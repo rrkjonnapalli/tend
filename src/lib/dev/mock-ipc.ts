@@ -60,6 +60,16 @@ const tasks = [
   task({ id: 'notes', path: 'work', title: 'Write release notes', orderKey: 'j', status: 'DONE' }),
   task({ id: 'milk', path: 'home', title: 'Buy milk', orderKey: 'k' }),
 ];
+let labels = [
+  { id: 'lb-review', name: 'review in progress', color: '#d57149', position: 0 },
+  { id: 'lb-script', name: 'script', color: '#1259d3', position: 1 },
+  { id: 'lb-approval', name: 'pending approval', color: '#da0037', position: 2 },
+];
+/** Task id → label ids. */
+const taskLabels = new Map<string, string[]>([['ship', ['lb-review', 'lb-script', 'lb-approval']], ['ci', ['lb-script']]]);
+const labelOrder = (ids: string[]) => labels.filter((l) => ids.includes(l.id)).map((l) => l.id);
+const labelLinks = () => [...taskLabels].flatMap(([taskId, ids]) => ids.map((id) => [taskId, id]));
+
 /** Manual My day choices: task id → included. */
 const myDay = new Map<string, boolean>();
 let createdCount = 0;
@@ -124,7 +134,30 @@ const handlers: Record<string, Handler> = {
   timer_add_minute: () => null,
   skipped_items: () => ['Bad Name.md', 'My Folder/'],
   feedback_send: () => null,
-  tasks_data: () => ({ folders: taskFolders, tasks, myDay: [...myDay] }),
+  tasks_data: () => ({ folders: taskFolders, tasks, myDay: [...myDay], labels: labelLinks() }),
+  labels_list: () => labels,
+  label_add: ({ name, color }) => {
+    const label = { id: `lb-${labels.length + 1}`, name: name as string, color: color as string, position: labels.length };
+    labels.push(label);
+    return label;
+  },
+  label_rename: ({ id, name }) => Object.assign(labels.find((l) => l.id === id)!, { name }),
+  label_recolor: ({ id, color }) => Object.assign(labels.find((l) => l.id === id)!, { color }),
+  label_reorder: ({ ids }) => {
+    labels = (ids as string[]).map((id, position) => ({ ...labels.find((l) => l.id === id)!, position }));
+    return null;
+  },
+  label_usage: ({ id }) => [...taskLabels.values()].filter((ids) => ids.includes(id as string)).length,
+  label_delete: ({ id }) => {
+    labels = labels.filter((l) => l.id !== id);
+    for (const [taskId, ids] of taskLabels) taskLabels.set(taskId, ids.filter((x) => x !== id));
+    return null;
+  },
+  task_labels_set: ({ id, labels: ids }) => {
+    const ordered = labelOrder(ids as string[]);
+    taskLabels.set(id as string, ordered);
+    return ordered;
+  },
   task_create: ({ task: input }) => {
     createdCount += 1;
     const fields = input as { path: string; title: string; parentId?: string };
@@ -142,7 +175,7 @@ const handlers: Record<string, Handler> = {
     else myDay.set(id as string, included as boolean);
     return null;
   },
-  task_get: ({ id }) => ({ ...tasks.find((t) => t.id === id), description: id === 'ship' ? 'First signed build for macOS and Linux.' : '', tags: id === 'ship' ? ['v0.1'] : [] }),
+  task_get: ({ id }) => ({ ...tasks.find((t) => t.id === id), description: id === 'ship' ? 'First signed build for macOS and Linux.' : '', tags: id === 'ship' ? ['v0.1'] : [], labels: taskLabels.get(id as string) ?? [] }),
   people_list: () => [
     { id: 'priya', firstName: 'Priya', lastName: 'Nair', nickname: null, dobYear: 1995, dobMonth: 10, dobDay: 10, phone: '+91 98450 12345', email: 'priya@example.com' },
     { id: 'ravi', firstName: 'Ravi', lastName: 'Kumar', nickname: null, dobYear: null, dobMonth: 3, dobDay: 2, phone: null, email: 'ravi@example.com' },

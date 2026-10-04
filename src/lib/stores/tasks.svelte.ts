@@ -1,32 +1,69 @@
-// Tasks, task folders, statuses and today's My day choices, loaded once and patched in place.
+// Tasks, task folders, statuses, labels and today's My day choices, loaded once and patched in
+// place.
 import { tasksAPI } from '#lib/api/tasks.ts';
 import type { NewTask, Task, TaskPatch } from '#lib/types/task.type.ts';
 import { statusesAPI } from '#lib/api/statuses.ts';
 import type { Status } from '#lib/types/status.type.ts';
+import { labelsAPI } from '#lib/api/labels.ts';
+import type { Label } from '#lib/types/label.type.ts';
 import { today } from '#lib/util/dates.ts';
 import { isUnder } from '#lib/util/names.ts';
 import { byOrderKey, isDone } from '#lib/util/task-views.ts';
+
+/** (task id, label id) pairs → task id → label ids. */
+function groupLinks(links: [string, string][]): Map<string, string[]> {
+  const byTask = new Map<string, string[]>();
+  for (const [taskId, labelId] of links) {
+    const ids = byTask.get(taskId) ?? [];
+    ids.push(labelId);
+    byTask.set(taskId, ids);
+  }
+  return byTask;
+}
 
 class TasksStore {
   folders = $state<string[]>([]);
   tasks = $state<Task[]>([]);
   statuses = $state<Status[]>([]);
+  labels = $state<Label[]>([]);
+  /** Task id → its label ids. */
+  labelIds = $state(new Map<string, string[]>());
   myDay = $state(new Map<string, boolean>());
   /** The day My day was loaded for, so a new day reloads it. */
   day = $state(today());
 
   load = async () => {
     const day = today();
-    const [data, statuses] = await Promise.all([tasksAPI.data(day), statusesAPI.list()]);
+    const [data, statuses, labels] = await Promise.all([tasksAPI.data(day), statusesAPI.list(), labelsAPI.list()]);
     this.folders = data.folders;
     this.tasks = data.tasks;
     this.myDay = new Map(data.myDay);
+    this.labelIds = groupLinks(data.labels);
     this.statuses = statuses;
+    this.labels = labels;
     this.day = day;
   };
 
   loadStatuses = async () => {
     this.statuses = await statusesAPI.list();
+  };
+
+  loadLabels = async () => {
+    this.labels = await labelsAPI.list();
+  };
+
+  /** The task's labels, in the list's order. */
+  labelsOf = (taskId: string): Label[] => {
+    const ids = new Set(this.labelIds.get(taskId) ?? []);
+    return this.labels.filter((l) => ids.has(l.id));
+  };
+
+  setLabels = async (taskId: string, ids: string[]) => {
+    const saved = await labelsAPI.setForTask({ id: taskId, labels: ids });
+    const next = new Map(this.labelIds);
+    next.set(taskId, saved);
+    this.labelIds = next;
+    return saved;
   };
 
   byId = (id: string) => this.tasks.find((t) => t.id === id);

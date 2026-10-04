@@ -3,14 +3,16 @@
   // add with an auto UPPER_SNAKE value, delete blocked while in use.
   import { onDestroy } from 'svelte';
   import Section from './Section.svelte';
-  import StatusRow from './StatusRow.svelte';
-  import StatusAddRow from './StatusAddRow.svelte';
-  import StatusSwatchPicker from './StatusSwatchPicker.svelte';
+  import ColorListRow from './ColorListRow.svelte';
+  import ColorListAddRow from './ColorListAddRow.svelte';
+  import SwatchPicker from './SwatchPicker.svelte';
   import { statusesAPI } from '#lib/api/statuses.ts';
   import type { Status, StatusPosition } from '#lib/types/status.type.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { startReorder } from '#lib/util/reorder.ts';
+  import { FIRST_STATUS, statusValue } from '#lib/util/statuses.ts';
+  import { freeSwatch } from '#lib/util/swatches.ts';
 
   tasks.loadStatuses();
 
@@ -30,6 +32,8 @@
   const first = $derived(tasks.statuses[0]?.label ?? 'Not started');
   const last = $derived(tasks.statuses.at(-1)?.label ?? 'Done');
   const swatchColor = $derived(tasks.statuses.find((s) => s.value === swatchFor?.value)?.color);
+
+  const PIN_NOTES: Record<StatusPosition, string> = { first: 'always first', middle: '', last: 'always last' };
 
   function positionOf(index: number): StatusPosition {
     if (index === 0) return 'first';
@@ -54,6 +58,11 @@
     const failure = await apply(action);
     if (failure) rowError = { value, message: failure };
     return failure === null;
+  }
+
+  function addStatus({ name, value }: { name: string; value: string }) {
+    const color = freeSwatch(tasks.statuses.map((s) => s.color));
+    return apply(() => statusesAPI.add({ label: name, value, color }));
   }
 
   function startEdit(value: string) {
@@ -109,9 +118,16 @@
   </span>
   <div class="rows">
     {#each list as s, i (s.value)}
-      <StatusRow
-        status={s}
-        position={positionOf(i)}
+      <ColorListRow
+        id={s.value}
+        name={s.label}
+        color={s.color}
+        ring={s.value === FIRST_STATUS}
+        pinned={positionOf(i) !== 'middle'}
+        note={PIN_NOTES[positionOf(i)]}
+        meta={s.value}
+        removable={!s.isDefault}
+        nameLabel="Status label"
         editing={editing === s.value}
         lifted={lifted === s.value && preview !== null}
         error={rowError?.value === s.value ? rowError.message : null}
@@ -123,11 +139,11 @@
         onremove={() => runRow(s.value, () => statusesAPI.remove(s.value))} />
     {/each}
   </div>
-  <StatusAddRow {apply} />
+  <ColorListAddRow what="status" toValue={statusValue} onadd={addStatus} />
 </Section>
 
 {#if swatchFor}
-  <StatusSwatchPicker anchor={swatchFor.anchor} color={swatchColor} onpick={pickColor} onclose={() => (swatchFor = null)} />
+  <SwatchPicker anchor={swatchFor.anchor} color={swatchColor} label="Status color" onpick={pickColor} onclose={() => (swatchFor = null)} />
 {/if}
 
 <style>

@@ -87,6 +87,8 @@ The user picks one **vault folder**. Tend works only inside it:
 - **Edit in place:** task rows, note rows and subtask rows show a pencil on hover, first in the right-hand part of the row. It turns the title (a note's name, under the name rule) into a field: Enter or leaving saves, Esc cancels. Every in-place edit, explorer rename included, uses the same soft-fill field (no border).
 - **No autocorrect** (nor spellcheck, auto-capitalise, autofill) in any input or textarea; the markdown editors have it off too.
 - **Assignee in task rows:** the person's initials, or a gray "U" (hover: Unassigned); click opens a people search to assign, with Unassign at the bottom. Subtask rows on a task page show it too, after My day.
+- **Labels** (schema v2, `src-tauri/src/db/migrations/002_task_labels.sql`): a fixed list in Settings → Tasks → Labels (name + color, drag to order, rename, recolor; deleting one in use asks, then takes it off those tasks). A task (or subtask) carries any number, picked on the task page from that list only. Board cards show them as colored dots (up to 4, then +N; hover names them); list rows don't. Tags stay free-typed and shared with notes.
+- **Swatches:** 20 colors (tokens.css `--sw-*`, `util/swatches.ts`), shared by statuses and labels.
 - **Status dot** in task list rows and subtask rows opens the status list to change it in place (trial; may go).
 - **Width toggle:**
   - On note and task pages, the top section (breadcrumb, tags) is full width.

@@ -1,16 +1,21 @@
 <script lang="ts">
   import { plainText } from '#lib/actions/plain-text.action.ts';
-  // One status in Settings → Statuses: drag handle (not first or last), colour swatch, label or
-  // inline rename, the fixed value, and edit / delete actions.
+  // One row of a colored list in Settings (statuses, labels): drag handle (unless pinned), color
+  // swatch, name or inline rename, an optional note and fixed value, and edit / delete actions.
   import { focusAndSelect } from '#lib/actions/focus.action.ts';
   import Icon from './Icon.svelte';
   import Grip from './Grip.svelte';
-  import { FIRST_STATUS } from '#lib/util/statuses.ts';
-  import type { Status, StatusPosition } from '#lib/types/status.type.ts';
 
   let {
-    status,
-    position,
+    id,
+    name,
+    color,
+    ring = false,
+    pinned = false,
+    note = '',
+    meta = '',
+    removable = true,
+    nameLabel,
     editing,
     lifted,
     error,
@@ -21,8 +26,21 @@
     oncancel,
     onremove,
   }: {
-    status: Status;
-    position: StatusPosition;
+    /** The row's key for drag reordering. */
+    id: string;
+    name: string;
+    color: string;
+    /** Draw the swatch as a ring (the first status). */
+    ring?: boolean;
+    /** No drag handle: the row keeps its place. */
+    pinned?: boolean;
+    /** A small note after the name, e.g. "always first". */
+    note?: string;
+    /** A fixed value shown in mono, e.g. a status's value. */
+    meta?: string;
+    removable?: boolean;
+    /** Accessible name of the rename field, e.g. "Status label". */
+    nameLabel: string;
     editing: boolean;
     lifted: boolean;
     error: string | null;
@@ -34,13 +52,10 @@
     onremove: () => void;
   } = $props();
 
-  const PIN_LABELS: Record<StatusPosition, string> = { first: 'always first', middle: '', last: 'always last' };
-
-  const pinned = $derived(position !== 'middle');
   let label = $state('');
 
   function startEdit() {
-    label = status.label;
+    label = name;
     onedit();
   }
 
@@ -53,27 +68,27 @@
   }
 </script>
 
-<div class="srow reveal-on-hover" class:sortable={!pinned} class:lifted class:editing data-key={status.value}>
+<div class="srow reveal-on-hover" class:sortable={!pinned} class:lifted class:editing data-key={id}>
   {#if pinned}<span></span>{:else}
     <span class="handle" role="presentation" onpointerdown={ongrab}><Grip /></span>
   {/if}
   <button
     class="sw"
-    class:ring={status.value === FIRST_STATUS}
-    style:--c={status.color}
-    aria-label="Color for {status.label}"
+    class:ring
+    style:--c={color}
+    aria-label="Color for {name}"
     title="Color"
     aria-haspopup="listbox"
     onclick={(e) => onswatch(e.currentTarget)}></button>
   {#if editing}
-    <input use:plainText class="etxt" aria-label="Status label" bind:value={label} onkeydown={editKeys} use:focusAndSelect />
+    <input use:plainText class="etxt" aria-label={nameLabel} bind:value={label} onkeydown={editKeys} use:focusAndSelect />
   {:else}
-    <span class="lab"><span class="nm">{status.label}</span><span class="pin">{PIN_LABELS[position]}</span></span>
+    <span class="lab"><span class="nm">{name}</span><span class="pin">{note}</span></span>
   {/if}
-  <span class="sval" title="Value (can’t be changed)">{status.value}</span>
+  <span class="sval" title={meta ? "Value (can’t be changed)" : undefined}>{meta}</span>
   <span class="acts" class:on-hover={!editing}>
-    {#if !status.isDefault}
-      <button class="icon-btn sm danger" aria-label="Delete {status.label}" title="Delete" onclick={onremove}>
+    {#if removable}
+      <button class="icon-btn sm danger" aria-label="Delete {name}" title="Delete" onclick={onremove}>
         <Icon name="trash" size={13} />
       </button>
     {/if}
@@ -81,7 +96,7 @@
       <button class="icon-btn sm ok" aria-label="Save" title="Save" onclick={() => onrename(label)}><Icon name="check" size={13} stroke={2.25} /></button>
       <button class="icon-btn sm danger" aria-label="Cancel" title="Cancel" onclick={oncancel}><Icon name="close" size={13} stroke={2.25} /></button>
     {:else}
-      <button class="icon-btn sm edit" aria-label="Edit {status.label}" title="Edit" onclick={startEdit}><Icon name="edit" size={13} /></button>
+      <button class="icon-btn sm edit" aria-label="Edit {name}" title="Edit" onclick={startEdit}><Icon name="edit" size={13} /></button>
     {/if}
   </span>
   {#if error}<span class="err" role="alert">{error}</span>{/if}

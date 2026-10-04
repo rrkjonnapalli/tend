@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import StatusesEditor from '#lib/components/StatusesEditor.svelte';
+  import LabelsEditor from '#lib/components/LabelsEditor.svelte';
   import SettingsGeneral from '#lib/components/SettingsGeneral.svelte';
   import SettingsPalette from '#lib/components/SettingsPalette.svelte';
   import { nav } from '#lib/stores/history.svelte.ts';
@@ -12,7 +13,7 @@
   const sections = [
     { id: 'general', label: 'General', sub: 'App-wide preferences.' },
     { id: 'notes', label: 'Notes', sub: 'Notes folder and editor.' },
-    { id: 'tasks', label: 'Tasks', sub: 'Statuses and board columns.' },
+    { id: 'tasks', label: 'Tasks', sub: 'Statuses, board columns and labels.' },
     { id: 'people', label: 'People', sub: 'Contacts and birthdays.' },
     { id: 'palette', label: 'Command palette', sub: 'Every command, with its shortcut. Press ⌘K anywhere to open the palette.' },
   ] as const;
@@ -47,6 +48,7 @@
       <SettingsGeneral />
     {:else if current.id === 'tasks'}
       <StatusesEditor />
+      <LabelsEditor />
     {:else if current.id === 'palette'}
       <SettingsPalette />
     {:else}

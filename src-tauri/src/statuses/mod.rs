@@ -50,7 +50,7 @@ pub fn list(conn: &Connection) -> AppResult<Vec<Status>> {
 pub fn add(conn: &Connection, label: &str, value: &str, color: &str) -> AppResult<Status> {
     let value = checks::new_value(conn, value)?;
     let label = checks::label(conn, label, None)?;
-    checks::color(color)?;
+    crate::colors::check(color)?;
     let position: i64 = conn.query_row(
         "SELECT max(position) + 1 FROM statuses WHERE value <> ?1",
         [DONE],
@@ -80,7 +80,7 @@ pub fn rename(conn: &Connection, value: &str, label: &str) -> AppResult<Status> 
 }
 
 pub fn recolor(conn: &Connection, value: &str, color: &str) -> AppResult<Status> {
-    checks::color(color)?;
+    crate::colors::check(color)?;
     conn.execute(
         "UPDATE statuses SET color = ?1 WHERE value = ?2",
         params![color, value],

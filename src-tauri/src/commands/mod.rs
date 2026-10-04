@@ -8,6 +8,7 @@
 pub mod app;
 pub mod attachments;
 pub mod comments;
+pub mod labels;
 pub mod notes;
 pub mod people;
 pub mod statuses;

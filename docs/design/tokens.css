@@ -78,9 +78,11 @@
   --c-nav-active-soft: #ede9ff; /* timer chip, assignee chip, person chips */
   --c-overdue: #a84f2c;
 
-  /* status swatches (statuses.color stores the hex) */
-  --sw-gray: #7d8995; --sw-blue: #1259d3; --sw-sky: #429ff5; --sw-violet: #6f5ee4; --sw-lilac: #b1b2ff;
-  --sw-green: #1e7a55; --sw-mint: #62d2a2; --sw-orange: #d57149; --sw-red: #da0037; --sw-pink: #f67280;
+  /* color swatches for statuses and labels (their color column stores the hex) */
+  --sw-gray: #7d8995; --sw-slate: #475569; --sw-blue: #1259d3; --sw-sky: #429ff5; --sw-indigo: #3f51b5;
+  --sw-violet: #6f5ee4; --sw-lilac: #b1b2ff; --sw-purple: #9c36b5; --sw-magenta: #c2255c; --sw-pink: #f67280;
+  --sw-red: #da0037; --sw-orange: #d57149; --sw-amber: #e8890c; --sw-yellow: #d4b106; --sw-olive: #7a8f2a;
+  --sw-green: #1e7a55; --sw-mint: #62d2a2; --sw-teal: #0f8a8a; --sw-cyan: #22a6c7; --sw-brown: #8d6e63;
 
   /* type */
   --font-heading: 'Montserrat', sans-serif;   /* 28/36 500 page titles; 15–16 500 section titles */

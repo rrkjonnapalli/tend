@@ -51,7 +51,7 @@ fn add_rules() {
     ));
     assert!(fails_with(
         add(&conn, "Ready", "READY", "blue"),
-        errors::STATUS_COLOR
+        errors::COLOR_INVALID
     ));
     add(&conn, "Ready", "READY", "#000000").unwrap();
     assert!(fails_with(

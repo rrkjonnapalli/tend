@@ -12,7 +12,10 @@ use crate::error::{errors, AppResult};
 pub const APP_ID: &str = "tend";
 
 /// Migration n is `MIGRATIONS[n - 1]`. The app's schema version is the length of this list.
-const MIGRATIONS: &[&str] = &[include_str!("../../../docs/schema.sql")];
+const MIGRATIONS: &[&str] = &[
+    include_str!("../../../docs/schema.sql"),
+    include_str!("migrations/002_task_labels.sql"),
+];
 
 pub fn schema_version() -> i64 {
     MIGRATIONS.len() as i64

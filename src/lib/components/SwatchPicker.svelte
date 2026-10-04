@@ -1,19 +1,27 @@
 <script lang="ts">
-  // The colour popover for a status: the ten swatches, the current one outlined.
+  // The color popover for a status or label: every swatch, the current one outlined.
   import Popover from './Popover.svelte';
-  import { SWATCHES } from '#lib/util/statuses.ts';
+  import { SWATCHES } from '#lib/util/swatches.ts';
 
   let {
     anchor,
     color,
     onpick,
     onclose,
-  }: { anchor: HTMLElement; color: string | undefined; onpick: (hex: string) => void; onclose: () => void } = $props();
+    label,
+  }: {
+    anchor: HTMLElement;
+    color: string | undefined;
+    onpick: (hex: string) => void;
+    onclose: () => void;
+    /** Accessible name, e.g. "Status color". */
+    label: string;
+  } = $props();
 
   const current = $derived(color?.toLowerCase());
 </script>
 
-<Popover {anchor} role="listbox" label="Status color" {onclose}>
+<Popover {anchor} role="listbox" {label} {onclose}>
   <div class="swpop">
     {#each SWATCHES as [name, hex] (hex)}
       <button

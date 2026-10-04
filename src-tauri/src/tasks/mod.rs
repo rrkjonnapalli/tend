@@ -40,6 +40,8 @@ pub struct TaskData {
     pub tasks: Vec<Task>,
     /// Manual My day overrides for the given day: task id → included.
     pub my_day: Vec<(String, bool)>,
+    /// Every (task id, label id) pair.
+    pub labels: Vec<(String, String)>,
 }
 
 /// A task to create. A subtask takes its parent's folder; `order_key` places it somewhere
@@ -120,10 +122,12 @@ pub fn data(conn: &Connection, day: &str) -> AppResult<TaskData> {
         .prepare("SELECT task_id, included FROM my_day WHERE day = ?1")?
         .query_map([day], |r| Ok((r.get(0)?, r.get::<_, i64>(1)? == 1)))?
         .collect::<Result<_, _>>()?;
+    let labels = crate::labels::links(conn)?;
     Ok(TaskData {
         folders,
         tasks,
         my_day,
+        labels,
     })
 }
 

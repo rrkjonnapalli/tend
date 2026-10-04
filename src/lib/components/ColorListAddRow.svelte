@@ -1,46 +1,52 @@
 <script lang="ts">
+  // The add row under a colored list in Settings (statuses, labels): a name, and for statuses a
+  // value that follows the name (via `toValue`) until it is typed in by hand.
   import { plainText } from '#lib/actions/plain-text.action.ts';
-  // The add row under the statuses: a label, and a value that follows the label as UPPER_SNAKE
-  // until it is typed in by hand.
   import Icon from './Icon.svelte';
-  import { statusesAPI } from '#lib/api/statuses.ts';
-  import { freeSwatch, statusValue } from '#lib/util/statuses.ts';
-  import { tasks } from '#lib/stores/tasks.svelte.ts';
 
-  /** `apply` runs a change and reloads the statuses; it returns why it failed, or null. */
-  let { apply }: { apply: (action: () => Promise<unknown>) => Promise<string | null> } = $props();
+  let {
+    what,
+    toValue,
+    onadd,
+  }: {
+    /** The kind of item, for placeholders and messages: "status", "label". */
+    what: string;
+    /** Turns the name into the item's value; leave out for items without a value. */
+    toValue?: (name: string) => string;
+    /** Adds the item; returns why it failed, or null. */
+    onadd: (item: { name: string; value: string }) => Promise<string | null>;
+  } = $props();
 
-  let label = $state('');
+  let name = $state('');
   let value = $state('');
   let valueTouched = $state(false);
   let error = $state('');
 
-  /** Why the typed status can't be added, or '' when it can. */
+  /** Why the typed item can't be added, or '' when it can. */
   function problemOf(text: string, val: string): string {
-    if (!text) return 'Give the status a label.';
-    if (!val) return 'Give the status a value.';
+    if (!text) return `Give the ${what} a name.`;
+    if (toValue && !val) return `Give the ${what} a value.`;
     return '';
   }
 
   function reset() {
-    label = '';
+    name = '';
     value = '';
     valueTouched = false;
   }
 
   async function add() {
-    const text = label.trim();
-    const val = statusValue(value || text);
+    const text = name.trim();
+    const val = toValue ? toValue(value || text) : '';
     error = problemOf(text, val);
     if (error) return;
-    const color = freeSwatch(tasks.statuses.map((s) => s.color));
-    const failure = await apply(() => statusesAPI.add({ label: text, value: val, color }));
+    const failure = await onadd({ name: text, value: val });
     if (failure) error = failure;
     else reset();
   }
 
-  function onLabelInput() {
-    if (!valueTouched) value = statusValue(label);
+  function onNameInput() {
+    if (toValue && !valueTouched) value = toValue(name);
   }
 
   function onValueInput() {
@@ -56,10 +62,14 @@
 <div class="addrow">
   <span class="plus">+</span>
   <span></span>
-  <input use:plainText aria-label="New status label" placeholder="add status" bind:value={label} oninput={onLabelInput} onkeydown={addKeys} />
-  <input use:plainText class="vin" aria-label="New status value" placeholder="VALUE" bind:value oninput={onValueInput} onkeydown={addKeys} />
+  <input use:plainText aria-label="New {what} name" placeholder="add {what}" bind:value={name} oninput={onNameInput} onkeydown={addKeys} />
+  {#if toValue}
+    <input use:plainText class="vin" aria-label="New {what} value" placeholder="VALUE" bind:value oninput={onValueInput} onkeydown={addKeys} />
+  {:else}
+    <span></span>
+  {/if}
   <span class="acts">
-    {#if label.trim()}<button class="icon-btn sm ok" aria-label="Add status" title="Add" onclick={add}><Icon name="check" size={13} stroke={2.25} /></button>{/if}
+    {#if name.trim()}<button class="icon-btn sm ok" aria-label="Add {what}" title="Add" onclick={add}><Icon name="check" size={13} stroke={2.25} /></button>{/if}
   </span>
 </div>
 {#if error}<span class="adderr" role="alert">{error}</span>{/if}

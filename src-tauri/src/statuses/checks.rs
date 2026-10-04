@@ -52,15 +52,6 @@ pub fn label(conn: &Connection, label: &str, except: Option<&str>) -> AppResult<
     Ok(label.to_string())
 }
 
-/// `#rrggbb`.
-pub fn color(color: &str) -> AppResult<()> {
-    let shaped = color.len() == 7 && color.starts_with('#');
-    if !shaped || !color[1..].chars().all(|c| c.is_ascii_hexdigit()) {
-        return Err(errors::STATUS_COLOR.err());
-    }
-    Ok(())
-}
-
 /// The same statuses as now, with Not started first and Done last.
 pub fn order(current: &[Status], values: &[String]) -> AppResult<()> {
     let mut proposed: Vec<&str> = values.iter().map(String::as_str).collect();

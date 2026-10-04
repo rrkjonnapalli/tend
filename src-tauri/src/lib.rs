@@ -1,4 +1,5 @@
 mod attachments;
+mod colors;
 mod commands;
 mod comments;
 mod config;
@@ -7,6 +8,7 @@ mod error;
 mod feedback;
 #[cfg(test)]
 mod ipc_tests;
+mod labels;
 #[cfg(target_os = "macos")]
 mod macos;
 mod names;
@@ -67,6 +69,14 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
             commands::notes::item_delete,
             commands::tags::tags_all,
             commands::tags::note_tags_set,
+            commands::labels::labels_list,
+            commands::labels::label_add,
+            commands::labels::label_rename,
+            commands::labels::label_recolor,
+            commands::labels::label_reorder,
+            commands::labels::label_usage,
+            commands::labels::label_delete,
+            commands::labels::task_labels_set,
             commands::statuses::statuses_list,
             commands::statuses::status_add,
             commands::statuses::status_rename,

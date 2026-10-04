@@ -22,6 +22,7 @@ pub const IO: ErrorDef = def("IO", "A file couldn’t be read or written");
 pub const DB: ErrorDef = def("DB", "The database couldn’t do that");
 pub const WATCH: ErrorDef = def("WATCH", "The notes folder can’t be watched");
 pub const JSON: ErrorDef = def("JSON", "That data couldn’t be read");
+pub const COLOR_INVALID: ErrorDef = def("COLOR_INVALID", "Colors are #rrggbb.");
 pub const OPEN_FAILED: ErrorDef = def("OPEN_FAILED", "The file couldn’t be opened");
 
 // ---- names and folders
@@ -54,7 +55,6 @@ pub const STATUS_LABEL_TAKEN: ErrorDef = def(
     "STATUS_LABEL_TAKEN",
     "Another status already uses this label.",
 );
-pub const STATUS_COLOR: ErrorDef = def("STATUS_COLOR", "Colors are #rrggbb.");
 pub const STATUS_ORDER: ErrorDef = def(
     "STATUS_ORDER",
     "Not started stays first and Done stays last.",
@@ -67,6 +67,12 @@ pub const STATUS_IN_USE: ErrorDef = def(
     "STATUS_IN_USE",
     "Some tasks still have this status. Move them to another status first.",
 );
+
+// ---- labels
+pub const LABEL_NAME_EMPTY: ErrorDef = def("LABEL_NAME_EMPTY", "A label needs a name.");
+pub const LABEL_NAME_TAKEN: ErrorDef =
+    def("LABEL_NAME_TAKEN", "Another label already uses this name.");
+pub const LABEL_ORDER: ErrorDef = def("LABEL_ORDER", "The order must list every label once.");
 
 // ---- people
 pub const FIRST_NAME_EMPTY: ErrorDef = def("FIRST_NAME_EMPTY", "A first name is needed");

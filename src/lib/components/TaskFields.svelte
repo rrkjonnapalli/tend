@@ -1,12 +1,13 @@
 <script lang="ts">
   // The task's properties grid: location (top-level tasks), status, due date and time, My day,
-  // assignee, tags.
+  // assignee, tags, labels.
   import type { Task, TaskPatch } from '#lib/types/task.type.ts';
   import StatusSelect from './StatusSelect.svelte';
   import DateField from './DateField.svelte';
   import TimeField from './TimeField.svelte';
   import AssigneeField from './AssigneeField.svelte';
   import TagEditor from './TagEditor.svelte';
+  import LabelField from './LabelField.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { inMyDay, isOverdue } from '#lib/util/task-views.ts';
   import { folderLabel } from '#lib/util/task-urls.ts';
@@ -83,6 +84,8 @@
   <div class="pv"><AssigneeField value={task.assigneeId} onchange={(assigneeId) => onpatch({ assigneeId })} /></div>
   <span class="pl">Tags</span>
   <div class="pv">{#if tagsLoaded}<TagEditor {tags} onchange={ontags} addLabel="+" />{/if}</div>
+  <span class="pl">Labels</span>
+  <div class="pv"><LabelField taskId={task.id} /></div>
 </div>
 
 <style>

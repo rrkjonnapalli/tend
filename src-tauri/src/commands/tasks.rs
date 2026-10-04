@@ -20,6 +20,8 @@ pub struct TaskDetail {
     task: tasks::Task,
     description: String,
     tags: Vec<String>,
+    /// Label ids, in the list's order.
+    labels: Vec<String>,
 }
 
 #[tauri::command(async)]
@@ -29,6 +31,7 @@ pub fn task_get(state: State<AppState>, id: String) -> AppResult<TaskDetail> {
             task: tasks::get(db, &id)?,
             description: tasks::description(db, &id)?,
             tags: tags::of(db, tags::Owner::Task, &id)?,
+            labels: crate::labels::of_task(db, &id)?,
         })
     })
 }

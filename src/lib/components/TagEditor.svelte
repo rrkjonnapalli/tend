@@ -1,7 +1,7 @@
 <script lang="ts">
+  import Chip from './Chip.svelte';
   import { plainText } from '#lib/actions/plain-text.action.ts';
   // Tag chips with a red ✕ each, and an inline input that suggests tags from the shared pool.
-  import Icon from './Icon.svelte';
   import Popover from './Popover.svelte';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { tagPool } from '#lib/stores/tags.svelte.ts';
@@ -103,12 +103,7 @@
 
 <div class="tags" aria-label="Tags">
   {#each tags as tag (tag)}
-    <span class="chip" title={tag}>
-      <span class="tl">{tag}</span>
-      <button class="x" aria-label="Remove tag {tag}" title="Remove" onclick={() => remove(tag)}>
-        <Icon name="close" size={9} stroke={3} />
-      </button>
-    </span>
+    <Chip text={tag} removeLabel="Remove tag {tag}" onremove={() => remove(tag)} />
   {/each}
   {#if adding}
     <input
@@ -151,43 +146,6 @@
     min-height: 26px;
   }
 
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    max-width: 152px;
-    padding: 2px 4px 2px 8px;
-    border-radius: var(--radius-sm);
-    background: var(--c-hover);
-    color: var(--text-muted);
-    font: 400 13px/18px var(--font-ui);
-  }
-
-  .tl {
-    min-width: 0;
-    max-width: 120px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .x {
-    flex: 0 0 14px;
-    width: 14px;
-    height: 14px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--radius-xs);
-    background: transparent;
-    color: var(--danger);
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-  }
-
-  .x:hover {
-    background: var(--danger-soft);
-  }
 
   .in {
     width: 96px;

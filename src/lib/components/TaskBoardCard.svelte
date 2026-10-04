@@ -1,9 +1,11 @@
 <script lang="ts">
-  // One board card: title, then due · subtasks · path · assignee. Opens the task on click or Enter.
+  // One board card: title, then due · subtasks · labels (dots) · path · assignee. Opens the task on
+  // click or Enter.
   import type { Task } from '#lib/types/task.type.ts';
   import { goto } from '$app/navigation';
   import Avatar from './Avatar.svelte';
   import SubtaskMark from './SubtaskMark.svelte';
+  import LabelDots from './LabelDots.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { dueLabel } from '#lib/util/dates.ts';
@@ -28,7 +30,8 @@
   const who = $derived(people.byId(task.assigneeId));
   const rel = $derived(relativeTo(task.path, folder));
   const subs = $derived(tasks.subtaskCount(task.id));
-  const hasMeta = $derived(!!task.dueDate || !!subs || !!rel || !!who);
+  const hasLabels = $derived(tasks.labelsOf(task.id).length > 0);
+  const hasMeta = $derived(!!task.dueDate || !!subs || hasLabels || !!rel || !!who);
 
   function open() {
     goto(routes.task(task.id));
@@ -45,6 +48,7 @@
     <span class="cmeta">
       {#if task.dueDate}<span class:warn={isOverdue(task, tasks.day)}>{dueLabel(task.dueDate)}</span>{/if}
       {#if subs}<span>{subs}</span>{/if}
+      <LabelDots taskId={task.id} />
       {#if rel}<span>{rel}</span>{/if}
       {#if who}<span class="cav"><Avatar person={who} size={18} /></span>{/if}
     </span>
