@@ -7,6 +7,8 @@ export const settingKeys = {
   notesWide: 'notes.wide',
   tasksWide: 'tasks.wide',
   tasksLayout: 'tasks.layout',
+  /** `{ view, day }`: the task list view picked last and when (see `defaultView`). */
+  tasksLastView: 'tasks.last_view',
   tasksRootName: 'tasks.root_name',
   timersSound: 'timers.sound',
   /** The folder Quick create last used for each kind. */

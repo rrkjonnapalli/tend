@@ -4,7 +4,7 @@
   import type { DayRange } from '#lib/types/date.type.ts';
   import type { DroppedOrder } from '#lib/types/reorder.type.ts';
   import type { Task } from '#lib/types/task.type.ts';
-  import type { View } from '#lib/types/task-view.type.ts';
+  import type { LastView, View } from '#lib/types/task-view.type.ts';
   import { onDestroy } from 'svelte';
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
@@ -14,7 +14,7 @@
   import Icon from '#lib/components/Icon.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
-  import { isDone, isManual, viewCounts, viewTasks } from '#lib/util/task-views.ts';
+  import { defaultView, isDone, isManual, viewCounts, viewTasks } from '#lib/util/task-views.ts';
   import { droppedKey, inPreviewOrder } from '#lib/util/task-order.ts';
   import { folderCrumbs, folderParam, TASK_PARAMS, tasksURL } from '#lib/util/task-urls.ts';
   import { startReorder } from '#lib/util/reorder.ts';
@@ -40,7 +40,8 @@
 
   const params = $derived(page.url.searchParams);
   const folder = $derived(params.get(TASK_PARAMS.folder) ?? '');
-  const view = $derived((params.get(TASK_PARAMS.view) as View) || 'all');
+  const lastView = $derived(settings.get<LastView | null>(settingKeys.tasksLastView, null));
+  const view = $derived((params.get(TASK_PARAMS.view) as View | null) ?? defaultView({ last: lastView, today: tasks.day }));
   const range = $derived.by((): DayRange => {
     const from = params.get(TASK_PARAMS.from) ?? tasks.day;
     const to = params.get(TASK_PARAMS.to) ?? from;
@@ -57,8 +58,8 @@
   const crumbs = $derived(folderCrumbs({ rootName, path: folder }));
 
   function setView(v: View, extra: Record<string, string> = {}) {
-    const viewParam: Record<string, string> = v === 'all' ? {} : { [TASK_PARAMS.view]: v };
-    nav.replace(tasksURL({ ...folderParam(folder), ...viewParam, ...extra }));
+    settings.set(settingKeys.tasksLastView, { view: v, day: tasks.day } satisfies LastView);
+    nav.replace(tasksURL({ ...folderParam(folder), [TASK_PARAMS.view]: v, ...extra }));
   }
 
   function setRange([from, to]: DayRange) {

@@ -161,7 +161,7 @@ The user picks one **vault folder**. Tend works only inside it:
   - The Statuses section is collapsible.
 
 ### Views
-- **Nav:** My day · All · Overdue · Upcoming · [date or range picker], each with a count. All stays the default view.
+- **Nav:** My day · All · Overdue · Upcoming · [date or range picker], each with a count. With no view in the URL the list opens My day on the first visit of a day, then the view picked last that day.
 - **List / Board** toggle at the right end of the nav.
 - **My day:** tasks due today are included by default. +/− my day (blue/red) stores manual overrides per day. My day has an "add task" field like All; a task added there is added to today's My day.
 - **Task page:** top-level tasks show a **Location** row (the folder path, e.g. `tasks / work / tend_v0_1`) that opens Move to…; subtasks don't, they live with their parent.

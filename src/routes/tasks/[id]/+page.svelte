@@ -224,7 +224,7 @@
 
 {#if moving && task}
   <MoveToDialog
-    what={task.title}
+    kind="task"
     folders={['', ...tasks.folders]}
     current={task.path}
     {rootName}

@@ -3,6 +3,9 @@ import type { Task } from '#lib/types/task.type.ts';
 
 export type View = 'all' | 'overdue' | 'myday' | 'upcoming' | 'range';
 
+/** The view last picked in the task list, and the day it was picked. */
+export type LastView = { view: View; day: string };
+
 export type ViewContext = { today: string; myDay: Map<string, boolean>; range: DayRange };
 
 /** My day state: the current day and the tasks added (true) or removed (false) by hand. */

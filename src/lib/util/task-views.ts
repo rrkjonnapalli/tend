@@ -1,7 +1,7 @@
 // Which tasks each view of the task list shows, and in what order.
 import type { DayRange } from '#lib/types/date.type.ts';
 import type { Task } from '#lib/types/task.type.ts';
-import type { MyDayContext, View, ViewContext, ViewScope } from '#lib/types/task-view.type.ts';
+import type { LastView, MyDayContext, View, ViewContext, ViewScope } from '#lib/types/task-view.type.ts';
 import { DONE_STATUS } from '#lib/util/statuses.ts';
 import { isUnder } from './names.ts';
 
@@ -23,6 +23,13 @@ const filters: Record<View, (t: Task, c: ViewContext) => boolean> = {
   upcoming: (t, c) => !isDone(t) && !!t.dueDate && t.dueDate >= c.today,
   range: (t, c) => !!t.dueDate && inRange(t.dueDate, c.range),
 };
+
+/** The view to open without one in the URL: My day on the first visit of a day, after that
+ * whichever view was picked last today. */
+export function defaultView({ last, today }: { last: LastView | null; today: string }): View {
+  if (!last || last.day !== today) return 'myday';
+  return last.view;
+}
 
 /** All and My day follow the manual order; the date views sort by due date. Done tasks sink. */
 export const isManual = (v: View) => v === 'all' || v === 'myday';

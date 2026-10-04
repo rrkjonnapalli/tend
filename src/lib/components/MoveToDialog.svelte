@@ -8,6 +8,7 @@
 
   let {
     what,
+    kind,
     folders,
     current,
     self,
@@ -15,8 +16,10 @@
     onmove,
     onclose,
   }: {
-    /** Shown in the header, e.g. "work/meetings/". */
-    what: string;
+    /** The item's name, shown in the header: "Move work/meetings/ to". */
+    what?: string;
+    /** Without `what`, the header names the kind instead: "Move task to". */
+    kind?: string;
     /** Every folder path, '' (the root) included. */
     folders: string[];
     /** The folder the item is in now. */
@@ -83,7 +86,7 @@
 
 <Panel label="Move" {onclose}>
   {#snippet head()}
-    <span>Move <span class="what">{what}</span> to</span><span class="k">{keyLabel('mod+shift+m')}</span>
+    <span>Move {#if what}<span class="what">{what}</span>{:else}{kind}{/if} to</span><span class="k">{keyLabel('mod+shift+m')}</span>
   {/snippet}
   <div class="row">
     <span class="l">to</span>

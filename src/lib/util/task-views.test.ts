@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Task } from '#lib/types/task.type.ts';
-import { inMyDay, viewCounts, viewTasks } from './task-views.ts';
+import { defaultView, inMyDay, viewCounts, viewTasks } from './task-views.ts';
 import type { ViewContext } from '#lib/types/task-view.type.ts';
 
 const base: Task = {
@@ -55,5 +55,16 @@ describe('views', () => {
 
   it('counts every view', () => {
     expect(viewCounts({ tasks, folder: 'work', ctx })).toEqual({ all: 5, overdue: 1, myday: 1, upcoming: 2, range: 2 });
+  });
+});
+
+describe('defaultView', () => {
+  it('opens My day on the first visit of a day', () => {
+    expect(defaultView({ last: null, today: '2026-10-04' })).toBe('myday');
+    expect(defaultView({ last: { view: 'all', day: '2026-10-03' }, today: '2026-10-04' })).toBe('myday');
+  });
+
+  it('keeps the view picked earlier today', () => {
+    expect(defaultView({ last: { view: 'all', day: '2026-10-04' }, today: '2026-10-04' })).toBe('all');
   });
 });
