@@ -36,7 +36,7 @@
         {@render right?.()}
         <a
           class="ico"
-          class:on={isCurrent('/settings')}
+          class:cur={isCurrent('/settings')}
           href="/settings"
           aria-label="Settings"
           title="Settings">

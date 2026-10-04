@@ -29,7 +29,9 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M2 · Vault: start page, setup and database  ☐
+## M2 · Vault: start page, setup and database  ☑
+
+> Done. An existing `db/app.sqlite` is checked read-only before it is opened read-write, so an incompatible file is never touched. A non-SQLite file also counts as incompatible. The last vault path is in `<app config dir>/config.json`. In dev, `src/lib/dev/mock-ipc.ts` lets the UI run in a plain browser for layout checks.
 
 **Read:** decisions §2, §3 · `schema.sql` (header and `meta`) · `screens/start.html`, `png/start.png`, `png/start-checking.png`
 

@@ -1,13 +1,17 @@
 // App-wide UI state that isn't tied to one screen.
+import { settings } from './settings.svelte.ts';
 
 export type Popup = 'feedback' | 'timers' | null;
 
 class Ui {
-  navOpen = $state(true);
   popup = $state<Popup>(null);
 
+  get navOpen(): boolean {
+    return settings.get('ui.nav_open', true);
+  }
+
   toggleNav = () => {
-    this.navOpen = !this.navOpen;
+    settings.set('ui.nav_open', !this.navOpen);
   };
 
   toggle = (p: Exclude<Popup, null>) => {
