@@ -118,7 +118,10 @@ fn settings_and_restore() {
     );
     assert_eq!(h.ok("settings_all", json!({}))["notes.wide"], json!(true));
     let restored = h.ok("vault_restore", json!({}));
-    assert_eq!(restored, json!(h.vault.path().to_string_lossy()));
+    assert_eq!(
+        restored,
+        json!({ "path": h.vault.path().to_string_lossy(), "error": null })
+    );
 }
 
 #[test]

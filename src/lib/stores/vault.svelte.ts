@@ -1,31 +1,43 @@
-// The open vault. `ready` turns true once launch has either reopened a vault or given up.
+// The open vault. `ready` turns true once launch has reopened a vault, found none, or failed.
 import { vaultApi } from '#lib/api/vault.ts';
+import { messageOf } from '#lib/api/core.ts';
 import { settings } from './settings.svelte.ts';
 import { tagPool } from './tags.svelte.ts';
 
 class VaultStore {
   path = $state<string | null>(null);
   ready = $state(false);
+  /** Why the remembered vault couldn't be reopened, and which one it was. */
+  problem = $state<{ path: string | null; message: string } | null>(null);
 
-  /** Reopens the last vault. Returns false when the start page should show. */
-  restore = async (): Promise<boolean> => {
+  /** Reopens the last vault. Waits as long as macOS takes to grant folder access. */
+  restore = async () => {
+    this.ready = false;
+    this.problem = null;
     try {
-      this.path = await vaultApi.restore();
-      if (this.path) await this.#loadAll();
-      return this.path !== null;
+      const r = await vaultApi.restore();
+      if (r.error) this.problem = { path: r.path, message: r.error };
+      else if (r.path) {
+        this.path = r.path;
+        await this.#loadAll();
+      }
     } catch (e) {
-      // A vault that can't be reopened sends the user to the start page to pick one.
-      console.error('Could not reopen the last vault', e);
-      this.path = null;
-      return false;
+      this.problem = { path: null, message: messageOf(e) };
     } finally {
       this.ready = true;
     }
   };
 
+  /** "Choose another folder" from the error screen. */
+  dismiss = () => {
+    this.problem = null;
+    this.path = null;
+  };
+
   /** Called once the start page has opened a vault. */
   opened = async (path: string) => {
     this.path = path;
+    this.problem = null;
     await this.#loadAll();
   };
 

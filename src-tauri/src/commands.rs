@@ -27,11 +27,13 @@ fn activate<R: Runtime>(
     crate::on_vault_open(app, state, &vault)
 }
 
+/// Async so it runs off the main thread: macOS may ask the user for folder access first,
+/// and the window must keep painting while it waits.
 #[tauri::command]
-pub fn vault_open<R: Runtime>(
+pub async fn vault_open<R: Runtime>(
     app: AppHandle<R>,
-    state: State<AppState>,
-    cfg: State<ConfigDir>,
+    state: State<'_, AppState>,
+    cfg: State<'_, ConfigDir>,
     path: String,
 ) -> AppResult<vault::Check> {
     let root = PathBuf::from(&path);
@@ -43,23 +45,36 @@ pub fn vault_open<R: Runtime>(
     Ok(check)
 }
 
-/// Reopens the last vault on launch. Returns its path, or None when it's gone or broken.
+/// What launch found: no remembered vault (`path` empty), the vault opened, or why it couldn't.
+#[derive(serde::Serialize)]
+pub struct Restore {
+    path: Option<String>,
+    error: Option<String>,
+}
+
+/// Reopens the last vault on launch. Async for the same reason as `vault_open`.
 #[tauri::command]
-pub fn vault_restore<R: Runtime>(
+pub async fn vault_restore<R: Runtime>(
     app: AppHandle<R>,
-    state: State<AppState>,
-    cfg: State<ConfigDir>,
-) -> AppResult<Option<String>> {
+    state: State<'_, AppState>,
+    cfg: State<'_, ConfigDir>,
+) -> AppResult<Restore> {
     let Some(root) = config::last_vault(&cfg.0) else {
-        return Ok(None);
+        return Ok(Restore {
+            path: None,
+            error: None,
+        });
     };
-    let (check, opened) = vault::open(&root);
-    match opened {
-        Some(v) => {
+    let path = Some(root.to_string_lossy().into_owned());
+    match vault::reopen(&root) {
+        Ok(v) => {
             activate(&app, &state, v)?;
-            Ok(Some(check.path))
+            Ok(Restore { path, error: None })
         }
-        None => Ok(None),
+        Err(error) => Ok(Restore {
+            path,
+            error: Some(error),
+        }),
     }
 }
 

@@ -1,6 +1,7 @@
 //! Opening a vault: check or create `notes/`, `.attachments/` and `db/app.sqlite`, in that order.
 
 use std::fs;
+use std::io::ErrorKind;
 use std::path::Path;
 
 use serde::Serialize;
@@ -72,9 +73,43 @@ fn ensure_dir(dir: &Path, item: &'static str, found: impl Fn() -> String) -> Res
         Err(e) => Err(Step {
             item,
             status: StepStatus::Error,
-            detail: e.to_string(),
+            detail: io_detail(&e),
         }),
     }
+}
+
+/// File errors in words the start page can show.
+fn io_detail(e: &std::io::Error) -> String {
+    match e.kind() {
+        ErrorKind::PermissionDenied => NO_PERMISSION.to_string(),
+        _ => e.to_string(),
+    }
+}
+
+const NO_PERMISSION: &str = "no permission to access this folder";
+
+/// Reopens the remembered vault on launch, or says in plain words why it can't.
+pub fn reopen(root: &Path) -> Result<Vault, String> {
+    match fs::metadata(root) {
+        Err(e) if e.kind() == ErrorKind::PermissionDenied => {
+            return Err("Tend doesn’t have permission to open this folder.".into())
+        }
+        Ok(m) if m.is_dir() => {}
+        // Never recreate a vault that has gone (moved, renamed, or on a drive that isn't attached).
+        _ => return Err("The folder isn’t there any more. It may have been moved or renamed, or it's on a drive that isn’t connected.".into()),
+    }
+    let (check, opened) = open(root);
+    opened.ok_or_else(|| {
+        let failed = check.steps.iter().find(|s| s.status == StepStatus::Error);
+        match failed.map(|s| s.detail.as_str()) {
+            Some("incompatible schema") => {
+                "An incompatible database exists in db/app.sqlite.".into()
+            }
+            Some(NO_PERMISSION) => "Tend doesn’t have permission to open this folder.".into(),
+            Some(detail) => format!("{}: {detail}", failed.map_or("", |s| s.item)),
+            None => "The vault couldn’t be opened.".into(),
+        }
+    })
 }
 
 pub fn open(root: &Path) -> (Check, Option<Vault>) {
@@ -121,6 +156,7 @@ pub fn open(root: &Path) -> (Check, Option<Vault>) {
         Err(e) => {
             let detail = match e {
                 AppError::IncompatibleDb => "incompatible schema".to_string(),
+                AppError::Io(io) => io_detail(&io),
                 other => other.to_string(),
             };
             steps.push(Step {
@@ -217,6 +253,42 @@ mod tests {
     #[test]
     fn missing_meta_is_incompatible() {
         incompatible("CREATE TABLE things (id INTEGER PRIMARY KEY);");
+    }
+
+    fn reopen_err(root: &Path) -> String {
+        match reopen(root) {
+            Err(e) => e,
+            Ok(_) => panic!("expected {} to fail", root.display()),
+        }
+    }
+
+    #[test]
+    fn reopen_explains_what_went_wrong() {
+        let dir = tempfile::tempdir().unwrap();
+        let gone = dir.path().join("gone");
+        assert!(reopen_err(&gone).contains("isn’t there"));
+        assert!(!gone.exists(), "a missing vault is never recreated");
+
+        assert!(reopen(dir.path()).is_ok());
+        let bad = tempfile::tempdir().unwrap();
+        fs::create_dir_all(bad.path().join("db")).unwrap();
+        fs::write(bad.path().join("db/app.sqlite"), "junk").unwrap();
+        assert_eq!(
+            reopen_err(bad.path()),
+            "An incompatible database exists in db/app.sqlite."
+        );
+    }
+
+    #[test]
+    fn reopen_reports_missing_permission() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        let locked = dir.path().join("locked");
+        fs::create_dir_all(&locked).unwrap();
+        fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).unwrap();
+        let err = reopen_err(&locked);
+        fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).unwrap();
+        assert!(err.contains("permission"), "{err}");
     }
 
     #[test]

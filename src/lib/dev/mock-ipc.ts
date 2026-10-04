@@ -1,10 +1,11 @@
 // Dev only: lets the UI run in a plain browser (vite dev without Tauri) for layout checks.
-// Commands answer from in-memory fixtures. Add `?vault=0` to the URL to see the start page.
+// Commands answer from in-memory fixtures. Add `?vault=0` to the URL to see the start page, `?vault=denied` for the error screen.
 import { mockIPC, mockWindows } from '@tauri-apps/api/mocks';
 
 type Handler = (args: Record<string, unknown>) => unknown;
 
-const withVault = new URLSearchParams(location.search).get('vault') !== '0';
+const vaultParam = new URLSearchParams(location.search).get('vault');
+const withVault = vaultParam !== '0';
 const settings: Record<string, unknown> = {};
 const now = Date.now();
 const notes = [
@@ -58,7 +59,10 @@ const comments: { id: string; task: string; body: string; createdAt: number; edi
 const taskFolders = ['home', 'inbox', 'work', 'work/infra', 'work/tend_v0_1'];
 
 const handlers: Record<string, Handler> = {
-  vault_restore: () => (withVault ? '/Users/demo/Tend' : null),
+  vault_restore: () =>
+    vaultParam === 'denied'
+      ? { path: '/Users/demo/Documents/Tend', error: 'Tend doesn’t have permission to open this folder.' }
+      : { path: withVault ? '/Users/demo/Tend' : null, error: null },
   vault_open: ({ path }) => ({
     path,
     ok: true,
