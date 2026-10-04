@@ -39,6 +39,10 @@
   }
 
   .cur {
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     color: var(--text);
   }
 </style>

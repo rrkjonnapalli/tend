@@ -72,6 +72,18 @@
     title = task?.title ?? '';
   });
 
+  /** Grows the title box to fit long titles over several lines. */
+  function autogrow(node: HTMLTextAreaElement, _value: string) {
+    const fit = () => {
+      node.style.height = 'auto';
+      node.style.height = `${node.scrollHeight}px`;
+    };
+    const ro = new ResizeObserver(fit);
+    ro.observe(node);
+    fit();
+    return { update: fit, destroy: () => ro.disconnect() };
+  }
+
   function saveTitle() {
     const t = title.trim();
     if (!task || t === task.title) return;
@@ -133,12 +145,15 @@
   let subDraft = $state('');
   let subPreview = $state<string[] | null>(null);
   let liftedSub = $state<string | null>(null);
-  const shownSubs = $derived(subPreview ? subPreview.map((k) => subs.find((s) => s.id === k)!).filter(Boolean) : subs);
+  const openSubs = $derived(subs.filter((s) => !isDone(s)));
+  const doneSubs = $derived(subs.filter(isDone));
+  const shownSubs = $derived(subPreview ? subPreview.map((k) => openSubs.find((s) => s.id === k)!).filter(Boolean) : openSubs);
+  let showDone = $state(false);
 
   async function addSub() {
     const t = subDraft.trim();
     if (!t || !task) return;
-    const last = subs.at(-1)?.orderKey ?? null;
+    const last = openSubs.at(-1)?.orderKey ?? null;
     try {
       await tasks.create({ path: task.path, title: t, parentId: id, orderKey: keyBetween(last, null) });
       subDraft = '';
@@ -150,7 +165,7 @@
   function grabSub(e: PointerEvent, subId: string) {
     liftedSub = subId;
     startReorder(e, {
-      keys: subs.map((s) => s.id),
+      keys: openSubs.map((s) => s.id),
       key: subId,
       preview: (p) => {
         subPreview = p;
@@ -235,12 +250,15 @@
       </div>
 
       <div class="body" style:max-width={wide ? 'none' : 'var(--content-w)'}>
-        <input
-          class="title heading"
+        <textarea
+          class="title"
           aria-label="Title"
+          rows="1"
           bind:value={title}
+          use:autogrow={title}
+          oninput={() => (title = title.replace(/\s*\n\s*/g, ' '))}
           onblur={saveTitle}
-          onkeydown={(e) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()} />
+          onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), (e.currentTarget as HTMLTextAreaElement).blur())}></textarea>
 
         <div class="props">
           <span class="pl">Status</span>
@@ -295,10 +313,23 @@
                   onpointerdown={(e) => grabSub(e, s.id)}>
                   <Grip />
                   <StatusDot value={s.status} />
-                  <span class:done={isDone(s)}>{s.title}</span>
+                  <span>{s.title}</span>
                 </a>
               {/each}
             </div>
+            {#if doneSubs.length}
+              <button class="donehead" aria-expanded={showDone} onclick={() => (showDone = !showDone)}>
+                <Icon name={showDone ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />Done<span class="cnt">{doneSubs.length}</span>
+              </button>
+              {#if showDone}
+                {#each doneSubs as s (s.id)}
+                  <a class="sub" href={routes.task(s.id)}>
+                    <StatusDot value={s.status} />
+                    <span class="done">{s.title}</span>
+                  </a>
+                {/each}
+              {/if}
+            {/if}
           </Section>
 
           <Section title="Attachments">
@@ -376,12 +407,15 @@
   }
 
   .title {
+    display: block;
     width: 100%;
     padding: 0;
     border: 0;
     outline: none;
+    resize: none;
+    overflow: hidden;
     background: transparent;
-    font: var(--text-heading);
+    font: 500 22px/30px var(--font-heading);
     color: var(--text);
   }
 
@@ -492,5 +526,28 @@
 
   .done {
     color: var(--c-muted-2);
+  }
+
+  .donehead {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0;
+    margin-top: 4px;
+    border: 0;
+    background: transparent;
+    font: 400 13px/18px var(--font-ui);
+    color: var(--c-muted-2);
+    cursor: pointer;
+    align-self: flex-start;
+  }
+
+  .donehead:hover {
+    color: var(--text);
+  }
+
+  .cnt {
+    margin-left: 2px;
   }
 </style>
