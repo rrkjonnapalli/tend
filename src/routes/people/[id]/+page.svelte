@@ -10,12 +10,14 @@
   import EditControls from '#lib/components/EditControls.svelte';
   import StatusDot from '#lib/components/StatusDot.svelte';
   import DeleteDialog from '#lib/components/DeleteDialog.svelte';
-  import { displayName, peopleApi, type Person, type PersonPatch } from '#lib/api/people.ts';
+  import { peopleAPI } from '#lib/api/people.ts';
+  import { displayName } from '#lib/util/people.ts';
+  import type { Person, PersonPatch } from '#lib/types/person.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
-  import { formatDob, parseDob, parseTime, timeLabel } from '#lib/util/dates.ts';
+  import { formatDOB, parseDOB, parseTime, timeLabel } from '#lib/util/dates.ts';
   import { birthdayHint, dobOf } from '#lib/util/birthdays.ts';
   import { isDone } from '#lib/util/task-views.ts';
   import { routes } from '#lib/util/routes.ts';
@@ -38,13 +40,13 @@
     last = p.lastName;
     nick = p.nickname ?? '';
     const d = dobOf(p);
-    dob = d ? formatDob(d) : '';
+    dob = d ? formatDOB(d) : '';
     tob = p.tob ? timeLabel(p.tob) : '';
   }
 
   async function load() {
     try {
-      fill(await peopleApi.get(id));
+      fill(await peopleAPI.get(id));
     } catch (e) {
       toast.show(messageOf(e));
     }
@@ -57,7 +59,7 @@
 
   async function save(patch: PersonPatch) {
     try {
-      fill(await peopleApi.update(id, patch));
+      fill(await peopleAPI.update({ id, patch }));
       people.load();
     } catch (e) {
       toast.show(messageOf(e));
@@ -66,10 +68,10 @@
 
   // ---- fields (saved on blur or Enter)
 
-  const parsedDob = $derived(parseDob(dob));
-  const dobBad = $derived(parsedDob === 'invalid');
-  const parsedTob = $derived(tob.trim() ? parseTime(tob) : null);
-  const tobBad = $derived(tob.trim() !== '' && parsedTob === null);
+  const parsedDOB = $derived(parseDOB(dob));
+  const dobBad = $derived(parsedDOB === 'invalid');
+  const parsedTOB = $derived(tob.trim() ? parseTime(tob) : null);
+  const tobBad = $derived(tob.trim() !== '' && parsedTOB === null);
 
   function saveName() {
     if (!person) return;
@@ -84,16 +86,16 @@
     if (Object.keys(patch).length) save(patch);
   }
 
-  function saveDob() {
+  function saveDOB() {
     if (!person || dobBad) return;
-    const d = parsedDob === 'invalid' ? null : parsedDob;
+    const d = parsedDOB === 'invalid' ? null : parsedDOB;
     const cur = dobOf(person);
-    if ((d ? formatDob(d) : '') !== (cur ? formatDob(cur) : '')) save({ dob: d });
+    if ((d ? formatDOB(d) : '') !== (cur ? formatDOB(cur) : '')) save({ dob: d });
   }
 
-  function saveTob() {
+  function saveTOB() {
     if (!person || tobBad) return;
-    if (parsedTob !== person.tob) save({ tob: parsedTob });
+    if (parsedTOB !== person.tob) save({ tob: parsedTOB });
     else tob = person.tob ? timeLabel(person.tob) : '';
   }
 
@@ -101,7 +103,7 @@
 
   const hint = $derived.by(() => {
     if (dobBad) return 'use yyyy-mm-dd or mm-dd';
-    return parsedDob && parsedDob !== 'invalid' ? birthdayHint(parsedDob) : '';
+    return parsedDOB && parsedDOB !== 'invalid' ? birthdayHint(parsedDOB) : '';
   });
 
   // ---- notes, tasks, delete
@@ -114,7 +116,7 @@
 
   async function remove() {
     deleting = false;
-    await peopleApi.remove(id);
+    await peopleAPI.remove(id);
     await Promise.all([people.load(), tasks.load()]);
     toast.show(`Deleted ${person ? displayName(person) : ''}`);
     nav.back('/people');
@@ -144,12 +146,12 @@
           </div>
           <span class="pl">Date of birth</span>
           <div class="pv">
-            <input class="fld mono" class:bad={dobBad} style:width="112px" aria-label="Date of birth, yyyy-mm-dd or mm-dd" placeholder="yyyy-mm-dd" bind:value={dob} onblur={saveDob} onkeydown={enterBlurs} />
+            <input class="fld mono" class:bad={dobBad} style:width="112px" aria-label="Date of birth, yyyy-mm-dd or mm-dd" placeholder="yyyy-mm-dd" bind:value={dob} onblur={saveDOB} onkeydown={enterBlurs} />
             <span class="hint" class:err={dobBad}>{hint}</span>
           </div>
           <span class="pl">Time of birth</span>
           <div class="pv">
-            <input class="fld mono" class:bad={tobBad} style:width="92px" aria-label="Time of birth" placeholder="optional" bind:value={tob} onblur={saveTob} onkeydown={enterBlurs} />
+            <input class="fld mono" class:bad={tobBad} style:width="92px" aria-label="Time of birth" placeholder="optional" bind:value={tob} onblur={saveTOB} onkeydown={enterBlurs} />
             {#if tobBad}<span class="hint err">use a time like 6:30 AM</span>{/if}
           </div>
         </div>

@@ -1,18 +1,15 @@
-<script lang="ts" module>
-  export type Range = [string, string];
-</script>
-
 <script lang="ts">
   // A date button with a month popover. Single mode picks one day (due dates); range mode
   // adds presets and picks one day or two for a range (the tasks nav).
+  import type { DayRange } from '#lib/types/date.type.ts';
   import Icon from './Icon.svelte';
   import Popover from './Popover.svelte';
   import MonthGrid from './MonthGrid.svelte';
-  import { addDays, parseIso, iso, shortDate, today } from '#lib/util/dates.ts';
+  import { addDays, parseISO, iso, shortDate, today } from '#lib/util/dates.ts';
 
   type Props =
     | { mode?: 'single'; value: string | null; onchange: (day: string | null) => void; warn?: boolean }
-    | { mode: 'range'; range: Range; onrange: (r: Range) => void; active?: boolean; marked?: Set<string> };
+    | { mode: 'range'; range: DayRange; onrange: (r: DayRange) => void; active?: boolean; marked?: Set<string> };
 
   let props: Props = $props();
 
@@ -32,9 +29,9 @@
     return props.value ? shortDate(props.value) : 'No due date';
   });
 
-  const presets = $derived.by((): [string, Range][] => {
-    const dow = (parseIso(now).getDay() + 6) % 7;
-    const d = parseIso(now);
+  const presets = $derived.by((): [string, DayRange][] => {
+    const dow = (parseISO(now).getDay() + 6) % 7;
+    const d = parseISO(now);
     const last = iso(new Date(d.getFullYear(), d.getMonth() + 1, 0));
     return [
       ['Today', [now, now]],
@@ -67,12 +64,12 @@
       hover = day;
       return;
     }
-    const r = [picking, day].sort() as Range;
+    const r = [picking, day].sort() as DayRange;
     props.onrange(r);
     close();
   }
 
-  function preset(r: Range) {
+  function preset(r: DayRange) {
     if (props.mode === 'range') props.onrange(r);
     close();
   }

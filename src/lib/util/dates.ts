@@ -1,4 +1,5 @@
 // Local calendar dates as 'YYYY-MM-DD' and times as 'HH:MM' (24h), matching the database.
+import type { DOB } from '#lib/types/date.type.ts';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -9,7 +10,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 export const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-export function parseIso(s: string): Date {
+export function parseISO(s: string): Date {
   const [y, m, d] = s.split('-').map(Number);
   return new Date(y, m - 1, d);
 }
@@ -17,13 +18,13 @@ export function parseIso(s: string): Date {
 export const today = (now = new Date()) => iso(now);
 
 export function addDays(day: string, n: number): string {
-  const d = parseIso(day);
+  const d = parseISO(day);
   d.setDate(d.getDate() + n);
   return iso(d);
 }
 
 /** Whole days from `a` to `b` (positive when `b` is later). */
-export const daysBetween = (a: string, b: string) => Math.round((parseIso(b).getTime() - parseIso(a).getTime()) / DAY_MS);
+export const daysBetween = (a: string, b: string) => Math.round((parseISO(b).getTime() - parseISO(a).getTime()) / DAY_MS);
 
 /** The cells of a month view, Monday first; `null` pads the first week. */
 export function monthGrid(year: number, month: number): (string | null)[] {
@@ -39,7 +40,7 @@ export const monthTitle = (year: number, month: number) => `${MONTHS_LONG[month]
 
 /** '2026-10-10' → '10 Oct' (year added when it isn't the current one). */
 export function shortDate(day: string, now = new Date()): string {
-  const d = parseIso(day);
+  const d = parseISO(day);
   const base = `${d.getDate()} ${MONTHS[d.getMonth()]}`;
   return d.getFullYear() === now.getFullYear() ? base : `${base} ${d.getFullYear()}`;
 }
@@ -50,7 +51,7 @@ export function dueLabel(day: string, now = new Date()): string {
   if (diff === 0) return 'Today';
   if (diff === 1) return 'Tomorrow';
   if (diff === -1) return 'Yesterday';
-  if (diff > 1 && diff < 7) return WEEKDAYS[parseIso(day).getDay()];
+  if (diff > 1 && diff < 7) return WEEKDAYS[parseISO(day).getDay()];
   return shortDate(day, now);
 }
 
@@ -102,10 +103,9 @@ export function timeLabel(hhmm: string): string {
   return `${t.h}:${pad(t.m)} ${t.pm ? 'PM' : 'AM'}`;
 }
 
-export type Dob = { year: number | null; month: number; day: number };
 
 /** 'yyyy-mm-dd' or 'mm-dd' → parts; '' → null; anything else → 'invalid'. */
-export function parseDob(text: string): Dob | null | 'invalid' {
+export function parseDOB(text: string): DOB | null | 'invalid' {
   const v = text.trim();
   if (!v) return null;
   let m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -124,14 +124,14 @@ export function parseDob(text: string): Dob | null | 'invalid' {
   return { year, month, day };
 }
 
-export const formatDob = (d: Dob) => (d.year ? `${d.year}-` : '') + `${pad(d.month)}-${pad(d.day)}`;
+export const formatDOB = (d: DOB) => (d.year ? `${d.year}-` : '') + `${pad(d.month)}-${pad(d.day)}`;
 
 /** The next birthday on or after today: its date, days until it, and the age turned (when the year is known). */
-export function nextBirthday(d: Dob, now = new Date()): { date: string; days: number; age: number | null } {
+export function nextBirthday(d: DOB, now = new Date()): { date: string; days: number; age: number | null } {
   const t = today(now);
   const year = now.getFullYear();
   let next = iso(new Date(year, d.month - 1, d.day));
   if (next < t) next = iso(new Date(year + 1, d.month - 1, d.day));
-  const nextYear = parseIso(next).getFullYear();
+  const nextYear = parseISO(next).getFullYear();
   return { date: next, days: daysBetween(t, next), age: d.year ? nextYear - d.year : null };
 }

@@ -1,7 +1,6 @@
+import type { FeedbackKind } from '#lib/types/feedback.type.ts';
 import { call } from './core.ts';
 
-export type FeedbackKind = 'bug' | 'idea' | 'other';
-
-export const feedbackApi = {
-  send: (kind: FeedbackKind, body: string) => call<void>('feedback_send', { kind, body }),
+export const feedbackAPI = {
+  send: (input: { kind: FeedbackKind; body: string }) => call<void>('feedback_send', { args: input }),
 };

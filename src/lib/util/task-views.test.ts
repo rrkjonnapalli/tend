@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { Task } from '#lib/api/tasks.ts';
-import { inMyDay, viewCounts, viewTasks, type ViewContext } from './task-views.ts';
+import type { Task } from '#lib/types/task.type.ts';
+import { inMyDay, viewCounts, viewTasks } from './task-views.ts';
+import type { ViewContext } from '#lib/types/task-view.type.ts';
 
 const base: Task = {
   id: '',

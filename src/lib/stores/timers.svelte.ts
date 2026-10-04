@@ -1,6 +1,7 @@
 // Running timers. The countdown is `endsAt − now`, recomputed every second (never counted
 // down), so it stays right after sleep or throttling. A timer rings once `now ≥ endsAt`.
-import { timersApi, type Timer } from '#lib/api/timers.ts';
+import { timersAPI } from '#lib/api/timers.ts';
+import type { Timer } from '#lib/types/timer.type.ts';
 import { messageOf } from '#lib/api/core.ts';
 import { allowNotifications, chime, notify } from '#lib/util/notify.ts';
 import { settings } from './settings.svelte.ts';
@@ -15,12 +16,12 @@ class TimersStore {
 
   /** Loads running timers and reports the ones that ended while the app was closed. */
   start = async () => {
-    const missed = await timersApi.finishedWhileClosed();
+    const missed = await timersAPI.finishedWhileClosed();
     if (missed.length) {
       const names = missed.map((t) => t.title || 'Timer').join(', ');
       toast.show(`${names} finished while Tend was closed`);
     }
-    this.list = await timersApi.list();
+    this.list = await timersAPI.list();
     if (this.#ticking) return;
     this.#ticking = true;
     setInterval(this.tick, TICK_MS);
@@ -36,7 +37,7 @@ class TimersStore {
 
   #ring = async (t: Timer) => {
     this.list = this.list.filter((x) => x.id !== t.id);
-    await timersApi.ring(t.id);
+    await timersAPI.ring(t.id);
     if (settings.get('timers.sound', true)) chime();
     await notify(t.title || 'Timer', 'Time’s up').catch(() => toast.show(`${t.title || 'Timer'}: time’s up`));
   };
@@ -45,7 +46,7 @@ class TimersStore {
     // Ask now, while the user is here, rather than when the timer rings.
     allowNotifications().catch(() => {});
     try {
-      const t = await timersApi.start(title, ms);
+      const t = await timersAPI.start({ title, ms });
       this.list = [...this.list, t].sort((a, b) => a.endsAt - b.endsAt);
       return t;
     } catch (e) {
@@ -54,12 +55,12 @@ class TimersStore {
   };
 
   addMinute = async (id: string) => {
-    await timersApi.addMinute(id);
-    this.list = await timersApi.list();
+    await timersAPI.addMinute(id);
+    this.list = await timersAPI.list();
   };
 
   cancel = async (id: string) => {
-    await timersApi.cancel(id);
+    await timersAPI.cancel(id);
     this.list = this.list.filter((t) => t.id !== id);
   };
 }

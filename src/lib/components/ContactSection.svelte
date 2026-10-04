@@ -2,7 +2,8 @@
   // Phone / Email / Address rows: value + label, edit or delete each, and an add row at the end.
   import Icon from './Icon.svelte';
   import Section from './Section.svelte';
-  import { peopleApi, type Contact, type ContactKind } from '#lib/api/people.ts';
+  import { peopleAPI } from '#lib/api/people.ts';
+  import type { Contact, ContactKind } from '#lib/types/person.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
 
@@ -47,14 +48,14 @@
   const save = () =>
     run(async () => {
       if (!editing || !edValue.trim()) return;
-      await peopleApi.updateContact(editing, edValue, edLabel);
+      await peopleAPI.updateContact({ id: editing, value: edValue, label: edLabel });
       editing = null;
     });
 
   const add = () =>
     run(async () => {
       if (!newValue.trim()) return;
-      await peopleApi.addContact(person, kind, newValue, newLabel);
+      await peopleAPI.addContact({ person, kind, value: newValue, label: newLabel });
       newValue = '';
       newLabel = '';
     });
@@ -84,7 +85,7 @@
         <span class="cl">{c.label}</span>
       {/if}
       <span class="acts" class:on-hover={!isEditing}>
-        <button class="icon-btn sm danger" aria-label="Delete" title="Delete" onclick={() => run(() => peopleApi.removeContact(c.id))}>
+        <button class="icon-btn sm danger" aria-label="Delete" title="Delete" onclick={() => run(() => peopleAPI.removeContact(c.id))}>
           <Icon name="trash" size={13} />
         </button>
         {#if isEditing}

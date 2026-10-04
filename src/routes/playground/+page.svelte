@@ -1,11 +1,13 @@
 <script lang="ts">
   // Dev only: every shared component with sample data, for checking states against the mockups.
-  import Explorer, { type ExplorerItem, type Leaf } from '#lib/components/Explorer.svelte';
+  import type { DayRange } from '#lib/types/date.type.ts';
+  import type { Leaf, ExplorerItem } from '#lib/types/explorer.type.ts';
+  import Explorer from '#lib/components/Explorer.svelte';
   import Section from '#lib/components/Section.svelte';
   import MarkdownField from '#lib/components/MarkdownField.svelte';
   import EditControls from '#lib/components/EditControls.svelte';
   import TagEditor from '#lib/components/TagEditor.svelte';
-  import DateField, { type Range } from '#lib/components/DateField.svelte';
+  import DateField from '#lib/components/DateField.svelte';
   import TimeField from '#lib/components/TimeField.svelte';
   import Popover from '#lib/components/Popover.svelte';
   import { tagPool } from '#lib/stores/tags.svelte.ts';
@@ -71,7 +73,7 @@
   let tags = $state(['v0.1', 'tauri']);
   let due = $state<string | null>(today());
   let time = $state<string | null>('17:30');
-  let range = $state<Range>([today(), today()]);
+  let range = $state<DayRange>([today(), today()]);
   let popAnchor = $state<HTMLButtonElement>();
   let popOpen = $state(false);
 </script>
@@ -87,7 +89,7 @@
     <TagEditor {tags} onchange={(t) => (tags = t)} addLabel="+" />
     <span class="pl">Due</span>
     <span class="pv"><DateField value={due} onchange={(d) => (due = d)} /><TimeField value={time} onchange={(t) => (time = t)} /></span>
-    <span class="pl">Range</span>
+    <span class="pl">DayRange</span>
     <span class="pv"><DateField mode="range" {range} onrange={(r) => (range = r)} active /> <span class="caption muted">{range.join(' → ')} · {time ?? 'no time'}</span></span>
     <span class="pl">Popover</span>
     <span class="pv">

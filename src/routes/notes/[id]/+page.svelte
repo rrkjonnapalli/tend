@@ -1,15 +1,16 @@
 <script lang="ts">
   // Note page: sticky bar (back, breadcrumb, width, read/edit), tags, then the note itself.
   // Edits autosave to disk ~500 ms after typing stops, and on blur or leaving the page.
+  import type { Crumb } from '#lib/types/breadcrumb.type.ts';
   import { beforeNavigate } from '$app/navigation';
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
-  import Breadcrumbs, { type Crumb } from '#lib/components/Breadcrumbs.svelte';
+  import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import TagEditor from '#lib/components/TagEditor.svelte';
   import MarkdownView from '#lib/components/MarkdownView.svelte';
   import MarkdownEditor from '#lib/components/MarkdownEditor.svelte';
-  import { notesApi } from '#lib/api/notes.ts';
-  import { tagsApi } from '#lib/api/tags.ts';
+  import { notesAPI } from '#lib/api/notes.ts';
+  import { tagsAPI } from '#lib/api/tags.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
@@ -35,7 +36,7 @@
 
   async function load(noteId: string, edit: boolean) {
     try {
-      const doc = await notesApi.read(noteId);
+      const doc = await notesAPI.read(noteId);
       text = doc.text;
       saved = doc.text;
       tags = doc.tags;
@@ -60,7 +61,7 @@
   $effect(() => {
     void notes.version;
     if (loadedId === id && !editing && text === saved) {
-      notesApi.read(id).then((doc) => {
+      notesAPI.read(id).then((doc) => {
         if (!editing && text === saved && doc.text !== text) text = saved = doc.text;
       }, () => {});
     }
@@ -71,7 +72,7 @@
     if (loadedId === null || text === saved) return;
     const [noteId, body] = [loadedId, text];
     try {
-      await notesApi.write(noteId, body);
+      await notesAPI.write({ id: noteId, text: body });
       if (loadedId === noteId) saved = body;
     } catch (e) {
       toast.show(messageOf(e));
@@ -92,7 +93,7 @@
   async function setTags(next: string[]) {
     tags = next;
     try {
-      tags = await tagsApi.setForNote(id, next);
+      tags = await tagsAPI.setForNote({ id, tags: next });
     } catch (e) {
       toast.show(messageOf(e));
     }

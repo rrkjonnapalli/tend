@@ -1,7 +1,8 @@
 <script lang="ts">
   import { open } from '@tauri-apps/plugin-dialog';
   import Icon from '#lib/components/Icon.svelte';
-  import { vaultApi, type Check } from '#lib/api/vault.ts';
+  import { vaultAPI } from '#lib/api/vault.ts';
+  import type { Check } from '#lib/types/vault.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
   import { isMac } from '#lib/util/keys.ts';
@@ -24,7 +25,7 @@
     failure = null;
     shown = 0;
     try {
-      check = await vaultApi.open(picked);
+      check = await vaultAPI.open(picked);
     } catch (e) {
       check = null;
       failure = messageOf(e);

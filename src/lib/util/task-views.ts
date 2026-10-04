@@ -1,9 +1,9 @@
 // Which tasks each view of the task list shows, and in what order.
-import type { Task } from '#lib/api/tasks.ts';
-import { DONE_STATUS } from '#lib/api/statuses.ts';
+import type { Task } from '#lib/types/task.type.ts';
+import { DONE_STATUS } from '#lib/util/statuses.ts';
 import { isUnder } from './names.ts';
+import type { View, ViewContext } from '#lib/types/task-view.type.ts';
 
-export type View = 'all' | 'overdue' | 'myday' | 'upcoming' | 'range';
 
 export const isDone = (t: Task) => t.status === DONE_STATUS;
 export const isOverdue = (t: Task, today: string) => !isDone(t) && !!t.dueDate && t.dueDate < today;
@@ -14,7 +14,6 @@ export function inMyDay(t: Task, today: string, manual: Map<string, boolean>): b
   return m ?? t.dueDate === today;
 }
 
-export type ViewContext = { today: string; myDay: Map<string, boolean>; range: [string, string] };
 
 const filters: Record<View, (t: Task, c: ViewContext) => boolean> = {
   all: (t) => t.parentId === null,

@@ -1,11 +1,7 @@
-<script lang="ts" module>
-  export type Anchor = HTMLElement | { x: number; y: number };
-  export type Placement = 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end';
-</script>
-
 <script lang="ts">
   // A floating panel anchored to an element or a point. It flips to stay inside the window,
   // closes on Esc and on a click outside, and never grows the page.
+  import type { Anchor, Placement } from '#lib/types/popover.type.ts';
   import type { Snippet } from 'svelte';
   import { pushLayer } from '#lib/util/layers.ts';
 

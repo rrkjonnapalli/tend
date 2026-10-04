@@ -3,7 +3,9 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
-  import { displayName, peopleApi, type PersonRow } from '#lib/api/people.ts';
+  import { peopleAPI } from '#lib/api/people.ts';
+  import { displayName } from '#lib/util/people.ts';
+  import type { PersonRow } from '#lib/types/person.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
@@ -38,7 +40,7 @@
     const [first, ...rest] = draft.trim().split(/\s+/);
     if (!first) return;
     try {
-      const id = await peopleApi.create(first, rest.join(' '));
+      const id = await peopleAPI.create({ first, last: rest.join(' ') });
       draft = '';
       await people.load();
       goto(routes.person(id));

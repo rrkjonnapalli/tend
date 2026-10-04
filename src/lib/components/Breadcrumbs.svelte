@@ -1,9 +1,6 @@
-<script lang="ts" module>
-  export type Crumb = { label: string; href?: string };
-</script>
-
 <script lang="ts">
   // "notes / work / tauri" with every part but the last clickable.
+  import type { Crumb } from '#lib/types/breadcrumb.type.ts';
   let { crumbs }: { crumbs: Crumb[] } = $props();
 </script>
 

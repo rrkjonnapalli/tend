@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, ago, dueLabel, joinTime, monthGrid, nextBirthday, parseDob, parseTime, shortDate, splitTime, timeLabel } from './dates.ts';
+import { addDays, ago, dueLabel, joinTime, monthGrid, nextBirthday, parseDOB, parseTime, shortDate, splitTime, timeLabel } from './dates.ts';
 
 const NOW = new Date(2026, 9, 4, 12, 0); // Sun 4 Oct 2026, noon
 
@@ -55,11 +55,11 @@ describe('times', () => {
 
 describe('birthdays', () => {
   it('parses full and year-less dates', () => {
-    expect(parseDob('1995-10-10')).toEqual({ year: 1995, month: 10, day: 10 });
-    expect(parseDob('10-10')).toEqual({ year: null, month: 10, day: 10 });
-    expect(parseDob('')).toBeNull();
-    expect(parseDob('2023-02-30')).toBe('invalid');
-    expect(parseDob('10/10')).toBe('invalid');
+    expect(parseDOB('1995-10-10')).toEqual({ year: 1995, month: 10, day: 10 });
+    expect(parseDOB('10-10')).toEqual({ year: null, month: 10, day: 10 });
+    expect(parseDOB('')).toBeNull();
+    expect(parseDOB('2023-02-30')).toBe('invalid');
+    expect(parseDOB('10/10')).toBe('invalid');
   });
 
   it('finds the next birthday and age', () => {

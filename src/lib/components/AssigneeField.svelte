@@ -4,7 +4,8 @@
   import Avatar from './Avatar.svelte';
   import Popover from './Popover.svelte';
   import SearchPicker from './SearchPicker.svelte';
-  import { displayName, type PersonRow } from '#lib/api/people.ts';
+  import { displayName } from '#lib/util/people.ts';
+  import type { PersonRow } from '#lib/types/person.type.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
 

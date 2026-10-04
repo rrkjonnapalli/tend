@@ -1,9 +1,8 @@
+import type { Comment } from '#lib/types/comment.type.ts';
 import { call } from './core.ts';
 
-export type Comment = { id: string; body: string; createdAt: number; editedAt: number | null };
-
-export const commentsApi = {
-  list: (task: string) => call<Comment[]>('comments_list', { task }),
-  add: (task: string, body: string) => call<void>('comment_add', { task, body }),
-  edit: (id: string, body: string) => call<void>('comment_edit', { id, body }),
+export const commentsAPI = {
+  list: (task: string) => call<Comment[]>('comments_list', { args: { task } }),
+  add: (input: { task: string; body: string }) => call<void>('comment_add', { args: input }),
+  edit: (input: { id: string; body: string }) => call<void>('comment_edit', { args: input }),
 };

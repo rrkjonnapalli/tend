@@ -1,6 +1,6 @@
 <script lang="ts">
   // The status colour dot; the first status (Not started) is drawn as a ring.
-  import { FIRST_STATUS } from '#lib/api/statuses.ts';
+  import { FIRST_STATUS } from '#lib/util/statuses.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
 
   let { value, size = 8 }: { value: string; size?: number } = $props();

@@ -1,11 +1,13 @@
 <script lang="ts">
   // ⌘K: commands in groups, title search across notes and tasks, and quick-create phrases
   // ("task: …", "note: …", "person: …", "timer 10m …"). ↑↓ move, ↵ runs, Esc closes.
+  import type { Command } from '#lib/types/command.type.ts';
+  import type { Phrase } from '#lib/types/quick-parse.type.ts';
   import { goto } from '$app/navigation';
   import Icon from './Icon.svelte';
   import Modal from './Modal.svelte';
-  import { available, commands, type Command } from '#lib/commands.ts';
-  import { peopleApi } from '#lib/api/people.ts';
+  import { available, commands } from '#lib/commands.ts';
+  import { peopleAPI } from '#lib/api/people.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
@@ -14,7 +16,7 @@
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { keyParts } from '#lib/util/keys.ts';
-  import { nameFromTitle, parsePhrase, type Phrase } from '#lib/util/quick-parse.ts';
+  import { nameFromTitle, parsePhrase } from '#lib/util/quick-parse.ts';
   import { routes } from '#lib/util/routes.ts';
 
   let { onclose }: { onclose: () => void } = $props();
@@ -63,7 +65,7 @@
           key: 'p:person', group: 'Create', icon: '+', isNew: true,
           label: `Person: ${[p.first, p.last].filter(Boolean).join(' ')}`, sub: 'People',
           run: async () => {
-            const id = await peopleApi.create(p.first, p.last);
+            const id = await peopleAPI.create({ first: p.first, last: p.last });
             await people.load();
             goto(routes.person(id));
           },

@@ -1,5 +1,6 @@
 // The notes index as the UI sees it. Reloads when the watcher reports outside changes.
-import { notesApi, type Item, type NoteRow } from '#lib/api/notes.ts';
+import { notesAPI } from '#lib/api/notes.ts';
+import type { Item, NoteRow } from '#lib/types/note.type.ts';
 import { isUnder } from '#lib/util/names.ts';
 
 class NotesStore {
@@ -10,18 +11,18 @@ class NotesStore {
   #listening = false;
 
   load = async () => {
-    const tree = await notesApi.tree();
+    const tree = await notesAPI.tree();
     this.folders = tree.folders;
     this.notes = tree.notes;
     this.version += 1;
     if (!this.#listening) {
       this.#listening = true;
-      await notesApi.onChanged(() => this.load());
+      await notesAPI.onChanged(() => this.load());
     }
   };
 
   rescan = async () => {
-    const tree = await notesApi.rescan();
+    const tree = await notesAPI.rescan();
     this.folders = tree.folders;
     this.notes = tree.notes;
     this.version += 1;
@@ -36,30 +37,30 @@ class NotesStore {
   foldersUnder = (folder: string) => this.folders.filter((f) => f !== folder && isUnder(f, folder));
 
   create = async (folder: string, name: string) => {
-    const row = await notesApi.create(folder, name);
+    const row = await notesAPI.create({ folder, name });
     await this.load();
     return row;
   };
 
   createFolder = async (path: string) => {
-    await notesApi.createFolder(path);
+    await notesAPI.createFolder(path);
     await this.load();
   };
 
   rename = async (item: Item, name: string) => {
-    const result = await notesApi.rename(item, name);
+    const result = await notesAPI.rename({ item, name });
     await this.load();
     return result;
   };
 
   move = async (item: Item, target: string) => {
-    const result = await notesApi.move(item, target);
+    const result = await notesAPI.move({ item, target });
     await this.load();
     return result;
   };
 
   remove = async (item: Item) => {
-    await notesApi.remove(item);
+    await notesAPI.remove(item);
     await this.load();
   };
 }

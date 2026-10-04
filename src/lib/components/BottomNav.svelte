@@ -1,6 +1,7 @@
 <script lang="ts">
+  import type { IconName } from '#lib/types/icon.type.ts';
   import { page } from '$app/state';
-  import Icon, { type IconName } from './Icon.svelte';
+  import Icon from './Icon.svelte';
   import FeedbackPopover from './FeedbackPopover.svelte';
   import TimerChip from './TimerChip.svelte';
   import { ui } from '#lib/stores/ui.svelte.ts';

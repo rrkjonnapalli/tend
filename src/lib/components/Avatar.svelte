@@ -1,6 +1,7 @@
 <script lang="ts">
   // A violet circle with a person's initials.
-  import { initials, displayName, type PersonRow } from '#lib/api/people.ts';
+  import { initials, displayName } from '#lib/util/people.ts';
+  import type { PersonRow } from '#lib/types/person.type.ts';
 
   let { person, size = 20 }: { person: Pick<PersonRow, 'firstName' | 'lastName' | 'nickname'>; size?: number } = $props();
 </script>

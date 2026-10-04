@@ -1,11 +1,11 @@
 // App settings from the vault's `settings` table. Read once per vault, written through on change.
-import { settingsApi } from '#lib/api/settings.ts';
+import { settingsAPI } from '#lib/api/settings.ts';
 
 class Settings {
   values = $state<Record<string, unknown>>({});
 
   load = async () => {
-    this.values = await settingsApi.all();
+    this.values = await settingsAPI.all();
   };
 
   get<T>(key: string, fallback: T): T {
@@ -14,7 +14,7 @@ class Settings {
 
   set = async (key: string, value: unknown) => {
     this.values[key] = value;
-    await settingsApi.set(key, value);
+    await settingsAPI.set({ key, value });
   };
 }
 

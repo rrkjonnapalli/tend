@@ -1,6 +1,6 @@
 // Timer durations: 'mm:ss' (minutes any length, seconds 0–59) or a bare number of minutes.
+import type { Duration } from '#lib/types/timer.type.ts';
 
-export type Duration = { ok: true; ms: number; label: string } | { ok: false; error: string };
 
 export function parseDuration(text: string): Duration {
   const v = text.trim();

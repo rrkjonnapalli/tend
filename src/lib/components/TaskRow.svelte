@@ -1,6 +1,6 @@
 <script lang="ts">
   // One task in a list: status dot · title (with parent hint) · subtasks · path · due · My day.
-  import type { Task } from '#lib/api/tasks.ts';
+  import type { Task } from '#lib/types/task.type.ts';
   import StatusDot from './StatusDot.svelte';
   import Grip from './Grip.svelte';
   import MyDayButton from './MyDayButton.svelte';

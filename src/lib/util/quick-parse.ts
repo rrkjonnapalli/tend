@@ -1,10 +1,6 @@
 // Phrases the ⌘K palette turns into things: "task: …", "note: …", "person: …", "timer 10m …".
+import type { Phrase } from '#lib/types/quick-parse.type.ts';
 
-export type Phrase =
-  | { kind: 'task'; title: string }
-  | { kind: 'note'; title: string }
-  | { kind: 'person'; first: string; last: string }
-  | { kind: 'timer'; ms: number; label: string; title: string };
 
 const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
 const UNIT_MS: Record<string, number> = { h: 3_600_000, m: 60_000, s: 1000 };

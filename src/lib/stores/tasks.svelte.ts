@@ -1,6 +1,9 @@
 // Tasks, task folders, statuses and today's My day choices, loaded once and patched in place.
-import { tasksApi, type NewTask, type Task, type TaskPatch } from '#lib/api/tasks.ts';
-import { statusesApi, DONE_STATUS, type Status } from '#lib/api/statuses.ts';
+import { tasksAPI } from '#lib/api/tasks.ts';
+import type { NewTask, Task, TaskPatch } from '#lib/types/task.type.ts';
+import { statusesAPI } from '#lib/api/statuses.ts';
+import { DONE_STATUS } from '#lib/util/statuses.ts';
+import type { Status } from '#lib/types/status.type.ts';
 import { today } from '#lib/util/dates.ts';
 import { isUnder } from '#lib/util/names.ts';
 
@@ -14,7 +17,7 @@ class TasksStore {
 
   load = async () => {
     const day = today();
-    const [data, statuses] = await Promise.all([tasksApi.data(day), statusesApi.list()]);
+    const [data, statuses] = await Promise.all([tasksAPI.data(day), statusesAPI.list()]);
     this.folders = data.folders;
     this.tasks = data.tasks;
     this.myDay = new Map(data.myDay);
@@ -23,7 +26,7 @@ class TasksStore {
   };
 
   loadStatuses = async () => {
-    this.statuses = await statusesApi.list();
+    this.statuses = await statusesAPI.list();
   };
 
   byId = (id: string) => this.tasks.find((t) => t.id === id);
@@ -44,29 +47,29 @@ class TasksStore {
   };
 
   create = async (task: NewTask) => {
-    const created = await tasksApi.create(task);
+    const created = await tasksAPI.create(task);
     await this.load();
     return created;
   };
 
   update = async (id: string, patch: TaskPatch) => {
-    const task = await tasksApi.update(id, patch);
+    const task = await tasksAPI.update({ id, patch });
     this.#replace(task);
     return task;
   };
 
   move = async (id: string, target: string) => {
-    await tasksApi.move(id, target);
+    await tasksAPI.move({ id, target });
     await this.load();
   };
 
   remove = async (id: string) => {
-    await tasksApi.remove(id);
+    await tasksAPI.remove(id);
     await this.load();
   };
 
   setMyDay = async (id: string, included: boolean | null) => {
-    await tasksApi.setMyDay(id, this.day, included);
+    await tasksAPI.setMyDay({ id, day: this.day, included });
     const next = new Map(this.myDay);
     if (included === null) next.delete(id);
     else next.set(id, included);
@@ -74,24 +77,24 @@ class TasksStore {
   };
 
   createFolder = async (path: string) => {
-    await tasksApi.createFolder(path);
+    await tasksAPI.createFolder(path);
     await this.load();
   };
 
   renameFolder = async (path: string, name: string) => {
-    const next = await tasksApi.renameFolder(path, name);
+    const next = await tasksAPI.renameFolder({ path, name });
     await this.load();
     return next;
   };
 
   moveFolder = async (path: string, target: string) => {
-    const next = await tasksApi.moveFolder(path, target);
+    const next = await tasksAPI.moveFolder({ path, target });
     await this.load();
     return next;
   };
 
   removeFolder = async (path: string) => {
-    await tasksApi.removeFolder(path);
+    await tasksAPI.removeFolder(path);
     await this.load();
   };
 }

@@ -1,5 +1,7 @@
 <script lang="ts">
   // Quick create: ⌘N note · ⌘⇧T task · ⌘⇧N folder (Notes/Tasks) · ⌘T timer.
+  import type { Duration } from '#lib/types/timer.type.ts';
+  import type { QuickKind } from '#lib/types/ui.type.ts';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Panel from './Panel.svelte';
@@ -10,7 +12,6 @@
   import { timers } from '#lib/stores/timers.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
-  import type { QuickKind } from '#lib/stores/ui.svelte.ts';
   import { isValidPath, join, nameError } from '#lib/util/names.ts';
   import { nameFromTitle } from '#lib/util/quick-parse.ts';
   import { parseDuration } from '#lib/util/timer-parse.ts';

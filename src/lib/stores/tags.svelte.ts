@@ -1,11 +1,11 @@
 // The shared tag pool used for suggestions in every TagEditor.
-import { tagsApi } from '#lib/api/tags.ts';
+import { tagsAPI } from '#lib/api/tags.ts';
 
 class TagPool {
   names = $state<string[]>([]);
 
   load = async () => {
-    this.names = await tagsApi.all();
+    this.names = await tagsAPI.all();
   };
 
   /** Adds names created elsewhere without a round trip. */

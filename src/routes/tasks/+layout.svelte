@@ -1,8 +1,9 @@
 <script lang="ts">
+  import type { ExplorerItem } from '#lib/types/explorer.type.ts';
   import type { Snippet } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import Explorer, { type ExplorerItem } from '#lib/components/Explorer.svelte';
+  import Explorer from '#lib/components/Explorer.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { isUnder, join, parentOf } from '#lib/util/names.ts';

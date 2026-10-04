@@ -2,7 +2,7 @@
   // The board: one column per status. Cards move with the pointer; a dashed placeholder shows
   // where they land. Dropping sets the status from the column and the order from the position.
   import { goto } from '$app/navigation';
-  import type { Task } from '#lib/api/tasks.ts';
+  import type { Task } from '#lib/types/task.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import StatusDot from './StatusDot.svelte';
   import Avatar from './Avatar.svelte';

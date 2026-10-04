@@ -1,6 +1,6 @@
 <script lang="ts">
   // "+ my day" (blue) or "− my day" (red), shown while its row is hovered.
-  import type { Task } from '#lib/api/tasks.ts';
+  import type { Task } from '#lib/types/task.type.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { inMyDay, isDone } from '#lib/util/task-views.ts';
 

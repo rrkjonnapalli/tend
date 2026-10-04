@@ -5,7 +5,9 @@
   import Grip from './Grip.svelte';
   import Popover from './Popover.svelte';
   import Section from './Section.svelte';
-  import { statusesApi, statusValue, SWATCHES, FIRST_STATUS, type Status } from '#lib/api/statuses.ts';
+  import { statusesAPI } from '#lib/api/statuses.ts';
+  import { statusValue, SWATCHES, FIRST_STATUS } from '#lib/util/statuses.ts';
+  import type { Status } from '#lib/types/status.type.ts';
   import { isAppError, messageOf } from '#lib/api/core.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { startReorder } from '#lib/util/reorder.ts';
@@ -53,7 +55,7 @@
   async function saveEdit() {
     const v = editing;
     if (!v) return;
-    if (await run(v, () => statusesApi.rename(v, edLabel))) editing = null;
+    if (await run(v, () => statusesAPI.rename({ value: v, label: edLabel }))) editing = null;
   }
 
   function cancelEdit() {
@@ -63,7 +65,7 @@
 
   async function pickColor(value: string, color: string) {
     swatchFor = null;
-    await run(value, () => statusesApi.recolor(value, color));
+    await run(value, () => statusesAPI.recolor({ value, color }));
   }
 
   async function add() {
@@ -74,7 +76,7 @@
     if (!value) return (addError = 'Give the status a value.');
     const used = new Set(tasks.statuses.map((s) => s.color));
     const color = (SWATCHES.find(([, hex]) => !used.has(hex)) ?? SWATCHES[0])[1];
-    if (await run(null, () => statusesApi.add(label, value, color))) {
+    if (await run(null, () => statusesAPI.add({ label, value, color }))) {
       newLabel = '';
       newValue = '';
       valueTouched = false;
@@ -95,7 +97,7 @@
         preview = p;
         if (!p) lifted = null;
       },
-      drop: (order) => run(value, () => statusesApi.reorder(order)),
+      drop: (order) => run(value, () => statusesAPI.reorder(order)),
     });
   }
 
@@ -146,7 +148,7 @@
         <span class="sval" title="Value (can’t be changed)">{s.value}</span>
         <span class="acts" class:on-hover={!isEditing}>
           {#if !s.isDefault}
-            <button class="icon-btn sm danger" aria-label="Delete {s.label}" title="Delete" onclick={() => run(s.value, () => statusesApi.remove(s.value))}>
+            <button class="icon-btn sm danger" aria-label="Delete {s.label}" title="Delete" onclick={() => run(s.value, () => statusesAPI.remove(s.value))}>
               <Icon name="trash" size={13} />
             </button>
           {/if}

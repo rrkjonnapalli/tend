@@ -1,11 +1,12 @@
 <script lang="ts">
+  import type { CommandGroup, Command } from '#lib/types/command.type.ts';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
   import StatusesEditor from '#lib/components/StatusesEditor.svelte';
-  import { notesApi } from '#lib/api/notes.ts';
+  import { notesAPI } from '#lib/api/notes.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
-  import { commands, type CommandGroup } from '#lib/commands.ts';
+  import { commands } from '#lib/commands.ts';
   import { keyParts } from '#lib/util/keys.ts';
   import { plural } from '#lib/util/plural.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
@@ -23,7 +24,7 @@
   let skipped = $state<string[]>([]);
   let showSkipped = $state(false);
   $effect(() => {
-    if (current.id === 'general') notesApi.skipped().then((s) => (skipped = s));
+    if (current.id === 'general') notesAPI.skipped().then((s) => (skipped = s));
   });
 
   const groups = $derived.by(() => {

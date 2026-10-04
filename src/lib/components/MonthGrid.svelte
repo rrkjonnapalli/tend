@@ -3,7 +3,7 @@
   // live preview while the second end of a range is being picked.
   import { untrack } from 'svelte';
   import Icon from './Icon.svelte';
-  import { monthGrid, monthTitle, parseIso, today } from '#lib/util/dates.ts';
+  import { monthGrid, monthTitle, parseISO, today } from '#lib/util/dates.ts';
 
   let {
     from,
@@ -27,7 +27,7 @@
   } = $props();
 
   // The grid opens on the selected month; after that the arrows move it.
-  const start = parseIso(untrack(() => from) ?? today());
+  const start = parseISO(untrack(() => from) ?? today());
   let year = $state(start.getFullYear());
   let month = $state(start.getMonth());
   const now = today();

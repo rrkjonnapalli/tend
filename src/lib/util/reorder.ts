@@ -1,15 +1,8 @@
 // Pointer drag to reorder a vertical list of equal-height rows. While dragging, `preview`
 // receives the keys in their new order; on release `drop` receives the final order (only when
 // it changed). Rows can only move within [min, max] (e.g. open tasks stay above done ones).
+import type { ReorderOptions } from '#lib/types/reorder.type.ts';
 
-export type ReorderOptions = {
-  keys: string[];
-  key: string;
-  min?: number;
-  max?: number;
-  preview: (keys: string[] | null) => void;
-  drop: (keys: string[], index: number) => void;
-};
 
 const START_PX = 4;
 

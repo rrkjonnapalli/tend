@@ -1,8 +1,9 @@
 <script lang="ts">
   // Folder list: every note under the folder (recursive), newest edit first.
+  import type { Crumb } from '#lib/types/breadcrumb.type.ts';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import Breadcrumbs, { type Crumb } from '#lib/components/Breadcrumbs.svelte';
+  import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { baseOf, nameError, relativeTo } from '#lib/util/names.ts';

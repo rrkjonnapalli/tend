@@ -1,23 +1,14 @@
+import { config } from '#lib/config/app.config.ts';
+import type { AttachmentLink, OwnerRef } from '#lib/types/attachment.type.ts';
 import { call } from './core.ts';
 
-export type Owner = 'task' | 'note' | 'comment' | 'person';
-export type AttachmentLink = {
-  id: string;
-  kind: 'file' | 'note';
-  attachmentId: string | null;
-  noteId: string | null;
-  name: string;
-  mimeType: string | null;
-  sizeBytes: number | null;
-  folder: string | null;
-  createdAt: number;
-};
-
-export const attachmentsApi = {
-  list: (owner: Owner, id: string) => call<AttachmentLink[]>('attachments_list', { owner, id }),
-  add: (owner: Owner, id: string, paths: string[]) => call<void>('attachments_add', { owner, id, paths }),
-  linkNote: (owner: Owner, id: string, note: string) => call<void>('attachment_link_note', { owner, id, note }),
-  unlink: (link: string) => call<void>('attachment_unlink', { link }),
-  open: (attachment: string) => call<void>('attachment_open', { attachment }),
-  reveal: (attachment: string) => call<void>('attachment_reveal', { attachment }),
+export const attachmentsAPI = {
+  list: (ref: OwnerRef) => call<AttachmentLink[]>('attachments_list', { args: ref }),
+  /** Copies the files into the vault, so large files get the long deadline. */
+  add: (input: OwnerRef & { paths: string[] }) =>
+    call<void>('attachments_add', { args: input, timeoutMs: config.slowCallTimeoutMs }),
+  linkNote: (input: OwnerRef & { note: string }) => call<void>('attachment_link_note', { args: input }),
+  unlink: (link: string) => call<void>('attachment_unlink', { args: { link } }),
+  open: (attachment: string) => call<void>('attachment_open', { args: { attachment } }),
+  reveal: (attachment: string) => call<void>('attachment_reveal', { args: { attachment } }),
 };

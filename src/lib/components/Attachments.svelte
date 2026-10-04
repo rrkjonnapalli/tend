@@ -7,8 +7,9 @@
   import Icon from './Icon.svelte';
   import Popover from './Popover.svelte';
   import SearchPicker from './SearchPicker.svelte';
-  import { attachmentsApi, type AttachmentLink, type Owner } from '#lib/api/attachments.ts';
-  import type { NoteRow } from '#lib/api/notes.ts';
+  import { attachmentsAPI } from '#lib/api/attachments.ts';
+  import type { AttachmentLink, Owner } from '#lib/types/attachment.type.ts';
+  import type { NoteRow } from '#lib/types/note.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
@@ -25,7 +26,7 @@
   let linkBtn = $state<HTMLButtonElement>();
 
   async function load() {
-    links = await attachmentsApi.list(owner, id);
+    links = await attachmentsAPI.list({ owner, id });
     onchange?.(links.length);
   }
 
@@ -37,7 +38,7 @@
   async function addPaths(paths: string[]) {
     if (!paths.length) return;
     try {
-      await attachmentsApi.add(owner, id, paths);
+      await attachmentsAPI.add({ owner, id, paths });
       toast.show(paths.length === 1 ? 'File attached' : `${paths.length} files attached`);
     } catch (e) {
       toast.show(messageOf(e));
@@ -76,18 +77,18 @@
 
   async function linkNote(n: NoteRow) {
     picking = false;
-    await attachmentsApi.linkNote(owner, id, n.id);
+    await attachmentsAPI.linkNote({ owner, id, note: n.id });
     await load();
   }
 
   async function unlink(l: AttachmentLink) {
-    await attachmentsApi.unlink(l.id);
+    await attachmentsAPI.unlink(l.id);
     await load();
   }
 
   async function openLink(l: AttachmentLink) {
     if (l.kind === 'note' && l.noteId) goto(routes.note(l.noteId));
-    else if (l.attachmentId) await attachmentsApi.open(l.attachmentId).catch((e) => toast.show(messageOf(e)));
+    else if (l.attachmentId) await attachmentsAPI.open(l.attachmentId).catch((e) => toast.show(messageOf(e)));
   }
 
   const isImage = (l: AttachmentLink) => l.mimeType?.startsWith('image/') ?? false;
@@ -132,7 +133,7 @@
     <span class="acts on-hover">
       <button class="aib" aria-label="Open" title="Open" onclick={() => openLink(l)}><Icon name="open" size={14} /></button>
       {#if l.kind === 'file' && l.attachmentId}
-        <button class="aib" aria-label="Show in folder" title="Show in folder" onclick={() => attachmentsApi.reveal(l.attachmentId!)}>
+        <button class="aib" aria-label="Show in folder" title="Show in folder" onclick={() => attachmentsAPI.reveal(l.attachmentId!)}>
           <Icon name="folder" size={14} />
         </button>
       {/if}

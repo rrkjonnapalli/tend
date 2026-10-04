@@ -1,6 +1,6 @@
 import { call } from './core.ts';
 
-export const settingsApi = {
+export const settingsAPI = {
   all: () => call<Record<string, unknown>>('settings_all'),
-  set: (key: string, value: unknown) => call<void>('settings_set', { key, value }),
+  set: (input: { key: string; value: unknown }) => call<void>('settings_set', { args: input }),
 };

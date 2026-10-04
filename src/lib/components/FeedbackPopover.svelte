@@ -2,7 +2,8 @@
   // Feedback: Bug / Idea / Other, a text area and Send (⌘↵ also sends). Saved in the vault.
   import Icon from './Icon.svelte';
   import Popover from './Popover.svelte';
-  import { feedbackApi, type FeedbackKind } from '#lib/api/feedback.ts';
+  import { feedbackAPI } from '#lib/api/feedback.ts';
+  import type { FeedbackKind } from '#lib/types/feedback.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { matches } from '#lib/util/keys.ts';
 
@@ -22,7 +23,7 @@
   async function send() {
     if (!draft.trim()) return;
     try {
-      await feedbackApi.send(kind, draft);
+      await feedbackAPI.send({ kind, body: draft });
       draft = '';
       sent = true;
       error = '';

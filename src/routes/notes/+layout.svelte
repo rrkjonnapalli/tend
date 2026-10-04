@@ -1,10 +1,11 @@
 <script lang="ts">
+  import type { ExplorerItem } from '#lib/types/explorer.type.ts';
   import type { Snippet } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import Explorer, { type ExplorerItem } from '#lib/components/Explorer.svelte';
+  import Explorer from '#lib/components/Explorer.svelte';
   import { notes } from '#lib/stores/notes.svelte.ts';
-  import type { Item } from '#lib/api/notes.ts';
+  import type { Item } from '#lib/types/note.type.ts';
   import { baseOf, isUnder, join, parentOf } from '#lib/util/names.ts';
   import { plural } from '#lib/util/plural.ts';
   import { routes } from '#lib/util/routes.ts';

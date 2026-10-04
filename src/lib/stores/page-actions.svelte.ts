@@ -1,8 +1,8 @@
 // Actions the open page offers to the command registry (toggle read/edit, set status, …).
 // A page registers them while it is mounted; commands run them when they exist.
 import { untrack } from 'svelte';
+import type { PageAction } from '#lib/types/ui.type.ts';
 
-export type PageAction = 'note.mode' | 'note.tag' | 'page.width' | 'task.status' | 'task.due' | 'task.myday';
 
 class PageActions {
   #actions = $state(new Map<PageAction, () => void>());

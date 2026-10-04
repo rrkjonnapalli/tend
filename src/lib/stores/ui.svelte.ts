@@ -1,8 +1,7 @@
 // App-wide UI state that isn't tied to one screen.
 import { settings } from './settings.svelte.ts';
+import type { Popup, QuickKind } from '#lib/types/ui.type.ts';
 
-export type Popup = 'feedback' | 'timers' | null;
-export type QuickKind = 'note' | 'task' | 'folder' | 'timer';
 
 class Ui {
   popup = $state<Popup>(null);

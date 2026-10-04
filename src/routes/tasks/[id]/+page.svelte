@@ -1,9 +1,10 @@
 <script lang="ts">
   // Task page: breadcrumb (folders → parent tasks), title, fields, then the collapsible sections.
+  import type { Crumb } from '#lib/types/breadcrumb.type.ts';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
-  import Breadcrumbs, { type Crumb } from '#lib/components/Breadcrumbs.svelte';
+  import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import StatusSelect from '#lib/components/StatusSelect.svelte';
   import StatusDot from '#lib/components/StatusDot.svelte';
   import DateField from '#lib/components/DateField.svelte';
@@ -19,7 +20,8 @@
   import MyDayButton from '#lib/components/MyDayButton.svelte';
   import MoveToDialog from '#lib/components/MoveToDialog.svelte';
   import DeleteDialog from '#lib/components/DeleteDialog.svelte';
-  import { tasksApi, type TaskPatch } from '#lib/api/tasks.ts';
+  import { tasksAPI } from '#lib/api/tasks.ts';
+  import type { TaskPatch } from '#lib/types/task.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { people } from '#lib/stores/people.svelte.ts';
@@ -48,7 +50,7 @@
 
   $effect(() => {
     const taskId = id;
-    tasksApi.get(taskId).then(
+    tasksAPI.get(taskId).then(
       (d) => {
         if (taskId !== id) return;
         description = d.description;
@@ -127,7 +129,7 @@
   async function setTags(next: string[]) {
     tags = next;
     try {
-      tags = await tasksApi.setTags(id, next);
+      tags = await tasksAPI.setTags({ id, tags: next });
     } catch (e) {
       toast.show(messageOf(e));
     }

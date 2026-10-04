@@ -3,7 +3,8 @@
   import MarkdownEditor from './MarkdownEditor.svelte';
   import MarkdownField from './MarkdownField.svelte';
   import EditControls from './EditControls.svelte';
-  import { commentsApi, type Comment } from '#lib/api/comments.ts';
+  import { commentsAPI } from '#lib/api/comments.ts';
+  import type { Comment } from '#lib/types/comment.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { ago } from '#lib/util/dates.ts';
@@ -18,7 +19,7 @@
   const editing: Record<string, boolean> = $state({});
 
   async function load() {
-    list = await commentsApi.list(task);
+    list = await commentsAPI.list(task);
     onchange?.(list.length);
   }
 
@@ -30,7 +31,7 @@
   async function post() {
     if (!draft.trim()) return;
     try {
-      await commentsApi.add(task, draft);
+      await commentsAPI.add({ task, body: draft });
       draft = '';
       composerKey += 1;
       await load();
@@ -41,7 +42,7 @@
 
   async function save(c: Comment, body: string) {
     try {
-      await commentsApi.edit(c.id, body);
+      await commentsAPI.edit({ id: c.id, body });
       await load();
     } catch (e) {
       toast.show(messageOf(e));

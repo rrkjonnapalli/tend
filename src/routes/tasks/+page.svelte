@@ -1,8 +1,11 @@
 <script lang="ts">
   // Task folder list: views (All · Overdue · My day · Upcoming · date range), then the rows.
+  import type { DayRange } from '#lib/types/date.type.ts';
+  import type { Crumb } from '#lib/types/breadcrumb.type.ts';
+  import type { View } from '#lib/types/task-view.type.ts';
   import { page } from '$app/state';
-  import Breadcrumbs, { type Crumb } from '#lib/components/Breadcrumbs.svelte';
-  import DateField, { type Range } from '#lib/components/DateField.svelte';
+  import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
+  import DateField from '#lib/components/DateField.svelte';
   import TaskRow from '#lib/components/TaskRow.svelte';
   import TaskBoard from '#lib/components/TaskBoard.svelte';
   import Icon from '#lib/components/Icon.svelte';
@@ -10,7 +13,7 @@
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { messageOf } from '#lib/api/core.ts';
-  import { isDone, isManual, viewCounts, viewTasks, type View } from '#lib/util/task-views.ts';
+  import { isDone, isManual, viewCounts, viewTasks } from '#lib/util/task-views.ts';
   import { keyBetween } from '#lib/util/order-key.ts';
   import { startReorder } from '#lib/util/reorder.ts';
   import { baseOf } from '#lib/util/names.ts';
@@ -35,7 +38,7 @@
   const params = $derived(page.url.searchParams);
   const folder = $derived(params.get('f') ?? '');
   const view = $derived((params.get('v') as View) || 'all');
-  const range = $derived<Range>([params.get('from') ?? tasks.day, params.get('to') ?? params.get('from') ?? tasks.day]);
+  const range = $derived<DayRange>([params.get('from') ?? tasks.day, params.get('to') ?? params.get('from') ?? tasks.day]);
   const rootName = $derived(settings.get('tasks.root_name', 'tasks'));
   const board = $derived(settings.get<string>('tasks.layout', 'list') === 'board');
 
