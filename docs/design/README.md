@@ -37,6 +37,10 @@ Each mockup keeps its logic in the `<script type="text/x-dc">` block, `renderVal
 | Status rules | `settings.html`, `slug`, `labelTaken`, `grab` | UPPER_SNAKE value from label, reserved values, first/last pinned |
 | Palette quick-create parsing | `command-palette.html`, `task:` / `note:` / `person:` / `timer` regexes | |
 
+## Icon
+
+`icon/`: `icon.svg` (source), `icon-1024.png` (feed to `npx tauri icon`), `mark.svg` (one-colour glyph using `currentColor`), `preview.png` (sizes, on dark, with the wordmark).
+
 ## Tokens
 
 `tokens.css` has the Clean Colors palette, semantic roles, status swatches, type styles, spacing, radius and layout sizes. The mockups use the same values, hard-coded.

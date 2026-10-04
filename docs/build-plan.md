@@ -6,9 +6,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M1 · Project setup and app shell  ☑
-
-> Done. SvelteKit 3 / TypeScript 6 notes are in `docs/open-questions.md`. Window title "Tend", min 960×640. The Feedback button is in place; its popover arrives in M9.
+## M1 · Project setup and app shell  ☐
 
 **Read:** CLAUDE.md, decisions §1, §4 · `design/tokens.css` · `screens/notes.html`, `png/notes.png`
 
@@ -16,6 +14,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - Tauri 2 + SvelteKit (adapter-static, `ssr = false`), Svelte 5, TS strict, vitest, svelte-check.
 - `tokens.css` imported globally. @fontsource fonts bundled. Base reset like the mockups (`body` white, `button,input{font:inherit}`, focus ring).
 - Window: min size 960×640. Title "Tend".
+- **App icon:** run `npx tauri icon docs/design/icon/icon-1024.png` to generate `src-tauri/icons/`. Use `docs/design/icon/mark.svg` as the favicon.
 - Routes `/notes`, `/tasks`, `/people`, `/settings` as empty pages.
 - **BottomNav** component, exactly as in the mockups:
   - full-width hairline; Notes · Tasks · People icons centred, active one violet with a dot
@@ -25,13 +24,12 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 **Done when**
 - `npm run tauri dev` opens the window. Nav switches pages, the active state matches `png/notes.png`, and collapse/expand works.
+- The Tend icon shows in the Dock / taskbar.
 - `npm run check` and `npm test` pass (one trivial test is fine).
 
 ---
 
-## M2 · Vault: start page, setup and database  ☑
-
-> Done. An existing `db/app.sqlite` is checked read-only before it is opened read-write, so an incompatible file is never touched. A non-SQLite file also counts as incompatible. The last vault path is in `<app config dir>/config.json`. In dev, `src/lib/dev/mock-ipc.ts` lets the UI run in a plain browser for layout checks.
+## M2 · Vault: start page, setup and database  ☐
 
 **Read:** decisions §2, §3 · `schema.sql` (header and `meta`) · `screens/start.html`, `png/start.png`, `png/start-checking.png`
 
@@ -61,9 +59,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M3 · Notes index: scan, watcher, sync  ☑
-
-> Done. A file renamed or moved outside Tend keeps its id when its mtime and title still match a note that vanished in the same scan. Folder prefix updates use `substr` instead of `LIKE`, because `_` is a `LIKE` wildcard and folder names may contain it. Non-`.md` files and invalid names are skipped; dotfiles are ignored silently. The watcher rescans the whole tree after each debounced batch.
+## M3 · Notes index: scan, watcher, sync  ☐
 
 **Read:** decisions §5 (Sync), §5a (Names) · `schema.sql` §2
 
@@ -86,9 +82,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M4 · Shared components  ☑
-
-> Done. Also built: `Popover` / `Modal` share one Esc stack (`util/layers.ts`), `Panel` is the header/rows/footer shell for Move to…, quick create and ⌘K, and `Section` + `EditControls` sit around `MarkdownField`. The markdown editor is CodeMirror 6 (`MarkdownEditor`), used by every markdown field. `/playground` exists only in dev builds (`import.meta.env.DEV`). The explorer selection colour follows the spec (`#eef3f6`), not the darker grey in `notes.png`.
+## M4 · Shared components  ☐
 
 **Read:** decisions §4, §5a · `screens/folders.html` + `png/folders-*.png` · task page in `screens/tasks.html` (description, tags, due) · `design/README.md` (logic to reuse)
 
@@ -114,9 +108,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M5 · Notes screens  ☑
-
-> Done. Routes: `/notes?f=<folder>` (folder list) and `/notes/<id>` (note page; `?edit=1` opens in Edit). Autosave runs 500 ms after typing stops, on blur, on ⌘E and before navigating away. `src-tauri/src/ipc_tests.rs` drives the real commands through Tauri's mock runtime with the same JSON arguments the UI sends. The folder-list summary also counts subfolders ("3 notes · 1 folder"), as in `folders.png`.
+## M5 · Notes screens  ☐
 
 **Read:** decisions §5 · `screens/notes.html`, `png/notes.png`, `png/notes-list.png`
 
@@ -136,9 +128,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M6 · Tasks: list, views, ordering  ☑
-
-> Done. View rules live in `util/task-views.ts` (unit-tested): All shows top-level tasks; Overdue, My day, Upcoming and the range view include subtasks, with a parent hint. All and My day are drag-sortable; the other views sort by due date. A drag can't move a task across the open/done boundary. New tasks go to the top of the global order. The Rust `order.rs` uses the same key scheme as `order-key.ts` (parity is tested). The task root can be renamed from its explorer menu (`settings.tasks.root_name`). The explorer's "new task" button opens the folder list with the add field focused. The board arrives with M7.
+## M6 · Tasks: list, views, ordering  ☐
 
 **Read:** decisions §6 (Structure, Views) · `schema.sql` §4–5 · `screens/tasks.html`, `png/tasks.png`
 
@@ -159,9 +149,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M7 · Tasks: task page and board  ☑
-
-> Done. Files are added through the dialog or dropped from the OS. Dropped files arrive as Tauri drag-drop events, which are hit-tested against the drop zone. Open and Show in folder go through Rust (`attachment_open` / `attachment_reveal`), so the UI only ever passes attachment ids. Also added: a task page *Move to…* and *Delete task* (see `docs/open-questions.md`). `ipc_tests.rs` covers the task, comment and attachment commands.
+## M7 · Tasks: task page and board  ☐
 
 **Read:** decisions §6 (Statuses, Task page, Board), §8 · `png/task-page.png`, `png/tasks-board.png`
 
@@ -187,9 +175,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M8 · People  ☑
-
-> Done. Date and time of birth are checked in the UI, which turns the field red and doesn't save, and again in Rust, so an invalid value never reaches the database. Fields save on blur or Enter. "Add person" splits on the first space (first name, then the rest as the last name). Deleting a person unassigns their tasks (`ON DELETE SET NULL`). `birthday_reminder` is stored, not shown.
+## M8 · People  ☐
 
 **Read:** decisions §10 · `screens/people.html`, `png/people.png`, `png/person-page.png`
 
@@ -206,9 +192,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M9 · Settings and feedback  ☑
-
-> Done. Rust enforces the status rules (first and last pinned, reserved values in any case, duplicate labels, value format, deletes blocked while in use or for defaults), and the UI shows Rust's message inline. A new status gets the first unused swatch. Feedback stores the app version from `tauri.conf.json`. The Settings → Command palette list is generated from `src/lib/commands.ts`.
+## M9 · Settings and feedback  ☐
 
 **Read:** decisions §6 (Statuses), §13, §4 (Feedback) · `screens/settings.html`, `png/settings.png`, `png/settings-palette.png`
 
@@ -228,9 +212,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M10 · ⌘K, quick create and timers  ☑
-
-> Done. `src/lib/commands.ts` drives the shortcuts, the palette and Settings → Command palette. Pages offer context actions to it through `stores/page-actions`. Timers: Rust stores `{title, ends_at, state}`, and the window recomputes `ends_at − now` every second and on focus or visibility change. When a timer ends, the window sends a desktop notification (plugin-notification), plays a chime and marks it `rung`. On launch, overdue timers show once in a "finished while Tend was closed" toast. Checked in the running app: vault reopen, initial scan, and outside edit or move picked up by the watcher in under 1.2 s.
+## M10 · ⌘K, quick create and timers  ☐
 
 **Read:** decisions §9, §11, §12 · `screens/command-palette.html`, `screens/quick-create.html`, `png/command-palette*.png`, `png/quick-create-*.png`, timer chip in `png/tasks.png`
 

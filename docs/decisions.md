@@ -26,6 +26,7 @@ Reference for building Tend (Tauri 2 + SvelteKit). The mockups in `docs/design/s
     | success | `#1e7a55` |
     | warning | `#a84f2c` |
     | danger | `#da0037` (soft `#ffebeb`) |
+- **App icon:** a lowercase t whose crossbar grows into a leaf, white on a violet (`#6f5ee4`) rounded square. Files in `docs/design/icon/`: `icon.svg` (source), `icon-1024.png` (input for `npx tauri icon`), `mark.svg` (one-colour glyph, `currentColor`, for favicon and in-app use).
 
 ## 2. Vault
 
