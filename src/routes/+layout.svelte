@@ -4,6 +4,8 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import BottomNav from '#lib/components/BottomNav.svelte';
+  import TopBar from '#lib/components/TopBar.svelte';
+  import { getCurrentWindow } from '@tauri-apps/api/window';
   import Toast from '#lib/components/Toast.svelte';
   import CommandPalette from '#lib/components/CommandPalette.svelte';
   import QuickCreate from '#lib/components/QuickCreate.svelte';
@@ -35,6 +37,19 @@
     if (vault.path) timers.start();
   });
 
+  // Square corners when the window fills the screen.
+  let filled = $state(false);
+  $effect(() => {
+    if (!('__TAURI_INTERNALS__' in window)) return;
+    const win = getCurrentWindow();
+    const check = async () => (filled = (await win.isMaximized()) || (await win.isFullscreen()));
+    check();
+    const stop = win.onResized(check);
+    return () => {
+      stop.then((f) => f());
+    };
+  });
+
   function onkeydown(e: KeyboardEvent) {
     const cmd = vault.path && !onStart ? commands.find((c) => c.keys && matches(e, c.keys) && available(c)) : undefined;
     if (cmd) {
@@ -48,11 +63,14 @@
 
 <svelte:window {onkeydown} />
 
-{#if vault.ready}
-  <div class="shell">
+<div class="shell" class:filled>
+  <TopBar />
+  {#if vault.ready}
     <div class="page">{@render children()}</div>
     {#if !onStart && vault.path}<BottomNav />{/if}
-  </div>
+  {/if}
+</div>
+{#if vault.ready}
   {#if ui.palette}<CommandPalette onclose={() => (ui.palette = false)} />{/if}
   {#if ui.quick}{#key ui.quick}<QuickCreate kind={ui.quick} onclose={() => (ui.quick = null)} />{/key}{/if}
   <Toast />
@@ -64,6 +82,15 @@
     height: 100vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    background: var(--c-page);
+    border: 1px solid var(--border);
+    border-radius: var(--window-radius);
+  }
+
+  .shell.filled {
+    border: 0;
+    border-radius: 0;
   }
 
   .page {

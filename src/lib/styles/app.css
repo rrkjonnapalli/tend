@@ -12,15 +12,21 @@
   box-sizing: border-box;
 }
 
+/* The window is transparent and borderless; the shell draws it with a small radius. */
+:root {
+  --window-radius: 4px;
+  --topbar-h: 32px;
+}
+
 html,
 body {
   height: 100%;
   margin: 0;
   overflow: hidden;
+  background: transparent;
 }
 
 body {
-  background: var(--c-page);
   color: var(--text);
   font: 400 14px/20px var(--font-ui);
   -webkit-font-smoothing: antialiased;

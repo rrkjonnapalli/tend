@@ -24,3 +24,8 @@ Choices made where the spec was unclear or the stack had moved on. Each one is t
 - **Page commands** in the registry (toggle read/edit, add tag, width, set status, set due date, add to My day) only show in ⌘K while a page that supports them is open.
 - **Timer sound** is a short Web Audio chime, so no sound file needs bundling. It is on by default and stored in `settings.timers.sound`, which has no UI in v1.
 - **After sleep**, the countdown is recomputed when the window regains focus or visibility, as well as every second, so a timer that ended during sleep rings right after wake.
+
+## Window
+
+- **Custom title bar.** Native decorations are off. `TopBar.svelte` is the 32 px drag region; double-click it to maximise. On macOS it has three quiet dots that take their colours on hover; on Windows and Linux it has minimise, maximise and close buttons. The current section is centred.
+- **Window corners.** The window is transparent and borderless. The shell draws it with `--window-radius: 4px` and a hairline border, and drops both when the window is maximised or full screen. On macOS a transparent window needs `macOSPrivateApi`, which rules out Mac App Store builds; direct downloads are unaffected.

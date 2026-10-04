@@ -37,6 +37,8 @@
     upload: '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>',
     open: '<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
+    minimize: '<path d="M5 12h14"/>',
+    maximize: '<rect x="5" y="5" width="14" height="14" rx="1"/>',
   } as const;
 
   export type IconName = keyof typeof icons;
