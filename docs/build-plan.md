@@ -114,7 +114,9 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M5 · Notes screens  ☐
+## M5 · Notes screens  ☑
+
+> Done. Routes: `/notes?f=<folder>` (folder list) and `/notes/<id>` (note page; `?edit=1` opens in Edit). Autosave runs 500 ms after typing stops, on blur, on ⌘E and before navigating away. `src-tauri/src/ipc_tests.rs` drives the real commands through Tauri's mock runtime with the same JSON arguments the UI sends. The folder-list summary also counts subfolders ("3 notes · 1 folder"), as in `folders.png`.
 
 **Read:** decisions §5 · `screens/notes.html`, `png/notes.png`, `png/notes-list.png`
 

@@ -1,6 +1,7 @@
 // The open vault. `ready` turns true once launch has either reopened a vault or given up.
 import { vaultApi } from '#lib/api/vault.ts';
 import { settings } from './settings.svelte.ts';
+import { tagPool } from './tags.svelte.ts';
 
 class VaultStore {
   path = $state<string | null>(null);
@@ -10,7 +11,7 @@ class VaultStore {
   restore = async (): Promise<boolean> => {
     try {
       this.path = await vaultApi.restore();
-      if (this.path) await settings.load();
+      if (this.path) await this.#loadAll();
       return this.path !== null;
     } finally {
       this.ready = true;
@@ -20,7 +21,12 @@ class VaultStore {
   /** Called once the start page has opened a vault. */
   opened = async (path: string) => {
     this.path = path;
-    await settings.load();
+    await this.#loadAll();
+  };
+
+  /** Everything read once per vault. */
+  #loadAll = async () => {
+    await Promise.all([settings.load(), tagPool.load()]);
   };
 }
 

@@ -3,7 +3,7 @@ import { call } from './core.ts';
 
 export type NoteRow = { id: string; folder: string; name: string; title: string; modifiedAt: number };
 export type NoteTree = { folders: string[]; notes: NoteRow[] };
-export type NoteDoc = NoteRow & { text: string };
+export type NoteDoc = NoteRow & { text: string; tags: string[] };
 export type Item = { kind: 'note'; id: string } | { kind: 'folder'; path: string };
 
 export const notesApi = {

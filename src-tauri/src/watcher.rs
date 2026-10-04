@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use notify::RecursiveMode;
 use notify_debouncer_full::{new_debouncer, DebounceEventResult};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Runtime};
 
 use crate::error::AppResult;
 use crate::notes;
@@ -22,7 +22,7 @@ pub fn rescan(vault: &Vault) -> AppResult<()> {
 }
 
 /// Rescans, then tells the UI.
-pub fn rescan_and_emit(app: &AppHandle, vault: &Vault) -> AppResult<()> {
+pub fn rescan_and_emit<R: Runtime>(app: &AppHandle<R>, vault: &Vault) -> AppResult<()> {
     rescan(vault)?;
     app.emit(CHANGED, ()).map_err(|e| std::io::Error::other(e.to_string()))?;
     Ok(())

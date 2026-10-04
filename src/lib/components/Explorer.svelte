@@ -313,7 +313,7 @@
     }
   }
 
-  const indent = (row: Row) => 16 + row.depth * 16 + (row.isFolder ? 0 : 16);
+  const indent = (row: Row) => 16 + row.depth * 16;
   const dropPath = (row: Row) => (row.isNew ? undefined : row.item.kind === 'folder' ? row.item.path : row.folder);
   const allFolders = $derived(['', ...folders]);
 </script>

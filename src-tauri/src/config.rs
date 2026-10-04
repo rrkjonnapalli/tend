@@ -7,6 +7,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::AppResult;
 
+/// Where app-level preferences live (the platform app config dir; a temp dir in tests).
+pub struct ConfigDir(pub PathBuf);
+
 #[derive(Default, Serialize, Deserialize)]
 struct Config {
     vault: Option<PathBuf>,
