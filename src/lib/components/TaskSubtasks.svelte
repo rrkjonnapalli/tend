@@ -5,7 +5,7 @@
   import { onDestroy } from 'svelte';
   import Icon from './Icon.svelte';
   import Grip from './Grip.svelte';
-  import StatusDot from './StatusDot.svelte';
+  import StatusSelect from './StatusSelect.svelte';
   import MyDayButton from './MyDayButton.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { isDone } from '#lib/util/task-views.ts';
@@ -52,6 +52,8 @@
   }
 
   function grab(e: PointerEvent, id: string) {
+    // The status and My day buttons keep their own clicks.
+    if ((e.target as HTMLElement).closest('.mini, [data-no-drag]')) return;
     lifted = id;
     stopReorder = startReorder(e, {
       keys: openSubs.map((s) => s.id),
@@ -76,7 +78,7 @@
       data-key={s.id}
       onpointerdown={(e) => grab(e, s.id)}>
       <Grip />
-      <StatusDot value={s.status} />
+      <StatusSelect compact value={s.status} onchange={(status) => tasks.update(s.id, { status })} />
       <span class="st">{s.title}</span>
       <MyDayButton task={s} />
     </a>
@@ -89,7 +91,7 @@
   {#if showDone}
     {#each doneSubs as s (s.id)}
       <a class="sub reveal-on-hover" href={routes.task(s.id)}>
-        <StatusDot value={s.status} />
+        <StatusSelect compact value={s.status} onchange={(status) => tasks.update(s.id, { status })} />
         <span class="st done">{s.title}</span>
         <MyDayButton task={s} />
       </a>

@@ -1,7 +1,7 @@
 <script lang="ts">
-  // Marks a subtask in task lists and on board cards; hover names its parent.
+  // A tiny "s" badge before a subtask's title in task lists and on board cards; hover names
+  // its parent.
   import type { Task } from '#lib/types/task.type.ts';
-  import Icon from './Icon.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
 
   let { task }: { task: Task } = $props();
@@ -11,16 +11,21 @@
 </script>
 
 {#if task.parentId}
-  <span class="mark" title={hint} aria-label={hint} role="img"><Icon name="subtask" size={13} /></span>
+  <span class="mark" title={hint} aria-label={hint} role="img">s</span>
 {/if}
 
 <style>
   .mark {
     display: inline-grid;
     place-items: center;
-    flex: 0 0 auto;
-    margin-right: 4px;
-    color: var(--c-muted-2);
-    vertical-align: -2px;
+    width: 14px;
+    height: 14px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: var(--success-soft);
+    color: var(--success);
+    font: 700 9px/1 var(--font-ui);
+    vertical-align: 1px;
+    cursor: default;
   }
 </style>

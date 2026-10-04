@@ -1,7 +1,7 @@
 <script lang="ts">
   // One task in a list: status dot · title (subtasks marked) · subtasks · path · due · My day.
   import type { Task } from '#lib/types/task.type.ts';
-  import StatusDot from './StatusDot.svelte';
+  import StatusSelect from './StatusSelect.svelte';
   import Grip from './Grip.svelte';
   import SubtaskMark from './SubtaskMark.svelte';
   import MyDayButton from './MyDayButton.svelte';
@@ -32,7 +32,7 @@
 
 <div class="row reveal-on-hover" class:sortable class:lifted data-key={task.id} role="listitem" {onpointerdown}>
   {#if sortable}<Grip />{/if}
-  <StatusDot value={task.status} />
+  <StatusSelect compact value={task.status} onchange={(status) => tasks.update(task.id, { status })} />
   <button class="title" onclick={() => goto(routes.task(task.id))}>
     <SubtaskMark {task} /><span class:done={isDone(task)}>{task.title}</span>
   </button>

@@ -101,8 +101,9 @@
   }
 
   function grab(e: PointerEvent, id: string) {
-    const onMyDayButton = (e.target as HTMLElement).closest('.mini');
-    if (!manual || onMyDayButton) return;
+    // The My day and status buttons keep their own clicks.
+    const onRowButton = (e.target as HTMLElement).closest('.mini, [data-no-drag]');
+    if (!manual || onRowButton) return;
     lifted = id;
     stopReorder = startReorder(e, {
       keys: rows.map((t) => t.id),
@@ -251,7 +252,7 @@
     display: flex;
     align-items: center;
     min-height: 36px;
-    margin-bottom: 4px;
+    margin-bottom: 12px;
     flex-wrap: wrap;
     gap: 4px 8px;
     font: 400 14px/20px var(--font-ui);

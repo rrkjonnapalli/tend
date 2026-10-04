@@ -52,7 +52,7 @@ export const commands: Command[] = [
   { id: 'task.status', group: 'Tasks', label: 'Set status…', ...onPage('task.status') },
   { id: 'task.due', group: 'Tasks', label: 'Set due date…', ...onPage('task.due') },
   { id: 'task.myday', group: 'Tasks', label: 'Add to My day', ...onPage('task.myday') },
-  { id: 'task.layout', group: 'Tasks', label: 'Switch list / board', when: onTasksList, run: toggleTaskLayout },
+  { id: 'task.layout', group: 'Tasks', label: 'Switch list / board', keys: 'mod+r', when: onTasksList, run: toggleTaskLayout },
 
   { id: 'app.palette', group: 'App', label: 'Open command palette', keys: 'mod+k', run: openPalette },
   { id: 'app.explorer', group: 'App', label: 'Toggle explorer', keys: 'mod+e', when: hasExplorer, run: ui.toggleExplorer },
