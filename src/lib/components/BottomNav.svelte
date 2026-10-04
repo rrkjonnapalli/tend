@@ -1,11 +1,9 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import { page } from '$app/state';
   import Icon, { type IconName } from './Icon.svelte';
   import FeedbackPopover from './FeedbackPopover.svelte';
+  import TimerChip from './TimerChip.svelte';
   import { ui } from '#lib/stores/ui.svelte.ts';
-
-  let { right }: { right?: Snippet } = $props();
 
   const sections: { href: string; label: string; icon: IconName }[] = [
     { href: '/notes', label: 'Notes', icon: 'note' },
@@ -36,7 +34,7 @@
         </a>
       {/each}
       <div class="right">
-        {@render right?.()}
+        <TimerChip />
         <a
           class="ico"
           class:cur={isCurrent('/settings')}

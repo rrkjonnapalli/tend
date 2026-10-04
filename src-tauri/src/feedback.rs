@@ -7,7 +7,10 @@ use crate::util::{new_id, now_ms};
 
 pub fn add(conn: &Connection, kind: &str, body: &str, app_version: &str) -> AppResult<()> {
     if !["bug", "idea", "other"].contains(&kind) {
-        return Err(AppError::rule("bad_kind", "Feedback is a bug, an idea or other."));
+        return Err(AppError::rule(
+            "bad_kind",
+            "Feedback is a bug, an idea or other.",
+        ));
     }
     let body = body.trim();
     if body.is_empty() {
@@ -31,8 +34,14 @@ mod tests {
         add(&conn, "idea", "  dark mode  ", "0.1.0").unwrap();
         assert!(add(&conn, "rant", "x", "0.1.0").is_err());
         assert!(add(&conn, "bug", " ", "0.1.0").is_err());
-        let (kind, body, v): (String, String, String) =
-            conn.query_row("SELECT kind, body, app_version FROM feedback", [], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?))).unwrap();
-        assert_eq!((kind.as_str(), body.as_str(), v.as_str()), ("idea", "dark mode", "0.1.0"));
+        let (kind, body, v): (String, String, String) = conn
+            .query_row("SELECT kind, body, app_version FROM feedback", [], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+            })
+            .unwrap();
+        assert_eq!(
+            (kind.as_str(), body.as_str(), v.as_str()),
+            ("idea", "dark mode", "0.1.0")
+        );
     }
 }

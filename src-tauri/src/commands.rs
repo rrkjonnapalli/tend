@@ -11,10 +11,17 @@ use tauri::{AppHandle, Runtime, State};
 use crate::config::ConfigDir;
 use crate::error::AppResult;
 use crate::state::AppState;
-use crate::{attachments, comments, config, feedback, notes, people, settings, statuses, tags, tasks, vault};
+use crate::{
+    attachments, comments, config, feedback, notes, people, settings, statuses, tags, tasks,
+    timers, vault,
+};
 
 /// Makes `vault` the open vault and starts what runs alongside it.
-fn activate<R: Runtime>(app: &AppHandle<R>, state: &AppState, vault: crate::state::Vault) -> AppResult<()> {
+fn activate<R: Runtime>(
+    app: &AppHandle<R>,
+    state: &AppState,
+    vault: crate::state::Vault,
+) -> AppResult<()> {
     let vault = Arc::new(vault);
     state.set(vault.clone());
     crate::on_vault_open(app, state, &vault)
@@ -43,7 +50,9 @@ pub fn vault_restore<R: Runtime>(
     state: State<AppState>,
     cfg: State<ConfigDir>,
 ) -> AppResult<Option<String>> {
-    let Some(root) = config::last_vault(&cfg.0) else { return Ok(None) };
+    let Some(root) = config::last_vault(&cfg.0) else {
+        return Ok(None);
+    };
     let (check, opened) = vault::open(&root);
     match opened {
         Some(v) => {
@@ -52,11 +61,6 @@ pub fn vault_restore<R: Runtime>(
         }
         None => Ok(None),
     }
-}
-
-#[tauri::command]
-pub fn vault_current(state: State<AppState>) -> Option<String> {
-    state.vault().ok().map(|v| v.root.to_string_lossy().into_owned())
 }
 
 #[tauri::command]
@@ -82,7 +86,10 @@ pub fn notes_tree(state: State<AppState>) -> AppResult<notes::Tree> {
 }
 
 #[tauri::command]
-pub fn notes_rescan<R: Runtime>(app: AppHandle<R>, state: State<AppState>) -> AppResult<notes::Tree> {
+pub fn notes_rescan<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<AppState>,
+) -> AppResult<notes::Tree> {
     crate::watcher::rescan_and_emit(&app, &*state.vault()?)?;
     state.with(|db, _| notes::tree(db))
 }
@@ -98,7 +105,11 @@ pub fn note_write(state: State<AppState>, id: String, text: String) -> AppResult
 }
 
 #[tauri::command]
-pub fn note_create(state: State<AppState>, folder: String, name: String) -> AppResult<notes::NoteRow> {
+pub fn note_create(
+    state: State<AppState>,
+    folder: String,
+    name: String,
+) -> AppResult<notes::NoteRow> {
     state.with(|db, v| notes::create(db, &v.notes_dir(), &folder, &name))
 }
 
@@ -148,12 +159,20 @@ pub fn tags_all(state: State<AppState>) -> AppResult<Vec<String>> {
 }
 
 #[tauri::command]
-pub fn note_tags_set(state: State<AppState>, id: String, tags: Vec<String>) -> AppResult<Vec<String>> {
+pub fn note_tags_set(
+    state: State<AppState>,
+    id: String,
+    tags: Vec<String>,
+) -> AppResult<Vec<String>> {
     state.with(|db, _| tags::set(db, tags::Owner::Note, &id, &tags))
 }
 
 #[tauri::command]
-pub fn task_tags_set(state: State<AppState>, id: String, tags: Vec<String>) -> AppResult<Vec<String>> {
+pub fn task_tags_set(
+    state: State<AppState>,
+    id: String,
+    tags: Vec<String>,
+) -> AppResult<Vec<String>> {
     state.with(|db, _| tags::set(db, tags::Owner::Task, &id, &tags))
 }
 
@@ -165,17 +184,30 @@ pub fn statuses_list(state: State<AppState>) -> AppResult<Vec<statuses::Status>>
 }
 
 #[tauri::command]
-pub fn status_add(state: State<AppState>, label: String, value: String, color: String) -> AppResult<statuses::Status> {
+pub fn status_add(
+    state: State<AppState>,
+    label: String,
+    value: String,
+    color: String,
+) -> AppResult<statuses::Status> {
     state.with(|db, _| statuses::add(db, &label, &value, &color))
 }
 
 #[tauri::command]
-pub fn status_rename(state: State<AppState>, value: String, label: String) -> AppResult<statuses::Status> {
+pub fn status_rename(
+    state: State<AppState>,
+    value: String,
+    label: String,
+) -> AppResult<statuses::Status> {
     state.with(|db, _| statuses::rename(db, &value, &label))
 }
 
 #[tauri::command]
-pub fn status_recolor(state: State<AppState>, value: String, color: String) -> AppResult<statuses::Status> {
+pub fn status_recolor(
+    state: State<AppState>,
+    value: String,
+    color: String,
+) -> AppResult<statuses::Status> {
     state.with(|db, _| statuses::recolor(db, &value, &color))
 }
 
@@ -190,7 +222,12 @@ pub fn status_delete(state: State<AppState>, value: String) -> AppResult<()> {
 }
 
 #[tauri::command]
-pub fn feedback_send<R: Runtime>(app: AppHandle<R>, state: State<AppState>, kind: String, body: String) -> AppResult<()> {
+pub fn feedback_send<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<AppState>,
+    kind: String,
+    body: String,
+) -> AppResult<()> {
     let version = app.package_info().version.to_string();
     state.with(|db, _| feedback::add(db, &kind, &body, &version))
 }
@@ -249,7 +286,11 @@ pub fn task_create(state: State<AppState>, task: NewTask) -> AppResult<tasks::Ta
 }
 
 #[tauri::command]
-pub fn task_update(state: State<AppState>, id: String, patch: tasks::Patch) -> AppResult<tasks::Task> {
+pub fn task_update(
+    state: State<AppState>,
+    id: String,
+    patch: tasks::Patch,
+) -> AppResult<tasks::Task> {
     state.with(|db, _| tasks::update(db, &id, &patch))
 }
 
@@ -264,7 +305,12 @@ pub fn task_delete(state: State<AppState>, id: String) -> AppResult<()> {
 }
 
 #[tauri::command]
-pub fn my_day_set(state: State<AppState>, id: String, day: String, included: Option<bool>) -> AppResult<()> {
+pub fn my_day_set(
+    state: State<AppState>,
+    id: String,
+    day: String,
+    included: Option<bool>,
+) -> AppResult<()> {
     state.with(|db, _| tasks::set_my_day(db, &id, &day, included))
 }
 
@@ -308,21 +354,37 @@ pub fn comment_edit(state: State<AppState>, id: String, body: String) -> AppResu
 // ---- attachments
 
 #[tauri::command]
-pub fn attachments_list(state: State<AppState>, owner: String, id: String) -> AppResult<Vec<attachments::Link>> {
+pub fn attachments_list(
+    state: State<AppState>,
+    owner: String,
+    id: String,
+) -> AppResult<Vec<attachments::Link>> {
     state.with(|db, _| attachments::list(db, &owner, &id))
 }
 
 /// Copies each file into the vault and links it. Stops at the first file that fails.
 #[tauri::command]
-pub fn attachments_add(state: State<AppState>, owner: String, id: String, paths: Vec<String>) -> AppResult<()> {
+pub fn attachments_add(
+    state: State<AppState>,
+    owner: String,
+    id: String,
+    paths: Vec<String>,
+) -> AppResult<()> {
     state.with(|db, v| {
         let store = v.attachments_dir();
-        paths.iter().try_for_each(|p| attachments::add_file(db, &store, &owner, &id, std::path::Path::new(p)))
+        paths.iter().try_for_each(|p| {
+            attachments::add_file(db, &store, &owner, &id, std::path::Path::new(p))
+        })
     })
 }
 
 #[tauri::command]
-pub fn attachment_link_note(state: State<AppState>, owner: String, id: String, note: String) -> AppResult<()> {
+pub fn attachment_link_note(
+    state: State<AppState>,
+    owner: String,
+    id: String,
+    note: String,
+) -> AppResult<()> {
     state.with(|db, _| attachments::link_note(db, &owner, &id, &note))
 }
 
@@ -366,7 +428,11 @@ pub fn person_get(state: State<AppState>, id: String) -> AppResult<people::Perso
 }
 
 #[tauri::command]
-pub fn person_update(state: State<AppState>, id: String, patch: people::Patch) -> AppResult<people::Person> {
+pub fn person_update(
+    state: State<AppState>,
+    id: String,
+    patch: people::Patch,
+) -> AppResult<people::Person> {
     state.with(|db, _| people::update(db, &id, &patch))
 }
 
@@ -376,16 +442,59 @@ pub fn person_delete(state: State<AppState>, id: String) -> AppResult<()> {
 }
 
 #[tauri::command]
-pub fn contact_add(state: State<AppState>, person: String, kind: String, value: String, label: String) -> AppResult<()> {
+pub fn contact_add(
+    state: State<AppState>,
+    person: String,
+    kind: String,
+    value: String,
+    label: String,
+) -> AppResult<()> {
     state.with(|db, _| people::contact_add(db, &person, &kind, &value, &label))
 }
 
 #[tauri::command]
-pub fn contact_update(state: State<AppState>, id: String, value: String, label: String) -> AppResult<()> {
+pub fn contact_update(
+    state: State<AppState>,
+    id: String,
+    value: String,
+    label: String,
+) -> AppResult<()> {
     state.with(|db, _| people::contact_update(db, &id, &value, &label))
 }
 
 #[tauri::command]
 pub fn contact_delete(state: State<AppState>, id: String) -> AppResult<()> {
     state.with(|db, _| people::contact_delete(db, &id))
+}
+
+// ---- timers
+
+#[tauri::command]
+pub fn timers_list(state: State<AppState>) -> AppResult<Vec<timers::Timer>> {
+    state.with(|db, _| timers::list(db))
+}
+
+#[tauri::command]
+pub fn timer_start(state: State<AppState>, title: String, ms: i64) -> AppResult<timers::Timer> {
+    state.with(|db, _| timers::start(db, &title, ms))
+}
+
+#[tauri::command]
+pub fn timer_add_minute(state: State<AppState>, id: String) -> AppResult<()> {
+    state.with(|db, _| timers::add_minute(db, &id))
+}
+
+#[tauri::command]
+pub fn timer_cancel(state: State<AppState>, id: String) -> AppResult<()> {
+    state.with(|db, _| timers::cancel(db, &id))
+}
+
+#[tauri::command]
+pub fn timer_ring(state: State<AppState>, id: String) -> AppResult<()> {
+    state.with(|db, _| timers::ring(db, &id))
+}
+
+#[tauri::command]
+pub fn timers_finished_while_closed(state: State<AppState>) -> AppResult<Vec<timers::Timer>> {
+    state.with(|db, _| timers::finished_while_closed(db))
 }

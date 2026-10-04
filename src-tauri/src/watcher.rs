@@ -24,7 +24,8 @@ pub fn rescan(vault: &Vault) -> AppResult<()> {
 /// Rescans, then tells the UI.
 pub fn rescan_and_emit<R: Runtime>(app: &AppHandle<R>, vault: &Vault) -> AppResult<()> {
     rescan(vault)?;
-    app.emit(CHANGED, ()).map_err(|e| std::io::Error::other(e.to_string()))?;
+    app.emit(CHANGED, ())
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
     Ok(())
 }
 
@@ -64,9 +65,14 @@ mod tests {
         let started = Instant::now();
         std::fs::write(vault.notes_dir().join("a.md"), "# After").unwrap();
 
-        rx.recv_timeout(Duration::from_secs(3)).expect("watcher fired");
+        rx.recv_timeout(Duration::from_secs(3))
+            .expect("watcher fired");
         let title = notes::tree(&vault.db()).unwrap().notes[0].title.clone();
         assert_eq!(title, "After");
-        assert!(started.elapsed() < Duration::from_millis(1500), "took {:?}", started.elapsed());
+        assert!(
+            started.elapsed() < Duration::from_millis(1500),
+            "took {:?}",
+            started.elapsed()
+        );
     }
 }

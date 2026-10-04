@@ -39,7 +39,10 @@ pub fn open(path: &Path) -> AppResult<(Connection, Opened)> {
     let opened = match from {
         None => Opened::Created,
         Some(v) if v == schema_version() => Opened::Current,
-        Some(v) => Opened::Migrated { from: v, to: schema_version() },
+        Some(v) => Opened::Migrated {
+            from: v,
+            to: schema_version(),
+        },
     };
     Ok((conn, opened))
 }
@@ -96,11 +99,23 @@ mod tests {
         let path = dir.path().join("app.sqlite");
         let (conn, opened) = open(&path).unwrap();
         assert_eq!(opened, Opened::Created);
-        let app: String = conn.query_row("SELECT value FROM meta WHERE key='app_id'", [], |r| r.get(0)).unwrap();
-        let ver: String = conn.query_row("SELECT value FROM meta WHERE key='schema_version'", [], |r| r.get(0)).unwrap();
+        let app: String = conn
+            .query_row("SELECT value FROM meta WHERE key='app_id'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        let ver: String = conn
+            .query_row(
+                "SELECT value FROM meta WHERE key='schema_version'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
         assert_eq!(app, "tend");
         assert_eq!(ver, "1");
-        let fk: i64 = conn.query_row("PRAGMA foreign_keys", [], |r| r.get(0)).unwrap();
+        let fk: i64 = conn
+            .query_row("PRAGMA foreign_keys", [], |r| r.get(0))
+            .unwrap();
         assert_eq!(fk, 1);
     }
 

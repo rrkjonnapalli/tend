@@ -34,7 +34,10 @@ fn check_owner(owner: &str) -> AppResult<()> {
     if OWNERS.contains(&owner) {
         Ok(())
     } else {
-        Err(AppError::rule("bad_owner", format!("Unknown owner type {owner}")))
+        Err(AppError::rule(
+            "bad_owner",
+            format!("Unknown owner type {owner}"),
+        ))
     }
 }
 
@@ -49,24 +52,40 @@ fn sha256(path: &Path) -> AppResult<String> {
         }
         hasher.update(&buf[..n]);
     }
-    Ok(hasher.finalize().iter().map(|b| format!("{b:02x}")).collect())
+    Ok(hasher
+        .finalize()
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect())
 }
 
 /// Copies `src` into the store and links it to the owner. The copy is removed if the database step fails.
-pub fn add_file(conn: &mut Connection, store: &Path, owner: &str, owner_id: &str, src: &Path) -> AppResult<()> {
+pub fn add_file(
+    conn: &mut Connection,
+    store: &Path,
+    owner: &str,
+    owner_id: &str,
+    src: &Path,
+) -> AppResult<()> {
     check_owner(owner)?;
     let name = src
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .ok_or_else(|| AppError::NotFound("File".into()))?;
     let id = new_id();
-    let ext = src.extension().map(|e| format!(".{}", e.to_string_lossy().to_lowercase())).unwrap_or_default();
+    let ext = src
+        .extension()
+        .map(|e| format!(".{}", e.to_string_lossy().to_lowercase()))
+        .unwrap_or_default();
     let stored = format!("{id}{ext}");
     let dest = store.join(&stored);
     fs::create_dir_all(store)?;
     fs::copy(src, &dest)?;
     let size = fs::metadata(&dest)?.len() as i64;
-    let mime = mime_guess::from_path(src).first_or_octet_stream().essence_str().to_string();
+    let mime = mime_guess::from_path(src)
+        .first_or_octet_stream()
+        .essence_str()
+        .to_string();
     let hash = sha256(&dest)?;
     let now = now_ms();
     let result = (|| -> AppResult<()> {
@@ -148,7 +167,11 @@ pub fn unlink(conn: &Connection, link_id: &str) -> AppResult<()> {
 /// Where an attachment's file lives on disk.
 pub fn file_path(conn: &Connection, store: &Path, attachment_id: &str) -> AppResult<PathBuf> {
     let stored: String = conn
-        .query_row("SELECT stored_name FROM attachments WHERE id = ?1", [attachment_id], |r| r.get(0))
+        .query_row(
+            "SELECT stored_name FROM attachments WHERE id = ?1",
+            [attachment_id],
+            |r| r.get(0),
+        )
         .optional()?
         .ok_or_else(|| AppError::NotFound("Attachment".into()))?;
     Ok(store.join(stored))
@@ -172,13 +195,25 @@ mod tests {
         let links = list(&conn, "task", &t.id).unwrap();
         assert_eq!(links.len(), 1);
         let l = &links[0];
-        assert_eq!((l.kind.as_str(), l.name.as_str(), l.size_bytes), ("file", "Invoice March.PDF", Some(5)));
+        assert_eq!(
+            (l.kind.as_str(), l.name.as_str(), l.size_bytes),
+            ("file", "Invoice March.PDF", Some(5))
+        );
         assert_eq!(l.mime_type.as_deref(), Some("application/pdf"));
         let path = file_path(&conn, &store, l.attachment_id.as_deref().unwrap()).unwrap();
         assert_eq!(fs::read(&path).unwrap(), b"hello");
-        assert!(path.file_name().unwrap().to_string_lossy().ends_with(".pdf"));
-        let hash: String = conn.query_row("SELECT sha256 FROM attachments", [], |r| r.get(0)).unwrap();
-        assert_eq!(hash, "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824");
+        assert!(path
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .ends_with(".pdf"));
+        let hash: String = conn
+            .query_row("SELECT sha256 FROM attachments", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(
+            hash,
+            "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+        );
 
         unlink(&conn, &l.id).unwrap();
         assert!(list(&conn, "task", &t.id).unwrap().is_empty());
@@ -190,13 +225,20 @@ mod tests {
     fn notes_link_once() {
         let mut conn = open_memory();
         let t = crate::tasks::create(&mut conn, "", "T", None, None, None).unwrap();
-        conn.execute("INSERT INTO note_folders (path, created_at) VALUES ('work', 0)", []).unwrap();
+        conn.execute(
+            "INSERT INTO note_folders (path, created_at) VALUES ('work', 0)",
+            [],
+        )
+        .unwrap();
         conn.execute("INSERT INTO notes (id, folder, file_name, title, created_at, modified_at) VALUES ('n', 'work', 'plan.md', 'Plan', 0, 0)", [])
             .unwrap();
         link_note(&conn, "task", &t.id, "n").unwrap();
         link_note(&conn, "task", &t.id, "n").unwrap();
         let links = list(&conn, "task", &t.id).unwrap();
         assert_eq!(links.len(), 1);
-        assert_eq!((links[0].name.as_str(), links[0].folder.as_deref()), ("plan", Some("work")));
+        assert_eq!(
+            (links[0].name.as_str(), links[0].folder.as_deref()),
+            ("plan", Some("work"))
+        );
     }
 }

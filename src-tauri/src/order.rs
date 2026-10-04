@@ -16,7 +16,11 @@ pub fn between(a: Option<&str>, b: Option<&str>) -> String {
     let mut i = 0;
     loop {
         let da = lo.get(i).map_or(0, |&c| digit(c));
-        let db = if open { BASE } else { hi.and_then(|h| h.get(i)).map_or(BASE, |&c| digit(c)) };
+        let db = if open {
+            BASE
+        } else {
+            hi.and_then(|h| h.get(i)).map_or(BASE, |&c| digit(c))
+        };
         if da == db {
             out.push(DIGITS[da]);
             i += 1;

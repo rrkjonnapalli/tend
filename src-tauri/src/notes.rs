@@ -68,7 +68,9 @@ fn mtime(path: &Path) -> i64 {
 }
 
 fn walk(dir: &Path, rel: &str, out: &mut Disk) {
-    let Ok(entries) = fs::read_dir(dir) else { return };
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
     for entry in entries.flatten() {
         let file = entry.file_name().to_string_lossy().into_owned();
         if file.starts_with('.') {
@@ -140,12 +142,16 @@ pub fn scan(conn: &mut Connection, dir: &Path) -> AppResult<Vec<String>> {
         .query_map([], |r| r.get(0))?
         .collect::<Result<_, _>>()?;
     for f in known.iter().filter(|f| !on_disk.contains(f.as_str())) {
-        tx.execute("UPDATE note_folders SET missing_at = ?1 WHERE path = ?2", params![now, f])?;
+        tx.execute(
+            "UPDATE note_folders SET missing_at = ?1 WHERE path = ?2",
+            params![now, f],
+        )?;
     }
 
     let mut indexed: HashMap<(String, String), Indexed> = HashMap::new();
     {
-        let mut stmt = tx.prepare("SELECT folder, file_name, id, modified_at, missing_at, title FROM notes")?;
+        let mut stmt =
+            tx.prepare("SELECT folder, file_name, id, modified_at, missing_at, title FROM notes")?;
         let rows = stmt.query_map([], |r| {
             Ok((
                 (r.get::<_, String>(0)?, r.get::<_, String>(1)?),
@@ -163,8 +169,11 @@ pub fn scan(conn: &mut Connection, dir: &Path) -> AppResult<Vec<String>> {
         }
     }
 
-    let present: HashSet<(String, String)> =
-        disk.notes.iter().map(|n| (n.folder.clone(), n.file_name.clone())).collect();
+    let present: HashSet<(String, String)> = disk
+        .notes
+        .iter()
+        .map(|n| (n.folder.clone(), n.file_name.clone()))
+        .collect();
     // Notes that just vanished. A new file with the same mtime and title is the same note,
     // renamed or moved outside Tend, so it keeps its id (and its tags and links).
     let mut vanished: Vec<(String, i64, String)> = indexed
@@ -186,7 +195,9 @@ pub fn scan(conn: &mut Connection, dir: &Path) -> AppResult<Vec<String>> {
             }
             None => {
                 let title = read_title(dir, &n.folder, &n.file_name);
-                let renamed = vanished.iter().position(|(_, m, t)| *m == n.mtime && *t == title);
+                let renamed = vanished
+                    .iter()
+                    .position(|(_, m, t)| *m == n.mtime && *t == title);
                 match renamed {
                     Some(i) => {
                         let (id, _, _) = vanished.swap_remove(i);
@@ -207,7 +218,10 @@ pub fn scan(conn: &mut Connection, dir: &Path) -> AppResult<Vec<String>> {
         }
     }
     for (id, _, _) in &vanished {
-        tx.execute("UPDATE notes SET missing_at = ?1 WHERE id = ?2", params![now, id])?;
+        tx.execute(
+            "UPDATE notes SET missing_at = ?1 WHERE id = ?2",
+            params![now, id],
+        )?;
     }
 
     purge(&tx, now)?;
@@ -245,20 +259,28 @@ fn to_row(r: &rusqlite::Row) -> rusqlite::Result<NoteRow> {
 
 pub fn tree(conn: &Connection) -> AppResult<Tree> {
     let folders = conn
-        .prepare("SELECT path FROM note_folders WHERE missing_at IS NULL AND path <> '' ORDER BY path")?
+        .prepare(
+            "SELECT path FROM note_folders WHERE missing_at IS NULL AND path <> '' ORDER BY path",
+        )?
         .query_map([], |r| r.get(0))?
         .collect::<Result<_, _>>()?;
     let notes = conn
-        .prepare(&format!("{ROW_SQL} WHERE missing_at IS NULL ORDER BY folder, file_name"))?
+        .prepare(&format!(
+            "{ROW_SQL} WHERE missing_at IS NULL ORDER BY folder, file_name"
+        ))?
         .query_map([], to_row)?
         .collect::<Result<_, _>>()?;
     Ok(Tree { folders, notes })
 }
 
 pub fn row(conn: &Connection, id: &str) -> AppResult<NoteRow> {
-    conn.query_row(&format!("{ROW_SQL} WHERE id = ?1 AND missing_at IS NULL"), [id], to_row)
-        .optional()?
-        .ok_or_else(|| AppError::NotFound("Note".into()))
+    conn.query_row(
+        &format!("{ROW_SQL} WHERE id = ?1 AND missing_at IS NULL"),
+        [id],
+        to_row,
+    )
+    .optional()?
+    .ok_or_else(|| AppError::NotFound("Note".into()))
 }
 
 pub fn read(conn: &Connection, dir: &Path, id: &str) -> AppResult<NoteDoc> {
@@ -282,7 +304,11 @@ pub fn write(conn: &Connection, dir: &Path, id: &str, text: &str) -> AppResult<N
 fn folder_exists(conn: &Connection, path: &str) -> AppResult<bool> {
     Ok(path.is_empty()
         || conn
-            .query_row("SELECT 1 FROM note_folders WHERE path = ?1 AND missing_at IS NULL", [path], |_| Ok(()))
+            .query_row(
+                "SELECT 1 FROM note_folders WHERE path = ?1 AND missing_at IS NULL",
+                [path],
+                |_| Ok(()),
+            )
             .optional()?
             .is_some())
 }
@@ -299,7 +325,9 @@ fn clash(conn: &Connection, dir: &Path, folder: &str, name: &str) -> AppResult<b
             )
             .optional()?
             .is_some();
-    Ok(in_db || dir.join(names::join(folder, name)).exists() || file_path(dir, folder, &file).exists())
+    Ok(in_db
+        || dir.join(names::join(folder, name)).exists()
+        || file_path(dir, folder, &file).exists())
 }
 
 fn check_new(conn: &Connection, dir: &Path, folder: &str, name: &str) -> AppResult<()> {
@@ -327,7 +355,11 @@ fn clear_missing(tx: &Transaction, path: &str) -> AppResult<()> {
 // Changes (disk first, then the database)
 
 /// Runs the database step; if it fails, `undo` puts the disk back.
-fn then_db<T>(conn: &mut Connection, undo: impl FnOnce(), db: impl FnOnce(&Transaction) -> AppResult<T>) -> AppResult<T> {
+fn then_db<T>(
+    conn: &mut Connection,
+    undo: impl FnOnce(),
+    db: impl FnOnce(&Transaction) -> AppResult<T>,
+) -> AppResult<T> {
     let result = (|| {
         let tx = conn.transaction()?;
         let out = db(&tx)?;
@@ -357,20 +389,29 @@ pub fn folder_create(conn: &mut Connection, dir: &Path, path: &str) -> AppResult
     }
     fs::create_dir_all(dir.join(path))?;
     let now = now_ms();
-    then_db(conn, || {}, |tx| {
-        for p in &missing {
-            clear_missing(tx, p)?;
-            tx.execute("INSERT INTO note_folders (path, created_at) VALUES (?1, ?2)", params![p, now])?;
-        }
-        Ok(())
-    })
+    then_db(
+        conn,
+        || {},
+        |tx| {
+            for p in &missing {
+                clear_missing(tx, p)?;
+                tx.execute(
+                    "INSERT INTO note_folders (path, created_at) VALUES (?1, ?2)",
+                    params![p, now],
+                )?;
+            }
+            Ok(())
+        },
+    )
 }
 
 /// The heading a new note starts with: `release_checklist` → `# Release checklist`.
 fn heading_for(name: &str) -> String {
     let words = name.replace('_', " ");
     let mut chars = words.chars();
-    let title = chars.next().map_or(String::new(), |c| c.to_uppercase().chain(chars).collect());
+    let title = chars
+        .next()
+        .map_or(String::new(), |c| c.to_uppercase().chain(chars).collect());
     format!("# {title}\n\n")
 }
 
@@ -385,13 +426,17 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, name: &str) -> Ap
     fs::write(&path, &text)?;
     let id = new_id();
     let (now, modified) = (now_ms(), mtime(&path));
-    then_db(conn, || drop(fs::remove_file(&path)), |tx| {
-        tx.execute(
+    then_db(
+        conn,
+        || drop(fs::remove_file(&path)),
+        |tx| {
+            tx.execute(
             "INSERT INTO notes (id, folder, file_name, title, created_at, modified_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             params![id, folder, file, title_of(&text, name), now, modified],
         )?;
-        Ok(())
-    })?;
+            Ok(())
+        },
+    )?;
     row(conn, &id)
 }
 
@@ -416,22 +461,37 @@ pub fn move_note(conn: &mut Connection, dir: &Path, id: &str, target: &str) -> A
     relocate_note(conn, dir, &note, target, &note.name)
 }
 
-fn relocate_note(conn: &mut Connection, dir: &Path, note: &NoteRow, folder: &str, name: &str) -> AppResult<NoteRow> {
+fn relocate_note(
+    conn: &mut Connection,
+    dir: &Path,
+    note: &NoteRow,
+    folder: &str,
+    name: &str,
+) -> AppResult<NoteRow> {
     let from = file_path(dir, &note.folder, &format!("{}{EXT}", note.name));
     let file = format!("{name}{EXT}");
     let to = file_path(dir, folder, &file);
     fs::rename(&from, &to)?;
-    then_db(conn, || drop(fs::rename(&to, &from)), |tx| {
-        tx.execute(
-            "UPDATE notes SET folder = ?1, file_name = ?2 WHERE id = ?3",
-            params![folder, file, note.id],
-        )?;
-        Ok(())
-    })?;
+    then_db(
+        conn,
+        || drop(fs::rename(&to, &from)),
+        |tx| {
+            tx.execute(
+                "UPDATE notes SET folder = ?1, file_name = ?2 WHERE id = ?3",
+                params![folder, file, note.id],
+            )?;
+            Ok(())
+        },
+    )?;
     row(conn, &note.id)
 }
 
-pub fn rename_folder(conn: &mut Connection, dir: &Path, path: &str, name: &str) -> AppResult<String> {
+pub fn rename_folder(
+    conn: &mut Connection,
+    dir: &Path,
+    path: &str,
+    name: &str,
+) -> AppResult<String> {
     if names::base(path) == name {
         return Ok(path.to_string());
     }
@@ -440,9 +500,17 @@ pub fn rename_folder(conn: &mut Connection, dir: &Path, path: &str, name: &str) 
     relocate_folder(conn, dir, path, &names::join(parent, name))
 }
 
-pub fn move_folder(conn: &mut Connection, dir: &Path, path: &str, target: &str) -> AppResult<String> {
+pub fn move_folder(
+    conn: &mut Connection,
+    dir: &Path,
+    path: &str,
+    target: &str,
+) -> AppResult<String> {
     if names::is_under(target, path) {
-        return Err(AppError::rule("into_self", "A folder can’t move into itself"));
+        return Err(AppError::rule(
+            "into_self",
+            "A folder can’t move into itself",
+        ));
     }
     if names::parent(path) == target {
         return Err(AppError::rule("same_folder", "It’s already in that folder"));
@@ -461,26 +529,34 @@ fn relocate_folder(conn: &mut Connection, dir: &Path, old: &str, new: &str) -> A
     }
     let (from, to) = (dir.join(old), dir.join(new));
     fs::rename(&from, &to)?;
-    then_db(conn, || drop(fs::rename(&to, &from)), |tx| {
-        clear_missing(tx, new)?;
-        // Notes follow through ON UPDATE CASCADE.
-        tx.execute(
-            "UPDATE note_folders SET path = ?2 || substr(path, length(?1) + 1)
+    then_db(
+        conn,
+        || drop(fs::rename(&to, &from)),
+        |tx| {
+            clear_missing(tx, new)?;
+            // Notes follow through ON UPDATE CASCADE.
+            tx.execute(
+                "UPDATE note_folders SET path = ?2 || substr(path, length(?1) + 1)
              WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
-            params![old, new],
-        )?;
-        Ok(())
-    })?;
+                params![old, new],
+            )?;
+            Ok(())
+        },
+    )?;
     Ok(new.to_string())
 }
 
 pub fn delete_note(conn: &mut Connection, dir: &Path, id: &str) -> AppResult<()> {
     let note = row(conn, id)?;
     fs::remove_file(file_path(dir, &note.folder, &format!("{}{EXT}", note.name)))?;
-    then_db(conn, || {}, |tx| {
-        tx.execute("DELETE FROM notes WHERE id = ?1", [id])?;
-        Ok(())
-    })
+    then_db(
+        conn,
+        || {},
+        |tx| {
+            tx.execute("DELETE FROM notes WHERE id = ?1", [id])?;
+            Ok(())
+        },
+    )
 }
 
 /// Deletes the folder and everything inside it, from disk and from the index.
@@ -492,17 +568,21 @@ pub fn delete_folder(conn: &mut Connection, dir: &Path, path: &str) -> AppResult
         return Err(AppError::NotFound("Folder".into()));
     }
     fs::remove_dir_all(dir.join(path))?;
-    then_db(conn, || {}, |tx| {
-        tx.execute(
+    then_db(
+        conn,
+        || {},
+        |tx| {
+            tx.execute(
             "DELETE FROM notes WHERE folder = ?1 OR substr(folder, 1, length(?1) + 1) = ?1 || '/'",
             [path],
         )?;
-        tx.execute(
+            tx.execute(
             "DELETE FROM note_folders WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
             [path],
         )?;
-        Ok(())
-    })
+            Ok(())
+        },
+    )
 }
 
 #[cfg(test)]
@@ -527,11 +607,18 @@ mod tests {
         }
         let mut conn = open_memory();
         scan(&mut conn, &dir).unwrap();
-        Fixture { _tmp: tmp, dir, conn }
+        Fixture {
+            _tmp: tmp,
+            dir,
+            conn,
+        }
     }
 
     fn names_in(t: &Tree) -> Vec<String> {
-        t.notes.iter().map(|n| names::join(&n.folder, &n.name)).collect()
+        t.notes
+            .iter()
+            .map(|n| names::join(&n.folder, &n.name))
+            .collect()
     }
 
     /// The index lists exactly what is on disk.
@@ -552,10 +639,21 @@ mod tests {
         ]);
         let t = tree(&f.conn).unwrap();
         assert_eq!(t.folders, vec!["work", "work/tauri"]);
-        assert_eq!(names_in(&t), vec!["scratch", "work/release_checklist", "work/tauri/window_config"]);
+        assert_eq!(
+            names_in(&t),
+            vec![
+                "scratch",
+                "work/release_checklist",
+                "work/tauri/window_config"
+            ]
+        );
         let wc = t.notes.iter().find(|n| n.name == "window_config").unwrap();
         assert_eq!(wc.title, "Window config");
-        let rc = t.notes.iter().find(|n| n.name == "release_checklist").unwrap();
+        let rc = t
+            .notes
+            .iter()
+            .find(|n| n.name == "release_checklist")
+            .unwrap();
         assert_eq!(rc.title, "release_checklist");
     }
 
@@ -604,15 +702,34 @@ mod tests {
         scan(&mut f.conn, &f.dir).unwrap();
         assert_eq!(names_in(&tree(&f.conn).unwrap()), vec!["b"]);
         assert!(tree(&f.conn).unwrap().folders.is_empty());
-        let rows: i64 = f.conn.query_row("SELECT count(*) FROM notes", [], |r| r.get(0)).unwrap();
+        let rows: i64 = f
+            .conn
+            .query_row("SELECT count(*) FROM notes", [], |r| r.get(0))
+            .unwrap();
         assert_eq!(rows, 2, "missing note stays during the grace period");
 
         let old = now_ms() - GRACE_MS - 1;
-        f.conn.execute("UPDATE notes SET missing_at = ?1 WHERE missing_at IS NOT NULL", [old]).unwrap();
-        f.conn.execute("UPDATE note_folders SET missing_at = ?1 WHERE missing_at IS NOT NULL", [old]).unwrap();
+        f.conn
+            .execute(
+                "UPDATE notes SET missing_at = ?1 WHERE missing_at IS NOT NULL",
+                [old],
+            )
+            .unwrap();
+        f.conn
+            .execute(
+                "UPDATE note_folders SET missing_at = ?1 WHERE missing_at IS NOT NULL",
+                [old],
+            )
+            .unwrap();
         scan(&mut f.conn, &f.dir).unwrap();
-        let rows: i64 = f.conn.query_row("SELECT count(*) FROM notes", [], |r| r.get(0)).unwrap();
-        let folders: i64 = f.conn.query_row("SELECT count(*) FROM note_folders", [], |r| r.get(0)).unwrap();
+        let rows: i64 = f
+            .conn
+            .query_row("SELECT count(*) FROM notes", [], |r| r.get(0))
+            .unwrap();
+        let folders: i64 = f
+            .conn
+            .query_row("SELECT count(*) FROM note_folders", [], |r| r.get(0))
+            .unwrap();
         assert_eq!((rows, folders), (1, 1));
     }
 
@@ -624,7 +741,10 @@ mod tests {
         assert!(f.dir.join("work/ideas/release_checklist.md").is_file());
         let n = write(&f.conn, &f.dir, &n.id, "# Ship it\n\nnow").unwrap();
         assert_eq!(n.title, "Ship it");
-        assert_eq!(read(&f.conn, &f.dir, &n.id).unwrap().text, "# Ship it\n\nnow");
+        assert_eq!(
+            read(&f.conn, &f.dir, &n.id).unwrap().text,
+            "# Ship it\n\nnow"
+        );
         assert_eq!(tree(&f.conn).unwrap().folders, vec!["work", "work/ideas"]);
         assert_matches_disk(&mut f);
     }
@@ -636,7 +756,10 @@ mod tests {
             Err(AppError::InvalidName(m)) => m,
             other => panic!("expected invalid name, got {other:?}"),
         };
-        assert_eq!(err(create(&mut f.conn, &f.dir, "", "Bad Name")), names::CHARS);
+        assert_eq!(
+            err(create(&mut f.conn, &f.dir, "", "Bad Name")),
+            names::CHARS
+        );
         assert_eq!(err(create(&mut f.conn, &f.dir, "", "")), names::EMPTY);
         assert_eq!(err(create(&mut f.conn, &f.dir, "", "work")), names::CLASH);
         assert_eq!(err(create(&mut f.conn, &f.dir, "work", "a")), names::CLASH);
@@ -646,27 +769,60 @@ mod tests {
 
     #[test]
     fn rename_and_move_a_folder_with_children() {
-        let mut f = fixture(&[("work/tauri/a.md", "# A"), ("work/b.md", "# B"), ("home/c.md", "# C")]);
-        let a = tree(&f.conn).unwrap().notes.iter().find(|n| n.name == "a").unwrap().id.clone();
+        let mut f = fixture(&[
+            ("work/tauri/a.md", "# A"),
+            ("work/b.md", "# B"),
+            ("home/c.md", "# C"),
+        ]);
+        let a = tree(&f.conn)
+            .unwrap()
+            .notes
+            .iter()
+            .find(|n| n.name == "a")
+            .unwrap()
+            .id
+            .clone();
 
-        assert_eq!(rename_folder(&mut f.conn, &f.dir, "work", "job").unwrap(), "job");
+        assert_eq!(
+            rename_folder(&mut f.conn, &f.dir, "work", "job").unwrap(),
+            "job"
+        );
         assert!(f.dir.join("job/tauri/a.md").is_file());
-        assert_eq!(tree(&f.conn).unwrap().folders, vec!["home", "job", "job/tauri"]);
+        assert_eq!(
+            tree(&f.conn).unwrap().folders,
+            vec!["home", "job", "job/tauri"]
+        );
         assert_eq!(row(&f.conn, &a).unwrap().folder, "job/tauri");
 
-        assert_eq!(move_folder(&mut f.conn, &f.dir, "job/tauri", "home").unwrap(), "home/tauri");
+        assert_eq!(
+            move_folder(&mut f.conn, &f.dir, "job/tauri", "home").unwrap(),
+            "home/tauri"
+        );
         assert!(f.dir.join("home/tauri/a.md").is_file());
         assert_eq!(row(&f.conn, &a).unwrap().folder, "home/tauri");
 
-        assert!(move_folder(&mut f.conn, &f.dir, "home", "home/tauri").is_err(), "into itself");
-        assert!(move_folder(&mut f.conn, &f.dir, "home/tauri", "home").is_err(), "same folder");
+        assert!(
+            move_folder(&mut f.conn, &f.dir, "home", "home/tauri").is_err(),
+            "into itself"
+        );
+        assert!(
+            move_folder(&mut f.conn, &f.dir, "home/tauri", "home").is_err(),
+            "same folder"
+        );
         assert_matches_disk(&mut f);
     }
 
     #[test]
     fn rename_and_move_a_note() {
         let mut f = fixture(&[("a.md", "# A"), ("work/x.md", "")]);
-        let id = tree(&f.conn).unwrap().notes.iter().find(|n| n.name == "a").unwrap().id.clone();
+        let id = tree(&f.conn)
+            .unwrap()
+            .notes
+            .iter()
+            .find(|n| n.name == "a")
+            .unwrap()
+            .id
+            .clone();
         rename_note(&mut f.conn, &f.dir, &id, "b").unwrap();
         assert!(f.dir.join("b.md").is_file() && !f.dir.join("a.md").exists());
         let moved = move_note(&mut f.conn, &f.dir, &id, "work/new").unwrap();
@@ -679,7 +835,14 @@ mod tests {
     #[test]
     fn delete_note_and_folder() {
         let mut f = fixture(&[("work/tauri/a.md", ""), ("work/b.md", ""), ("c.md", "")]);
-        let c = tree(&f.conn).unwrap().notes.iter().find(|n| n.name == "c").unwrap().id.clone();
+        let c = tree(&f.conn)
+            .unwrap()
+            .notes
+            .iter()
+            .find(|n| n.name == "c")
+            .unwrap()
+            .id
+            .clone();
         delete_note(&mut f.conn, &f.dir, &c).unwrap();
         assert!(!f.dir.join("c.md").exists());
         delete_folder(&mut f.conn, &f.dir, "work").unwrap();
@@ -694,7 +857,12 @@ mod tests {
     fn rescan_repairs_drift() {
         let mut f = fixture(&[("a.md", "# A")]);
         f.conn.execute("DELETE FROM notes", []).unwrap();
-        f.conn.execute("INSERT INTO note_folders (path, created_at) VALUES ('ghost', 0)", []).unwrap();
+        f.conn
+            .execute(
+                "INSERT INTO note_folders (path, created_at) VALUES ('ghost', 0)",
+                [],
+            )
+            .unwrap();
         scan(&mut f.conn, &f.dir).unwrap();
         let t = tree(&f.conn).unwrap();
         assert_eq!(names_in(&t), vec!["a"]);

@@ -228,7 +228,9 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M10 · ⌘K, quick create and timers  ☐
+## M10 · ⌘K, quick create and timers  ☑
+
+> Done. `src/lib/commands.ts` drives the shortcuts, the palette and Settings → Command palette. Pages offer context actions to it through `stores/page-actions`. Timers: Rust stores `{title, ends_at, state}`, and the window recomputes `ends_at − now` every second and on focus or visibility change. When a timer ends, the window sends a desktop notification (plugin-notification), plays a chime and marks it `rung`. On launch, overdue timers show once in a "finished while Tend was closed" toast. Checked in the running app: vault reopen, initial scan, and outside edit or move picked up by the watcher in under 1.2 s.
 
 **Read:** decisions §9, §11, §12 · `screens/command-palette.html`, `screens/quick-create.html`, `png/command-palette*.png`, `png/quick-create-*.png`, timer chip in `png/tasks.png`
 

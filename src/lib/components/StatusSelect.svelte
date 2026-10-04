@@ -32,6 +32,12 @@
     open = !open;
     hi = Math.max(0, tasks.statuses.findIndex((s) => s.value === value));
   }
+
+  /** Opens the list (the "Set status…" command). */
+  export function show() {
+    if (!open) toggle();
+    button?.focus();
+  }
 </script>
 
 <button bind:this={button} class="ghost" aria-haspopup="listbox" aria-expanded={open} onclick={toggle} {onkeydown}>

@@ -28,6 +28,7 @@
   import { keyBetween } from '#lib/util/order-key.ts';
   import { startReorder } from '#lib/util/reorder.ts';
   import { matches } from '#lib/util/keys.ts';
+  import { pageActions } from '#lib/stores/page-actions.svelte.ts';
   import { hasLayers } from '#lib/util/layers.ts';
   import { plural } from '#lib/util/plural.ts';
   import { routes } from '#lib/util/routes.ts';
@@ -190,6 +191,18 @@
     goto(to, { replace: true });
   }
 
+  let statusSelect = $state<StatusSelect>();
+  let dueField = $state<DateField>();
+
+  $effect(() =>
+    pageActions.provide({
+      'page.width': () => settings.set('tasks.wide', !wide),
+      'task.status': () => statusSelect?.show(),
+      'task.due': () => dueField?.show(),
+      'task.myday': () => tasks.setMyDay(id, true),
+    }),
+  );
+
   function onkeydown(e: KeyboardEvent) {
     if (hasLayers() || !task || task.parentId) return;
     if (matches(e, 'mod+shift+m')) {
@@ -231,10 +244,10 @@
 
         <div class="props">
           <span class="pl">Status</span>
-          <div class="pv"><StatusSelect value={task.status} onchange={(status) => patch({ status })} /></div>
+          <div class="pv"><StatusSelect bind:this={statusSelect} value={task.status} onchange={(status) => patch({ status })} /></div>
           <span class="pl">Due</span>
           <div class="pv">
-            <DateField value={task.dueDate} warn={isOverdue(task, tasks.day)} onchange={(dueDate) => patch(dueDate ? { dueDate } : { dueDate: null, dueTime: null })} />
+            <DateField bind:this={dueField} value={task.dueDate} warn={isOverdue(task, tasks.day)} onchange={(dueDate) => patch(dueDate ? { dueDate } : { dueDate: null, dueTime: null })} />
             <TimeField value={task.dueTime} onchange={(dueTime) => patch({ dueTime })} />
           </div>
           <span class="pl">My day</span>

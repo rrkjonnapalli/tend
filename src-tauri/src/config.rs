@@ -26,7 +26,9 @@ pub fn last_vault(dir: &Path) -> Option<PathBuf> {
 
 pub fn remember_vault(dir: &Path, vault: &Path) -> AppResult<()> {
     fs::create_dir_all(dir)?;
-    let cfg = Config { vault: Some(vault.to_path_buf()) };
+    let cfg = Config {
+        vault: Some(vault.to_path_buf()),
+    };
     fs::write(file(dir), serde_json::to_string_pretty(&cfg)?)?;
     Ok(())
 }

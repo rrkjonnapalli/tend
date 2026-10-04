@@ -34,7 +34,10 @@ pub fn of(conn: &Connection, owner: Owner, id: &str) -> AppResult<Vec<String>> {
     let sql = format!(
         "SELECT t.name FROM {table} x JOIN tags t ON t.id = x.tag_id WHERE x.{col} = ?1 ORDER BY t.name COLLATE NOCASE"
     );
-    let names = conn.prepare(&sql)?.query_map([id], |r| r.get(0))?.collect::<Result<_, _>>()?;
+    let names = conn
+        .prepare(&sql)?
+        .query_map([id], |r| r.get(0))?
+        .collect::<Result<_, _>>()?;
     Ok(names)
 }
 
@@ -47,18 +50,29 @@ fn ensure(conn: &Connection, name: &str) -> AppResult<String> {
         return Ok(id);
     }
     let id = new_id();
-    conn.execute("INSERT INTO tags (id, name, created_at) VALUES (?1, ?2, ?3)", params![id, name, now_ms()])?;
+    conn.execute(
+        "INSERT INTO tags (id, name, created_at) VALUES (?1, ?2, ?3)",
+        params![id, name, now_ms()],
+    )?;
     Ok(id)
 }
 
 /// Replaces the owner's tags. Blank names are ignored; tags no longer used anywhere stay in the pool.
-pub fn set(conn: &mut Connection, owner: Owner, id: &str, names: &[String]) -> AppResult<Vec<String>> {
+pub fn set(
+    conn: &mut Connection,
+    owner: Owner,
+    id: &str,
+    names: &[String],
+) -> AppResult<Vec<String>> {
     let (table, col) = owner.table();
     let tx = conn.transaction()?;
     tx.execute(&format!("DELETE FROM {table} WHERE {col} = ?1"), [id])?;
     for name in names.iter().map(|n| n.trim()).filter(|n| !n.is_empty()) {
         let tag = ensure(&tx, name)?;
-        tx.execute(&format!("INSERT OR IGNORE INTO {table} ({col}, tag_id) VALUES (?1, ?2)"), params![id, tag])?;
+        tx.execute(
+            &format!("INSERT OR IGNORE INTO {table} ({col}, tag_id) VALUES (?1, ?2)"),
+            params![id, tag],
+        )?;
     }
     tx.commit()?;
     of(conn, owner, id)
@@ -74,7 +88,13 @@ mod tests {
         let mut conn = open_memory();
         conn.execute("INSERT INTO notes (id, folder, file_name, title, created_at, modified_at) VALUES ('n', '', 'n.md', 'n', 0, 0)", [])
             .unwrap();
-        let tags = set(&mut conn, Owner::Note, "n", &["UI".into(), "tauri".into(), " ".into(), "ui".into()]).unwrap();
+        let tags = set(
+            &mut conn,
+            Owner::Note,
+            "n",
+            &["UI".into(), "tauri".into(), " ".into(), "ui".into()],
+        )
+        .unwrap();
         assert_eq!(tags, vec!["tauri", "UI"]);
         assert_eq!(all(&conn).unwrap(), vec!["tauri", "UI"]);
         let tags = set(&mut conn, Owner::Note, "n", &["Tauri".into()]).unwrap();

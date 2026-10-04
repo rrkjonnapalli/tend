@@ -14,7 +14,8 @@
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
-  import { matches, label as keyLabel } from '#lib/util/keys.ts';
+  import { label as keyLabel } from '#lib/util/keys.ts';
+  import { pageActions } from '#lib/stores/page-actions.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
 
   const SAVE_MS = 500;
@@ -100,12 +101,15 @@
     flush();
   });
 
-  function onkeydown(e: KeyboardEvent) {
-    if (matches(e, 'mod+e')) {
-      e.preventDefault();
-      setMode(!editing);
-    }
-  }
+  let tagEditor = $state<TagEditor>();
+
+  $effect(() =>
+    pageActions.provide({
+      'note.mode': () => setMode(!editing),
+      'note.tag': () => tagEditor?.start(),
+      'page.width': () => settings.set('notes.wide', !wide),
+    }),
+  );
 
   const crumbs = $derived.by((): Crumb[] => {
     const out: Crumb[] = [{ label: 'notes', href: routes.notesFolder('') }];
@@ -115,8 +119,6 @@
     return out;
   });
 </script>
-
-<svelte:window {onkeydown} />
 
 <main class="main">
   <div class="bar">
@@ -141,7 +143,7 @@
 
   {#if loadedId === id}
     <article class="note">
-      <TagEditor {tags} onchange={setTags} />
+      <TagEditor bind:this={tagEditor} {tags} onchange={setTags} />
       <div class="body" style:max-width={wide ? 'none' : 'var(--content-w)'}>
         {#if editing}
           {#key id}

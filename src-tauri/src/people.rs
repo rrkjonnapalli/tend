@@ -91,7 +91,6 @@ pub struct Dob {
     pub day: i64,
 }
 
-
 const KINDS: [&str; 3] = ["phone", "email", "address"];
 
 fn days_in_month(year: Option<i64>, month: i64) -> i64 {
@@ -107,8 +106,15 @@ fn days_in_month(year: Option<i64>, month: i64) -> i64 {
 
 fn check_dob(d: &Dob) -> AppResult<()> {
     let valid_year = d.year.is_none_or(|y| (1..=9999).contains(&y));
-    if !valid_year || !(1..=12).contains(&d.month) || d.day < 1 || d.day > days_in_month(d.year, d.month) {
-        return Err(crate::error::AppError::rule("bad_dob", "Use yyyy-mm-dd or mm-dd"));
+    if !valid_year
+        || !(1..=12).contains(&d.month)
+        || d.day < 1
+        || d.day > days_in_month(d.year, d.month)
+    {
+        return Err(crate::error::AppError::rule(
+            "bad_dob",
+            "Use yyyy-mm-dd or mm-dd",
+        ));
     }
     Ok(())
 }
@@ -121,14 +127,20 @@ fn check_tob(t: &str) -> AppResult<()> {
     if ok {
         Ok(())
     } else {
-        Err(crate::error::AppError::rule("bad_tob", "Use a time like 6:30 AM"))
+        Err(crate::error::AppError::rule(
+            "bad_tob",
+            "Use a time like 6:30 AM",
+        ))
     }
 }
 
 fn check_first(name: &str) -> AppResult<String> {
     let n = name.trim();
     if n.is_empty() {
-        return Err(crate::error::AppError::rule("empty_name", "A first name is needed"));
+        return Err(crate::error::AppError::rule(
+            "empty_name",
+            "A first name is needed",
+        ));
     }
     Ok(n.to_string())
 }
@@ -148,12 +160,20 @@ pub fn get(conn: &Connection, id: &str) -> AppResult<Person> {
         .into_iter()
         .find(|p| p.id == id)
         .ok_or_else(|| crate::error::AppError::NotFound("Person".into()))?;
-    let (tob, notes) = conn.query_row("SELECT tob, notes FROM people WHERE id = ?1", [id], |r| Ok((r.get(0)?, r.get(1)?)))?;
+    let (tob, notes) =
+        conn.query_row("SELECT tob, notes FROM people WHERE id = ?1", [id], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })?;
     let contacts = conn
         .prepare("SELECT id, kind, value, label FROM person_contacts WHERE person_id = ?1 ORDER BY kind, position")?
         .query_map([id], |r| Ok(Contact { id: r.get(0)?, kind: r.get(1)?, value: r.get(2)?, label: r.get(3)? }))?
         .collect::<Result<_, _>>()?;
-    Ok(Person { row, tob, notes, contacts })
+    Ok(Person {
+        row,
+        tob,
+        notes,
+        contacts,
+    })
 }
 
 pub fn update(conn: &mut Connection, id: &str, p: &Patch) -> AppResult<Person> {
@@ -165,14 +185,23 @@ pub fn update(conn: &mut Connection, id: &str, p: &Patch) -> AppResult<Person> {
     }
     let tx = conn.transaction()?;
     if let Some(first) = &p.first_name {
-        tx.execute("UPDATE people SET first_name = ?1 WHERE id = ?2", rusqlite::params![check_first(first)?, id])?;
+        tx.execute(
+            "UPDATE people SET first_name = ?1 WHERE id = ?2",
+            rusqlite::params![check_first(first)?, id],
+        )?;
     }
     if let Some(last) = &p.last_name {
-        tx.execute("UPDATE people SET last_name = ?1 WHERE id = ?2", rusqlite::params![last.trim(), id])?;
+        tx.execute(
+            "UPDATE people SET last_name = ?1 WHERE id = ?2",
+            rusqlite::params![last.trim(), id],
+        )?;
     }
     if let Some(nick) = &p.nickname {
         let nick = nick.as_deref().map(str::trim).filter(|n| !n.is_empty());
-        tx.execute("UPDATE people SET nickname = ?1 WHERE id = ?2", rusqlite::params![nick, id])?;
+        tx.execute(
+            "UPDATE people SET nickname = ?1 WHERE id = ?2",
+            rusqlite::params![nick, id],
+        )?;
     }
     if let Some(dob) = &p.dob {
         let (y, m, d) = dob.map_or((None, None, None), |d| (d.year, Some(d.month), Some(d.day)));
@@ -182,12 +211,21 @@ pub fn update(conn: &mut Connection, id: &str, p: &Patch) -> AppResult<Person> {
         )?;
     }
     if let Some(tob) = &p.tob {
-        tx.execute("UPDATE people SET tob = ?1 WHERE id = ?2", rusqlite::params![tob, id])?;
+        tx.execute(
+            "UPDATE people SET tob = ?1 WHERE id = ?2",
+            rusqlite::params![tob, id],
+        )?;
     }
     if let Some(notes) = &p.notes {
-        tx.execute("UPDATE people SET notes = ?1 WHERE id = ?2", rusqlite::params![notes, id])?;
+        tx.execute(
+            "UPDATE people SET notes = ?1 WHERE id = ?2",
+            rusqlite::params![notes, id],
+        )?;
     }
-    tx.execute("UPDATE people SET updated_at = ?1 WHERE id = ?2", rusqlite::params![crate::util::now_ms(), id])?;
+    tx.execute(
+        "UPDATE people SET updated_at = ?1 WHERE id = ?2",
+        rusqlite::params![crate::util::now_ms(), id],
+    )?;
     tx.commit()?;
     get(conn, id)
 }
@@ -200,7 +238,10 @@ pub fn delete(conn: &Connection, id: &str) -> AppResult<()> {
 
 fn check_contact(kind: &str, value: &str) -> AppResult<String> {
     if !KINDS.contains(&kind) {
-        return Err(crate::error::AppError::rule("bad_kind", format!("Unknown contact kind {kind}")));
+        return Err(crate::error::AppError::rule(
+            "bad_kind",
+            format!("Unknown contact kind {kind}"),
+        ));
     }
     let v = value.trim();
     if v.is_empty() {
@@ -209,7 +250,13 @@ fn check_contact(kind: &str, value: &str) -> AppResult<String> {
     Ok(v.to_string())
 }
 
-pub fn contact_add(conn: &Connection, person: &str, kind: &str, value: &str, label: &str) -> AppResult<()> {
+pub fn contact_add(
+    conn: &Connection,
+    person: &str,
+    kind: &str,
+    value: &str,
+    label: &str,
+) -> AppResult<()> {
     let value = check_contact(kind, value)?;
     let next: i64 = conn.query_row(
         "SELECT coalesce(max(position) + 1, 0) FROM person_contacts WHERE person_id = ?1 AND kind = ?2",
@@ -224,7 +271,11 @@ pub fn contact_add(conn: &Connection, person: &str, kind: &str, value: &str, lab
 }
 
 pub fn contact_update(conn: &Connection, id: &str, value: &str, label: &str) -> AppResult<()> {
-    let kind: String = conn.query_row("SELECT kind FROM person_contacts WHERE id = ?1", [id], |r| r.get(0))?;
+    let kind: String = conn.query_row(
+        "SELECT kind FROM person_contacts WHERE id = ?1",
+        [id],
+        |r| r.get(0),
+    )?;
     let value = check_contact(&kind, value)?;
     conn.execute(
         "UPDATE person_contacts SET value = ?1, label = ?2 WHERE id = ?3",
@@ -252,12 +303,28 @@ mod tests {
         let mut conn = open_memory();
         let id = create(&conn, "Ravi", "Kumar").unwrap();
         assert!(create(&conn, "  ", "x").is_err());
-        let p = update(&mut conn, &id, &patch(r#"{"nickname":"Ravs","dob":{"year":1995,"month":10,"day":9},"tob":"06:30"}"#)).unwrap();
+        let p = update(
+            &mut conn,
+            &id,
+            &patch(r#"{"nickname":"Ravs","dob":{"year":1995,"month":10,"day":9},"tob":"06:30"}"#),
+        )
+        .unwrap();
         assert_eq!(p.row.nickname.as_deref(), Some("Ravs"));
-        assert_eq!((p.row.dob_year, p.row.dob_month, p.row.dob_day), (Some(1995), Some(10), Some(9)));
+        assert_eq!(
+            (p.row.dob_year, p.row.dob_month, p.row.dob_day),
+            (Some(1995), Some(10), Some(9))
+        );
         assert_eq!(p.tob.as_deref(), Some("06:30"));
-        let p = update(&mut conn, &id, &patch(r#"{"dob":{"year":null,"month":2,"day":29},"nickname":"","tob":null}"#)).unwrap();
-        assert_eq!((p.row.dob_year, p.row.dob_month, p.row.dob_day), (None, Some(2), Some(29)));
+        let p = update(
+            &mut conn,
+            &id,
+            &patch(r#"{"dob":{"year":null,"month":2,"day":29},"nickname":"","tob":null}"#),
+        )
+        .unwrap();
+        assert_eq!(
+            (p.row.dob_year, p.row.dob_month, p.row.dob_day),
+            (None, Some(2), Some(29))
+        );
         assert_eq!((p.row.nickname, p.tob), (None, None));
     }
 
@@ -272,7 +339,10 @@ mod tests {
             r#"{"tob":"25:00"}"#,
             r#"{"tob":"6:30"}"#,
         ] {
-            assert!(update(&mut conn, &id, &patch(bad)).is_err(), "{bad} should fail");
+            assert!(
+                update(&mut conn, &id, &patch(bad)).is_err(),
+                "{bad} should fail"
+            );
         }
         let p = get(&conn, &id).unwrap();
         assert_eq!((p.row.dob_month, p.tob), (None, None));
@@ -288,17 +358,43 @@ mod tests {
         assert!(contact_add(&conn, &id, "fax", "1", "").is_err());
         assert!(contact_add(&conn, &id, "email", " ", "").is_err());
         let row = &list(&conn).unwrap()[0];
-        assert_eq!((row.phone.as_deref(), row.email.as_deref()), (Some("+91 1"), Some("a@b.c")));
+        assert_eq!(
+            (row.phone.as_deref(), row.email.as_deref()),
+            (Some("+91 1"), Some("a@b.c"))
+        );
         let p = get(&conn, &id).unwrap();
-        let first = p.contacts.iter().find(|c| c.value == "+91 1").unwrap().id.clone();
+        let first = p
+            .contacts
+            .iter()
+            .find(|c| c.value == "+91 1")
+            .unwrap()
+            .id
+            .clone();
         contact_update(&conn, &first, "+91 9", "home").unwrap();
-        contact_delete(&conn, &p.contacts.iter().find(|c| c.value == "+91 2").unwrap().id).unwrap();
+        contact_delete(
+            &conn,
+            &p.contacts.iter().find(|c| c.value == "+91 2").unwrap().id,
+        )
+        .unwrap();
         let p = get(&conn, &id).unwrap();
-        let phones: Vec<_> = p.contacts.iter().filter(|c| c.kind == "phone").map(|c| (c.value.as_str(), c.label.as_str())).collect();
+        let phones: Vec<_> = p
+            .contacts
+            .iter()
+            .filter(|c| c.kind == "phone")
+            .map(|c| (c.value.as_str(), c.label.as_str()))
+            .collect();
         assert_eq!(phones, vec![("+91 9", "home")]);
         let t = crate::tasks::create(&mut conn, "", "T", None, None, None).unwrap();
-        crate::tasks::update(&conn, &t.id, &serde_json::from_str(&format!(r#"{{"assigneeId":"{id}"}}"#)).unwrap()).unwrap();
+        crate::tasks::update(
+            &conn,
+            &t.id,
+            &serde_json::from_str(&format!(r#"{{"assigneeId":"{id}"}}"#)).unwrap(),
+        )
+        .unwrap();
         delete(&conn, &id).unwrap();
-        assert!(crate::tasks::get(&conn, &t.id).unwrap().assignee_id.is_none());
+        assert!(crate::tasks::get(&conn, &t.id)
+            .unwrap()
+            .assignee_id
+            .is_none());
     }
 }

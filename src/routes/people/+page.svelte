@@ -1,6 +1,7 @@
 <script lang="ts">
   // People list: search, add (first and last name, ↵ opens the new person), and the table.
   import { goto } from '$app/navigation';
+  import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
   import { displayName, peopleApi, type PersonRow } from '#lib/api/people.ts';
   import { messageOf } from '#lib/api/core.ts';
@@ -16,6 +17,11 @@
 
   let query = $state('');
   let draft = $state('');
+  let addInput = $state<HTMLInputElement>();
+
+  $effect(() => {
+    if (page.url.searchParams.get('add') === '1') addInput?.focus();
+  });
 
   const matches = (p: PersonRow, q: string) =>
     !q || [displayName(p), p.firstName, p.lastName, p.phone ?? '', p.email ?? ''].some((s) => s.toLowerCase().includes(q));
@@ -55,7 +61,7 @@
     <div class="table">
       <label class="add">
         <span class="plus">+</span>
-        <input aria-label="Add person" placeholder="add person (first and last name), ↵" bind:value={draft} onkeydown={(e) => e.key === 'Enter' && add()} />
+        <input bind:this={addInput} aria-label="Add person" placeholder="add person (first and last name), ↵" bind:value={draft} onkeydown={(e) => e.key === 'Enter' && add()} />
       </label>
       <div class="phead"><span>Name</span><span>Birthday</span><span>Phone</span><span>Email</span></div>
       {#each shown as p (p.id)}

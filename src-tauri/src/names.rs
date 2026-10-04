@@ -7,7 +7,10 @@ pub const CHARS: &str = "Only a–z, 0–9 and _ (no spaces or capitals)";
 pub const CLASH: &str = "Something with this name already exists here";
 
 pub fn is_valid(name: &str) -> bool {
-    !name.is_empty() && name.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+    !name.is_empty()
+        && name
+            .bytes()
+            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
 }
 
 pub fn check(name: &str) -> AppResult<()> {

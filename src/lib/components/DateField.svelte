@@ -45,6 +45,11 @@
     ];
   });
 
+  /** Opens the month popover (the "Set due date…" command). */
+  export function show() {
+    open = true;
+  }
+
   function close() {
     open = false;
     picking = null;

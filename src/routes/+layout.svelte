@@ -5,7 +5,11 @@
   import { page } from '$app/state';
   import BottomNav from '#lib/components/BottomNav.svelte';
   import Toast from '#lib/components/Toast.svelte';
-  import { blocked, commands } from '#lib/commands.ts';
+  import CommandPalette from '#lib/components/CommandPalette.svelte';
+  import QuickCreate from '#lib/components/QuickCreate.svelte';
+  import { ui } from '#lib/stores/ui.svelte.ts';
+  import { timers } from '#lib/stores/timers.svelte.ts';
+  import { available, blocked, commands } from '#lib/commands.ts';
   import { matches } from '#lib/util/keys.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
 
@@ -26,8 +30,13 @@
     });
   });
 
+  // Timers run as soon as a vault is open, whichever page is showing.
+  $effect(() => {
+    if (vault.path) timers.start();
+  });
+
   function onkeydown(e: KeyboardEvent) {
-    const cmd = vault.path ? commands.find((c) => c.keys && matches(e, c.keys)) : undefined;
+    const cmd = vault.path && !onStart ? commands.find((c) => c.keys && matches(e, c.keys) && available(c)) : undefined;
     if (cmd) {
       e.preventDefault();
       cmd.run();
@@ -44,6 +53,8 @@
     <div class="page">{@render children()}</div>
     {#if !onStart && vault.path}<BottomNav />{/if}
   </div>
+  {#if ui.palette}<CommandPalette onclose={() => (ui.palette = false)} />{/if}
+  {#if ui.quick}{#key ui.quick}<QuickCreate kind={ui.quick} onclose={() => (ui.quick = null)} />{/key}{/if}
   <Toast />
 {/if}
 

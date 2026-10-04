@@ -2,9 +2,12 @@
 import { settings } from './settings.svelte.ts';
 
 export type Popup = 'feedback' | 'timers' | null;
+export type QuickKind = 'note' | 'task' | 'folder' | 'timer';
 
 class Ui {
   popup = $state<Popup>(null);
+  palette = $state(false);
+  quick = $state<QuickKind | null>(null);
 
   get navOpen(): boolean {
     return settings.get('ui.nav_open', true);
@@ -24,6 +27,12 @@ class Ui {
 
   toggle = (p: Exclude<Popup, null>) => {
     this.popup = this.popup === p ? null : p;
+  };
+
+  /** Opens a bottom-bar popover, showing the bar first if it's hidden. */
+  show = (p: Exclude<Popup, null>) => {
+    if (!this.navOpen) this.toggleNav();
+    this.popup = p;
   };
 }
 

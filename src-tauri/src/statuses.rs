@@ -17,7 +17,9 @@ pub struct Status {
 
 pub fn list(conn: &Connection) -> AppResult<Vec<Status>> {
     let rows = conn
-        .prepare("SELECT value, label, color, position, is_default FROM statuses ORDER BY position")?
+        .prepare(
+            "SELECT value, label, color, position, is_default FROM statuses ORDER BY position",
+        )?
         .query_map([], |r| {
             Ok(Status {
                 value: r.get(0)?,
@@ -53,13 +55,18 @@ fn check_label(conn: &Connection, label: &str, except: Option<&str>) -> AppResul
         .optional()?
         .is_some();
     if taken {
-        return Err(AppError::rule("label_taken", "Another status already uses this label."));
+        return Err(AppError::rule(
+            "label_taken",
+            "Another status already uses this label.",
+        ));
     }
     Ok(label.to_string())
 }
 
 fn check_color(color: &str) -> AppResult<()> {
-    let ok = color.len() == 7 && color.starts_with('#') && color[1..].chars().all(|c| c.is_ascii_hexdigit());
+    let ok = color.len() == 7
+        && color.starts_with('#')
+        && color[1..].chars().all(|c| c.is_ascii_hexdigit());
     if ok {
         Ok(())
     } else {
@@ -71,23 +78,40 @@ fn check_color(color: &str) -> AppResult<()> {
 pub fn add(conn: &Connection, label: &str, value: &str, color: &str) -> AppResult<Status> {
     let value = value.trim();
     let valid = value.chars().next().is_some_and(|c| c.is_ascii_uppercase())
-        && value.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_');
+        && value
+            .chars()
+            .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_');
     if !valid {
-        return Err(AppError::rule("bad_value", "Give the status a value (A–Z, 0–9 and _)."));
+        return Err(AppError::rule(
+            "bad_value",
+            "Give the status a value (A–Z, 0–9 and _).",
+        ));
     }
     if RESERVED.iter().any(|r| r.eq_ignore_ascii_case(value)) {
-        return Err(AppError::rule("reserved", format!("{value} is reserved for a default status.")));
+        return Err(AppError::rule(
+            "reserved",
+            format!("{value} is reserved for a default status."),
+        ));
     }
     let exists = conn
-        .query_row("SELECT 1 FROM statuses WHERE value = ?1", [value], |_| Ok(()))
+        .query_row("SELECT 1 FROM statuses WHERE value = ?1", [value], |_| {
+            Ok(())
+        })
         .optional()?
         .is_some();
     if exists {
-        return Err(AppError::rule("value_taken", format!("{value} is already used by another status.")));
+        return Err(AppError::rule(
+            "value_taken",
+            format!("{value} is already used by another status."),
+        ));
     }
     let label = check_label(conn, label, None)?;
     check_color(color)?;
-    let position: i64 = conn.query_row("SELECT max(position) + 1 FROM statuses WHERE value <> ?1", [LAST], |r| r.get(0))?;
+    let position: i64 = conn.query_row(
+        "SELECT max(position) + 1 FROM statuses WHERE value <> ?1",
+        [LAST],
+        |r| r.get(0),
+    )?;
     conn.execute(
         "INSERT INTO statuses (value, label, color, position, is_default) VALUES (?1, ?2, ?3, ?4, 0)",
         params![value, label, color, position],
@@ -104,13 +128,19 @@ fn get(conn: &Connection, value: &str) -> AppResult<Status> {
 
 pub fn rename(conn: &Connection, value: &str, label: &str) -> AppResult<Status> {
     let label = check_label(conn, label, Some(value))?;
-    conn.execute("UPDATE statuses SET label = ?1 WHERE value = ?2", params![label, value])?;
+    conn.execute(
+        "UPDATE statuses SET label = ?1 WHERE value = ?2",
+        params![label, value],
+    )?;
     get(conn, value)
 }
 
 pub fn recolor(conn: &Connection, value: &str, color: &str) -> AppResult<Status> {
     check_color(color)?;
-    conn.execute("UPDATE statuses SET color = ?1 WHERE value = ?2", params![color, value])?;
+    conn.execute(
+        "UPDATE statuses SET color = ?1 WHERE value = ?2",
+        params![color, value],
+    )?;
     get(conn, value)
 }
 
@@ -121,12 +151,21 @@ pub fn reorder(conn: &mut Connection, values: &[String]) -> AppResult<()> {
     same.sort_unstable();
     let mut have: Vec<_> = current.iter().map(|s| s.value.as_str()).collect();
     have.sort_unstable();
-    if same != have || values.first().map(String::as_str) != Some(FIRST) || values.last().map(String::as_str) != Some(LAST) {
-        return Err(AppError::rule("bad_order", "Not started stays first and Done stays last."));
+    if same != have
+        || values.first().map(String::as_str) != Some(FIRST)
+        || values.last().map(String::as_str) != Some(LAST)
+    {
+        return Err(AppError::rule(
+            "bad_order",
+            "Not started stays first and Done stays last.",
+        ));
     }
     let tx = conn.transaction()?;
     for (i, v) in values.iter().enumerate().take(values.len() - 1) {
-        tx.execute("UPDATE statuses SET position = ?1 WHERE value = ?2", params![i as i64, v])?;
+        tx.execute(
+            "UPDATE statuses SET position = ?1 WHERE value = ?2",
+            params![i as i64, v],
+        )?;
     }
     tx.commit()?;
     Ok(())
@@ -136,9 +175,16 @@ pub fn reorder(conn: &mut Connection, values: &[String]) -> AppResult<()> {
 pub fn delete(conn: &Connection, value: &str) -> AppResult<()> {
     let s = get(conn, value)?;
     if s.is_default {
-        return Err(AppError::rule("default", "Default statuses can be renamed, not deleted."));
+        return Err(AppError::rule(
+            "default",
+            "Default statuses can be renamed, not deleted.",
+        ));
     }
-    let used: i64 = conn.query_row("SELECT count(*) FROM tasks WHERE status = ?1", [value], |r| r.get(0))?;
+    let used: i64 = conn.query_row(
+        "SELECT count(*) FROM tasks WHERE status = ?1",
+        [value],
+        |r| r.get(0),
+    )?;
     if used > 0 {
         return Err(AppError::rule(
             "in_use",
@@ -176,7 +222,10 @@ mod tests {
         let conn = open_memory();
         add(&conn, "Waiting", "WAITING", "#d57149").unwrap();
         add(&conn, "In review", "IN_REVIEW", "#6f5ee4").unwrap();
-        assert_eq!(values(&conn), vec!["NOT_STARTED", "IN_PROGRESS", "WAITING", "IN_REVIEW", "DONE"]);
+        assert_eq!(
+            values(&conn),
+            vec!["NOT_STARTED", "IN_PROGRESS", "WAITING", "IN_REVIEW", "DONE"]
+        );
     }
 
     #[test]
@@ -184,8 +233,14 @@ mod tests {
         let conn = open_memory();
         assert_eq!(code(add(&conn, "Ready", "done", "#000000")), "bad_value");
         assert_eq!(code(add(&conn, "Ready", "DONE", "#000000")), "reserved");
-        assert_eq!(code(add(&conn, "Ready", "In_Progress", "#000000")), "bad_value");
-        assert_eq!(code(add(&conn, "not started", "READY", "#000000")), "label_taken");
+        assert_eq!(
+            code(add(&conn, "Ready", "In_Progress", "#000000")),
+            "bad_value"
+        );
+        assert_eq!(
+            code(add(&conn, "not started", "READY", "#000000")),
+            "label_taken"
+        );
         assert_eq!(code(add(&conn, "Ready", "READY", "blue")), "bad_color");
         add(&conn, "Ready", "READY", "#000000").unwrap();
         assert_eq!(code(add(&conn, "Other", "READY", "#000000")), "value_taken");
@@ -195,9 +250,15 @@ mod tests {
     #[test]
     fn rename_and_recolor() {
         let conn = open_memory();
-        assert_eq!(rename(&conn, "NOT_STARTED", "Ready").unwrap().label, "Ready");
+        assert_eq!(
+            rename(&conn, "NOT_STARTED", "Ready").unwrap().label,
+            "Ready"
+        );
         assert_eq!(code(rename(&conn, "IN_PROGRESS", "ready")), "label_taken");
-        assert_eq!(rename(&conn, "IN_PROGRESS", "In Progress").unwrap().label, "In Progress");
+        assert_eq!(
+            rename(&conn, "IN_PROGRESS", "In Progress").unwrap().label,
+            "In Progress"
+        );
         assert_eq!(recolor(&conn, "DONE", "#62d2a2").unwrap().color, "#62d2a2");
     }
 
@@ -206,10 +267,29 @@ mod tests {
         let mut conn = open_memory();
         add(&conn, "Waiting", "WAITING", "#d57149").unwrap();
         let order = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
-        reorder(&mut conn, &order(&["NOT_STARTED", "WAITING", "IN_PROGRESS", "DONE"])).unwrap();
-        assert_eq!(values(&conn), vec!["NOT_STARTED", "WAITING", "IN_PROGRESS", "DONE"]);
-        assert_eq!(code(reorder(&mut conn, &order(&["WAITING", "NOT_STARTED", "IN_PROGRESS", "DONE"]))), "bad_order");
-        assert_eq!(code(reorder(&mut conn, &order(&["NOT_STARTED", "IN_PROGRESS", "DONE"]))), "bad_order");
+        reorder(
+            &mut conn,
+            &order(&["NOT_STARTED", "WAITING", "IN_PROGRESS", "DONE"]),
+        )
+        .unwrap();
+        assert_eq!(
+            values(&conn),
+            vec!["NOT_STARTED", "WAITING", "IN_PROGRESS", "DONE"]
+        );
+        assert_eq!(
+            code(reorder(
+                &mut conn,
+                &order(&["WAITING", "NOT_STARTED", "IN_PROGRESS", "DONE"])
+            )),
+            "bad_order"
+        );
+        assert_eq!(
+            code(reorder(
+                &mut conn,
+                &order(&["NOT_STARTED", "IN_PROGRESS", "DONE"])
+            )),
+            "bad_order"
+        );
     }
 
     #[test]

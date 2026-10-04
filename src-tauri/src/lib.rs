@@ -16,6 +16,7 @@ mod state;
 mod statuses;
 mod tags;
 mod tasks;
+mod timers;
 mod util;
 mod vault;
 mod watcher;
@@ -29,7 +30,11 @@ use crate::error::AppResult;
 use crate::state::{AppState, Vault};
 
 /// Runs once a vault becomes the open vault: index the notes, then watch them.
-fn on_vault_open<R: Runtime>(app: &AppHandle<R>, state: &AppState, vault: &Arc<Vault>) -> AppResult<()> {
+fn on_vault_open<R: Runtime>(
+    app: &AppHandle<R>,
+    state: &AppState,
+    vault: &Arc<Vault>,
+) -> AppResult<()> {
     watcher::rescan(vault)?;
     let app = app.clone();
     let guard = watcher::start(vault.clone(), move |v| {
@@ -42,61 +47,68 @@ fn on_vault_open<R: Runtime>(app: &AppHandle<R>, state: &AppState, vault: &Arc<V
 
 /// App state and every command. Shared by the real app and the IPC tests.
 pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
-    builder.manage(AppState::default()).invoke_handler(tauri::generate_handler![
-        commands::vault_open,
-        commands::vault_restore,
-        commands::vault_current,
-        commands::settings_all,
-        commands::settings_set,
-        commands::skipped_items,
-        commands::notes_tree,
-        commands::notes_rescan,
-        commands::note_read,
-        commands::note_write,
-        commands::note_create,
-        commands::folder_create,
-        commands::item_rename,
-        commands::item_move,
-        commands::item_delete,
-        commands::tags_all,
-        commands::note_tags_set,
-        commands::statuses_list,
-        commands::status_add,
-        commands::status_rename,
-        commands::status_recolor,
-        commands::status_reorder,
-        commands::status_delete,
-        commands::feedback_send,
-        commands::tasks_data,
-        commands::task_get,
-        commands::task_create,
-        commands::task_update,
-        commands::task_move,
-        commands::task_delete,
-        commands::task_tags_set,
-        commands::my_day_set,
-        commands::task_folder_create,
-        commands::task_folder_rename,
-        commands::task_folder_move,
-        commands::task_folder_delete,
-        commands::comments_list,
-        commands::comment_add,
-        commands::comment_edit,
-        commands::attachments_list,
-        commands::attachments_add,
-        commands::attachment_link_note,
-        commands::attachment_unlink,
-        commands::attachment_open,
-        commands::attachment_reveal,
-        commands::people_list,
-        commands::person_create,
-        commands::person_get,
-        commands::person_update,
-        commands::person_delete,
-        commands::contact_add,
-        commands::contact_update,
-        commands::contact_delete,
-    ])
+    builder
+        .manage(AppState::default())
+        .invoke_handler(tauri::generate_handler![
+            commands::vault_open,
+            commands::vault_restore,
+            commands::settings_all,
+            commands::settings_set,
+            commands::skipped_items,
+            commands::notes_tree,
+            commands::notes_rescan,
+            commands::note_read,
+            commands::note_write,
+            commands::note_create,
+            commands::folder_create,
+            commands::item_rename,
+            commands::item_move,
+            commands::item_delete,
+            commands::tags_all,
+            commands::note_tags_set,
+            commands::statuses_list,
+            commands::status_add,
+            commands::status_rename,
+            commands::status_recolor,
+            commands::status_reorder,
+            commands::status_delete,
+            commands::feedback_send,
+            commands::timers_list,
+            commands::timer_start,
+            commands::timer_add_minute,
+            commands::timer_cancel,
+            commands::timer_ring,
+            commands::timers_finished_while_closed,
+            commands::tasks_data,
+            commands::task_get,
+            commands::task_create,
+            commands::task_update,
+            commands::task_move,
+            commands::task_delete,
+            commands::task_tags_set,
+            commands::my_day_set,
+            commands::task_folder_create,
+            commands::task_folder_rename,
+            commands::task_folder_move,
+            commands::task_folder_delete,
+            commands::comments_list,
+            commands::comment_add,
+            commands::comment_edit,
+            commands::attachments_list,
+            commands::attachments_add,
+            commands::attachment_link_note,
+            commands::attachment_unlink,
+            commands::attachment_open,
+            commands::attachment_reveal,
+            commands::people_list,
+            commands::person_create,
+            commands::person_get,
+            commands::person_update,
+            commands::person_delete,
+            commands::contact_add,
+            commands::contact_update,
+            commands::contact_delete,
+        ])
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

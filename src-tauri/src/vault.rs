@@ -37,7 +37,9 @@ fn plural(n: usize, word: &str) -> String {
 }
 
 fn count_files(dir: &Path, ext: Option<&str>) -> usize {
-    let Ok(entries) = fs::read_dir(dir) else { return 0 };
+    let Ok(entries) = fs::read_dir(dir) else {
+        return 0;
+    };
     entries
         .flatten()
         .map(|e| {
@@ -55,11 +57,23 @@ fn count_files(dir: &Path, ext: Option<&str>) -> usize {
 /// Makes sure a directory exists. Returns a step saying whether it was found or created.
 fn ensure_dir(dir: &Path, item: &'static str, found: impl Fn() -> String) -> Result<Step, Step> {
     if dir.is_dir() {
-        return Ok(Step { item, status: StepStatus::Found, detail: format!("found · {}", found()) });
+        return Ok(Step {
+            item,
+            status: StepStatus::Found,
+            detail: format!("found · {}", found()),
+        });
     }
     match fs::create_dir_all(dir) {
-        Ok(()) => Ok(Step { item, status: StepStatus::Created, detail: "created".into() }),
-        Err(e) => Err(Step { item, status: StepStatus::Error, detail: e.to_string() }),
+        Ok(()) => Ok(Step {
+            item,
+            status: StepStatus::Created,
+            detail: "created".into(),
+        }),
+        Err(e) => Err(Step {
+            item,
+            status: StepStatus::Error,
+            detail: e.to_string(),
+        }),
     }
 }
 
@@ -68,8 +82,12 @@ pub fn open(root: &Path) -> (Check, Option<Vault>) {
     let notes = root.join("notes");
     let attachments = root.join(".attachments");
     let dirs = [
-        ensure_dir(&notes, "notes/", || plural(count_files(&notes, Some("md")), "note")),
-        ensure_dir(&attachments, ".attachments/", || plural(count_files(&attachments, None), "file")),
+        ensure_dir(&notes, "notes/", || {
+            plural(count_files(&notes, Some("md")), "note")
+        }),
+        ensure_dir(&attachments, ".attachments/", || {
+            plural(count_files(&attachments, None), "file")
+        }),
     ];
     for result in dirs {
         let failed = result.is_err();
@@ -90,22 +108,37 @@ pub fn open(root: &Path) -> (Check, Option<Vault>) {
                 Opened::Current => (StepStatus::Found, "schema matches".to_string()),
                 Opened::Migrated { to, .. } => (StepStatus::Found, format!("migrated to v{to}")),
             };
-            steps.push(Step { item: "db/app.sqlite", status, detail });
-            (finish(root, steps, true), Some(Vault::new(root.to_path_buf(), conn)))
+            steps.push(Step {
+                item: "db/app.sqlite",
+                status,
+                detail,
+            });
+            (
+                finish(root, steps, true),
+                Some(Vault::new(root.to_path_buf(), conn)),
+            )
         }
         Err(e) => {
             let detail = match e {
                 AppError::IncompatibleDb => "incompatible schema".to_string(),
                 other => other.to_string(),
             };
-            steps.push(Step { item: "db/app.sqlite", status: StepStatus::Error, detail });
+            steps.push(Step {
+                item: "db/app.sqlite",
+                status: StepStatus::Error,
+                detail,
+            });
             (finish(root, steps, false), None)
         }
     }
 }
 
 fn finish(root: &Path, steps: Vec<Step>, ok: bool) -> Check {
-    Check { path: root.to_string_lossy().into_owned(), steps, ok }
+    Check {
+        path: root.to_string_lossy().into_owned(),
+        steps,
+        ok,
+    }
 }
 
 #[cfg(test)]
@@ -158,7 +191,11 @@ mod tests {
         assert!(vault.is_none());
         assert_eq!(check.steps[2].status, StepStatus::Error);
         assert_eq!(check.steps[2].detail, "incompatible schema");
-        assert_eq!(fs::read(&path).unwrap(), before, "incompatible db must not change");
+        assert_eq!(
+            fs::read(&path).unwrap(),
+            before,
+            "incompatible db must not change"
+        );
     }
 
     #[test]
@@ -189,6 +226,9 @@ mod tests {
         fs::write(dir.path().join("db/app.sqlite"), "not a database").unwrap();
         let (check, vault) = open(dir.path());
         assert!(!check.ok && vault.is_none());
-        assert_eq!(fs::read_to_string(dir.path().join("db/app.sqlite")).unwrap(), "not a database");
+        assert_eq!(
+            fs::read_to_string(dir.path().join("db/app.sqlite")).unwrap(),
+            "not a database"
+        );
     }
 }

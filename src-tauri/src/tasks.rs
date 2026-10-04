@@ -53,7 +53,6 @@ pub struct Patch {
     pub order_key: Option<String>,
 }
 
-
 const COLS: &str =
     "id, path, parent_id, title, status, due_date, due_time, assignee_id, order_key, created_at, completed_at";
 
@@ -74,13 +73,21 @@ fn to_task(r: &rusqlite::Row) -> rusqlite::Result<Task> {
 }
 
 pub fn get(conn: &Connection, id: &str) -> AppResult<Task> {
-    conn.query_row(&format!("SELECT {COLS} FROM tasks WHERE id = ?1"), [id], to_task)
-        .optional()?
-        .ok_or_else(|| AppError::NotFound("Task".into()))
+    conn.query_row(
+        &format!("SELECT {COLS} FROM tasks WHERE id = ?1"),
+        [id],
+        to_task,
+    )
+    .optional()?
+    .ok_or_else(|| AppError::NotFound("Task".into()))
 }
 
 pub fn description(conn: &Connection, id: &str) -> AppResult<String> {
-    Ok(conn.query_row("SELECT description FROM tasks WHERE id = ?1", [id], |r| r.get(0))?)
+    Ok(
+        conn.query_row("SELECT description FROM tasks WHERE id = ?1", [id], |r| {
+            r.get(0)
+        })?,
+    )
 }
 
 pub fn data(conn: &Connection, day: &str) -> AppResult<TaskData> {
@@ -96,7 +103,11 @@ pub fn data(conn: &Connection, day: &str) -> AppResult<TaskData> {
         .prepare("SELECT task_id, included FROM my_day WHERE day = ?1")?
         .query_map([day], |r| Ok((r.get(0)?, r.get::<_, i64>(1)? == 1)))?
         .collect::<Result<_, _>>()?;
-    Ok(TaskData { folders, tasks, my_day })
+    Ok(TaskData {
+        folders,
+        tasks,
+        my_day,
+    })
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -104,7 +115,9 @@ pub fn data(conn: &Connection, day: &str) -> AppResult<TaskData> {
 
 fn folder_exists(conn: &Connection, path: &str) -> AppResult<bool> {
     Ok(conn
-        .query_row("SELECT 1 FROM task_folders WHERE path = ?1", [path], |_| Ok(()))
+        .query_row("SELECT 1 FROM task_folders WHERE path = ?1", [path], |_| {
+            Ok(())
+        })
         .optional()?
         .is_some())
 }
@@ -135,7 +148,10 @@ fn ensure_folder(tx: &Transaction, path: &str) -> AppResult<()> {
     let mut cur = String::new();
     for seg in path.split('/').filter(|s| !s.is_empty()) {
         cur = names::join(&cur, seg);
-        tx.execute("INSERT OR IGNORE INTO task_folders (path, created_at) VALUES (?1, ?2)", params![cur, now])?;
+        tx.execute(
+            "INSERT OR IGNORE INTO task_folders (path, created_at) VALUES (?1, ?2)",
+            params![cur, now],
+        )?;
     }
     Ok(())
 }
@@ -151,7 +167,10 @@ pub fn folder_rename(conn: &mut Connection, path: &str, name: &str) -> AppResult
 
 pub fn folder_move(conn: &mut Connection, path: &str, target: &str) -> AppResult<String> {
     if names::is_under(target, path) {
-        return Err(AppError::rule("into_self", "A folder can’t move into itself"));
+        return Err(AppError::rule(
+            "into_self",
+            "A folder can’t move into itself",
+        ));
     }
     if names::parent(path) == target {
         return Err(AppError::rule("same_folder", "It’s already in that folder"));
@@ -238,7 +257,10 @@ pub fn update(conn: &Connection, id: &str, patch: &Patch) -> AppResult<Task> {
         if title.trim().is_empty() {
             return Err(AppError::rule("empty_title", "A task needs a title"));
         }
-        conn.execute("UPDATE tasks SET title = ?1 WHERE id = ?2", params![title.trim(), id])?;
+        conn.execute(
+            "UPDATE tasks SET title = ?1 WHERE id = ?2",
+            params![title.trim(), id],
+        )?;
     }
     if let Some(status) = &patch.status {
         conn.execute(
@@ -249,21 +271,39 @@ pub fn update(conn: &Connection, id: &str, patch: &Patch) -> AppResult<Task> {
         )?;
     }
     if let Some(text) = &patch.description {
-        conn.execute("UPDATE tasks SET description = ?1 WHERE id = ?2", params![text, id])?;
+        conn.execute(
+            "UPDATE tasks SET description = ?1 WHERE id = ?2",
+            params![text, id],
+        )?;
     }
     if let Some(due) = &patch.due_date {
-        conn.execute("UPDATE tasks SET due_date = ?1 WHERE id = ?2", params![due, id])?;
+        conn.execute(
+            "UPDATE tasks SET due_date = ?1 WHERE id = ?2",
+            params![due, id],
+        )?;
     }
     if let Some(time) = &patch.due_time {
-        conn.execute("UPDATE tasks SET due_time = ?1 WHERE id = ?2", params![time, id])?;
+        conn.execute(
+            "UPDATE tasks SET due_time = ?1 WHERE id = ?2",
+            params![time, id],
+        )?;
     }
     if let Some(who) = &patch.assignee_id {
-        conn.execute("UPDATE tasks SET assignee_id = ?1 WHERE id = ?2", params![who, id])?;
+        conn.execute(
+            "UPDATE tasks SET assignee_id = ?1 WHERE id = ?2",
+            params![who, id],
+        )?;
     }
     if let Some(key) = &patch.order_key {
-        conn.execute("UPDATE tasks SET order_key = ?1 WHERE id = ?2", params![key, id])?;
+        conn.execute(
+            "UPDATE tasks SET order_key = ?1 WHERE id = ?2",
+            params![key, id],
+        )?;
     }
-    conn.execute("UPDATE tasks SET updated_at = ?1 WHERE id = ?2", params![now, id])?;
+    conn.execute(
+        "UPDATE tasks SET updated_at = ?1 WHERE id = ?2",
+        params![now, id],
+    )?;
     get(conn, id)
 }
 
@@ -299,7 +339,10 @@ pub fn set_my_day(conn: &Connection, id: &str, day: &str, included: Option<bool>
              ON CONFLICT(task_id, day) DO UPDATE SET included = excluded.included",
             params![id, day, inc as i64],
         )?,
-        None => conn.execute("DELETE FROM my_day WHERE task_id = ?1 AND day = ?2", params![id, day])?,
+        None => conn.execute(
+            "DELETE FROM my_day WHERE task_id = ?1 AND day = ?2",
+            params![id, day],
+        )?,
     };
     Ok(())
 }
@@ -310,7 +353,12 @@ mod tests {
     use crate::db::open_memory;
 
     fn ids(conn: &Connection) -> Vec<String> {
-        data(conn, "2026-10-04").unwrap().tasks.into_iter().map(|t| t.title).collect()
+        data(conn, "2026-10-04")
+            .unwrap()
+            .tasks
+            .into_iter()
+            .map(|t| t.title)
+            .collect()
     }
 
     #[test]
@@ -329,7 +377,15 @@ mod tests {
         let a = create(&mut conn, "", "A", None, None, None).unwrap();
         let b = create(&mut conn, "", "B", None, None, None).unwrap();
         let after_a = crate::order::between(Some(&a.order_key), None);
-        update(&conn, &b.id, &Patch { order_key: Some(after_a), ..Default::default() }).unwrap();
+        update(
+            &conn,
+            &b.id,
+            &Patch {
+                order_key: Some(after_a),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         assert_eq!(ids(&conn), vec!["A", "B"]);
         assert_eq!(get(&conn, &a.id).unwrap().order_key, a.order_key);
     }
@@ -338,9 +394,25 @@ mod tests {
     fn done_sets_and_clears_completed_at() {
         let mut conn = open_memory();
         let t = create(&mut conn, "", "A", None, None, None).unwrap();
-        let done = update(&conn, &t.id, &Patch { status: Some(DONE.into()), ..Default::default() }).unwrap();
+        let done = update(
+            &conn,
+            &t.id,
+            &Patch {
+                status: Some(DONE.into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         assert!(done.completed_at.is_some());
-        let back = update(&conn, &t.id, &Patch { status: Some("IN_PROGRESS".into()), ..Default::default() }).unwrap();
+        let back = update(
+            &conn,
+            &t.id,
+            &Patch {
+                status: Some("IN_PROGRESS".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         assert!(back.completed_at.is_none());
     }
 
@@ -348,12 +420,19 @@ mod tests {
     fn patch_clears_optional_fields_with_null() {
         let mut conn = open_memory();
         let t = create(&mut conn, "", "A", None, None, None).unwrap();
-        let p: Patch = serde_json::from_str(r#"{"dueDate":"2026-10-10","dueTime":"17:30"}"#).unwrap();
+        let p: Patch =
+            serde_json::from_str(r#"{"dueDate":"2026-10-10","dueTime":"17:30"}"#).unwrap();
         let t2 = update(&conn, &t.id, &p).unwrap();
-        assert_eq!((t2.due_date.as_deref(), t2.due_time.as_deref()), (Some("2026-10-10"), Some("17:30")));
+        assert_eq!(
+            (t2.due_date.as_deref(), t2.due_time.as_deref()),
+            (Some("2026-10-10"), Some("17:30"))
+        );
         let p: Patch = serde_json::from_str(r#"{"dueTime":null}"#).unwrap();
         let t3 = update(&conn, &t.id, &p).unwrap();
-        assert_eq!((t3.due_date.as_deref(), t3.due_time), (Some("2026-10-10"), None));
+        assert_eq!(
+            (t3.due_date.as_deref(), t3.due_time),
+            (Some("2026-10-10"), None)
+        );
     }
 
     #[test]
@@ -366,8 +445,14 @@ mod tests {
         assert_eq!(d.folders, vec!["job", "job/tend_v0_1", "work_x"]);
         let paths: Vec<_> = d.tasks.iter().map(|t| t.path.as_str()).collect();
         assert!(paths.contains(&"job/tend_v0_1") && paths.contains(&"work_x"));
-        assert!(folder_rename(&mut conn, "job", "work_x").is_err(), "name clash");
-        assert!(folder_move(&mut conn, "job", "job/tend_v0_1").is_err(), "into itself");
+        assert!(
+            folder_rename(&mut conn, "job", "work_x").is_err(),
+            "name clash"
+        );
+        assert!(
+            folder_move(&mut conn, "job", "job/tend_v0_1").is_err(),
+            "into itself"
+        );
     }
 
     #[test]
@@ -397,9 +482,15 @@ mod tests {
         let mut conn = open_memory();
         let t = create(&mut conn, "", "A", None, None, None).unwrap();
         set_my_day(&conn, &t.id, "2026-10-04", Some(true)).unwrap();
-        assert_eq!(data(&conn, "2026-10-04").unwrap().my_day, vec![(t.id.clone(), true)]);
+        assert_eq!(
+            data(&conn, "2026-10-04").unwrap().my_day,
+            vec![(t.id.clone(), true)]
+        );
         set_my_day(&conn, &t.id, "2026-10-04", Some(false)).unwrap();
-        assert_eq!(data(&conn, "2026-10-04").unwrap().my_day, vec![(t.id.clone(), false)]);
+        assert_eq!(
+            data(&conn, "2026-10-04").unwrap().my_day,
+            vec![(t.id.clone(), false)]
+        );
         set_my_day(&conn, &t.id, "2026-10-04", None).unwrap();
         assert!(data(&conn, "2026-10-04").unwrap().my_day.is_empty());
         assert!(data(&conn, "2026-10-05").unwrap().my_day.is_empty());

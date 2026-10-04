@@ -16,7 +16,11 @@ pub struct Vault {
 
 impl Vault {
     pub fn new(root: PathBuf, conn: Connection) -> Self {
-        Vault { root, conn: Mutex::new(conn), skipped: Mutex::default() }
+        Vault {
+            root,
+            conn: Mutex::new(conn),
+            skipped: Mutex::default(),
+        }
     }
 
     pub fn db(&self) -> MutexGuard<'_, Connection> {
@@ -25,7 +29,10 @@ impl Vault {
     }
 
     pub fn skipped(&self) -> Vec<String> {
-        self.skipped.lock().unwrap_or_else(|e| e.into_inner()).clone()
+        self.skipped
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .clone()
     }
 
     pub fn set_skipped(&self, items: Vec<String>) {

@@ -19,7 +19,9 @@ pub fn new_id() -> String {
 pub mod nullable {
     use serde::{Deserialize, Deserializer};
 
-    pub fn deserialize<'de, D: Deserializer<'de>, T: Deserialize<'de>>(d: D) -> Result<Option<Option<T>>, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>, T: Deserialize<'de>>(
+        d: D,
+    ) -> Result<Option<Option<T>>, D::Error> {
         Option::<T>::deserialize(d).map(Some)
     }
 }

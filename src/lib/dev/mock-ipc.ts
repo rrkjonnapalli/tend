@@ -50,11 +50,14 @@ const tasks = [
   task('notes', 'work', 'Write release notes', 'j', { status: 'DONE' }),
   task('milk', 'home', 'Buy milk', 'k'),
 ];
+const timerList = [
+  { id: 'tea', title: 'Tea', endsAt: now + 271_000 },
+  { id: 'motor', title: 'Turn off the motor', endsAt: now + 545_000 },
+];
 const taskFolders = ['home', 'inbox', 'work', 'work/infra', 'work/tend_v0_1'];
 
 const handlers: Record<string, Handler> = {
   vault_restore: () => (withVault ? '/Users/demo/Tend' : null),
-  vault_current: () => (withVault ? '/Users/demo/Tend' : null),
   vault_open: ({ path }) => ({
     path,
     ok: true,
@@ -77,6 +80,16 @@ const handlers: Record<string, Handler> = {
   },
   note_tags_set: ({ id, tags }) => (noteTags[id as string] = tags as string[]),
   statuses_list: () => statuses,
+  timers_list: () => timerList,
+  timers_finished_while_closed: () => [],
+  timer_start: ({ title, ms }) => {
+    const t = { id: `t${Date.now()}`, title: title as string, endsAt: Date.now() + (ms as number) };
+    timerList.push(t);
+    return t;
+  },
+  timer_ring: () => null,
+  timer_cancel: ({ id }) => timerList.splice(timerList.findIndex((t) => t.id === id), 1),
+  timer_add_minute: () => null,
   skipped_items: () => ['Bad Name.md', 'My Folder/'],
   feedback_send: () => null,
   tasks_data: () => ({ folders: taskFolders, tasks, myDay: [] }),

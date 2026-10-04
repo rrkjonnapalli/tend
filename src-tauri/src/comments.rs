@@ -61,7 +61,10 @@ mod tests {
         add(&conn, &t.id, "second").unwrap();
         assert!(add(&conn, &t.id, "  ").is_err());
         let all = list(&conn, &t.id).unwrap();
-        assert_eq!(all.iter().map(|c| c.body.as_str()).collect::<Vec<_>>(), vec!["second", "first"]);
+        assert_eq!(
+            all.iter().map(|c| c.body.as_str()).collect::<Vec<_>>(),
+            vec!["second", "first"]
+        );
         edit(&conn, &all[1].id, "first, edited").unwrap();
         let again = list(&conn, &t.id).unwrap();
         assert_eq!(again[1].body, "first, edited");

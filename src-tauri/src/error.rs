@@ -27,7 +27,10 @@ pub enum AppError {
 
 impl AppError {
     pub fn rule(code: &'static str, message: impl Into<String>) -> Self {
-        AppError::Rule { code, message: message.into() }
+        AppError::Rule {
+            code,
+            message: message.into(),
+        }
     }
 
     pub fn code(&self) -> &'static str {

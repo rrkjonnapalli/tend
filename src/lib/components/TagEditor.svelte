@@ -36,7 +36,7 @@
     onchange([...tags, v]);
   }
 
-  function start() {
+  export function start() {
     adding = true;
     draft = '';
     hi = 0;
