@@ -91,14 +91,14 @@
           <div class="row editing">
             <InlineTitle value={n.name} label="Note name" check={(name) => renameProblem(n, name)} onsave={(name) => rename(n, name)} oncancel={stopEditing} />
             <span></span>
-            <span class="meta right">{ago(n.modifiedAt)}</span>
+            <span class="meta">{ago(n.modifiedAt)}</span>
             <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>
           </div>
         {:else}
           <a class="row reveal-on-hover" href={routes.note(n.id)}>
             <span class="name">{n.name}</span>
             <EditButton label="Rename note" onedit={() => (editingId = n.id)} />
-            <span class="meta right">{ago(n.modifiedAt)}</span>
+            <span class="meta">{ago(n.modifiedAt)}</span>
             <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>
           </a>
         {/if}
@@ -158,9 +158,9 @@
   .row {
     display: grid;
     /* name | edit · modified · path */
-    grid-template-columns: minmax(0, 1fr) 24px 72px 160px;
+    grid-template-columns: minmax(0, 1fr) var(--col-edit) var(--col-date) var(--col-path);
     align-items: center;
-    gap: 12px;
+    column-gap: var(--col-gap);
     min-height: 36px;
     padding: 0 16px;
     margin: 0 -16px;
@@ -195,9 +195,6 @@
     white-space: nowrap;
   }
 
-  .right {
-    text-align: right;
-  }
 
   .empty {
     padding-top: 8px;

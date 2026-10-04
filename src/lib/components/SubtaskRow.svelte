@@ -60,7 +60,7 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--col-gap);
     min-height: 32px;
     padding: 0 16px 0 32px;
     margin: 0 -16px 0 -32px;
@@ -82,13 +82,13 @@
 
   /* A fixed slot, so the edit pencil sits at the same spot with or without "+ my day". */
   .md {
-    flex: 0 0 64px;
+    flex: 0 0 var(--col-myday);
     display: flex;
-    justify-content: flex-end;
   }
 
   .st {
     flex: 1;
+    margin-left: 6px;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

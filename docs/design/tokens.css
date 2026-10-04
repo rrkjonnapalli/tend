@@ -110,4 +110,12 @@
   --content-w: 760px;      /* note/task page narrow width */
   --bottom-nav-h: 44px;
   --row-h: 32px;
+
+  /* list rows: fixed right-hand columns, so they line up on every row */
+  --col-gap: 6px;
+  --col-edit: 24px;
+  --col-myday: 64px;
+  --col-count: 36px;
+  --col-date: 64px;       /* due, or modified on notes */
+  --col-path: 80px;
 }

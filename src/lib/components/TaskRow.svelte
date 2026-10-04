@@ -1,6 +1,6 @@
 <script lang="ts">
   // One task in a list. Left: status dot · type badge · title. Right, each a fixed width so they
-  // line up on every row: edit · subtask count · due · My day · path (cut off with a tooltip).
+  // line up on every row: edit · My day · subtask count · due · path (cut off with a tooltip).
   import type { Task } from '#lib/types/task.type.ts';
   import StatusSelect from './StatusSelect.svelte';
   import Grip from './Grip.svelte';
@@ -54,9 +54,9 @@
     </button>
   {/if}
   <span class="ed">{#if !editing}<EditButton label="Edit title" onedit={() => (editing = true)} />{/if}</span>
+  <span class="md"><MyDayButton {task} /></span>
   <span class="meta count">{tasks.subtaskCount(task.id)}</span>
   <span class="due" class:warn={isOverdue(task, now)}>{task.dueDate ? dueLabel(task.dueDate) : ''}</span>
-  <span class="md"><MyDayButton {task} /></span>
   <span class="meta path" use:overflowTitle>{relativeTo(task.path, folder)}</span>
 </div>
 
@@ -64,10 +64,10 @@
   .row {
     position: relative;
     display: grid;
-    /* dot · title | edit · count · due · My day · path */
-    grid-template-columns: 8px minmax(0, 1fr) 24px 40px 72px 72px 160px;
+    /* dot · title | edit · My day · count · due · path */
+    grid-template-columns: 8px minmax(0, 1fr) var(--col-edit) var(--col-myday) var(--col-count) var(--col-date) var(--col-path);
     align-items: center;
-    gap: 12px;
+    column-gap: var(--col-gap);
     min-height: 36px;
     padding: 0 16px;
     margin: 0 -16px;
@@ -95,6 +95,7 @@
 
   .title {
     min-width: 0;
+    margin-left: 6px;
     height: 36px;
     padding: 0;
     border: 0;
@@ -121,10 +122,6 @@
     color: var(--c-muted-2);
   }
 
-  .count {
-    text-align: right;
-  }
-
   .path {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -134,7 +131,6 @@
   .due {
     font: 400 13px/18px var(--font-ui);
     color: var(--c-muted-2);
-    text-align: right;
   }
 
   .due.warn {
@@ -142,7 +138,7 @@
   }
 
   .md {
-    text-align: right;
+    display: flex;
   }
 
 </style>
