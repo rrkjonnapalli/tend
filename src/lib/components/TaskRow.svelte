@@ -1,12 +1,13 @@
 <script lang="ts">
   // One task in a list. Left: status dot · type badge · title. Right, each a fixed width so they
-  // line up on every row: edit · My day · subtask count · due · path (cut off with a tooltip).
+  // line up on every row: edit · My day · subtask count · due · assignee · path (cut off, tooltip).
   import type { Task } from '#lib/types/task.type.ts';
   import StatusSelect from './StatusSelect.svelte';
   import Grip from './Grip.svelte';
   import SubtaskMark from './SubtaskMark.svelte';
   import EditButton from './EditButton.svelte';
   import InlineTitle from './InlineTitle.svelte';
+  import AssigneeBadge from './AssigneeBadge.svelte';
   import { overflowTitle } from '#lib/actions/overflow-title.action.ts';
   import MyDayButton from './MyDayButton.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
@@ -57,6 +58,7 @@
   <span class="md"><MyDayButton {task} /></span>
   <span class="meta count">{tasks.subtaskCount(task.id)}</span>
   <span class="due" class:warn={isOverdue(task, now)}>{task.dueDate ? dueLabel(task.dueDate) : ''}</span>
+  <span class="who"><AssigneeBadge value={task.assigneeId} onchange={(assigneeId) => tasks.update(task.id, { assigneeId })} /></span>
   <span class="meta path" use:overflowTitle>{relativeTo(task.path, folder)}</span>
 </div>
 
@@ -64,7 +66,7 @@
   .row {
     position: relative;
     display: grid;
-    /* dot · title | edit · My day · count · due · path */
+    /* dot · title | edit · My day · count · due · assignee · path */
     grid-template-columns: var(--grid-task);
     align-items: center;
     column-gap: var(--col-gap);
@@ -136,7 +138,8 @@
     color: var(--c-overdue);
   }
 
-  .md {
+  .md,
+  .who {
     display: flex;
   }
 

@@ -19,6 +19,7 @@
   import TaskBoard from '#lib/components/TaskBoard.svelte';
   import Icon from '#lib/components/Icon.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
+  import { people } from '#lib/stores/people.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { defaultView, isDone, isManual, viewCounts, viewTasks } from '#lib/util/task-views.ts';
   import { droppedKey, inPreviewOrder } from '#lib/util/task-order.ts';
@@ -26,6 +27,9 @@
   import { startReorder } from '#lib/util/reorder.ts';
   import { plural } from '#lib/util/plural.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
+
+  // Assignee badges need the people list.
+  people.load();
 
   const VIEWS: [View, string][] = [
     ['myday', 'My day'],
@@ -35,8 +39,8 @@
   ];
   /** Views with an "add task" field; a task added in My day joins today's My day. */
   const ADD_VIEWS: View[] = ['myday', 'all'];
-  /** Titles over the list columns: dot · title | edit · My day · count · due · folder. */
-  const COLUMNS = ['', 'Title', '', 'My day', 'Subs', 'Due', 'Folder'];
+  /** Titles over the list columns: dot · title | edit · My day · count · due · assignee · folder. */
+  const COLUMNS = ['', 'Title', '', 'My day', 'Subs', 'Due', 'Who', 'Folder'];
   const EMPTY: Record<View, string> = {
     all: 'No tasks here yet',
     overdue: 'Nothing overdue',

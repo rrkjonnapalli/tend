@@ -2,8 +2,7 @@
   // The assignee: a person chip with a red ✕, or "+ assign" which opens a people search.
   import Icon from './Icon.svelte';
   import Avatar from './Avatar.svelte';
-  import Popover from './Popover.svelte';
-  import SearchPicker from './SearchPicker.svelte';
+  import PeoplePicker from './PeoplePicker.svelte';
   import { displayName } from '#lib/util/people.ts';
   import type { PersonRow } from '#lib/types/person.type.ts';
   import { people } from '#lib/stores/people.svelte.ts';
@@ -14,13 +13,6 @@
   let open = $state(false);
   let anchor = $state<HTMLElement>();
   const person = $derived(people.byId(value));
-
-  /** True when the query is empty or any of the person's names, email or phone contains it. */
-  function match(p: PersonRow, q: string): boolean {
-    if (!q) return true;
-    const fields = [displayName(p), p.firstName, p.lastName, p.email ?? '', p.phone ?? ''];
-    return fields.some((s) => s.toLowerCase().includes(q));
-  }
 
   function pick(p: PersonRow) {
     open = false;
@@ -40,13 +32,7 @@
   {/if}
 </span>
 {#if open}
-  <Popover {anchor} onclose={() => (open = false)}>
-    <SearchPicker items={people.people} {match} onpick={pick} placeholder="Search people…" label="People" empty="No people yet">
-      {#snippet row(p)}
-        <Avatar person={p} size={18} />{displayName(p)}<span class="sub">{p.email ?? p.phone ?? ''}</span>
-      {/snippet}
-    </SearchPicker>
-  </Popover>
+  <PeoplePicker {anchor} onpick={pick} onclose={() => (open = false)} />
 {/if}
 
 <style>
