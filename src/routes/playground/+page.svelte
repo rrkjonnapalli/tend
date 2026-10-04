@@ -1,6 +1,5 @@
 <script lang="ts">
   // Dev only: every shared component with sample data, for checking states against the mockups.
-  import { goto } from '$app/navigation';
   import Explorer, { type ExplorerItem, type Leaf } from '#lib/components/Explorer.svelte';
   import Section from '#lib/components/Section.svelte';
   import MarkdownField from '#lib/components/MarkdownField.svelte';
@@ -12,8 +11,9 @@
   import { tagPool } from '#lib/stores/tags.svelte.ts';
   import { baseOf, isUnder, join, parentOf } from '#lib/util/names.ts';
   import { today } from '#lib/util/dates.ts';
+  import { nav } from '#lib/stores/history.svelte.ts';
 
-  if (!import.meta.env.DEV) goto('/notes', { replace: true });
+  if (!import.meta.env.DEV) nav.replace('/notes');
   tagPool.names = ['ci', 'docs', 'home', 'reading', 'release', 'tauri', 'ui', 'v0.1'];
 
   let folders = $state(['home', 'home/recipes', 'inbox', 'work', 'work/meetings', 'work/tend_v0_1']);

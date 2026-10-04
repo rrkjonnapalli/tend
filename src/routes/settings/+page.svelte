@@ -8,6 +8,7 @@
   import { commands, type CommandGroup } from '#lib/commands.ts';
   import { keyParts } from '#lib/util/keys.ts';
   import { plural } from '#lib/util/plural.ts';
+  import { nav } from '#lib/stores/history.svelte.ts';
 
   const sections = [
     { id: 'general', label: 'General', sub: 'App-wide preferences.' },
@@ -36,7 +37,7 @@
   });
 
   function show(id: string) {
-    goto(`/settings?s=${id}`, { replace: true });
+    nav.replace(`/settings?s=${id}`);
   }
 </script>
 

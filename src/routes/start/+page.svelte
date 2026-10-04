@@ -1,11 +1,11 @@
 <script lang="ts">
   import { open } from '@tauri-apps/plugin-dialog';
-  import { goto } from '$app/navigation';
   import Icon from '#lib/components/Icon.svelte';
   import { vaultApi, type Check } from '#lib/api/vault.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
   import { isMac } from '#lib/util/keys.ts';
+  import { nav } from '#lib/stores/history.svelte.ts';
 
   const mod = isMac ? '⌘' : 'Ctrl';
   const STEP_MS = 450;
@@ -45,7 +45,7 @@
   async function enter() {
     if (!check) return;
     await vault.opened(check.path);
-    goto('/notes', { replace: true });
+    nav.replace('/notes');
   }
 
   const examples = [

@@ -1,7 +1,7 @@
 <script lang="ts">
   // Note page: sticky bar (back, breadcrumb, width, read/edit), tags, then the note itself.
   // Edits autosave to disk ~500 ms after typing stops, and on blur or leaving the page.
-  import { beforeNavigate, goto } from '$app/navigation';
+  import { beforeNavigate } from '$app/navigation';
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
   import Breadcrumbs, { type Crumb } from '#lib/components/Breadcrumbs.svelte';
@@ -17,6 +17,7 @@
   import { label as keyLabel } from '#lib/util/keys.ts';
   import { pageActions } from '#lib/stores/page-actions.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { nav } from '#lib/stores/history.svelte.ts';
 
   const SAVE_MS = 500;
 
@@ -122,7 +123,7 @@
 
 <main class="main">
   <div class="bar">
-    <button class="icon-btn sm back" aria-label="Back to list" title="Back" onclick={() => goto(routes.notesFolder(row?.folder ?? ''))}>
+    <button class="icon-btn sm back" aria-label="Back" title="Back" onclick={() => nav.back(routes.notesFolder(row?.folder ?? ''))}>
       <Icon name="back" size={13} />
     </button>
     <Breadcrumbs {crumbs} />

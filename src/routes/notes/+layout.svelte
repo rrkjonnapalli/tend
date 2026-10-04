@@ -8,6 +8,7 @@
   import { baseOf, isUnder, join, parentOf } from '#lib/util/names.ts';
   import { plural } from '#lib/util/plural.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { nav } from '#lib/stores/history.svelte.ts';
 
   let { children }: { children: Snippet } = $props();
 
@@ -22,7 +23,7 @@
 
   /** After a folder moves, a list open inside it follows it to the new path. */
   function follow(oldPath: string, newPath: string) {
-    if (!noteId && isUnder(folder, oldPath)) goto(routes.notesFolder(newPath + folder.slice(oldPath.length)), { replace: true });
+    if (!noteId && isUnder(folder, oldPath)) nav.replace(routes.notesFolder(newPath + folder.slice(oldPath.length)));
   }
 
   const actions = {
@@ -44,9 +45,9 @@
       const gone = item.kind === 'folder' ? item.path : null;
       const noteFolder = item.kind === 'leaf' ? notes.byId(item.id)?.folder ?? '' : '';
       await notes.remove(toApi(item));
-      if (item.kind === 'leaf' && item.id === noteId) goto(routes.notesFolder(noteFolder), { replace: true });
-      if (gone !== null && !noteId && isUnder(folder, gone)) goto(routes.notesFolder(parentOf(gone)), { replace: true });
-      if (gone !== null && noteId && isUnder(notes.byId(noteId)?.folder ?? '', gone)) goto(routes.notesFolder(parentOf(gone)), { replace: true });
+      if (item.kind === 'leaf' && item.id === noteId) nav.back(routes.notesFolder(noteFolder));
+      if (gone !== null && !noteId && isUnder(folder, gone)) nav.replace(routes.notesFolder(parentOf(gone)));
+      if (gone !== null && noteId && isUnder(notes.byId(noteId)?.folder ?? '', gone)) nav.replace(routes.notesFolder(parentOf(gone)));
     },
     reload: () => notes.rescan(),
     contents: (path: string) => {

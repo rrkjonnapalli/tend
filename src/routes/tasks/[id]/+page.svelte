@@ -33,6 +33,7 @@
   import { hasLayers } from '#lib/util/layers.ts';
   import { plural } from '#lib/util/plural.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { nav } from '#lib/stores/history.svelte.ts';
 
   people.load();
 
@@ -116,7 +117,7 @@
 
   function back() {
     if (!task) return;
-    goto(task.parentId ? routes.task(task.parentId) : routes.tasksFolder(task.path));
+    nav.back(task.parentId ? routes.task(task.parentId) : routes.tasksFolder(task.path));
   }
 
   // ---- My day, tags, description
@@ -204,7 +205,7 @@
     const to = task.parentId ? routes.task(task.parentId) : routes.tasksFolder(task.path);
     await tasks.remove(id);
     toast.show(`Deleted ${task.title}`);
-    goto(to, { replace: true });
+    nav.back(to);
   }
 
   let statusSelect = $state<StatusSelect>();

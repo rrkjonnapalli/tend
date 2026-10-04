@@ -8,6 +8,7 @@
   import { isUnder, join, parentOf } from '#lib/util/names.ts';
   import { plural } from '#lib/util/plural.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { nav } from '#lib/stores/history.svelte.ts';
 
   let { children }: { children: Snippet } = $props();
 
@@ -20,7 +21,7 @@
   const selected = $derived<ExplorerItem>({ kind: 'folder', path: taskId ? (tasks.byId(taskId)?.path ?? '') : folder });
 
   function follow(oldPath: string, newPath: string) {
-    if (!taskId && isUnder(folder, oldPath)) goto(routes.tasksFolder(newPath + folder.slice(oldPath.length)), { replace: true });
+    if (!taskId && isUnder(folder, oldPath)) nav.replace(routes.tasksFolder(newPath + folder.slice(oldPath.length)));
   }
 
   const actions = {
@@ -38,7 +39,7 @@
     remove: async (item: ExplorerItem) => {
       if (item.kind !== 'folder') return;
       await tasks.removeFolder(item.path);
-      if (!taskId && isUnder(folder, item.path)) goto(routes.tasksFolder(parentOf(item.path)), { replace: true });
+      if (!taskId && isUnder(folder, item.path)) nav.replace(routes.tasksFolder(parentOf(item.path)));
     },
     reload: () => tasks.load(),
     contents: (path: string) => {

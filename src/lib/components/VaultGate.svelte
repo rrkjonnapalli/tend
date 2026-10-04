@@ -1,8 +1,8 @@
 <script lang="ts">
   // What the window shows before the app: "Opening vault…" while launch waits (for example on
   // macOS asking for folder access), or why the remembered vault couldn't be opened.
-  import { goto } from '$app/navigation';
   import { vault } from '#lib/stores/vault.svelte.ts';
+  import { nav } from '#lib/stores/history.svelte.ts';
 
   /** Fast launches skip the loading line entirely. */
   const SHOW_AFTER_MS = 300;
@@ -16,7 +16,7 @@
 
   function chooseAnother() {
     vault.dismiss();
-    goto('/start', { replace: true });
+    nav.replace('/start');
   }
 </script>
 

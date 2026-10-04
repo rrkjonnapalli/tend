@@ -1,6 +1,5 @@
 <script lang="ts">
   // Task folder list: views (All · Overdue · My day · Upcoming · date range), then the rows.
-  import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Breadcrumbs, { type Crumb } from '#lib/components/Breadcrumbs.svelte';
   import DateField, { type Range } from '#lib/components/DateField.svelte';
@@ -17,6 +16,7 @@
   import { baseOf } from '#lib/util/names.ts';
   import { plural } from '#lib/util/plural.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { nav } from '#lib/stores/history.svelte.ts';
 
   const VIEWS: [View, string][] = [
     ['all', 'All'],
@@ -59,7 +59,7 @@
   function setView(v: View, extra: Record<string, string> = {}) {
     const q = new URLSearchParams({ ...(folder ? { f: folder } : {}), ...(v === 'all' ? {} : { v }), ...extra });
     const s = q.toString();
-    goto(`/tasks${s ? `?${s}` : ''}`, { replace: true });
+    nav.replace(`/tasks${s ? `?${s}` : ''}`);
   }
 
   function grab(e: PointerEvent, id: string) {

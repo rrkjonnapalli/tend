@@ -19,6 +19,7 @@
   import { birthdayHint, dobOf } from '#lib/util/birthdays.ts';
   import { isDone } from '#lib/util/task-views.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { nav } from '#lib/stores/history.svelte.ts';
 
   tasks.load();
 
@@ -116,7 +117,7 @@
     await peopleApi.remove(id);
     await Promise.all([people.load(), tasks.load()]);
     toast.show(`Deleted ${person ? displayName(person) : ''}`);
-    goto('/people', { replace: true });
+    nav.back('/people');
   }
 </script>
 
@@ -124,7 +125,7 @@
   {#if person}
     <div class="page">
       <div class="bar caption">
-        <button class="icon-btn sm back" aria-label="Back to people" title="Back" onclick={() => goto('/people')}><Icon name="back" size={13} /></button>
+        <button class="icon-btn sm back" aria-label="Back" title="Back" onclick={() => nav.back('/people')}><Icon name="back" size={13} /></button>
         <Breadcrumbs crumbs={[{ label: 'People', href: '/people' }, { label: displayName(person) }]} />
         <span class="grow"></span>
         <button class="icon-btn sm danger" aria-label="Delete person" title="Delete" onclick={() => (deleting = true)}><Icon name="trash" size={13} /></button>

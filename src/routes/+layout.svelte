@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { afterNavigate } from '$app/navigation';
   import '#lib/styles/app.css';
   import type { Snippet } from 'svelte';
-  import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import VaultGate from '#lib/components/VaultGate.svelte';
   import BottomNav from '#lib/components/BottomNav.svelte';
@@ -15,6 +15,7 @@
   import { available, blocked, commands } from '#lib/commands.ts';
   import { matches } from '#lib/util/keys.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
+  import { nav } from '#lib/stores/history.svelte.ts';
 
   let { children }: { children: Snippet } = $props();
 
@@ -22,11 +23,13 @@
   const path = $derived(page.url.pathname || '/');
   const onStart = $derived(path === '/start');
 
+  afterNavigate(nav.record);
+
   // Once launch is settled: no vault → start page; "/" → Notes.
   $effect(() => {
     if (!vault.ready || vault.problem) return;
-    if (!vault.path && !onStart) goto('/start', { replace: true });
-    else if (vault.path && path === '/') goto('/notes', { replace: true });
+    if (!vault.path && !onStart) nav.replace('/start');
+    else if (vault.path && path === '/') nav.replace('/notes');
   });
 
   // Timers run as soon as a vault is open, whichever page is showing.
