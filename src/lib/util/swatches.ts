@@ -24,6 +24,9 @@ export const SWATCHES: [string, string][] = [
   ['Brown', '#8d6e63'],
 ];
 
+/** True for a `#rrggbb` color, the form the database stores. */
+export const isHexColor = (text: string) => /^#[0-9a-f]{6}$/i.test(text);
+
 /** The first swatch the list doesn't use yet, or the first swatch when all are taken. */
 export function freeSwatch(usedColors: string[]): string {
   const used = new Set(usedColors);
