@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // A list page's search line: one row under the page bar, the field at the right end.
   // While it's on screen, ⌘L (the "page.search" action) focuses it.
   import Icon from './Icon.svelte';
@@ -28,7 +29,7 @@
 <div class="line">
   <label class="search">
     <span class="ic"><Icon name="search" size={14} /></span>
-    <input bind:this={input} aria-label={label} {placeholder} bind:value />
+    <input use:plainText bind:this={input} aria-label={label} {placeholder} bind:value />
   </label>
 </div>
 

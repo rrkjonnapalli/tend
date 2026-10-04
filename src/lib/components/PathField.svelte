@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // A folder path input with suggestions as you type. Tab or Enter takes the highlighted one.
   import { cleanPath } from '#lib/util/names.ts';
   import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
@@ -54,6 +55,7 @@
 
 <span class="wrap">
   <input
+    use:plainText
     class="path"
     aria-label={label}
     placeholder="top level"

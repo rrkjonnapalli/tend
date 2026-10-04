@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // People list: search, add (first and last name, ↵ opens the new person), and the table.
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
@@ -60,7 +61,7 @@
     <div class="table">
       <label class="add">
         <span class="plus">+</span>
-        <input bind:this={addInput} use:focusOnMount aria-label="Add person" placeholder="add person (first and last name), ↵" bind:value={draft} onkeydown={addKeys} />
+        <input use:plainText bind:this={addInput} use:focusOnMount aria-label="Add person" placeholder="add person (first and last name)" bind:value={draft} onkeydown={addKeys} />
       </label>
       <div class="phead"><span>Name</span><span>Birthday</span><span>Phone</span><span>Email</span></div>
       {#each shown as p (p.id)}

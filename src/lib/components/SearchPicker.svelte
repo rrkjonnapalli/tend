@@ -1,5 +1,6 @@
 <script lang="ts" generics="T extends { id: string }">
   // A search field over a list, inside a popover: type to filter, ↑↓ to move, Enter to pick.
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   import type { Snippet } from 'svelte';
   import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
 
@@ -45,7 +46,7 @@
 
 <div class="picker">
   <!-- svelte-ignore a11y_autofocus -->
-  <input {placeholder} aria-label={label} autofocus bind:value={query} oninput={() => (hi = 0)} {onkeydown} />
+  <input use:plainText {placeholder} aria-label={label} autofocus bind:value={query} oninput={() => (hi = 0)} {onkeydown} />
   <div role="listbox" aria-label={label}>
     {#each shown as item, i (item.id)}
       <button class="po" class:on={i === hi} role="option" aria-selected={i === hi} onclick={() => onpick(item)} onmouseenter={() => (hi = i)}>

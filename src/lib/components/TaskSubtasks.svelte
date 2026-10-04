@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // A task's subtasks: an add field, the open ones (drag to reorder), then the done ones folded away.
   import type { DroppedOrder } from '#lib/types/reorder.type.ts';
   import type { Task } from '#lib/types/task.type.ts';
@@ -66,7 +67,7 @@
 
 <label class="add">
   <span class="plus">+</span>
-  <input placeholder="add subtask" aria-label="Add subtask" bind:value={draft} onkeydown={addKeys} />
+  <input use:plainText placeholder="add subtask" aria-label="Add subtask" bind:value={draft} onkeydown={addKeys} />
 </label>
 <div class="subs">
   {#each shown as s (s.id)}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // "Move to…": a path field with folder suggestions. Leaves out the item's own folder and,
   // for folders, the folder itself and everything inside it. A new path is created.
   import Panel from './Panel.svelte';
@@ -92,6 +93,7 @@
     <span class="l">to</span>
     <!-- svelte-ignore a11y_autofocus -->
     <input
+      use:plainText
       autofocus
       aria-label="Destination folder"
       placeholder="folder path, empty = top level"

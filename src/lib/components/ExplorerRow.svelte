@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // One line of the explorer tree, with its inline name editor and the error under it.
   import type { DropState, ExplorerRow } from '#lib/types/explorer.type.ts';
   import Icon from './Icon.svelte';
@@ -82,6 +83,7 @@
   {/if}
   {#if editing}
     <input
+      use:plainText
       class="ein"
       class:bad={showsError}
       aria-label="Name"

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // One board column: a status header, its cards, and the inline "+ add task" field.
   import type { Status } from '#lib/types/status.type.ts';
   import type { Task } from '#lib/types/task.type.ts';
@@ -69,6 +70,7 @@
     {#if cards.length === 0 && !adding}<span class="cempty">No tasks</span>{/if}
     {#if adding}
       <input
+        use:plainText
         class="cadd"
         aria-label="New task in {status.label}"
         placeholder="Task title, ↵ to add"

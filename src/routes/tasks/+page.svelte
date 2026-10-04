@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // Task folder list: views (My day · All · Overdue · Upcoming · date range), then the rows.
   import { settingKeys } from '#lib/config/settings.config.ts';
   import type { DayRange } from '#lib/types/date.type.ts';
@@ -170,6 +171,7 @@
         <label class="add">
           <span class="plus">+</span>
           <input
+            use:plainText
             bind:this={addInput}
             use:focusOnMount
             placeholder="add task"

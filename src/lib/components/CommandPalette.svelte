@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   import type { QuickKind } from '#lib/types/ui.type.ts';
   import { settingKeys } from '#lib/config/settings.config.ts';
   import { timerStartedText } from '#lib/util/timer-text.ts';
@@ -204,7 +205,7 @@
     <div class="pin">
       <span class="ic"><Icon name="search" size={16} /></span>
       <!-- svelte-ignore a11y_autofocus -->
-      <input aria-label="Command or search" placeholder="Type a command, or search notes and tasks…" autofocus bind:value={query} oninput={() => (hi = 0)} {onkeydown} />
+      <input use:plainText aria-label="Command or search" placeholder="Type a command, or search notes and tasks…" autofocus bind:value={query} oninput={() => (hi = 0)} {onkeydown} />
       <kbd>esc</kbd>
     </div>
     <div class="res" role="listbox">

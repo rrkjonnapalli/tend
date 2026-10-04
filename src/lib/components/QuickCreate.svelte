@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   import { settingKeys } from '#lib/config/settings.config.ts';
   // Quick create: ⌘N note · ⌘⇧T task · ⌘⇧N folder (Notes/Tasks) · ⌘T timer.
   import type { QuickKind } from '#lib/types/ui.type.ts';
@@ -132,7 +133,7 @@
 
   {#if kind === 'timer'}
     <div class="row">
-      <input
+      <input use:plainText
         class="time"
         class:bad={!dur.ok}
         aria-label="Duration, minutes and seconds"
@@ -140,7 +141,7 @@
         onkeydown={onEnter}
         use:focusAndSelect />
       <span class="vsep"></span>
-      <input class="qi" aria-label="What for" placeholder="what for (optional)" bind:value={text} onkeydown={onEnter} />
+      <input use:plainText class="qi" aria-label="What for" placeholder="what for (optional)" bind:value={text} onkeydown={onEnter} />
     </div>
   {:else}
     <div class="row">
@@ -149,7 +150,7 @@
     </div>
     <div class="row">
       <span class="ql">name</span>
-      <input
+      <input use:plainText
         bind:this={nameInput}
         class="qi"
         aria-label="Name"

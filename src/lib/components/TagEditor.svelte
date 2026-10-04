@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // Tag chips with a red ✕ each, and an inline input that suggests tags from the shared pool.
   import Icon from './Icon.svelte';
   import Popover from './Popover.svelte';
@@ -111,6 +112,7 @@
   {/each}
   {#if adding}
     <input
+      use:plainText
       bind:this={input}
       class="in"
       aria-label="New tag"

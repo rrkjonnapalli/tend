@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // Folder list: every note under the folder (recursive), newest edit first.
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
@@ -53,6 +54,7 @@
       <label class="add">
         <span>+</span>
         <input
+          use:plainText
           use:focusOnMount
           placeholder="new note"
           aria-label="New note"
