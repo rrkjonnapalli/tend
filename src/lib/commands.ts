@@ -45,7 +45,7 @@ export const commands: Command[] = [
   { id: 'new.timer', group: 'Create', label: 'New timer', keys: 'mod+t', example: 'timer 10m turn off the motor', run: openQuick('timer') },
   { id: 'new.person', group: 'Create', label: 'New person', example: 'person: Ravi Kumar', run: () => goto(routes.newPerson) },
 
-  { id: 'note.mode', group: 'Notes', label: 'Toggle read / edit', keys: 'mod+e', ...onPage('note.mode') },
+  { id: 'note.mode', group: 'Notes', label: 'Toggle read / edit', keys: 'mod+r', ...onPage('note.mode') },
   { id: 'note.tag', group: 'Notes', label: 'Add tag to note', ...onPage('note.tag') },
   { id: 'page.width', group: 'Notes', label: 'Toggle content width', ...onPage('page.width') },
 
@@ -55,7 +55,7 @@ export const commands: Command[] = [
   { id: 'task.layout', group: 'Tasks', label: 'Switch list / board', when: onTasksList, run: toggleTaskLayout },
 
   { id: 'app.palette', group: 'App', label: 'Open command palette', keys: 'mod+k', run: openPalette },
-  { id: 'app.explorer', group: 'App', label: 'Toggle explorer', keys: 'mod+b', when: hasExplorer, run: ui.toggleExplorer },
+  { id: 'app.explorer', group: 'App', label: 'Toggle explorer', keys: 'mod+e', when: hasExplorer, run: ui.toggleExplorer },
   { id: 'app.nav', group: 'App', label: 'Toggle dock (bottom bar)', keys: 'mod+d', run: ui.toggleNav },
   { id: 'app.feedback', group: 'App', label: 'Send feedback', run: () => ui.show('feedback') },
   { id: 'app.vault', group: 'App', label: 'Change vault…', run: () => goto(routes.start) },

@@ -3,6 +3,7 @@
   import type { Task } from '#lib/types/task.type.ts';
   import { goto } from '$app/navigation';
   import Avatar from './Avatar.svelte';
+  import SubtaskMark from './SubtaskMark.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { dueLabel } from '#lib/util/dates.ts';
@@ -39,7 +40,7 @@
 </script>
 
 <div class="card" class:lifted class:isdone={isDone(task)} data-card={task.id} role="button" tabindex="0" {onpointerdown} onclick={open} {onkeydown}>
-  <span class="ctitle">{task.title}</span>
+  <span class="ctitle"><SubtaskMark {task} />{task.title}</span>
   {#if hasMeta}
     <span class="cmeta">
       {#if task.dueDate}<span class:warn={isOverdue(task, tasks.day)}>{dueLabel(task.dueDate)}</span>{/if}

@@ -81,7 +81,8 @@ The user picks one **vault folder**. Tend works only inside it:
   - A popover with Bug / Idea / Other, a text area and *Send* (⌘/Ctrl+Enter also sends).
   - Stored in the `feedback` table. Confirmation: "Thanks, saved."
 - **Page bar:** every page starts with one 40px row on the same line as the explorer's icon toolbar: back (detail pages) · breadcrumb · a short count ("12 tasks", "5 notes · 3 folders") · actions on the right. List pages have no big title.
-- **List pages** (notes, tasks, people): under the bar, one filter line (task views, people search, empty for notes for now), then the add field, which takes focus when the page opens. A person just added opens with First name focused.
+- **List pages** (notes, tasks, people): under the bar, a search line with the field at the right end (filters names, titles and paths as you type); tasks add the views line under it; then the add field, which takes focus when the page opens. Drag order is off while a task search is typed. A person just added opens with First name focused.
+- **Subtasks in lists and on the board** carry a ↳ mark; hovering it reads "Subtask of <parent>".
 - **Width toggle:**
   - On note and task pages, the top section (breadcrumb, tags) is full width.
   - Content is centred at **760px**, with an icon to switch to full width.
@@ -107,7 +108,7 @@ The user picks one **vault folder**. Tend works only inside it:
   - Shows every note under that folder path (recursive).
   - Rows show name, relative path and last edited.
 - **Note page:**
-  - Sticky top bar: back · breadcrumb · width toggle · Read/Edit icon toggle (⌘E).
+  - Sticky top bar: back · breadcrumb · width toggle · Read/Edit icon toggle (⌘R). ⌘E toggles the explorer.
   - Tag row.
   - Rendered markdown in Read mode; a full markdown editor in Edit mode.
   - New notes open in Edit mode.

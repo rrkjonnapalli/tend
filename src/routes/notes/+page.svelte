@@ -4,6 +4,8 @@
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
+  import SearchLine from '#lib/components/SearchLine.svelte';
+  import { searchNeedle, textMatches } from '#lib/util/search.ts';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
@@ -14,8 +16,11 @@
   import { routes } from '#lib/util/routes.ts';
 
   const folder = $derived(page.url.searchParams.get('f') ?? '');
-  const rows = $derived(notes.under(folder));
-  const summary = $derived(folderSummary({ notes: rows.length, folders: notes.foldersUnder(folder).length }));
+  let query = $state('');
+  const needle = $derived(searchNeedle(query));
+  const inFolder = $derived(notes.under(folder));
+  const rows = $derived(inFolder.filter((n) => textMatches([n.name, n.title, n.folder], needle)));
+  const summary = $derived(folderSummary({ notes: inFolder.length, folders: notes.foldersUnder(folder).length }));
   const crumbs = $derived(folderCrumbs(folder));
 
   let draft = $state('');
@@ -43,8 +48,7 @@
 <main class="main">
   <PageBar meta={summary}><Breadcrumbs {crumbs} /></PageBar>
   <article class="list">
-    <!-- Kept free for filters. -->
-    <div class="filters"></div>
+    <SearchLine bind:value={query} label="Search notes" placeholder="Search notes" />
     <div class="rows">
       <label class="add">
         <span>+</span>
@@ -64,7 +68,7 @@
           <span class="meta right">{ago(n.modifiedAt)}</span>
         </a>
       {/each}
-      {#if rows.length === 0}<span class="caption muted empty">No notes here yet</span>{/if}
+      {#if rows.length === 0}<span class="caption muted empty">{needle ? 'No notes match' : 'No notes here yet'}</span>{/if}
     </div>
   </article>
 </main>
@@ -82,10 +86,6 @@
     flex-direction: column;
   }
 
-  .filters {
-    min-height: 36px;
-    margin-bottom: 4px;
-  }
 
   .rows {
     display: flex;

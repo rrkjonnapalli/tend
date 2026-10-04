@@ -1,4 +1,5 @@
 import type { PersonName, PersonRow } from '#lib/types/person.type.ts';
+import { textMatches } from './search.ts';
 
 /** Nickname when set, otherwise first and last name. */
 export function displayName(p: PersonName): string {
@@ -25,7 +26,6 @@ export function splitName(text: string): { first: string; last: string } {
 
 /** True when the lower-case query is in the person's name, phone or email. An empty query matches everyone. */
 export function personMatches(p: PersonRow, query: string): boolean {
-  if (!query) return true;
   const fields = [displayName(p), p.firstName, p.lastName, p.phone ?? '', p.email ?? ''];
-  return fields.some((field) => field.toLowerCase().includes(query));
+  return textMatches(fields, query);
 }

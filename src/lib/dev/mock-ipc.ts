@@ -48,7 +48,7 @@ const tasks = [
   task({ id: 'ship', path: 'work/tend_v0_1', title: 'Ship first build', orderKey: 'a', status: 'IN_PROGRESS', dueDate: day(7), assigneeId: 'priya' }),
   task({ id: 'setup', path: 'work/tend_v0_1', title: 'Set up Tauri + Svelte', orderKey: 'aa', parentId: 'ship', status: 'DONE' }),
   task({ id: 'nx', path: 'work/tend_v0_1', title: 'Notes explorer', orderKey: 'ab', parentId: 'ship', status: 'IN_PROGRESS' }),
-  task({ id: 'rem', path: 'work/tend_v0_1', title: 'Reminders', orderKey: 'ac', parentId: 'ship' }),
+  task({ id: 'rem', path: 'work/tend_v0_1', title: 'Reminders', orderKey: 'ac', parentId: 'ship', dueDate: day(0) }),
   task({ id: 'readme', path: 'work/tend_v0_1', title: 'Write README', orderKey: 'b' }),
   task({ id: 'ci', path: 'work/infra', title: 'Set up CI builds', orderKey: 'c', status: 'IN_REVIEW', dueDate: day(9) }),
   task({ id: 'certs', path: 'work/infra', title: 'Get code signing certificates', orderKey: 'd', dueDate: day(-2) }),

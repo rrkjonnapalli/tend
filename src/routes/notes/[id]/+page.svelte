@@ -140,9 +140,9 @@
       <Icon name={wide ? 'narrow' : 'widen'} size={14} />
     </button>
     {#if editing}
-      <button class="icon-btn" aria-label="Read" title="Read ({keyLabel('mod+e')})" onclick={() => setMode(false)}><Icon name="read" size={13} /></button>
+      <button class="icon-btn" aria-label="Read" title="Read ({keyLabel('mod+r')})" onclick={() => setMode(false)}><Icon name="read" size={13} /></button>
     {:else}
-      <button class="icon-btn" aria-label="Edit" title="Edit ({keyLabel('mod+e')})" onclick={() => setMode(true)}><Icon name="edit" size={13} /></button>
+      <button class="icon-btn" aria-label="Edit" title="Edit ({keyLabel('mod+r')})" onclick={() => setMode(true)}><Icon name="edit" size={13} /></button>
     {/if}
     {/snippet}
   </PageBar>

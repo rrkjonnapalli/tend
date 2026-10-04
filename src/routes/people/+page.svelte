@@ -2,9 +2,9 @@
   // People list: search, add (first and last name, ↵ opens the new person), and the table.
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import Icon from '#lib/components/Icon.svelte';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
+  import SearchLine from '#lib/components/SearchLine.svelte';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { peopleAPI } from '#lib/api/people.ts';
   import { displayName, personMatches, splitName } from '#lib/util/people.ts';
@@ -13,6 +13,7 @@
   import { personBirthday } from '#lib/util/birthdays.ts';
   import { plural } from '#lib/util/plural.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { searchNeedle } from '#lib/util/search.ts';
 
   const UPCOMING_DAYS = 30;
 
@@ -26,7 +27,7 @@
     if (page.url.searchParams.get('add') === '1') addInput?.focus();
   });
 
-  const needle = $derived(query.trim().toLowerCase());
+  const needle = $derived(searchNeedle(query));
   const shown = $derived(people.people.filter((p) => personMatches(p, needle)));
   const noMatches = $derived(shown.length === 0 && people.people.length > 0);
 
@@ -55,10 +56,7 @@
 <main class="main">
   <PageBar meta={summary}><Breadcrumbs crumbs={[{ label: 'People' }]} /></PageBar>
   <div class="page">
-    <label class="search">
-      <span class="ic"><Icon name="search" size={14} /></span>
-      <input aria-label="Search people" placeholder="Search name, phone or email" bind:value={query} />
-    </label>
+    <SearchLine bind:value={query} label="Search people" placeholder="Search name, phone or email" />
     <div class="table">
       <label class="add">
         <span class="plus">+</span>
@@ -93,33 +91,6 @@
     gap: 8px;
   }
 
-  .search {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 32px;
-    padding: 0 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    max-width: 320px;
-  }
-
-  .search:focus-within {
-    border-color: var(--primary);
-  }
-
-  .search .ic {
-    display: grid;
-    color: var(--c-muted-2);
-  }
-
-  .search input {
-    flex: 1;
-    border: 0;
-    outline: none;
-    background: transparent;
-    font: 400 14px/20px var(--font-ui);
-  }
 
   .table {
     display: flex;

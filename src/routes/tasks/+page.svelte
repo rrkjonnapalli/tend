@@ -9,6 +9,8 @@
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
+  import SearchLine from '#lib/components/SearchLine.svelte';
+  import { searchNeedle, textMatches } from '#lib/util/search.ts';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import DateField from '#lib/components/DateField.svelte';
   import TaskRow from '#lib/components/TaskRow.svelte';
@@ -52,9 +54,13 @@
   const board = $derived(settings.get<string>(settingKeys.tasksLayout, 'list') === 'board');
 
   const ctx = $derived({ today: tasks.day, myDay: tasks.myDay, range });
-  const rows = $derived(viewTasks({ tasks: tasks.tasks, folder, view, ctx }));
+  let query = $state('');
+  const needle = $derived(searchNeedle(query));
+  const inView = $derived(viewTasks({ tasks: tasks.tasks, folder, view, ctx }));
+  const rows = $derived(inView.filter((t) => textMatches([t.title, t.path], needle)));
   const counts = $derived(viewCounts({ tasks: tasks.tasks, folder, ctx }));
-  const manual = $derived(isManual(view));
+  // Drag order is off while searching: a filtered list hides the neighbours a drop lands between.
+  const manual = $derived(isManual(view) && !needle);
   const dueDays = $derived(new Set(tasks.tasks.flatMap((t) => (t.dueDate ? [t.dueDate] : []))));
   const crumbs = $derived(folderCrumbs({ rootName, path: folder }));
 
@@ -134,6 +140,7 @@
 <main class="main" class:board>
   <PageBar meta={plural(counts.all, 'task')}><Breadcrumbs {crumbs} /></PageBar>
   <article class="list">
+    <SearchLine bind:value={query} label="Search tasks" placeholder="Search tasks" />
 
     <nav class="views" aria-label="Views">
       {#each VIEWS as [v, label], i (v)}
@@ -174,12 +181,11 @@
         <TaskRow
           {task}
           {folder}
-          showParent={view !== 'all'}
           sortable={manual}
           lifted={lifted === task.id && preview !== null}
           onpointerdown={(e) => grab(e, task.id)} />
       {/each}
-      {#if shown.length === 0}<span class="caption muted empty">{EMPTY[view]}</span>{/if}
+      {#if shown.length === 0}<span class="caption muted empty">{needle ? 'No tasks match' : EMPTY[view]}</span>{/if}
     </div>
     {/if}
   </article>

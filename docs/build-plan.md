@@ -139,7 +139,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
   - nav: My day · All · Overdue · Upcoming · date/range picker, with counts
   - List/Board toggle (the board comes in M7)
   - `+ add task`
-- **Rows:** status dot (status color; ring for Not started) · title (parent hint outside All) · subtask count · relative path · due (amber if overdue) · `+ my day` / `− my day` on hover.
+- **Rows:** status dot (status color; ring for Not started) · title (↳ mark on subtasks, hover names the parent) · subtask count · relative path · due (amber if overdue) · `+ my day` / `− my day` on hover.
 - **Ordering:** one global `order_key` per task. Dragging rows in All or My day writes only the moved task's key (`keyBetween`). Done tasks sink.
 - **My day:** due today = included by default. The `my_day` table stores manual add and remove per day.
 

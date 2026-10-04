@@ -1,8 +1,9 @@
 <script lang="ts">
-  // One task in a list: status dot · title (with parent hint) · subtasks · path · due · My day.
+  // One task in a list: status dot · title (subtasks marked) · subtasks · path · due · My day.
   import type { Task } from '#lib/types/task.type.ts';
   import StatusDot from './StatusDot.svelte';
   import Grip from './Grip.svelte';
+  import SubtaskMark from './SubtaskMark.svelte';
   import MyDayButton from './MyDayButton.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { dueLabel } from '#lib/util/dates.ts';
@@ -14,7 +15,6 @@
   let {
     task,
     folder,
-    showParent = false,
     sortable = false,
     lifted = false,
     onpointerdown,
@@ -22,21 +22,19 @@
     task: Task;
     /** Paths are shown relative to this folder. */
     folder: string;
-    showParent?: boolean;
     sortable?: boolean;
     lifted?: boolean;
     onpointerdown?: (e: PointerEvent) => void;
   } = $props();
 
   const now = $derived(tasks.day);
-  const parent = $derived(showParent && task.parentId ? tasks.byId(task.parentId) : undefined);
 </script>
 
 <div class="row reveal-on-hover" class:sortable class:lifted data-key={task.id} role="listitem" {onpointerdown}>
   {#if sortable}<Grip />{/if}
   <StatusDot value={task.status} />
   <button class="title" onclick={() => goto(routes.task(task.id))}>
-    {#if parent}<span class="meta">{parent.title} › </span>{/if}<span class:done={isDone(task)}>{task.title}</span>
+    <SubtaskMark {task} /><span class:done={isDone(task)}>{task.title}</span>
   </button>
   <span class="meta">{tasks.subtaskCount(task.id)}</span>
   <span class="meta">{relativeTo(task.path, folder)}</span>
