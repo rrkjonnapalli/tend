@@ -11,7 +11,7 @@ use tauri::{AppHandle, Runtime, State};
 use crate::config::ConfigDir;
 use crate::error::AppResult;
 use crate::state::AppState;
-use crate::{config, notes, settings, tags, vault};
+use crate::{config, notes, settings, statuses, tags, tasks, vault};
 
 /// Makes `vault` the open vault and starts what runs alongside it.
 fn activate<R: Runtime>(app: &AppHandle<R>, state: &AppState, vault: crate::state::Vault) -> AppResult<()> {
@@ -150,4 +150,109 @@ pub fn tags_all(state: State<AppState>) -> AppResult<Vec<String>> {
 #[tauri::command]
 pub fn note_tags_set(state: State<AppState>, id: String, tags: Vec<String>) -> AppResult<Vec<String>> {
     state.with(|db, _| tags::set(db, tags::Owner::Note, &id, &tags))
+}
+
+#[tauri::command]
+pub fn task_tags_set(state: State<AppState>, id: String, tags: Vec<String>) -> AppResult<Vec<String>> {
+    state.with(|db, _| tags::set(db, tags::Owner::Task, &id, &tags))
+}
+
+// ---- statuses
+
+#[tauri::command]
+pub fn statuses_list(state: State<AppState>) -> AppResult<Vec<statuses::Status>> {
+    state.with(|db, _| statuses::list(db))
+}
+
+// ---- tasks
+
+/// Everything the task lists need, with My day overrides for `day` (the UI's local today).
+#[tauri::command]
+pub fn tasks_data(state: State<AppState>, day: String) -> AppResult<tasks::TaskData> {
+    state.with(|db, _| tasks::data(db, &day))
+}
+
+/// One task with the fields only its page shows.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TaskDetail {
+    #[serde(flatten)]
+    task: tasks::Task,
+    description: String,
+    tags: Vec<String>,
+}
+
+#[tauri::command]
+pub fn task_get(state: State<AppState>, id: String) -> AppResult<TaskDetail> {
+    state.with(|db, _| {
+        Ok(TaskDetail {
+            task: tasks::get(db, &id)?,
+            description: tasks::description(db, &id)?,
+            tags: tags::of(db, tags::Owner::Task, &id)?,
+        })
+    })
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NewTask {
+    path: String,
+    title: String,
+    parent_id: Option<String>,
+    status: Option<String>,
+    order_key: Option<String>,
+}
+
+#[tauri::command]
+pub fn task_create(state: State<AppState>, task: NewTask) -> AppResult<tasks::Task> {
+    state.with(|db, _| {
+        tasks::create(
+            db,
+            &task.path,
+            &task.title,
+            task.parent_id.as_deref(),
+            task.status.as_deref(),
+            task.order_key.as_deref(),
+        )
+    })
+}
+
+#[tauri::command]
+pub fn task_update(state: State<AppState>, id: String, patch: tasks::Patch) -> AppResult<tasks::Task> {
+    state.with(|db, _| tasks::update(db, &id, &patch))
+}
+
+#[tauri::command]
+pub fn task_move(state: State<AppState>, id: String, target: String) -> AppResult<tasks::Task> {
+    state.with(|db, _| tasks::move_to(db, &id, &target))
+}
+
+#[tauri::command]
+pub fn task_delete(state: State<AppState>, id: String) -> AppResult<()> {
+    state.with(|db, _| tasks::delete(db, &id))
+}
+
+#[tauri::command]
+pub fn my_day_set(state: State<AppState>, id: String, day: String, included: Option<bool>) -> AppResult<()> {
+    state.with(|db, _| tasks::set_my_day(db, &id, &day, included))
+}
+
+#[tauri::command]
+pub fn task_folder_create(state: State<AppState>, path: String) -> AppResult<()> {
+    state.with(|db, _| tasks::folder_create(db, &path))
+}
+
+#[tauri::command]
+pub fn task_folder_rename(state: State<AppState>, path: String, name: String) -> AppResult<String> {
+    state.with(|db, _| tasks::folder_rename(db, &path, &name))
+}
+
+#[tauri::command]
+pub fn task_folder_move(state: State<AppState>, path: String, target: String) -> AppResult<String> {
+    state.with(|db, _| tasks::folder_move(db, &path, &target))
+}
+
+#[tauri::command]
+pub fn task_folder_delete(state: State<AppState>, path: String) -> AppResult<()> {
+    state.with(|db, _| tasks::folder_delete(db, &path))
 }

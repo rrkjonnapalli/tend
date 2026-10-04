@@ -19,6 +19,39 @@ const texts: Record<string, string> = {
 };
 const noteTags: Record<string, string[]> = { wc: ['tauri', 'ui'] };
 
+const day = (n: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const statuses = [
+  { value: 'NOT_STARTED', label: 'Not started', color: '#7d8995', position: 0, isDefault: true },
+  { value: 'IN_PROGRESS', label: 'In progress', color: '#1259d3', position: 1, isDefault: true },
+  { value: 'WAITING', label: 'Waiting', color: '#d57149', position: 2, isDefault: false },
+  { value: 'IN_REVIEW', label: 'In review', color: '#6f5ee4', position: 3, isDefault: false },
+  { value: 'DONE', label: 'Done', color: '#1e7a55', position: 1000, isDefault: true },
+];
+const task = (id: string, path: string, title: string, key: string, o: Record<string, unknown> = {}) => ({
+  id, path, title, orderKey: key, parentId: null, status: 'NOT_STARTED', dueDate: null, dueTime: null, assigneeId: null, createdAt: now, completedAt: null, ...o,
+});
+const tasks = [
+  task('ship', 'work/tend_v0_1', 'Ship first build', 'a', { status: 'IN_PROGRESS', dueDate: day(7), assigneeId: 'priya' }),
+  task('setup', 'work/tend_v0_1', 'Set up Tauri + Svelte', 'aa', { parentId: 'ship', status: 'DONE' }),
+  task('nx', 'work/tend_v0_1', 'Notes explorer', 'ab', { parentId: 'ship', status: 'IN_PROGRESS' }),
+  task('rem', 'work/tend_v0_1', 'Reminders', 'ac', { parentId: 'ship' }),
+  task('readme', 'work/tend_v0_1', 'Write README', 'b'),
+  task('ci', 'work/infra', 'Set up CI builds', 'c', { status: 'IN_REVIEW', dueDate: day(9) }),
+  task('certs', 'work/infra', 'Get code signing certificates', 'd', { dueDate: day(-2) }),
+  task('weekly', 'work', 'Weekly review', 'e', { dueDate: day(-1) }),
+  task('settings', 'work/tend_v0_1', 'Settings screen', 'f', { dueDate: day(6) }),
+  task('board', 'work/tend_v0_1', 'Board view', 'g', { dueDate: day(0), status: 'WAITING' }),
+  task('icon', 'work/tend_v0_1', 'App icon', 'h'),
+  task('plan', 'work', 'Plan v0.2 scope', 'i', { dueDate: day(4) }),
+  task('notes', 'work', 'Write release notes', 'j', { status: 'DONE' }),
+  task('milk', 'home', 'Buy milk', 'k'),
+];
+const taskFolders = ['home', 'inbox', 'work', 'work/infra', 'work/tend_v0_1'];
+
 const handlers: Record<string, Handler> = {
   vault_restore: () => (withVault ? '/Users/demo/Tend' : null),
   vault_current: () => (withVault ? '/Users/demo/Tend' : null),
@@ -43,6 +76,14 @@ const handlers: Record<string, Handler> = {
     return notes.find((n) => n.id === id);
   },
   note_tags_set: ({ id, tags }) => (noteTags[id as string] = tags as string[]),
+  statuses_list: () => statuses,
+  tasks_data: () => ({ folders: taskFolders, tasks, myDay: [] }),
+  task_update: ({ id, patch }) => {
+    const t = tasks.find((x) => x.id === id)!;
+    Object.assign(t, patch);
+    return t;
+  },
+  my_day_set: () => null,
   settings_all: () => settings,
   settings_set: ({ key, value }) => {
     settings[key as string] = value;

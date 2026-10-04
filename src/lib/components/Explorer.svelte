@@ -15,6 +15,8 @@
     reload: () => Promise<void>;
     /** "5 notes and 2 folders" for the delete dialog. */
     contents: (path: string) => string;
+    /** When set, the root row can be renamed (its menu has Rename only). */
+    renameRoot?: (name: string) => Promise<void>;
   };
 
   // Expanded folders per explorer, kept while the app runs so switching sections keeps them.
@@ -28,7 +30,7 @@
   import Popover from './Popover.svelte';
   import MoveToDialog from './MoveToDialog.svelte';
   import DeleteDialog from './DeleteDialog.svelte';
-  import { baseOf, isUnder, join, nameError, parentOf } from '#lib/util/names.ts';
+  import { baseOf, isUnder, join, nameError, nameErrors, parentOf } from '#lib/util/names.ts';
   import { label as keyLabel, matches } from '#lib/util/keys.ts';
   import { hasLayers } from '#lib/util/layers.ts';
   import { messageOf } from '#lib/api/core.ts';
@@ -137,7 +139,15 @@
     ...leaves.filter((l) => l.folder === folder && `l:${l.id}` !== exceptKey).map((l) => l.name),
   ];
 
-  const draftError = $derived(editing ? nameError(draft.trim(), siblingNames(editing.folder, editing.key)) : '');
+  const isRoot = (row: Row) => row.item.kind === 'folder' && row.item.path === '';
+  const hasMenu = (row: Row) => !row.isNew && (!isRoot(row) || !!actions.renameRoot);
+
+  // The root's display name is free text; everything else follows the name rule.
+  const draftError = $derived.by(() => {
+    if (!editing) return '';
+    if (editing.key === 'f:') return draft.trim() ? '' : nameErrors.empty;
+    return nameError(draft.trim(), siblingNames(editing.folder, editing.key));
+  });
 
   function focusEditor(node: HTMLInputElement) {
     node.focus();
@@ -172,6 +182,8 @@
         toast.show(`Folder ${join(e.folder, name)} created`);
       } else if (e.isNew === 'leaf') {
         await actions.createLeaf?.(e.folder, name);
+      } else if (e.key === 'f:') {
+        if (name !== rootName) await actions.renameRoot?.(name);
       } else if (e.item) {
         const old = e.item.kind === 'folder' ? baseOf(e.item.path) : leaves.find((l) => l.id === (e.item as { id: string }).id)?.name;
         if (old === name) return;
@@ -288,7 +300,7 @@
   function openMenu(row: Row, e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (row.item.kind === 'folder' && row.item.path === '') return;
+    if (!hasMenu(row)) return;
     const anchor = e.type === 'contextmenu' ? { x: e.clientX, y: e.clientY } : (e.currentTarget as HTMLElement);
     menu = { row, anchor };
   }
@@ -383,7 +395,7 @@
           {:else}
             <span class="nm">{row.name}</span>
           {/if}
-          {#if !row.isNew && !isEditing && !(row.isFolder && (row.item as { path: string }).path === '')}
+          {#if hasMenu(row) && !isEditing}
             <button
               class="more"
               class:on={menu?.row.key === row.key}
@@ -416,11 +428,13 @@
   <Popover anchor={menu.anchor} placement="bottom-end" role="menu" pad onclose={() => (menu = null)}>
     <div class="menu">
       <button class="opt" role="menuitem" onclick={() => startRename(row)}>Rename<span class="hint">F2</span></button>
+      {#if !isRoot(row)}
       <button class="opt" role="menuitem" onclick={() => ((moving = row), (menu = null))}>
         Move to…<span class="hint">{keyLabel('mod+shift+m')}</span>
       </button>
       <div class="opt-sep"></div>
       <button class="opt danger" role="menuitem" onclick={() => ((deleting = row), (menu = null))}>Delete…<span class="hint">⌫</span></button>
+      {/if}
     </div>
   </Popover>
 {/if}

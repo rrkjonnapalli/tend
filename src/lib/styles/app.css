@@ -280,3 +280,39 @@ kbd,
 .on-hover:focus-visible {
   visibility: visible;
 }
+
+/* While a list row is being dragged. */
+body.reordering,
+body.reordering * {
+  user-select: none;
+  cursor: grabbing !important;
+}
+
+/* Six-dot drag handle shown on hover at the left of sortable rows. */
+.grip {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  display: grid;
+  place-items: center;
+  color: var(--c-muted-2);
+  visibility: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.sortable:hover .grip,
+.sortable.lifted .grip {
+  visibility: visible;
+}
+
+body.reordering .sortable:not(.lifted) .grip {
+  visibility: hidden;
+}
+
+.sortable.lifted {
+  background: var(--c-hover);
+  box-shadow: inset 2px 0 0 var(--border);
+}

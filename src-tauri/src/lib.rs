@@ -6,9 +6,12 @@ mod error;
 mod ipc_tests;
 mod names;
 mod notes;
+mod order;
 mod settings;
 mod state;
+mod statuses;
 mod tags;
+mod tasks;
 mod util;
 mod vault;
 mod watcher;
@@ -53,6 +56,19 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
         commands::item_delete,
         commands::tags_all,
         commands::note_tags_set,
+        commands::statuses_list,
+        commands::tasks_data,
+        commands::task_get,
+        commands::task_create,
+        commands::task_update,
+        commands::task_move,
+        commands::task_delete,
+        commands::task_tags_set,
+        commands::my_day_set,
+        commands::task_folder_create,
+        commands::task_folder_rename,
+        commands::task_folder_move,
+        commands::task_folder_delete,
     ])
 }
 

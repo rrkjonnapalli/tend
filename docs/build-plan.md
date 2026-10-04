@@ -136,7 +136,9 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M6 · Tasks: list, views, ordering  ☐
+## M6 · Tasks: list, views, ordering  ☑
+
+> Done. View rules live in `util/task-views.ts` (unit-tested): All shows top-level tasks; Overdue, My day, Upcoming and the range view include subtasks, with a parent hint. All and My day are drag-sortable; the other views sort by due date. A drag can't move a task across the open/done boundary. New tasks go to the top of the global order. The Rust `order.rs` uses the same key scheme as `order-key.ts` (parity is tested). The task root can be renamed from its explorer menu (`settings.tasks.root_name`). The explorer's "new task" button opens the folder list with the add field focused. The board arrives with M7.
 
 **Read:** decisions §6 (Structure, Views) · `schema.sql` §4–5 · `screens/tasks.html`, `png/tasks.png`
 

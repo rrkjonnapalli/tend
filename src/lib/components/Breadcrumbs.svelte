@@ -25,6 +25,7 @@
     gap: 6px;
     flex-wrap: wrap;
     min-width: 0;
+    min-height: 24px;
     color: var(--c-muted-2);
   }
 
