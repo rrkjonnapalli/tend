@@ -54,6 +54,7 @@ const timerList = [
   { id: 'tea', title: 'Tea', endsAt: now + 271_000 },
   { id: 'motor', title: 'Turn off the motor', endsAt: now + 545_000 },
 ];
+const comments: { id: string; task: string; body: string; createdAt: number; editedAt: number | null }[] = [];
 const taskFolders = ['home', 'inbox', 'work', 'work/infra', 'work/tend_v0_1'];
 
 const handlers: Record<string, Handler> = {
@@ -113,7 +114,14 @@ const handlers: Record<string, Handler> = {
       { id: 'c4', kind: 'address', value: '12 Lake View Rd, Bengaluru 560034', label: 'home' },
     ],
   }),
-  comments_list: () => [],
+  comments_list: ({ task }) => comments.filter((c) => c.task === task).reverse(),
+  comment_add: ({ task, body }) => {
+    comments.push({ id: `c${comments.length}`, task: task as string, body: body as string, createdAt: Date.now(), editedAt: null });
+  },
+  comment_edit: ({ id, body }) => {
+    const c = comments.find((x) => x.id === id)!;
+    Object.assign(c, { body, editedAt: Date.now() });
+  },
   attachments_list: () => [],
   settings_all: () => settings,
   settings_set: ({ key, value }) => {

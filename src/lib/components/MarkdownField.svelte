@@ -7,7 +7,8 @@
   let {
     value,
     onsave,
-    editing = $bindable(false),
+    // No fallback: a parent may bind a value that starts out undefined (one entry per comment).
+    editing = $bindable(),
     placeholder = '',
     empty = '',
     minHeight = 120,
