@@ -127,3 +127,17 @@ fn tasks_round_trip_through_ipc() {
     h.ok("task_delete", json!({ "id": pid }));
     assert_eq!(h.ok("tasks_data", json!({ "day": "x" }))["tasks"], json!([]));
 }
+
+#[test]
+fn people_round_trip_through_ipc() {
+    let h = Harness::new();
+    let id = h.ok("person_create", json!({ "first": "Ravi", "last": "Kumar" }));
+    let p = h.ok("person_update", json!({ "id": id, "patch": { "dob": { "year": null, "month": 10, "day": 9 }, "tob": "06:30" } }));
+    assert_eq!((p["dobMonth"].as_i64(), p["dobYear"].is_null(), p["tob"].as_str()), (Some(10), true, Some("06:30")));
+    let err = h.call("person_update", json!({ "id": id, "patch": { "dob": { "year": 2023, "month": 2, "day": 29 } } })).unwrap_err();
+    assert_eq!(err["code"], "bad_dob");
+    h.ok("contact_add", json!({ "person": id, "kind": "email", "value": "r@k.in", "label": "work" }));
+    assert_eq!(h.ok("people_list", json!({}))[0]["email"], "r@k.in");
+    h.ok("person_delete", json!({ "id": id }));
+    assert_eq!(h.ok("people_list", json!({})), json!([]));
+}

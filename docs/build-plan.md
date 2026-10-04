@@ -187,7 +187,9 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M8 · People  ☐
+## M8 · People  ☑
+
+> Done. Date and time of birth are checked in the UI, which turns the field red and doesn't save, and again in Rust, so an invalid value never reaches the database. Fields save on blur or Enter. "Add person" splits on the first space (first name, then the rest as the last name). Deleting a person unassigns their tasks (`ON DELETE SET NULL`). `birthday_reminder` is stored, not shown.
 
 **Read:** decisions §10 · `screens/people.html`, `png/people.png`, `png/person-page.png`
 

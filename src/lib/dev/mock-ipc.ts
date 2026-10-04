@@ -89,6 +89,15 @@ const handlers: Record<string, Handler> = {
     { id: 'priya', firstName: 'Priya', lastName: 'Nair', nickname: null, dobYear: 1995, dobMonth: 10, dobDay: 10, phone: '+91 98450 12345', email: 'priya@example.com' },
     { id: 'ravi', firstName: 'Ravi', lastName: 'Kumar', nickname: null, dobYear: null, dobMonth: 3, dobDay: 2, phone: null, email: 'ravi@example.com' },
   ],
+  person_get: ({ id }) => ({
+    id, firstName: 'Ravi', lastName: 'Kumar', nickname: null, dobYear: 1995, dobMonth: 10, dobDay: 9, phone: '+91 98765 43210', email: 'ravi.kumar@example.com',
+    tob: '06:30', notes: 'Prefers calls after 6.', contacts: [
+      { id: 'c1', kind: 'phone', value: '+91 98765 43210', label: 'personal' },
+      { id: 'c2', kind: 'phone', value: '+91 80 4123 9876', label: 'work' },
+      { id: 'c3', kind: 'email', value: 'ravi.kumar@example.com', label: 'personal' },
+      { id: 'c4', kind: 'address', value: '12 Lake View Rd, Bengaluru 560034', label: 'home' },
+    ],
+  }),
   comments_list: () => [],
   attachments_list: () => [],
   settings_all: () => settings,

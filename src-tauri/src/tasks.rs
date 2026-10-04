@@ -44,23 +44,15 @@ pub struct Patch {
     pub title: Option<String>,
     pub status: Option<String>,
     pub description: Option<String>,
-    #[serde(default, with = "nullable")]
+    #[serde(default, with = "crate::util::nullable")]
     pub due_date: Option<Option<String>>,
-    #[serde(default, with = "nullable")]
+    #[serde(default, with = "crate::util::nullable")]
     pub due_time: Option<Option<String>>,
-    #[serde(default, with = "nullable")]
+    #[serde(default, with = "crate::util::nullable")]
     pub assignee_id: Option<Option<String>>,
     pub order_key: Option<String>,
 }
 
-/// Tells "missing" (leave alone) apart from `null` (clear) in a patch.
-mod nullable {
-    use serde::{Deserialize, Deserializer};
-
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<Option<String>>, D::Error> {
-        Option::<String>::deserialize(d).map(Some)
-    }
-}
 
 const COLS: &str =
     "id, path, parent_id, title, status, due_date, due_time, assignee_id, order_key, created_at, completed_at";

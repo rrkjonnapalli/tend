@@ -82,6 +82,13 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
         commands::attachment_open,
         commands::attachment_reveal,
         commands::people_list,
+        commands::person_create,
+        commands::person_get,
+        commands::person_update,
+        commands::person_delete,
+        commands::contact_add,
+        commands::contact_update,
+        commands::contact_delete,
     ])
 }
 
