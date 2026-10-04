@@ -2,10 +2,10 @@
 import { tasksAPI } from '#lib/api/tasks.ts';
 import type { NewTask, Task, TaskPatch } from '#lib/types/task.type.ts';
 import { statusesAPI } from '#lib/api/statuses.ts';
-import { DONE_STATUS } from '#lib/util/statuses.ts';
 import type { Status } from '#lib/types/status.type.ts';
 import { today } from '#lib/util/dates.ts';
 import { isUnder } from '#lib/util/names.ts';
+import { byOrderKey, isDone } from '#lib/util/task-views.ts';
 
 class TasksStore {
   folders = $state<string[]>([]);
@@ -30,14 +30,16 @@ class TasksStore {
   };
 
   byId = (id: string) => this.tasks.find((t) => t.id === id);
-  subtasksOf = (id: string) => this.tasks.filter((t) => t.parentId === id).sort((a, b) => (a.orderKey < b.orderKey ? -1 : 1));
+  subtasksOf = (id: string) => this.tasks.filter((t) => t.parentId === id).sort(byOrderKey);
   status = (value: string) => this.statuses.find((s) => s.value === value);
   topLevelUnder = (folder: string) => this.tasks.filter((t) => t.parentId === null && isUnder(t.path, folder));
 
   /** "1/3" done subtasks, or '' when there are none. */
   subtaskCount = (id: string) => {
     const subs = this.subtasksOf(id);
-    return subs.length ? `${subs.filter((s) => s.status === DONE_STATUS).length}/${subs.length}` : '';
+    if (!subs.length) return '';
+    const done = subs.filter(isDone).length;
+    return `${done}/${subs.length}`;
   };
 
   #replace = (task: Task) => {
@@ -58,7 +60,7 @@ class TasksStore {
     return task;
   };
 
-  move = async (id: string, target: string) => {
+  move = async ({ id, target }: { id: string; target: string }) => {
     await tasksAPI.move({ id, target });
     await this.load();
   };
@@ -81,13 +83,13 @@ class TasksStore {
     await this.load();
   };
 
-  renameFolder = async (path: string, name: string) => {
+  renameFolder = async ({ path, name }: { path: string; name: string }) => {
     const next = await tasksAPI.renameFolder({ path, name });
     await this.load();
     return next;
   };
 
-  moveFolder = async (path: string, target: string) => {
+  moveFolder = async ({ path, target }: { path: string; target: string }) => {
     const next = await tasksAPI.moveFolder({ path, target });
     await this.load();
     return next;

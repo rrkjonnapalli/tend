@@ -2,30 +2,48 @@
 // Settings → Command palette.
 import { goto } from '$app/navigation';
 import { page } from '$app/state';
-import { ui } from './stores/ui.svelte.ts';
-import { settings } from './stores/settings.svelte.ts';
-import { pageActions } from './stores/page-actions.svelte.ts';
+import { ui } from '#lib/stores/ui.svelte.ts';
+import { settings } from '#lib/stores/settings.svelte.ts';
+import { pageActions } from '#lib/stores/page-actions.svelte.ts';
+import { routes } from '#lib/util/routes.ts';
 import type { Command } from '#lib/types/command.type.ts';
-import type { PageAction } from '#lib/types/ui.type.ts';
-
-
+import type { PageAction, QuickKind } from '#lib/types/ui.type.ts';
+import { settingKeys } from '#lib/config/settings.config.ts';
 
 const onPage = (id: PageAction) => ({ when: () => pageActions.has(id), run: () => pageActions.run(id) });
-const onTasksList = () => page.url.pathname === '/tasks';
+const onTasksList = () => page.url.pathname === routes.tasks;
+
 /** Notes and Tasks are the sections with an explorer. */
-const hasExplorer = () => /^\/(notes|tasks)(\/|$)/.test(page.url.pathname);
+function hasExplorer(): boolean {
+  const path = page.url.pathname;
+  const inSection = (base: string) => path === base || path.startsWith(`${base}/`);
+  return inSection(routes.notes) || inSection(routes.tasks);
+}
+
+const openQuick = (kind: QuickKind) => () => {
+  ui.quick = kind;
+};
+
+function openPalette() {
+  ui.palette = true;
+}
+
+function toggleTaskLayout() {
+  const isBoard = settings.get<string>(settingKeys.tasksLayout, 'list') === 'board';
+  settings.set(settingKeys.tasksLayout, isBoard ? 'list' : 'board');
+}
 
 export const commands: Command[] = [
-  { id: 'go.notes', group: 'Go to', label: 'Go to Notes', keys: 'mod+1', run: () => goto('/notes') },
-  { id: 'go.tasks', group: 'Go to', label: 'Go to Tasks', keys: 'mod+2', run: () => goto('/tasks') },
-  { id: 'go.people', group: 'Go to', label: 'Go to People', keys: 'mod+3', run: () => goto('/people') },
-  { id: 'go.settings', group: 'Go to', label: 'Open Settings', keys: 'mod+,', run: () => goto('/settings') },
+  { id: 'go.notes', group: 'Go to', label: 'Go to Notes', keys: 'mod+1', run: () => goto(routes.notes) },
+  { id: 'go.tasks', group: 'Go to', label: 'Go to Tasks', keys: 'mod+2', run: () => goto(routes.tasks) },
+  { id: 'go.people', group: 'Go to', label: 'Go to People', keys: 'mod+3', run: () => goto(routes.people) },
+  { id: 'go.settings', group: 'Go to', label: 'Open Settings', keys: 'mod+,', run: () => goto(routes.settings) },
 
-  { id: 'new.note', group: 'Create', label: 'New note', keys: 'mod+n', example: 'note: Meeting notes', run: () => (ui.quick = 'note') },
-  { id: 'new.task', group: 'Create', label: 'New task', keys: 'mod+shift+t', example: 'task: Write README', run: () => (ui.quick = 'task') },
-  { id: 'new.folder', group: 'Create', label: 'New folder', keys: 'mod+shift+n', run: () => (ui.quick = 'folder') },
-  { id: 'new.timer', group: 'Create', label: 'New timer', keys: 'mod+t', example: 'timer 10m turn off the motor', run: () => (ui.quick = 'timer') },
-  { id: 'new.person', group: 'Create', label: 'New person', example: 'person: Ravi Kumar', run: () => goto('/people?add=1') },
+  { id: 'new.note', group: 'Create', label: 'New note', keys: 'mod+n', example: 'note: Meeting notes', run: openQuick('note') },
+  { id: 'new.task', group: 'Create', label: 'New task', keys: 'mod+shift+t', example: 'task: Write README', run: openQuick('task') },
+  { id: 'new.folder', group: 'Create', label: 'New folder', keys: 'mod+shift+n', run: openQuick('folder') },
+  { id: 'new.timer', group: 'Create', label: 'New timer', keys: 'mod+t', example: 'timer 10m turn off the motor', run: openQuick('timer') },
+  { id: 'new.person', group: 'Create', label: 'New person', example: 'person: Ravi Kumar', run: () => goto(routes.newPerson) },
 
   { id: 'note.mode', group: 'Notes', label: 'Toggle read / edit', keys: 'mod+e', ...onPage('note.mode') },
   { id: 'note.tag', group: 'Notes', label: 'Add tag to note', ...onPage('note.tag') },
@@ -34,19 +52,13 @@ export const commands: Command[] = [
   { id: 'task.status', group: 'Tasks', label: 'Set status…', ...onPage('task.status') },
   { id: 'task.due', group: 'Tasks', label: 'Set due date…', ...onPage('task.due') },
   { id: 'task.myday', group: 'Tasks', label: 'Add to My day', ...onPage('task.myday') },
-  {
-    id: 'task.layout',
-    group: 'Tasks',
-    label: 'Switch list / board',
-    when: onTasksList,
-    run: () => settings.set('tasks.layout', settings.get<string>('tasks.layout', 'list') === 'board' ? 'list' : 'board'),
-  },
+  { id: 'task.layout', group: 'Tasks', label: 'Switch list / board', when: onTasksList, run: toggleTaskLayout },
 
-  { id: 'app.palette', group: 'App', label: 'Open command palette', keys: 'mod+k', run: () => (ui.palette = true) },
+  { id: 'app.palette', group: 'App', label: 'Open command palette', keys: 'mod+k', run: openPalette },
   { id: 'app.explorer', group: 'App', label: 'Toggle explorer', keys: 'mod+b', when: hasExplorer, run: ui.toggleExplorer },
   { id: 'app.nav', group: 'App', label: 'Toggle bottom bar', run: ui.toggleNav },
   { id: 'app.feedback', group: 'App', label: 'Send feedback', run: () => ui.show('feedback') },
-  { id: 'app.vault', group: 'App', label: 'Change vault…', run: () => goto('/start') },
+  { id: 'app.vault', group: 'App', label: 'Change vault…', run: () => goto(routes.start) },
 ];
 
 export const available = (c: Command) => !c.when || c.when();

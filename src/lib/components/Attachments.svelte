@@ -1,21 +1,18 @@
 <script lang="ts">
   // Attachments of one owner: a drop zone (or click to choose), "link a note", and the rows.
   import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
   import { open as openDialog } from '@tauri-apps/plugin-dialog';
-  import { getCurrentWebview } from '@tauri-apps/api/webview';
+  import { getCurrentWebview, type DragDropEvent } from '@tauri-apps/api/webview';
   import Icon from './Icon.svelte';
   import Popover from './Popover.svelte';
   import SearchPicker from './SearchPicker.svelte';
+  import AttachmentRow from './AttachmentRow.svelte';
   import { attachmentsAPI } from '#lib/api/attachments.ts';
   import type { AttachmentLink, Owner } from '#lib/types/attachment.type.ts';
   import type { NoteRow } from '#lib/types/note.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
-  import { bytesLabel } from '#lib/util/bytes.ts';
-  import { shortDate, iso } from '#lib/util/dates.ts';
-  import { routes } from '#lib/util/routes.ts';
 
   let { owner, id, onchange }: { owner: Owner; id: string; onchange?: (count: number) => void } = $props();
 
@@ -48,30 +45,44 @@
 
   async function choose() {
     const picked = await openDialog({ multiple: true, title: 'Attach files' });
-    if (picked) await addPaths(Array.isArray(picked) ? picked : [picked]);
+    if (!picked) return;
+    await addPaths(Array.isArray(picked) ? picked : [picked]);
   }
 
-  // Files dragged in from the OS arrive as Tauri drag-drop events with paths.
+  function zoneKeys(e: KeyboardEvent) {
+    if (e.key === 'Enter') choose();
+  }
+
+  // Files dragged in from the OS arrive as Tauri drag-drop events with paths, in physical pixels.
+  function isOverZone(p: { x: number; y: number }): boolean {
+    if (!zone) return false;
+    const r = zone.getBoundingClientRect();
+    const x = p.x / devicePixelRatio;
+    const y = p.y / devicePixelRatio;
+    return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+  }
+
+  function onDragDrop(p: DragDropEvent) {
+    if (p.type === 'over' || p.type === 'enter') {
+      over = isOverZone(p.position);
+      return;
+    }
+    if (p.type === 'leave') {
+      over = false;
+      return;
+    }
+    const hit = isOverZone(p.position);
+    over = false;
+    if (hit) addPaths(p.paths);
+  }
+
+  const inTauri = () => '__TAURI_INTERNALS__' in window;
+
   onMount(() => {
-    if (!('__TAURI_INTERNALS__' in window)) return;
-    const inside = (p: { x: number; y: number }) => {
-      if (!zone) return false;
-      const r = zone.getBoundingClientRect();
-      const [x, y] = [p.x / devicePixelRatio, p.y / devicePixelRatio];
-      return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-    };
-    const stop = getCurrentWebview().onDragDropEvent((e) => {
-      const p = e.payload;
-      if (p.type === 'over' || p.type === 'enter') over = inside(p.position);
-      else if (p.type === 'leave') over = false;
-      else if (p.type === 'drop') {
-        const hit = inside(p.position);
-        over = false;
-        if (hit) addPaths(p.paths);
-      }
-    });
+    if (!inTauri()) return;
+    const stop = getCurrentWebview().onDragDropEvent((e) => onDragDrop(e.payload));
     return () => {
-      stop.then((f) => f());
+      stop.then((unlisten) => unlisten());
     };
   });
 
@@ -86,32 +97,21 @@
     await load();
   }
 
-  async function openLink(l: AttachmentLink) {
-    if (l.kind === 'note' && l.noteId) goto(routes.note(l.noteId));
-    else if (l.attachmentId) await attachmentsAPI.open(l.attachmentId).catch((e) => toast.show(messageOf(e)));
-  }
-
-  const isImage = (l: AttachmentLink) => l.mimeType?.startsWith('image/') ?? false;
-  const ext = (l: AttachmentLink) => (l.name.includes('.') ? l.name.slice(l.name.lastIndexOf('.') + 1).toUpperCase() : 'FILE');
-
-  function meta(l: AttachmentLink): string {
-    if (l.kind === 'note') return `note · ${l.folder || 'notes'}`;
-    return `${ext(l)} · ${bytesLabel(l.sizeBytes ?? 0)} · ${shortDate(iso(new Date(l.createdAt)))}`;
-  }
-
   const matchNote = (n: NoteRow, q: string) => !q || n.title.toLowerCase().includes(q) || n.name.includes(q) || n.folder.includes(q);
 
-  async function startLink() {
+  async function startLink(e: MouseEvent) {
+    // The button sits inside the drop zone, whose click opens the file dialog.
+    e.stopPropagation();
     if (!notes.notes.length) await notes.load();
     picking = true;
   }
 </script>
 
-<div class="drop" class:over bind:this={zone} role="button" tabindex="0" onclick={choose} onkeydown={(e) => e.key === 'Enter' && choose()}>
+<div class="drop" class:over bind:this={zone} role="button" tabindex="0" onclick={choose} onkeydown={zoneKeys}>
   <span class="ic"><Icon name="upload" size={14} /></span>
   <span>Drop files here or click to choose</span>
   <span class="grow"></span>
-  <span class="or">or <button bind:this={linkBtn} class="lnk" onclick={(e) => (e.stopPropagation(), startLink())}>link a note</button></span>
+  <span class="or">or <button bind:this={linkBtn} class="lnk" onclick={startLink}>link a note</button></span>
 </div>
 {#if picking}
   <Popover anchor={linkBtn} placement="bottom-end" onclose={() => (picking = false)}>
@@ -124,22 +124,7 @@
 {/if}
 
 {#each links as l (l.id)}
-  <div class="arow reveal-on-hover">
-    <span class="ic" class:note={l.kind === 'note'}>
-      <Icon name={l.kind === 'note' ? 'note' : isImage(l) ? 'image' : 'file'} size={14} />
-    </span>
-    <span class="an">{l.name}</span>
-    <span class="am">{meta(l)}</span>
-    <span class="acts on-hover">
-      <button class="aib" aria-label="Open" title="Open" onclick={() => openLink(l)}><Icon name="open" size={14} /></button>
-      {#if l.kind === 'file' && l.attachmentId}
-        <button class="aib" aria-label="Show in folder" title="Show in folder" onclick={() => attachmentsAPI.reveal(l.attachmentId!)}>
-          <Icon name="folder" size={14} />
-        </button>
-      {/if}
-      <button class="aib del" aria-label="Remove" title="Remove" onclick={() => unlink(l)}><Icon name="close" size={12} stroke={2.25} /></button>
-    </span>
-  </div>
+  <AttachmentRow link={l} onremove={() => unlink(l)} />
 {/each}
 
 <style>
@@ -194,67 +179,8 @@
     color: var(--c-muted-2);
   }
 
-  .ic.note,
   .note-ic {
     display: grid;
     color: var(--accent);
-  }
-
-  .arow {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 36px;
-    padding: 0 10px 0 16px;
-    margin: 0 -16px;
-    font: 400 14px/20px var(--font-ui);
-  }
-
-  .arow:hover {
-    background: var(--c-hover);
-  }
-
-  .an {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .am {
-    font: 400 12px/16px var(--font-ui);
-    color: var(--c-muted-2);
-  }
-
-  .acts {
-    display: flex;
-    gap: 2px;
-  }
-
-  .aib {
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--c-muted-2);
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-  }
-
-  .aib:hover {
-    background: var(--border);
-    color: var(--text);
-  }
-
-  .aib.del {
-    color: var(--danger);
-  }
-
-  .aib.del:hover {
-    background: var(--danger-soft);
   }
 </style>

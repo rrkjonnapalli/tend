@@ -1,6 +1,6 @@
 // The notes index as the UI sees it. Reloads when the watcher reports outside changes.
 import { notesAPI } from '#lib/api/notes.ts';
-import type { Item, NoteRow } from '#lib/types/note.type.ts';
+import type { Item, NoteRow, NoteTree } from '#lib/types/note.type.ts';
 import { isUnder } from '#lib/util/names.ts';
 
 class NotesStore {
@@ -11,32 +11,38 @@ class NotesStore {
   #listening = false;
 
   load = async () => {
-    const tree = await notesAPI.tree();
-    this.folders = tree.folders;
-    this.notes = tree.notes;
-    this.version += 1;
-    if (!this.#listening) {
-      this.#listening = true;
-      await notesAPI.onChanged(() => this.load());
-    }
+    this.#apply(await notesAPI.tree());
+    await this.#listen();
   };
 
   rescan = async () => {
-    const tree = await notesAPI.rescan();
+    this.#apply(await notesAPI.rescan());
+  };
+
+  #apply(tree: NoteTree) {
     this.folders = tree.folders;
     this.notes = tree.notes;
     this.version += 1;
-  };
+  }
+
+  /** Subscribes once; the store lives as long as the app, so it never unsubscribes. */
+  async #listen() {
+    if (this.#listening) return;
+    this.#listening = true;
+    await notesAPI.onChanged(() => this.load());
+  }
 
   byId = (id: string) => this.notes.find((n) => n.id === id);
 
   /** Every note in `folder` or below it, newest edit first. */
-  under = (folder: string) =>
-    this.notes.filter((n) => isUnder(n.folder, folder)).sort((a, b) => b.modifiedAt - a.modifiedAt);
+  under = (folder: string) => {
+    const inside = this.notes.filter((n) => isUnder(n.folder, folder));
+    return inside.sort((a, b) => b.modifiedAt - a.modifiedAt);
+  };
 
   foldersUnder = (folder: string) => this.folders.filter((f) => f !== folder && isUnder(f, folder));
 
-  create = async (folder: string, name: string) => {
+  create = async ({ folder, name }: { folder: string; name: string }) => {
     const row = await notesAPI.create({ folder, name });
     await this.load();
     return row;

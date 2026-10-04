@@ -6,7 +6,7 @@
 
   let { task }: { task: Task } = $props();
 
-  const mine = $derived(inMyDay(task, tasks.day, tasks.myDay));
+  const mine = $derived(inMyDay(task, { today: tasks.day, myDay: tasks.myDay }));
 
   // The button may sit inside a link row: don't follow the link.
   function toggle(e: MouseEvent) {

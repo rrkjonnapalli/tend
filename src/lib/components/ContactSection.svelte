@@ -1,5 +1,6 @@
 <script lang="ts">
   // Phone / Email / Address rows: value + label, edit or delete each, and an add row at the end.
+  import { focusOnMount } from '#lib/actions/focus.action.ts';
   import Icon from './Icon.svelte';
   import Section from './Section.svelte';
   import { peopleAPI } from '#lib/api/people.ts';
@@ -30,6 +31,7 @@
   let newValue = $state('');
   let newLabel = $state('');
 
+  /** Runs a contact change, then lets the page reload the person. */
   async function run(action: () => Promise<void>) {
     try {
       await action();
@@ -45,32 +47,47 @@
     edLabel = c.label;
   }
 
-  const save = () =>
-    run(async () => {
-      if (!editing || !edValue.trim()) return;
-      await peopleAPI.updateContact({ id: editing, value: edValue, label: edLabel });
-      editing = null;
-    });
+  function stopEditing() {
+    editing = null;
+  }
 
-  const add = () =>
+  function clearDraft() {
+    newValue = '';
+    newLabel = '';
+  }
+
+  function save() {
+    const id = editing;
+    if (!id || !edValue.trim()) return;
     run(async () => {
-      if (!newValue.trim()) return;
+      await peopleAPI.updateContact({ id, value: edValue, label: edLabel });
+      stopEditing();
+    });
+  }
+
+  function add() {
+    if (!newValue.trim()) return;
+    run(async () => {
       await peopleAPI.addContact({ person, kind, value: newValue, label: newLabel });
-      newValue = '';
-      newLabel = '';
+      clearDraft();
     });
+  }
 
-  function keys(e: KeyboardEvent, onEnter: () => void, onEscape: () => void) {
-    if (e.key === 'Enter') onEnter();
+  function remove(c: Contact) {
+    run(() => peopleAPI.removeContact(c.id));
+  }
+
+  /** Enter saves, Esc cancels without closing anything around the field. */
+  function fieldKeys(e: KeyboardEvent, { enter, escape }: { enter: () => void; escape: () => void }) {
+    if (e.key === 'Enter') enter();
     if (e.key === 'Escape') {
       e.stopPropagation();
-      onEscape();
+      escape();
     }
   }
 
-  function focusOnMount(node: HTMLInputElement) {
-    node.focus();
-  }
+  const editKeys = (e: KeyboardEvent) => fieldKeys(e, { enter: save, escape: stopEditing });
+  const addKeys = (e: KeyboardEvent) => fieldKeys(e, { enter: add, escape: clearDraft });
 </script>
 
 <Section {title}>
@@ -78,19 +95,19 @@
     {@const isEditing = editing === c.id}
     <div class="crow reveal-on-hover" class:editing={isEditing}>
       {#if isEditing}
-        <input class="ein" aria-label="{title} value" bind:value={edValue} use:focusOnMount onkeydown={(e) => keys(e, save, () => (editing = null))} />
-        <input class="ein lab" aria-label="Label" placeholder="label" bind:value={edLabel} onkeydown={(e) => keys(e, save, () => (editing = null))} />
+        <input class="ein" aria-label="{title} value" bind:value={edValue} use:focusOnMount onkeydown={editKeys} />
+        <input class="ein lab" aria-label="Label" placeholder="label" bind:value={edLabel} onkeydown={editKeys} />
       {:else}
         <span class="cv">{c.value}</span>
         <span class="cl">{c.label}</span>
       {/if}
       <span class="acts" class:on-hover={!isEditing}>
-        <button class="icon-btn sm danger" aria-label="Delete" title="Delete" onclick={() => run(() => peopleAPI.removeContact(c.id))}>
+        <button class="icon-btn sm danger" aria-label="Delete" title="Delete" onclick={() => remove(c)}>
           <Icon name="trash" size={13} />
         </button>
         {#if isEditing}
           <button class="icon-btn sm ok" aria-label="Save" title="Save" onclick={save}><Icon name="check" size={13} stroke={2.25} /></button>
-          <button class="icon-btn sm danger" aria-label="Cancel" title="Cancel" onclick={() => (editing = null)}><Icon name="close" size={13} stroke={2.25} /></button>
+          <button class="icon-btn sm danger" aria-label="Cancel" title="Cancel" onclick={stopEditing}><Icon name="close" size={13} stroke={2.25} /></button>
         {:else}
           <button class="icon-btn sm edit" aria-label="Edit" title="Edit" onclick={() => edit(c)}><Icon name="edit" size={13} /></button>
         {/if}
@@ -99,8 +116,8 @@
   {/each}
   <div class="crow add">
     <span class="plus">+</span>
-    <input class="ain" aria-label="New {title}" {placeholder} bind:value={newValue} onkeydown={(e) => keys(e, add, () => ((newValue = ''), (newLabel = '')))} />
-    <input class="ain lab" aria-label="Label" placeholder="label" bind:value={newLabel} onkeydown={(e) => keys(e, add, () => ((newValue = ''), (newLabel = '')))} />
+    <input class="ain" aria-label="New {title}" {placeholder} bind:value={newValue} onkeydown={addKeys} />
+    <input class="ain lab" aria-label="Label" placeholder="label" bind:value={newLabel} onkeydown={addKeys} />
     <span class="acts">
       {#if newValue.trim()}<button class="icon-btn sm ok" aria-label="Add" title="Add" onclick={add}><Icon name="check" size={13} stroke={2.25} /></button>{/if}
     </span>

@@ -1,4 +1,4 @@
-import type { PersonName } from '#lib/types/person.type.ts';
+import type { PersonName, PersonRow } from '#lib/types/person.type.ts';
 
 /** Nickname when set, otherwise first and last name. */
 export function displayName(p: PersonName): string {
@@ -15,4 +15,17 @@ export function initials(p: PersonName): string {
   if (words.length === 1) return first.toUpperCase();
   const last = words[words.length - 1][0];
   return (first + last).toUpperCase();
+}
+
+/** "Ravi Kumar Rao" → first "Ravi", last "Kumar Rao". */
+export function splitName(text: string): { first: string; last: string } {
+  const [first = '', ...rest] = text.trim().split(/\s+/);
+  return { first, last: rest.join(' ') };
+}
+
+/** True when the lower-case query is in the person's name, phone or email. An empty query matches everyone. */
+export function personMatches(p: PersonRow, query: string): boolean {
+  if (!query) return true;
+  const fields = [displayName(p), p.firstName, p.lastName, p.phone ?? '', p.email ?? ''];
+  return fields.some((field) => field.toLowerCase().includes(query));
 }

@@ -1,6 +1,7 @@
 <script lang="ts" generics="T extends { id: string }">
   // A search field over a list, inside a popover: type to filter, ↑↓ to move, Enter to pick.
   import type { Snippet } from 'svelte';
+  import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
 
   let {
     items,
@@ -25,15 +26,16 @@
 
   let query = $state('');
   let hi = $state(0);
-  const shown = $derived(items.filter((i) => match(i, query.trim().toLowerCase())).slice(0, max));
+  const needle = $derived(query.trim().toLowerCase());
+  const shown = $derived(items.filter((item) => match(item, needle)).slice(0, max));
 
   function onkeydown(e: KeyboardEvent) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      hi = Math.min(hi + 1, shown.length - 1);
+      hi = nextIndex(hi, shown.length);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      hi = Math.max(hi - 1, 0);
+      hi = prevIndex(hi);
     } else if (e.key === 'Enter' && shown[hi]) {
       e.preventDefault();
       onpick(shown[hi]);

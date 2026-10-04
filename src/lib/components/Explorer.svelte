@@ -5,15 +5,29 @@
 
 <script lang="ts">
   // The left-hand tree shared by Notes (folders + notes) and Tasks (folders only).
-  import type { Leaf, ExplorerItem, ExplorerActions } from '#lib/types/explorer.type.ts';
+  import type { DropState, ExplorerActions, ExplorerEdit, ExplorerItem, ExplorerRow, Leaf, NewKind } from '#lib/types/explorer.type.ts';
+  import type { Anchor } from '#lib/types/popover.type.ts';
   import { untrack } from 'svelte';
   import Icon from './Icon.svelte';
-  import Popover from './Popover.svelte';
+  import ExplorerRowView from './ExplorerRow.svelte';
+  import ExplorerMenu from './ExplorerMenu.svelte';
   import MoveToDialog from './MoveToDialog.svelte';
   import DeleteDialog from './DeleteDialog.svelte';
-  import { baseOf, isUnder, join, nameError, nameErrors, parentOf } from '#lib/util/names.ts';
-  import { label as keyLabel, matches } from '#lib/util/keys.ts';
+  import { baseOf, join, nameError, nameErrors, parentOf } from '#lib/util/names.ts';
+  import { isTypingTarget, matches } from '#lib/util/keys.ts';
   import { hasLayers } from '#lib/util/layers.ts';
+  import {
+    NEW_KEY,
+    ROOT_KEY,
+    buildRows,
+    canDrop,
+    folderPath,
+    isRoot,
+    keyOf,
+    siblingNames,
+    withAncestors,
+  } from '#lib/util/explorer-rows.ts';
+  import { dropTargetAt, trackDrag } from '#lib/util/explorer-drag.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { ui } from '#lib/stores/ui.svelte.ts';
@@ -38,15 +52,9 @@
     actions: ExplorerActions;
   } = $props();
 
-  type Row = {
-    key: string;
-    item: ExplorerItem;
-    name: string;
-    depth: number;
-    folder: string;
-    isFolder: boolean;
-    isNew?: 'folder' | 'leaf';
-  };
+  /** The drag ghost sits just below and right of the pointer. */
+  const GHOST_OFFSET_X = 12;
+  const GHOST_OFFSET_Y = 8;
 
   // The explorer id never changes for a mounted explorer.
   const memoryKey = untrack(() => id);
@@ -55,16 +63,15 @@
     expandedBy.set(memoryKey, expanded);
   });
 
-  // Editing: an existing row being renamed, or a new row being named.
-  let editing = $state<{ key: string; folder: string; isNew?: 'folder' | 'leaf'; item?: ExplorerItem } | null>(null);
+  let editing = $state<ExplorerEdit | null>(null);
   let draft = $state('');
-  let menu = $state<{ row: Row; anchor: HTMLElement | { x: number; y: number } } | null>(null);
-  let moving = $state<Row | null>(null);
-  let deleting = $state<Row | null>(null);
-  let drag = $state<{ row: Row; over: string | null; x: number; y: number } | null>(null);
+  let menu = $state<{ row: ExplorerRow; anchor: Anchor } | null>(null);
+  let moving = $state<ExplorerRow | null>(null);
+  let deleting = $state<ExplorerRow | null>(null);
+  let drag = $state<{ row: ExplorerRow; over: string | null; x: number; y: number } | null>(null);
   let suppressClick = false;
 
-  const keyOf = (item: ExplorerItem) => (item.kind === 'folder' ? `f:${item.path}` : `l:${item.id}`);
+  const tree = $derived({ folders, leaves });
   const selectedKey = $derived(selected ? keyOf(selected) : null);
   const selectedFolder = $derived.by(() => {
     if (!selected) return '';
@@ -74,105 +81,94 @@
 
   // Opening an item reveals it: every folder above it expands.
   $effect(() => {
-    let p = selected?.kind === 'folder' ? parentOf(selected.path) : selectedFolder;
+    const start = selected?.kind === 'folder' ? parentOf(selected.path) : selectedFolder;
+    const hidden = withAncestors(start).filter((path) => !expanded[path]);
+    if (hidden.length === 0) return;
     const next = { ...expanded };
-    let changed = false;
-    while (true) {
-      if (!next[p]) {
-        next[p] = true;
-        changed = true;
-      }
-      if (p === '') break;
-      p = parentOf(p);
-    }
-    if (changed) expanded = next;
+    for (const path of hidden) next[path] = true;
+    expanded = next;
   });
 
-  const childrenOf = (p: string) => folders.filter((f) => parentOf(f) === p).sort();
-  const leavesIn = (p: string) => leaves.filter((l) => l.folder === p).sort((a, b) => a.name.localeCompare(b.name));
-
-  const rows = $derived.by(() => {
-    const out: Row[] = [];
-    const walk = (path: string, depth: number) => {
-      out.push({
-        key: `f:${path}`,
-        item: { kind: 'folder', path },
-        name: path === '' ? rootName : baseOf(path),
-        depth,
-        folder: parentOf(path),
-        isFolder: true,
-      });
-      if (!expanded[path]) return;
-      if (editing?.isNew === 'folder' && editing.folder === path)
-        out.push({ key: 'new', item: { kind: 'folder', path: '' }, name: '', depth: depth + 1, folder: path, isFolder: true, isNew: 'folder' });
-      childrenOf(path).forEach((c) => walk(c, depth + 1));
-      if (editing?.isNew === 'leaf' && editing.folder === path)
-        out.push({ key: 'new', item: { kind: 'leaf', id: '' }, name: '', depth: depth + 1, folder: path, isFolder: false, isNew: 'leaf' });
-      for (const l of leavesIn(path))
-        out.push({ key: `l:${l.id}`, item: { kind: 'leaf', id: l.id }, name: l.name, depth: depth + 1, folder: path, isFolder: false });
-    };
-    walk('', 0);
-    return out;
+  const adding = $derived.by(() => {
+    if (!editing?.isNew) return null;
+    return { kind: editing.isNew, folder: editing.folder };
   });
+  const rows = $derived(buildRows({ tree, rootName, expanded, adding }));
+  const selectedRow = $derived(rows.find((r) => r.key === selectedKey && !isRoot(r)));
+  const allFolders = $derived(['', ...folders]);
 
-  const siblingNames = (folder: string, exceptKey?: string) => [
-    ...folders.filter((f) => parentOf(f) === folder && `f:${f}` !== exceptKey).map(baseOf),
-    ...leaves.filter((l) => l.folder === folder && `l:${l.id}` !== exceptKey).map((l) => l.name),
-  ];
-
-  const isRoot = (row: Row) => row.item.kind === 'folder' && row.item.path === '';
-  const hasMenu = (row: Row) => !row.isNew && (!isRoot(row) || !!actions.renameRoot);
+  const hasMenu = (row: ExplorerRow) => !row.isNew && (!isRoot(row) || !!actions.renameRoot);
+  const allowsDrop = (row: ExplorerRow, target: string) => canDrop({ tree, row, target });
 
   // The root's display name is free text; everything else follows the name rule.
   const draftError = $derived.by(() => {
     if (!editing) return '';
-    if (editing.key === 'f:') return draft.trim() ? '' : nameErrors.empty;
-    return nameError(draft.trim(), siblingNames(editing.folder, editing.key));
+    const name = draft.trim();
+    if (editing.key === ROOT_KEY) return name ? '' : nameErrors.empty;
+    return nameError(name, siblingNames({ tree, folder: editing.folder, exceptKey: editing.key }));
   });
 
-  function focusEditor(node: HTMLInputElement) {
-    node.focus();
-    node.select();
-  }
+  // ---- naming
 
-  function startRename(row: Row) {
+  function startRename(row: ExplorerRow) {
     menu = null;
     editing = { key: row.key, folder: row.folder, item: row.item };
     draft = row.name;
   }
 
-  function startNew(kind: 'folder' | 'leaf') {
+  function startNew(kind: NewKind) {
     const folder = selectedFolder;
     expanded = { ...expanded, [folder]: true };
-    editing = { key: 'new', folder, isNew: kind };
+    editing = { key: NEW_KEY, folder, isNew: kind };
     draft = '';
   }
 
+  function onNewItem() {
+    if (actions.newItem) actions.newItem(selectedFolder);
+    else startNew('leaf');
+  }
+
+  async function createFolder(parent: string, name: string) {
+    await actions.createFolder({ parent, name });
+    toast.show(`Folder ${join(parent, name)} created`);
+  }
+
+  async function renameRoot(name: string) {
+    if (name !== rootName) await actions.renameRoot?.(name);
+  }
+
+  function currentName(item: ExplorerItem): string | undefined {
+    if (item.kind === 'folder') return baseOf(item.path);
+    return leaves.find((l) => l.id === item.id)?.name;
+  }
+
+  async function renameItem(item: ExplorerItem, name: string) {
+    if (currentName(item) === name) return;
+    await actions.rename(item, name);
+    toast.show(`Renamed to ${name}`);
+  }
+
+  async function save(edit: ExplorerEdit, name: string) {
+    if (edit.isNew === 'folder') await createFolder(edit.folder, name);
+    else if (edit.isNew === 'leaf') await actions.createLeaf?.({ folder: edit.folder, name });
+    else if (edit.key === ROOT_KEY) await renameRoot(name);
+    else if (edit.item) await renameItem(edit.item, name);
+  }
+
   async function commit() {
-    const e = editing;
-    if (!e) return;
+    const edit = editing;
+    if (!edit) return;
     const name = draft.trim();
     if (draftError) {
-      if (e.isNew && !name) editing = null;
+      // An empty new row is dropped; a bad name stays open for fixing.
+      if (edit.isNew && !name) editing = null;
       return;
     }
     editing = null;
     try {
-      if (e.isNew === 'folder') {
-        await actions.createFolder(e.folder, name);
-        toast.show(`Folder ${join(e.folder, name)} created`);
-      } else if (e.isNew === 'leaf') {
-        await actions.createLeaf?.(e.folder, name);
-      } else if (e.key === 'f:') {
-        if (name !== rootName) await actions.renameRoot?.(name);
-      } else if (e.item) {
-        const old = e.item.kind === 'folder' ? baseOf(e.item.path) : leaves.find((l) => l.id === (e.item as { id: string }).id)?.name;
-        if (old === name) return;
-        await actions.rename(e.item, name);
-        toast.show(`Renamed to ${name}`);
-      }
-    } catch (err) {
-      toast.show(messageOf(err));
+      await save(edit, name);
+    } catch (e) {
+      toast.show(messageOf(e));
     }
   }
 
@@ -195,79 +191,99 @@
 
   // ---- moving
 
-  const clash = (folder: string, name: string) => siblingNames(folder).includes(name);
-
-  function canDrop(row: Row, target: string): boolean {
-    if (row.item.kind === 'folder') {
-      const path = row.item.path;
-      return !isUnder(target, path) && parentOf(path) !== target && !clash(target, baseOf(path));
-    }
-    return row.folder !== target && !clash(target, row.name);
-  }
-
-  async function moveTo(row: Row, target: string) {
+  async function moveTo(row: ExplorerRow, target: string) {
     moving = null;
     try {
       await actions.move(row.item, target);
       expanded = { ...expanded, [target]: true };
       toast.show(`Moved to ${target || rootName}/`);
-    } catch (err) {
-      toast.show(messageOf(err));
+    } catch (e) {
+      toast.show(messageOf(e));
     }
   }
 
-  function onRowDown(row: Row, e: PointerEvent) {
-    if (e.button !== 0 || row.isNew || editing?.key === row.key || (row.isFolder && row.item.kind === 'folder' && row.item.path === '')) return;
-    const x0 = e.clientX;
-    const y0 = e.clientY;
-    let frame = 0;
-    let last: PointerEvent | null = null;
+  function canDrag(row: ExplorerRow, e: PointerEvent): boolean {
+    const isPrimary = e.button === 0;
+    const isEditing = editing?.key === row.key;
+    return isPrimary && !row.isNew && !isEditing && !isRoot(row);
+  }
 
-    const step = () => {
-      frame = 0;
-      if (!last || !drag) return;
-      const hit = document.elementFromPoint(last.clientX, last.clientY)?.closest<HTMLElement>('[data-drop]');
-      drag = { ...drag, over: hit ? hit.dataset.drop! : null, x: last.clientX + 12, y: last.clientY + 8 };
-    };
-    const move = (ev: PointerEvent) => {
-      if (!drag) {
-        if (Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) < 5) return;
+  const ghostAt = (e: PointerEvent) => ({ x: e.clientX + GHOST_OFFSET_X, y: e.clientY + GHOST_OFFSET_Y });
+
+  /** The click that ends a drag must not also open the row. */
+  function suppressNextClick() {
+    suppressClick = true;
+    setTimeout(() => {
+      suppressClick = false;
+    }, 0);
+  }
+
+  function endDrag() {
+    const done = drag;
+    drag = null;
+    if (!done) return;
+    suppressNextClick();
+    const target = done.over;
+    if (target !== null && allowsDrop(done.row, target)) moveTo(done.row, target);
+  }
+
+  function onRowDown(row: ExplorerRow, e: PointerEvent) {
+    if (!canDrag(row, e)) return;
+    trackDrag({
+      start: e,
+      onstart: (ev) => {
         menu = null;
-        drag = { row, over: null, x: ev.clientX + 12, y: ev.clientY + 8 };
-      }
-      last = ev;
-      if (!frame) frame = requestAnimationFrame(step);
-    };
-    const up = () => {
-      window.removeEventListener('pointermove', move);
-      window.removeEventListener('pointerup', up);
-      if (frame) cancelAnimationFrame(frame);
-      const d = drag;
-      drag = null;
-      if (!d) return;
-      suppressClick = true;
-      setTimeout(() => (suppressClick = false), 0);
-      if (d.over !== null && canDrop(d.row, d.over)) moveTo(d.row, d.over);
-    };
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', up);
+        drag = { row, over: null, ...ghostAt(ev) };
+      },
+      onmove: (ev) => {
+        if (drag) drag = { ...drag, over: dropTargetAt(ev), ...ghostAt(ev) };
+      },
+      onend: endDrag,
+    });
+  }
+
+  function dropStateOf(row: ExplorerRow): DropState {
+    if (drag === null || drag.over === null || row.isNew) return null;
+    if (drag.over !== folderPath(row.item)) return null;
+    return allowsDrop(drag.row, drag.over) ? 'allowed' : 'blocked';
   }
 
   // ---- deleting
 
-  async function confirmDelete(row: Row) {
+  /** "work/meetings/" for a folder, the bare name for a leaf. */
+  function displayName(row: ExplorerRow): string {
+    if (row.item.kind === 'folder') return `${row.item.path}/`;
+    return row.name;
+  }
+
+  async function confirmDelete(row: ExplorerRow) {
     deleting = null;
     try {
       await actions.remove(row.item);
-      toast.show(`Deleted ${row.isFolder ? `${(row.item as { path: string }).path}/` : row.name}`);
-    } catch (err) {
-      toast.show(messageOf(err));
+      toast.show(`Deleted ${displayName(row)}`);
+    } catch (e) {
+      toast.show(messageOf(e));
     }
+  }
+
+  function deleteCopy(row: ExplorerRow) {
+    if (row.item.kind === 'folder') {
+      return {
+        title: `Delete folder ${row.name}?`,
+        body: actions.contents(row.item.path),
+        confirmWord: row.name,
+        button: 'Delete folder',
+      };
+    }
+    return {
+      title: `Delete ${row.name}?`,
+      body: 'The file is deleted from disk. Tags and attachment links on it are removed.',
+    };
   }
 
   // ---- interactions
 
-  function openRow(row: Row) {
+  function openRow(row: ExplorerRow) {
     if (suppressClick || row.isNew || editing?.key === row.key) return;
     menu = null;
     actions.open(row.item);
@@ -278,7 +294,11 @@
     expanded = { ...expanded, [path]: !expanded[path] };
   }
 
-  function openMenu(row: Row, e: MouseEvent) {
+  function collapseAll() {
+    expanded = { '': true };
+  }
+
+  function openMenu(row: ExplorerRow, e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
     if (!hasMenu(row)) return;
@@ -286,14 +306,19 @@
     menu = { row, anchor };
   }
 
-  const selectedRow = $derived(rows.find((r) => r.key === selectedKey && !(r.item.kind === 'folder' && r.item.path === '')));
+  function askMove(row: ExplorerRow) {
+    moving = row;
+    menu = null;
+  }
 
-  function isTyping(t: EventTarget | null) {
-    return t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || !!t.closest('.cm-editor'));
+  function askDelete(row: ExplorerRow) {
+    deleting = row;
+    menu = null;
   }
 
   function onkeydown(e: KeyboardEvent) {
-    if (!ui.explorerOpen || hasLayers() || editing || isTyping(e.target) || !selectedRow) return;
+    const busy = hasLayers() || editing !== null || isTypingTarget(e.target);
+    if (!ui.explorerOpen || busy || !selectedRow) return;
     if (e.key === 'F2') {
       e.preventDefault();
       startRename(selectedRow);
@@ -305,10 +330,6 @@
       deleting = selectedRow;
     }
   }
-
-  const indent = (row: Row) => 16 + row.depth * 16;
-  const dropPath = (row: Row) => (row.isNew ? undefined : row.item.kind === 'folder' ? row.item.path : row.folder);
-  const allFolders = $derived(['', ...folders]);
 </script>
 
 <svelte:window {onkeydown} />
@@ -316,11 +337,7 @@
 {#if ui.explorerOpen}
   <aside class="explorer" class:dragging={drag !== null} aria-label="Explorer">
     <div class="toolbar" role="toolbar" aria-label="Explorer actions">
-      <button
-        class="icon-btn sm"
-        aria-label={newItemLabel}
-        title={newItemLabel}
-        onclick={() => (actions.newItem ? actions.newItem(selectedFolder) : startNew('leaf'))}>
+      <button class="icon-btn sm" aria-label={newItemLabel} title={newItemLabel} onclick={onNewItem}>
         <Icon name={actions.newItem ? 'taskNew' : 'noteNew'} size={13} stroke={1.75} />
       </button>
       <button class="icon-btn sm" aria-label="New folder" title="New folder" onclick={() => startNew('folder')}>
@@ -329,68 +346,31 @@
       <button class="icon-btn sm" aria-label="Reload" title="Reload" onclick={() => actions.reload()}>
         <Icon name="reload" size={13} stroke={1.75} />
       </button>
-      <button class="icon-btn sm" aria-label="Collapse all" title="Collapse all" onclick={() => (expanded = { '': true })}>
+      <button class="icon-btn sm" aria-label="Collapse all" title="Collapse all" onclick={collapseAll}>
         <Icon name="collapseAll" size={13} stroke={1.75} />
       </button>
     </div>
 
     <div class="tree" role="tree">
       {#each rows as row (row.key)}
-        {@const isSel = row.key === selectedKey && !drag}
-        {@const isTarget = drag !== null && row.isFolder && !row.isNew && drag.over === (row.item as { path: string }).path}
-        {@const isEditing = editing?.key === row.key}
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <div
-          class="row"
-          class:leaf={!row.isFolder}
-          class:sel={isSel}
-          class:drop={isTarget && canDrop(drag!.row, drag!.over!)}
-          class:bad={isTarget && !canDrop(drag!.row, drag!.over!)}
-          class:ghosted={drag?.row.key === row.key}
-          style:padding-left="{indent(row)}px"
-          data-drop={dropPath(row)}
-          role="treeitem"
-          tabindex="-1"
-          aria-selected={isSel}
-          aria-expanded={row.isFolder ? !!expanded[(row.item as { path: string }).path] : undefined}
-          onpointerdown={(e) => onRowDown(row, e)}
-          oncontextmenu={(e) => openMenu(row, e)}
-          onclick={() => !row.isFolder && openRow(row)}>
-          {#if row.isFolder}
-            <button class="chev" aria-label="Expand or collapse folder" onclick={(e) => !row.isNew && toggle((row.item as { path: string }).path, e)}>
-              <Icon name={expanded[(row.item as { path: string }).path] && !row.isNew ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />
-            </button>
-          {/if}
-          {#if isEditing}
-            <input
-              class="ein"
-              class:bad={!!draftError && !!draft.trim()}
-              aria-label="Name"
-              bind:value={draft}
-              onkeydown={onEditKey}
-              onblur={onEditBlur}
-              onpointerdown={(e) => e.stopPropagation()}
-              use:focusEditor />
-          {:else if row.isFolder}
-            <button class="nm" onclick={() => openRow(row)}>{row.name}</button>
-          {:else}
-            <span class="nm">{row.name}</span>
-          {/if}
-          {#if hasMenu(row) && !isEditing}
-            <button
-              class="more"
-              class:on={menu?.row.key === row.key}
-              aria-label="More actions"
-              title="More"
-              onpointerdown={(e) => e.stopPropagation()}
-              onclick={(e) => openMenu(row, e)}>
-              <Icon name="more" size={14} />
-            </button>
-          {/if}
-        </div>
-        {#if isEditing && draftError && draft.trim()}
-          <div class="name-err" style:padding-left="{indent(row)}px">{draftError}</div>
-        {/if}
+        {@const path = folderPath(row.item) ?? ''}
+        <ExplorerRowView
+          {row}
+          selected={row.key === selectedKey && !drag}
+          drop={dropStateOf(row)}
+          ghosted={drag?.row.key === row.key}
+          expanded={!!expanded[path]}
+          editing={editing?.key === row.key}
+          bind:draft
+          {draftError}
+          hasMenu={hasMenu(row)}
+          menuOpen={menu?.row.key === row.key}
+          onpress={(e) => onRowDown(row, e)}
+          onmenu={(e) => openMenu(row, e)}
+          onopen={() => openRow(row)}
+          ontoggle={(e) => toggle(path, e)}
+          oneditkey={onEditKey}
+          oneditblur={onEditBlur} />
       {/each}
     </div>
 
@@ -406,18 +386,13 @@
 
 {#if menu}
   {@const row = menu.row}
-  <Popover anchor={menu.anchor} placement="bottom-end" role="menu" pad onclose={() => (menu = null)}>
-    <div class="menu">
-      <button class="opt" role="menuitem" onclick={() => startRename(row)}>Rename<span class="hint">F2</span></button>
-      {#if !isRoot(row)}
-      <button class="opt" role="menuitem" onclick={() => ((moving = row), (menu = null))}>
-        Move to…<span class="hint">{keyLabel('mod+shift+m')}</span>
-      </button>
-      <div class="opt-sep"></div>
-      <button class="opt danger" role="menuitem" onclick={() => ((deleting = row), (menu = null))}>Delete…<span class="hint">⌫</span></button>
-      {/if}
-    </div>
-  </Popover>
+  <ExplorerMenu
+    anchor={menu.anchor}
+    isRoot={isRoot(row)}
+    onrename={() => startRename(row)}
+    onmove={() => askMove(row)}
+    ondelete={() => askDelete(row)}
+    onclose={() => (menu = null)} />
 {/if}
 
 {#if moving}
@@ -426,29 +401,15 @@
     what={row.item.kind === 'folder' ? `${row.item.path}/` : join(row.folder, row.name)}
     folders={allFolders}
     current={row.folder}
-    self={row.item.kind === 'folder' ? row.item.path : undefined}
+    self={folderPath(row.item)}
     {rootName}
-    onmove={(t) => moveTo(row, t)}
+    onmove={(target) => moveTo(row, target)}
     onclose={() => (moving = null)} />
 {/if}
 
 {#if deleting}
   {@const row = deleting}
-  {#if row.item.kind === 'folder'}
-    <DeleteDialog
-      title="Delete folder {row.name}?"
-      body={actions.contents(row.item.path)}
-      confirmWord={row.name}
-      button="Delete folder"
-      ondelete={() => confirmDelete(row)}
-      onclose={() => (deleting = null)} />
-  {:else}
-    <DeleteDialog
-      title="Delete {row.name}?"
-      body="The file is deleted from disk. Tags and attachment links on it are removed."
-      ondelete={() => confirmDelete(row)}
-      onclose={() => (deleting = null)} />
-  {/if}
+  <DeleteDialog {...deleteCopy(row)} ondelete={() => confirmDelete(row)} onclose={() => (deleting = null)} />
 {/if}
 
 {#if drag}
@@ -481,144 +442,6 @@
     display: flex;
     flex-direction: column;
     user-select: none;
-  }
-
-  .row {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 0 0 28px;
-    padding-right: 6px;
-    font: 400 14px/20px var(--font-ui);
-    color: var(--text);
-    cursor: pointer;
-    touch-action: none;
-  }
-
-  .row.leaf {
-    color: var(--text-muted);
-  }
-
-  .row:hover {
-    background: var(--c-hover);
-  }
-
-  .row.sel {
-    background: var(--c-selected);
-    color: var(--text);
-  }
-
-  .row.drop,
-  .dragging .row.drop {
-    background: var(--primary-soft);
-    box-shadow: inset 0 0 0 1px var(--primary);
-  }
-
-  .row.bad {
-    background: var(--danger-soft);
-  }
-
-  .row.ghosted {
-    opacity: 0.4;
-  }
-
-  .dragging .row:hover:not(.drop):not(.bad) {
-    background: transparent;
-  }
-
-  .chev {
-    flex: 0 0 10px;
-    width: 10px;
-    height: 28px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--c-muted-2);
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-  }
-
-  .nm {
-    flex: 1;
-    min-width: 0;
-    height: 28px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font: inherit;
-    color: inherit;
-    cursor: pointer;
-    line-height: 28px;
-  }
-
-  .more {
-    width: 22px;
-    height: 22px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--c-muted-2);
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    visibility: hidden;
-  }
-
-  .row:hover .more,
-  .more.on,
-  .more:focus-visible {
-    visibility: visible;
-  }
-
-  .more:hover,
-  .more.on {
-    background: var(--border);
-    color: var(--text);
-  }
-
-  .dragging .more {
-    visibility: hidden;
-  }
-
-  .ein {
-    flex: 1;
-    min-width: 0;
-    height: 24px;
-    padding: 0 6px;
-    margin-left: -6px;
-    border: 1px solid var(--primary);
-    border-radius: var(--radius-sm);
-    outline: none;
-    background: var(--c-page);
-    font: 400 14px/20px var(--font-ui);
-    color: var(--text);
-  }
-
-  .ein.bad {
-    border-color: var(--danger);
-    color: var(--danger);
-  }
-
-  .name-err {
-    padding: 2px 8px 6px;
-    font: 400 12px/16px var(--font-ui);
-    color: var(--danger);
-  }
-
-  .menu {
-    min-width: 180px;
-  }
-
-  .menu .opt {
-    height: 30px;
-    font-size: 14px;
   }
 
   .caret {

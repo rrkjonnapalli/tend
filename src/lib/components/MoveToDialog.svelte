@@ -2,8 +2,9 @@
   // "Move to…": a path field with folder suggestions. Leaves out the item's own folder and,
   // for folders, the folder itself and everything inside it. A new path is created.
   import Panel from './Panel.svelte';
-  import { isUnder, isValidPath } from '#lib/util/names.ts';
+  import { cleanPath, isUnder, isValidPath } from '#lib/util/names.ts';
   import { label as keyLabel } from '#lib/util/keys.ts';
+  import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
 
   let {
     what,
@@ -27,19 +28,23 @@
     onclose: () => void;
   } = $props();
 
+  const MAX_SUGGESTIONS = 6;
+
   let query = $state('');
   let hi = $state(0);
   /** True once ↑↓ picked a suggestion; Enter then takes it instead of the typed path. */
   let browsing = $state(false);
-  const MAX = 6;
 
-  const allowed = $derived(folders.filter((f) => f !== current && !(self !== undefined && isUnder(f, self))));
-  const target = $derived(query.trim().replace(/\/+$/, ''));
-  const suggestions = $derived(allowed.filter((f) => !target || f.includes(target)).slice(0, MAX));
+  /** When moving a folder, `path` is that folder or inside it. */
+  const insideSelf = (path: string) => self !== undefined && isUnder(path, self);
+
+  const allowed = $derived(folders.filter((f) => f !== current && !insideSelf(f)));
+  const target = $derived(cleanPath(query));
+  const suggestions = $derived(allowed.filter((f) => !target || f.includes(target)).slice(0, MAX_SUGGESTIONS));
 
   const error = $derived.by(() => {
     if (target && !isValidPath(target)) return 'Folder names: a–z, 0–9 and _ only';
-    if (self !== undefined && isUnder(target, self)) return 'Can’t move a folder into itself';
+    if (insideSelf(target)) return 'Can’t move a folder into itself';
     if (target === current) return 'Already there';
     return '';
   });
@@ -51,20 +56,27 @@
     onmove(path);
   }
 
+  function resetHighlight() {
+    hi = 0;
+    browsing = false;
+  }
+
   function onkeydown(e: KeyboardEvent) {
+    const highlighted = suggestions[hi];
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (browsing) hi = Math.min(hi + 1, suggestions.length - 1);
+      if (browsing) hi = nextIndex(hi, suggestions.length);
       browsing = suggestions.length > 0;
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      hi = Math.max(hi - 1, 0);
-    } else if (e.key === 'Tab' && suggestions[hi] !== undefined) {
+      hi = prevIndex(hi);
+    } else if (e.key === 'Tab' && highlighted !== undefined) {
       e.preventDefault();
-      query = suggestions[hi];
+      query = highlighted;
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      go(browsing && suggestions[hi] !== undefined ? suggestions[hi] : target);
+      const picked = browsing && highlighted !== undefined;
+      go(picked ? highlighted : target);
     }
   }
 </script>
@@ -81,7 +93,7 @@
       aria-label="Destination folder"
       placeholder="folder path, empty = top level"
       bind:value={query}
-      oninput={() => ((hi = 0), (browsing = false))}
+      oninput={resetHighlight}
       {onkeydown} />
   </div>
   {#each suggestions as s, i (s)}

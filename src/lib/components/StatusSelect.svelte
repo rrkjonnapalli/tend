@@ -17,20 +17,29 @@
     if (v !== value) onchange(v);
   }
 
+  /** Moves the highlight by `by`, stopping at the first and last status. */
+  function moveHighlight(by: number) {
+    const last = tasks.statuses.length - 1;
+    const next = hi + by;
+    hi = Math.max(0, Math.min(last, next));
+  }
+
   function onkeydown(e: KeyboardEvent) {
     if (!open) return;
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
-      hi = Math.max(0, Math.min(tasks.statuses.length - 1, hi + (e.key === 'ArrowDown' ? 1 : -1)));
+      moveHighlight(e.key === 'ArrowDown' ? 1 : -1);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       pick(tasks.statuses[hi].value);
     }
   }
 
+  /** Opens or closes the list; it opens on the current status (or the first if unknown). */
   function toggle() {
     open = !open;
-    hi = Math.max(0, tasks.statuses.findIndex((s) => s.value === value));
+    const currentIndex = tasks.statuses.findIndex((s) => s.value === value);
+    hi = Math.max(0, currentIndex);
   }
 
   /** Opens the list (the "Set status…" command). */

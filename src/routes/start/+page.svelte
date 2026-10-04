@@ -1,15 +1,19 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { open } from '@tauri-apps/plugin-dialog';
   import Icon from '#lib/components/Icon.svelte';
+  import StartChecklist from '#lib/components/StartChecklist.svelte';
   import { vaultAPI } from '#lib/api/vault.ts';
   import type { Check } from '#lib/types/vault.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
   import { isMac } from '#lib/util/keys.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
+  import { routes } from '#lib/util/routes.ts';
 
   const mod = isMac ? '⌘' : 'Ctrl';
-  const STEP_MS = 450;
+  /** Delay between revealing one checklist step and the next. */
+  const STEP_DELAY_MS = 450;
 
   let check = $state<Check | null>(null);
   let shown = $state(0);
@@ -18,27 +22,43 @@
 
   const done = $derived(check !== null && shown >= check.steps.length);
 
+  onDestroy(stopReveal);
+
   async function choose() {
     const picked = await open({ directory: true, title: 'Choose vault folder' });
     if (typeof picked !== 'string') return;
-    clearInterval(timer);
+    await checkFolder(picked);
+  }
+
+  async function checkFolder(path: string) {
+    stopReveal();
     failure = null;
     shown = 0;
     try {
-      check = await vaultAPI.open(picked);
+      check = await vaultAPI.open(path);
     } catch (e) {
       check = null;
       failure = messageOf(e);
       return;
     }
-    timer = setInterval(() => {
-      shown += 1;
-      if (check && shown >= check.steps.length) clearInterval(timer);
-    }, STEP_MS);
+    startReveal();
+  }
+
+  function startReveal() {
+    timer = setInterval(revealNext, STEP_DELAY_MS);
+  }
+
+  function revealNext() {
+    shown += 1;
+    if (done) stopReveal();
+  }
+
+  function stopReveal() {
+    clearInterval(timer);
   }
 
   function reset() {
-    clearInterval(timer);
+    stopReveal();
     check = null;
     shown = 0;
   }
@@ -46,7 +66,7 @@
   async function enter() {
     if (!check) return;
     await vault.opened(check.path);
-    nav.replace('/notes');
+    nav.replace(routes.notes);
   }
 
   const examples = [
@@ -79,19 +99,7 @@
             <span class="p">{check.path}</span>
             <button class="gbtn sm" onclick={reset}>Change</button>
           </div>
-          <div class="steps">
-            {#each check.steps as st, i (st.item)}
-              {@const state = i < shown ? (st.status === 'error' ? 'bad' : 'ok') : i === shown ? 'run' : 'wait'}
-              <div class="step {state}">
-                <span class="ic">
-                  {#if state === 'ok'}<span class="okic"><Icon name="check" size={13} stroke={2.5} /></span>{/if}
-                  {#if state === 'bad'}<span class="badic"><Icon name="close" size={13} stroke={2.5} /></span>{/if}
-                </span>
-                <span class="mono name">{st.item}</span>
-                <span class="st">{i < shown ? st.detail : state === 'run' ? 'checking…' : ''}</span>
-              </div>
-            {/each}
-          </div>
+          <StartChecklist steps={check.steps} {shown} />
           {#if done && !check.ok}
             <div class="err" role="alert">
               An incompatible database exists in <span class="mono">db/app.sqlite</span>. Choose another folder, or
@@ -268,73 +276,6 @@
     border-color: var(--c-muted-2);
   }
 
-  .steps {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-left: 4px;
-  }
-
-  .step {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font: 400 14px/20px var(--font-ui);
-  }
-
-  .step .name {
-    flex: 0 0 120px;
-  }
-
-  .step .ic {
-    flex: 0 0 14px;
-    display: grid;
-    place-items: center;
-  }
-
-  .okic {
-    display: grid;
-    color: var(--success);
-  }
-
-  .badic {
-    display: grid;
-    color: var(--danger);
-  }
-
-  .step .st {
-    color: var(--c-muted-2);
-    font-size: 13px;
-  }
-
-  .step.wait .name {
-    color: var(--c-faint);
-  }
-
-  .step.wait .ic::before {
-    content: '';
-    width: 6px;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--border);
-  }
-
-  .step.run .ic::before {
-    content: '';
-    width: 10px;
-    height: 10px;
-    border: 2px solid var(--border);
-    border-top-color: var(--primary);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   .err {
     padding: 10px 12px;
     border-radius: 6px;
@@ -388,5 +329,4 @@
     row-gap: 8px;
     align-items: center;
   }
-
 </style>

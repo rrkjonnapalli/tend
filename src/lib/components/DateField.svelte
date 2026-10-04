@@ -5,7 +5,8 @@
   import Icon from './Icon.svelte';
   import Popover from './Popover.svelte';
   import MonthGrid from './MonthGrid.svelte';
-  import { addDays, parseISO, iso, shortDate, today } from '#lib/util/dates.ts';
+  import { shortDate, today } from '#lib/util/dates.ts';
+  import { rangePresets } from '#lib/util/date-presets.ts';
 
   type Props =
     | { mode?: 'single'; value: string | null; onchange: (day: string | null) => void; warn?: boolean }
@@ -29,18 +30,7 @@
     return props.value ? shortDate(props.value) : 'No due date';
   });
 
-  const presets = $derived.by((): [string, DayRange][] => {
-    const dow = (parseISO(now).getDay() + 6) % 7;
-    const d = parseISO(now);
-    const last = iso(new Date(d.getFullYear(), d.getMonth() + 1, 0));
-    return [
-      ['Today', [now, now]],
-      ['Tomorrow', [addDays(now, 1), addDays(now, 1)]],
-      ['This week', [addDays(now, -dow), addDays(now, 6 - dow)]],
-      ['Next 7 days', [now, addDays(now, 6)]],
-      ['This month', [`${now.slice(0, 8)}01`, last]],
-    ];
-  });
+  const presets = rangePresets(now);
 
   /** Opens the month popover (the "Set due date…" command). */
   export function show() {
@@ -52,6 +42,23 @@
     picking = null;
     hover = null;
   }
+
+  function toggle() {
+    if (open) close();
+    else open = true;
+  }
+
+  /** While picking a range, the hovered day previews its end. */
+  function onhover(day: string) {
+    if (picking) hover = day;
+  }
+
+  function clear() {
+    if (props.mode !== 'range') props.onchange(null);
+    close();
+  }
+
+  const isPresetOn = (r: DayRange, preset: DayRange) => !picking && r[0] === preset[0] && r[1] === preset[1];
 
   function pick(day: string) {
     if (props.mode !== 'range') {
@@ -84,7 +91,7 @@
     aria-label="Calendar: pick a date or range"
     aria-haspopup="dialog"
     aria-expanded={open}
-    onclick={() => (open ? close() : (open = true))}>
+    onclick={toggle}>
     <span class="ic"><Icon name="calendar" size={13} /></span>{label}
   </button>
 {:else}
@@ -95,7 +102,7 @@
     class:none={!props.value}
     aria-haspopup="dialog"
     aria-expanded={open}
-    onclick={() => (open ? close() : (open = true))}>
+    onclick={toggle}>
     <span class="ic"><Icon name="calendar" size={13} /></span>{label}
   </button>
 {/if}
@@ -106,8 +113,8 @@
       {#if props.mode === 'range'}
         {@const r = props.range}
         <div class="presets">
-          {#each presets as [name, pr] (name)}
-            <button class="pre" class:on={!picking && r[0] === pr[0] && r[1] === pr[1]} onclick={() => preset(pr)}>{name}</button>
+          {#each presets as p (p.name)}
+            <button class="pre" class:on={isPresetOn(r, p.range)} onclick={() => preset(p.range)}>{p.name}</button>
           {/each}
         </div>
         <div class="body">
@@ -117,14 +124,14 @@
             preview={picking ? { anchor: picking, hover: hover ?? picking } : null}
             marked={props.marked}
             onpick={pick}
-            onhover={(d) => picking && (hover = d)} />
+            {onhover} />
           <div class="foot">{picking ? 'Pick an end date' : 'Pick a day, or two for a range'}</div>
         </div>
       {:else}
         {@const single = props}
         <div class="body">
           <MonthGrid from={single.value} dimPast onpick={pick} />
-          <button class="clr" onclick={() => (single.onchange(null), close())}>No due date</button>
+          <button class="clr" onclick={clear}>No due date</button>
         </div>
       {/if}
     </div>

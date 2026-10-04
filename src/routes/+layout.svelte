@@ -6,7 +6,6 @@
   import VaultGate from '#lib/components/VaultGate.svelte';
   import BottomNav from '#lib/components/BottomNav.svelte';
   import TopBar from '#lib/components/TopBar.svelte';
-  import { getCurrentWindow } from '@tauri-apps/api/window';
   import Toast from '#lib/components/Toast.svelte';
   import CommandPalette from '#lib/components/CommandPalette.svelte';
   import QuickCreate from '#lib/components/QuickCreate.svelte';
@@ -14,50 +13,57 @@
   import { timers } from '#lib/stores/timers.svelte.ts';
   import { available, blocked, commands } from '#lib/commands.ts';
   import { matches } from '#lib/util/keys.ts';
+  import { routes } from '#lib/util/routes.ts';
+  import { inTauri, watchFilled } from '#lib/util/window.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
 
   let { children }: { children: Snippet } = $props();
 
   // In the built app the first URL is "tauri://localhost", whose pathname is "" rather than "/".
-  const path = $derived(page.url.pathname || '/');
-  const onStart = $derived(path === '/start');
+  const path = $derived(page.url.pathname || routes.home);
+  const onStart = $derived(path === routes.start);
+  const settled = $derived(vault.ready && !vault.problem);
+  /** A vault is open and the start page is behind us: the bottom bar and shortcuts are live. */
+  const inVault = $derived(Boolean(vault.path) && !onStart);
 
   afterNavigate(nav.record);
 
   // Once launch is settled: no vault → start page; "/" → Notes.
   $effect(() => {
-    if (!vault.ready || vault.problem) return;
-    if (!vault.path && !onStart) nav.replace('/start');
-    else if (vault.path && path === '/') nav.replace('/notes');
+    if (!settled) return;
+    if (!vault.path && !onStart) nav.replace(routes.start);
+    else if (vault.path && path === routes.home) nav.replace(routes.notes);
   });
 
   // Timers run as soon as a vault is open, whichever page is showing.
   $effect(() => {
-    if (vault.path) timers.start();
+    if (!vault.path) return;
+    timers.start();
+    return timers.stop;
   });
 
   // Square corners when the window fills the screen.
   let filled = $state(false);
   $effect(() => {
-    if (!('__TAURI_INTERNALS__' in window)) return;
-    const win = getCurrentWindow();
-    const check = async () => (filled = (await win.isMaximized()) || (await win.isFullscreen()));
-    check();
-    const stop = win.onResized(check);
-    return () => {
-      stop.then((f) => f());
-    };
+    if (!inTauri()) return;
+    return watchFilled((value) => (filled = value));
   });
 
+  function commandFor(e: KeyboardEvent) {
+    if (!inVault) return undefined;
+    return commands.find((c) => c.keys && matches(e, c.keys) && available(c));
+  }
+
   function onkeydown(e: KeyboardEvent) {
-    const cmd = vault.path && !onStart ? commands.find((c) => c.keys && matches(e, c.keys) && available(c)) : undefined;
+    const cmd = commandFor(e);
     if (cmd) {
       e.preventDefault();
       cmd.run();
       return;
     }
-    if (blocked.some((k) => matches(e, k))) e.preventDefault();
+    const isBlocked = blocked.some((k) => matches(e, k));
+    if (isBlocked) e.preventDefault();
   }
 </script>
 
@@ -65,14 +71,14 @@
 
 <div class="shell" class:filled>
   <TopBar />
-  {#if !vault.ready || vault.problem}
+  {#if !settled}
     <VaultGate />
   {:else}
     <div class="page">{@render children()}</div>
-    {#if !onStart && vault.path}<BottomNav />{/if}
+    {#if inVault}<BottomNav />{/if}
   {/if}
 </div>
-{#if vault.ready && !vault.problem}
+{#if settled}
   {#if ui.palette}<CommandPalette onclose={() => (ui.palette = false)} />{/if}
   {#if ui.quick}{#key ui.quick}<QuickCreate kind={ui.quick} onclose={() => (ui.quick = null)} />{/key}{/if}
   <Toast />

@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type { ExplorerItem } from '#lib/types/explorer.type.ts';
+  import type { ExplorerActions, ExplorerItem } from '#lib/types/explorer.type.ts';
+  import type { Item } from '#lib/types/note.type.ts';
   import type { Snippet } from 'svelte';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Explorer from '#lib/components/Explorer.svelte';
   import { notes } from '#lib/stores/notes.svelte.ts';
-  import type { Item } from '#lib/types/note.type.ts';
-  import { baseOf, isUnder, join, parentOf } from '#lib/util/names.ts';
-  import { plural } from '#lib/util/plural.ts';
-  import { routes } from '#lib/util/routes.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
+  import { isUnder, join, parentOf } from '#lib/util/names.ts';
+  import { NOTES_ROOT_NAME, folderContents } from '#lib/util/note-paths.ts';
+  import { routes } from '#lib/util/routes.ts';
 
   let { children }: { children: Snippet } = $props();
 
@@ -22,45 +22,69 @@
 
   const toApi = (item: ExplorerItem): Item => (item.kind === 'folder' ? { kind: 'folder', path: item.path } : { kind: 'note', id: item.id });
 
-  /** After a folder moves, a list open inside it follows it to the new path. */
-  function follow(oldPath: string, newPath: string) {
-    if (!noteId && isUnder(folder, oldPath)) nav.replace(routes.notesFolder(newPath + folder.slice(oldPath.length)));
+  function hrefOf(item: ExplorerItem): string {
+    if (item.kind === 'folder') return routes.notesFolder(item.path);
+    return routes.note(item.id);
   }
 
-  const actions = {
-    open: (item: ExplorerItem) => goto(item.kind === 'folder' ? routes.notesFolder(item.path) : routes.note(item.id)),
-    createFolder: (parent: string, name: string) => notes.createFolder(join(parent, name)),
-    createLeaf: async (folder: string, name: string) => {
-      const row = await notes.create(folder, name);
-      goto(routes.note(row.id, true));
-    },
-    rename: async (item: ExplorerItem, name: string) => {
-      const result = await notes.rename(toApi(item), name);
-      if (item.kind === 'folder') follow(item.path, result);
-    },
-    move: async (item: ExplorerItem, target: string) => {
-      const result = await notes.move(toApi(item), target);
-      if (item.kind === 'folder') follow(item.path, result);
-    },
-    remove: async (item: ExplorerItem) => {
-      const gone = item.kind === 'folder' ? item.path : null;
-      const noteFolder = item.kind === 'leaf' ? notes.byId(item.id)?.folder ?? '' : '';
-      await notes.remove(toApi(item));
-      if (item.kind === 'leaf' && item.id === noteId) nav.back(routes.notesFolder(noteFolder));
-      if (gone !== null && !noteId && isUnder(folder, gone)) nav.replace(routes.notesFolder(parentOf(gone)));
-      if (gone !== null && noteId && isUnder(notes.byId(noteId)?.folder ?? '', gone)) nav.replace(routes.notesFolder(parentOf(gone)));
-    },
+  /** After a folder moves, a list open inside it follows it to the new path. */
+  function follow({ from, to }: { from: string; to: string }) {
+    if (noteId || !isUnder(folder, from)) return;
+    const moved = to + folder.slice(from.length);
+    nav.replace(routes.notesFolder(moved));
+  }
+
+  async function createLeaf({ folder, name }: { folder: string; name: string }) {
+    const row = await notes.create({ folder, name });
+    goto(routes.note(row.id, { edit: true }));
+  }
+
+  async function rename(item: ExplorerItem, name: string) {
+    const result = await notes.rename(toApi(item), name);
+    if (item.kind === 'folder') follow({ from: item.path, to: result });
+  }
+
+  async function move(item: ExplorerItem, target: string) {
+    const result = await notes.move(toApi(item), target);
+    if (item.kind === 'folder') follow({ from: item.path, to: result });
+  }
+
+  /** Deleting the open note goes back to its folder. */
+  async function removeNote(id: string) {
+    const noteFolder = notes.byId(id)?.folder ?? '';
+    await notes.remove({ kind: 'note', id });
+    if (id === noteId) nav.back(routes.notesFolder(noteFolder));
+  }
+
+  /** Deleting the folder that holds the open list or note goes to its parent. */
+  async function removeFolder(path: string) {
+    await notes.remove({ kind: 'folder', path });
+    const viewing = noteId ? (notes.byId(noteId)?.folder ?? '') : folder;
+    if (isUnder(viewing, path)) nav.replace(routes.notesFolder(parentOf(path)));
+  }
+
+  async function remove(item: ExplorerItem) {
+    if (item.kind === 'leaf') await removeNote(item.id);
+    else await removeFolder(item.path);
+  }
+
+  function contents(path: string): string {
+    return folderContents({ notes: notes.under(path).length, folders: notes.foldersUnder(path).length });
+  }
+
+  const actions: ExplorerActions = {
+    open: (item) => goto(hrefOf(item)),
+    createFolder: ({ parent, name }) => notes.createFolder(join(parent, name)),
+    createLeaf,
+    rename,
+    move,
+    remove,
     reload: () => notes.rescan(),
-    contents: (path: string) => {
-      const n = notes.under(path).length;
-      const f = notes.foldersUnder(path).length;
-      if (!n && !f) return 'The folder is empty.';
-      return `It contains ${plural(n, 'note')}${f ? ` and ${plural(f, 'folder')}` : ''}. Everything inside is deleted from disk.`;
-    },
+    contents,
   };
 </script>
 
-<Explorer id="notes" rootName="notes" folders={notes.folders} {leaves} {selected} {actions} />
+<Explorer id="notes" rootName={NOTES_ROOT_NAME} folders={notes.folders} {leaves} {selected} {actions} />
 <div class="pane">{@render children()}</div>
 
 <style>

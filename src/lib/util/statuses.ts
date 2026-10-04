@@ -24,3 +24,10 @@ export function statusValue(label: string): string {
   const trimmed = snake.replace(/^[_0-9]+|_+$/g, '');
   return trimmed.slice(0, MAX_VALUE_LENGTH);
 }
+
+/** The first swatch no status uses yet, or the first swatch when all are taken. */
+export function freeSwatch(usedColors: string[]): string {
+  const used = new Set(usedColors);
+  const free = SWATCHES.find(([, hex]) => !used.has(hex)) ?? SWATCHES[0];
+  return free[1];
+}

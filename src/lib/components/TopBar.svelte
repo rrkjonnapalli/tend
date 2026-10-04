@@ -1,32 +1,32 @@
 <script lang="ts">
   // The window's own title bar (native decorations are off): drag anywhere on it, double-click
   // to maximise. macOS gets window dots on the left; Windows and Linux get buttons on the right.
-  import { getCurrentWindow } from '@tauri-apps/api/window';
   import { page } from '$app/state';
   import Icon from './Icon.svelte';
   import { isMac } from '#lib/util/keys.ts';
+  import { runWindowAction } from '#lib/util/window.ts';
 
   const SECTIONS: Record<string, string> = { notes: 'Notes', tasks: 'Tasks', people: 'People', settings: 'Settings' };
-  const title = $derived(SECTIONS[page.url.pathname.split('/')[1]] ?? 'Tend');
+  const APP_NAME = 'Tend';
 
-  const inTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
-  const win = () => getCurrentWindow();
+  const section = $derived(page.url.pathname.split('/')[1]);
+  const title = $derived(SECTIONS[section] ?? APP_NAME);
 </script>
 
 <header class="bar" class:mac={isMac} data-tauri-drag-region>
   {#if isMac}
     <div class="dots" role="group" aria-label="Window">
-      <button class="dot close" aria-label="Close window" onclick={() => inTauri && win().close()}><Icon name="close" size={8} stroke={3} /></button>
-      <button class="dot min" aria-label="Minimize window" onclick={() => inTauri && win().minimize()}><Icon name="minimize" size={8} stroke={3} /></button>
-      <button class="dot max" aria-label="Maximize window" onclick={() => inTauri && win().toggleMaximize()}><Icon name="plus" size={8} stroke={3} /></button>
+      <button class="dot close" aria-label="Close window" onclick={() => runWindowAction('close')}><Icon name="close" size={8} stroke={3} /></button>
+      <button class="dot min" aria-label="Minimize window" onclick={() => runWindowAction('minimize')}><Icon name="minimize" size={8} stroke={3} /></button>
+      <button class="dot max" aria-label="Maximize window" onclick={() => runWindowAction('toggleMaximize')}><Icon name="plus" size={8} stroke={3} /></button>
     </div>
   {/if}
   <span class="title" data-tauri-drag-region>{title}</span>
   {#if !isMac}
     <div class="ctrls" role="group" aria-label="Window">
-      <button class="ctrl" aria-label="Minimize window" title="Minimize" onclick={() => inTauri && win().minimize()}><Icon name="minimize" size={12} stroke={1.5} /></button>
-      <button class="ctrl" aria-label="Maximize window" title="Maximize" onclick={() => inTauri && win().toggleMaximize()}><Icon name="maximize" size={11} stroke={1.5} /></button>
-      <button class="ctrl close" aria-label="Close window" title="Close" onclick={() => inTauri && win().close()}><Icon name="close" size={12} stroke={1.5} /></button>
+      <button class="ctrl" aria-label="Minimize window" title="Minimize" onclick={() => runWindowAction('minimize')}><Icon name="minimize" size={12} stroke={1.5} /></button>
+      <button class="ctrl" aria-label="Maximize window" title="Maximize" onclick={() => runWindowAction('toggleMaximize')}><Icon name="maximize" size={11} stroke={1.5} /></button>
+      <button class="ctrl close" aria-label="Close window" title="Close" onclick={() => runWindowAction('close')}><Icon name="close" size={12} stroke={1.5} /></button>
     </div>
   {/if}
 </header>

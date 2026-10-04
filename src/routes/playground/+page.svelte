@@ -14,8 +14,9 @@
   import { baseOf, isUnder, join, parentOf } from '#lib/util/names.ts';
   import { today } from '#lib/util/dates.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
+  import { routes } from '#lib/util/routes.ts';
 
-  if (!import.meta.env.DEV) nav.replace('/notes');
+  if (!import.meta.env.DEV) nav.replace(routes.notes);
   tagPool.names = ['ci', 'docs', 'home', 'reading', 'release', 'tauri', 'ui', 'v0.1'];
 
   let folders = $state(['home', 'home/recipes', 'inbox', 'work', 'work/meetings', 'work/tend_v0_1']);
@@ -27,32 +28,39 @@
   ]);
   let selected = $state<ExplorerItem | null>({ kind: 'folder', path: 'work' });
 
-  const rebase = (p: string, from: string, to: string) => (isUnder(p, from) && from ? to + p.slice(from.length) : p);
+  /** `path` with its `from` prefix swapped for `to`, when it sits under `from`. */
+  function rebase(path: string, { from, to }: { from: string; to: string }) {
+    if (!from || !isUnder(path, from)) return path;
+    return to + path.slice(from.length);
+  }
 
   const actions = {
-    open: (item: ExplorerItem) => (selected = item),
-    createFolder: async (parent: string, name: string) => {
+    open: (item: ExplorerItem) => {
+      selected = item;
+    },
+    createFolder: async ({ parent, name }: { parent: string; name: string }) => {
       folders = [...folders, join(parent, name)];
     },
-    createLeaf: async (folder: string, name: string) => {
+    createLeaf: async ({ folder, name }: { folder: string; name: string }) => {
       const id = `n${Date.now()}`;
       leaves = [...leaves, { id, folder, name }];
       selected = { kind: 'leaf', id };
     },
     rename: async (item: ExplorerItem, name: string) => {
       if (item.kind === 'leaf') leaves = leaves.map((l) => (l.id === item.id ? { ...l, name } : l));
-      else move(item.path, join(parentOf(item.path), name));
+      else move({ from: item.path, to: join(parentOf(item.path), name) });
     },
     move: async (item: ExplorerItem, target: string) => {
       if (item.kind === 'leaf') leaves = leaves.map((l) => (l.id === item.id ? { ...l, folder: target } : l));
-      else move(item.path, join(target, baseOf(item.path)));
+      else move({ from: item.path, to: join(target, baseOf(item.path)) });
     },
     remove: async (item: ExplorerItem) => {
-      if (item.kind === 'leaf') leaves = leaves.filter((l) => l.id !== item.id);
-      else {
-        folders = folders.filter((f) => !isUnder(f, item.path));
-        leaves = leaves.filter((l) => !isUnder(l.folder, item.path));
+      if (item.kind === 'leaf') {
+        leaves = leaves.filter((l) => l.id !== item.id);
+        return;
       }
+      folders = folders.filter((f) => !isUnder(f, item.path));
+      leaves = leaves.filter((l) => !isUnder(l.folder, item.path));
     },
     reload: async () => {},
     contents: (path: string) => {
@@ -62,9 +70,9 @@
     },
   };
 
-  function move(from: string, to: string) {
-    folders = folders.map((f) => rebase(f, from, to));
-    leaves = leaves.map((l) => ({ ...l, folder: rebase(l.folder, from, to) }));
+  function move(paths: { from: string; to: string }) {
+    folders = folders.map((f) => rebase(f, paths));
+    leaves = leaves.map((l) => ({ ...l, folder: rebase(l.folder, paths) }));
   }
 
   let desc = $state('First signed build for **macOS** and Linux.\n\n- [x] sign\n- [ ] notarize');

@@ -14,7 +14,9 @@ export const isValidName = (name: string) => RULE.test(name);
 export function nameError(name: string, siblings: Iterable<string> = []): string {
   if (!name) return nameErrors.empty;
   if (!isValidName(name)) return nameErrors.chars;
-  for (const s of siblings) if (s === name) return nameErrors.clash;
+  for (const sibling of siblings) {
+    if (sibling === name) return nameErrors.clash;
+  }
   return '';
 }
 
@@ -27,5 +29,11 @@ export const baseOf = (path: string) => path.slice(path.lastIndexOf('/') + 1);
 /** `path` is `root` or inside it. '' contains everything. */
 export const isUnder = (path: string, root: string) => root === '' || path === root || path.startsWith(root + '/');
 /** `path` relative to `root`, '' when they are the same. */
-export const relativeTo = (path: string, root: string) =>
-  path === root ? '' : root === '' ? path : path.slice(root.length + 1);
+export function relativeTo(path: string, root: string): string {
+  if (path === root) return '';
+  if (root === '') return path;
+  return path.slice(root.length + 1);
+}
+
+/** A typed folder path without surrounding spaces or trailing slashes. */
+export const cleanPath = (value: string) => value.trim().replace(/\/+$/, '');

@@ -4,6 +4,7 @@
   import type { Anchor, Placement } from '#lib/types/popover.type.ts';
   import type { Snippet } from 'svelte';
   import { pushLayer } from '#lib/util/layers.ts';
+  import { positionFor } from '#lib/util/popover-position.ts';
 
   let {
     anchor,
@@ -26,9 +27,11 @@
     children: Snippet;
   } = $props();
 
-  const MARGIN = 8;
+  /** Before the first measure, so the popover never flashes at 0,0. */
+  const OFFSCREEN = -9999;
+
   let el = $state<HTMLDivElement>();
-  let pos = $state({ left: -9999, top: -9999 });
+  let pos = $state({ left: OFFSCREEN, top: OFFSCREEN });
 
   function rectOf(a: Anchor): { left: number; right: number; top: number; bottom: number } {
     if (a instanceof HTMLElement) return a.getBoundingClientRect();
@@ -37,19 +40,13 @@
 
   function place() {
     if (!el || !anchor) return;
-    const r = rectOf(anchor);
-    const w = el.offsetWidth;
-    const h = el.offsetHeight;
-    const [side, align] = placement.split('-') as ['top' | 'bottom', 'start' | 'end'];
-    const below = r.bottom + offset;
-    const above = r.top - offset - h;
-    const fitsBelow = below + h <= window.innerHeight - MARGIN;
-    const fitsAbove = above >= MARGIN;
-    let top = side === 'bottom' ? (fitsBelow || !fitsAbove ? below : above) : fitsAbove || !fitsBelow ? above : below;
-    top = Math.max(MARGIN, Math.min(top, window.innerHeight - MARGIN - h));
-    let left = align === 'start' ? r.left : r.right - w;
-    left = Math.max(MARGIN, Math.min(left, window.innerWidth - MARGIN - w));
-    pos = { left, top };
+    pos = positionFor({
+      rect: rectOf(anchor),
+      size: { width: el.offsetWidth, height: el.offsetHeight },
+      placement,
+      offset,
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+    });
   }
 
   $effect(() => {
@@ -67,9 +64,9 @@
   $effect(() => pushLayer(() => onclose()));
 
   function onpointerdown(e: PointerEvent) {
-    const t = e.target as Node;
-    if (el?.contains(t)) return;
-    if (anchor instanceof HTMLElement && anchor.contains(t)) return;
+    const target = e.target as Node;
+    if (el?.contains(target)) return;
+    if (anchor instanceof HTMLElement && anchor.contains(target)) return;
     onclose();
   }
 </script>

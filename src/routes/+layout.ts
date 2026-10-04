@@ -1,12 +1,14 @@
 // Tauri has no Node server, so the app runs as a client-only SPA.
 import { vault } from '#lib/stores/vault.svelte.ts';
+import { inTauri } from '#lib/util/window.ts';
 
 export const ssr = false;
 export const prerender = false;
 
 /** In a plain browser during development, answer commands from fixtures (see lib/dev). */
 async function devMock() {
-  if (import.meta.env.DEV && !('__TAURI_INTERNALS__' in window)) await import('#lib/dev/mock-ipc.ts');
+  const inBrowserDev = import.meta.env.DEV && !inTauri();
+  if (inBrowserDev) await import('#lib/dev/mock-ipc.ts');
 }
 
 let started = false;

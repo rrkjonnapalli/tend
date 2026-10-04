@@ -1,20 +1,28 @@
 <script lang="ts">
+  // The sections bar at the bottom: Notes, Tasks, People, plus timers, settings and feedback.
   import type { IconName } from '#lib/types/icon.type.ts';
   import { page } from '$app/state';
   import Icon from './Icon.svelte';
   import FeedbackPopover from './FeedbackPopover.svelte';
   import TimerChip from './TimerChip.svelte';
   import { ui } from '#lib/stores/ui.svelte.ts';
+  import { routes } from '#lib/util/routes.ts';
 
   const sections: { href: string; label: string; icon: IconName }[] = [
-    { href: '/notes', label: 'Notes', icon: 'note' },
-    { href: '/tasks', label: 'Tasks', icon: 'task' },
-    { href: '/people', label: 'People', icon: 'person' },
+    { href: routes.notes, label: 'Notes', icon: 'note' },
+    { href: routes.tasks, label: 'Tasks', icon: 'task' },
+    { href: routes.people, label: 'People', icon: 'person' },
   ];
 
   let feedbackBtn = $state<HTMLButtonElement>();
 
-  const isCurrent = (href: string) => page.url.pathname === href || page.url.pathname.startsWith(href + '/');
+  const feedbackOpen = $derived(ui.popup === 'feedback');
+
+  /** The section's own page or any page inside it. */
+  function isCurrent(href: string) {
+    const path = page.url.pathname;
+    return path === href || path.startsWith(`${href}/`);
+  }
 </script>
 
 {#if ui.navOpen}
@@ -38,8 +46,8 @@
         <TimerChip />
         <a
           class="ico"
-          class:cur={isCurrent('/settings')}
-          href="/settings"
+          class:cur={isCurrent(routes.settings)}
+          href={routes.settings}
           aria-label="Settings"
           title="Settings">
           <Icon name="settings" size={16} />
@@ -47,18 +55,18 @@
         <button
           bind:this={feedbackBtn}
           class="ico"
-          class:on={ui.popup === 'feedback'}
+          class:on={feedbackOpen}
           aria-label="Feedback"
           title="Feedback"
           aria-haspopup="dialog"
-          aria-expanded={ui.popup === 'feedback'}
+          aria-expanded={feedbackOpen}
           onclick={() => ui.toggle('feedback')}>
           <Icon name="feedback" size={16} />
         </button>
       </div>
     </nav>
   </div>
-  {#if ui.popup === 'feedback'}<FeedbackPopover anchor={feedbackBtn} onclose={() => (ui.popup = null)} />{/if}
+  {#if feedbackOpen}<FeedbackPopover anchor={feedbackBtn} onclose={ui.closePopup} />{/if}
 {:else}
   <button class="tog closed" aria-label="Show sections bar" title="Show" onclick={ui.toggleNav}>
     <Icon name="chevronUp" size={12} stroke={2.5} />

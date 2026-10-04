@@ -11,17 +11,10 @@ class History {
   /** Call from the root layout's afterNavigate. */
   record = (nav: AfterNavigate) => {
     const url = nav.to ? nav.to.url.pathname + nav.to.url.search : '';
-    if (nav.type === 'enter') {
-      this.#stack = [url];
-      this.#index = 0;
-    } else if (nav.type === 'popstate') {
-      this.#index = Math.max(0, Math.min(this.#stack.length - 1, this.#index + (nav.delta ?? 0)));
-    } else if (this.#replacing) {
-      this.#stack[this.#index] = url;
-    } else {
-      this.#stack = [...this.#stack.slice(0, this.#index + 1), url];
-      this.#index += 1;
-    }
+    if (nav.type === 'enter') this.#start(url);
+    else if (nav.type === 'popstate') this.#step(nav.delta ?? 0);
+    else if (this.#replacing) this.#stack[this.#index] = url;
+    else this.#push(url);
     this.#replacing = false;
   };
 
@@ -36,6 +29,25 @@ class History {
     if (this.#index > 0) history.back();
     else this.replace(fallback);
   };
+
+  #start(url: string) {
+    this.#stack = [url];
+    this.#index = 0;
+  }
+
+  /** Browser back/forward: move by `delta`, staying inside the stack. */
+  #step(delta: number) {
+    const last = this.#stack.length - 1;
+    const target = this.#index + delta;
+    this.#index = Math.max(0, Math.min(last, target));
+  }
+
+  /** A new page drops any forward steps, like a browser. */
+  #push(url: string) {
+    const kept = this.#stack.slice(0, this.#index + 1);
+    this.#stack = [...kept, url];
+    this.#index += 1;
+  }
 }
 
 export const nav = new History();

@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { settingKeys } from '#lib/config/settings.config.ts';
   // Note page: sticky bar (back, breadcrumb, width, read/edit), tags, then the note itself.
   // Edits autosave to disk ~500 ms after typing stops, and on blur or leaving the page.
   import type { Crumb } from '#lib/types/breadcrumb.type.ts';
+  import type { NoteDoc } from '#lib/types/note.type.ts';
   import { beforeNavigate } from '$app/navigation';
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
@@ -18,9 +20,11 @@
   import { label as keyLabel } from '#lib/util/keys.ts';
   import { pageActions } from '#lib/stores/page-actions.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { folderCrumbs } from '#lib/util/note-paths.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
 
   const SAVE_MS = 500;
+  const EDITOR_MIN_HEIGHT = 600;
 
   const id = $derived(page.params.id!);
   const row = $derived(notes.byId(id));
@@ -32,16 +36,21 @@
   let loadedId = $state<string | null>(null);
   let timer: ReturnType<typeof setTimeout> | undefined;
 
-  const wide = $derived(settings.get('notes.wide', false));
+  const wide = $derived(settings.get(settingKeys.notesWide, false));
+  const widthLabel = $derived(wide ? 'Narrow width' : 'Full width');
 
-  async function load(noteId: string, edit: boolean) {
+  function show({ noteId, doc, edit }: { noteId: string; doc: NoteDoc; edit: boolean }) {
+    text = doc.text;
+    saved = doc.text;
+    tags = doc.tags;
+    loadedId = noteId;
+    editing = edit;
+  }
+
+  async function load({ noteId, edit }: { noteId: string; edit: boolean }) {
     try {
       const doc = await notesAPI.read(noteId);
-      text = doc.text;
-      saved = doc.text;
-      tags = doc.tags;
-      loadedId = noteId;
-      editing = edit;
+      show({ noteId, doc, edit });
     } catch (e) {
       toast.show(messageOf(e));
     }
@@ -53,24 +62,32 @@
     const edit = page.url.searchParams.get('edit') === '1';
     if (noteId !== loadedId) {
       flush();
-      load(noteId, edit);
+      load({ noteId, edit });
     }
   });
+
+  /** True while the open note has no edits of its own that a reload would overwrite. */
+  const isUntouched = () => !editing && text === saved;
+
+  function takeOutsideText(doc: NoteDoc) {
+    if (!isUntouched() || doc.text === text) return;
+    text = doc.text;
+    saved = doc.text;
+  }
 
   // Outside changes reach an open note that isn't being edited.
   $effect(() => {
     void notes.version;
-    if (loadedId === id && !editing && text === saved) {
-      notesAPI.read(id).then((doc) => {
-        if (!editing && text === saved && doc.text !== text) text = saved = doc.text;
-      }, () => {});
+    if (loadedId === id && isUntouched()) {
+      notesAPI.read(id).then(takeOutsideText, () => {});
     }
   });
 
   async function flush() {
     clearTimeout(timer);
     if (loadedId === null || text === saved) return;
-    const [noteId, body] = [loadedId, text];
+    const noteId = loadedId;
+    const body = text;
     try {
       await notesAPI.write({ id: noteId, text: body });
       if (loadedId === noteId) saved = body;
@@ -109,16 +126,18 @@
     pageActions.provide({
       'note.mode': () => setMode(!editing),
       'note.tag': () => tagEditor?.start(),
-      'page.width': () => settings.set('notes.wide', !wide),
+      'page.width': toggleWidth,
     }),
   );
 
+  function toggleWidth() {
+    settings.set(settingKeys.notesWide, !wide);
+  }
+
   const crumbs = $derived.by((): Crumb[] => {
-    const out: Crumb[] = [{ label: 'notes', href: routes.notesFolder('') }];
-    const segs = row?.folder ? row.folder.split('/') : [];
-    segs.forEach((s, i) => out.push({ label: s, href: routes.notesFolder(segs.slice(0, i + 1).join('/')) }));
-    if (row) out.push({ label: row.name });
-    return out;
+    const trail = folderCrumbs(row?.folder ?? '');
+    if (!row) return trail;
+    return [...trail, { label: row.name }];
   });
 </script>
 
@@ -131,9 +150,9 @@
     <span class="grow"></span>
     <button
       class="icon-btn"
-      aria-label={wide ? 'Narrow width' : 'Full width'}
-      title={wide ? 'Narrow width' : 'Full width'}
-      onclick={() => settings.set('notes.wide', !wide)}>
+      aria-label={widthLabel}
+      title={widthLabel}
+      onclick={toggleWidth}>
       <Icon name={wide ? 'narrow' : 'widen'} size={14} />
     </button>
     {#if editing}
@@ -154,7 +173,7 @@
               {onchange}
               onblur={flush}
               variant="note"
-              minHeight={600}
+              minHeight={EDITOR_MIN_HEIGHT}
               placeholder={'# Title\n\nStart writing…'}
               label="Note"
               autofocus />

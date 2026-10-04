@@ -23,6 +23,7 @@
     onchange?.(list.length);
   }
 
+  // Reload when another task's comments are shown.
   $effect(() => {
     void task;
     load();

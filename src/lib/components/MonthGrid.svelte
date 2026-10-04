@@ -3,7 +3,7 @@
   // live preview while the second end of a range is being picked.
   import { untrack } from 'svelte';
   import Icon from './Icon.svelte';
-  import { monthGrid, monthTitle, parseISO, today } from '#lib/util/dates.ts';
+  import { dayOfMonth, monthGrid, monthTitle, parseISO, today } from '#lib/util/dates.ts';
 
   let {
     from,
@@ -31,6 +31,7 @@
   let year = $state(start.getFullYear());
   let month = $state(start.getMonth());
   const now = today();
+  const WEEKDAY_HEADS = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'];
 
   const cells = $derived(monthGrid(year, month));
   const band = $derived.by(() => {
@@ -47,12 +48,21 @@
     month = d.getMonth();
   }
 
+  /** A band is drawn only for a range of more than one day. */
+  function inBand(day: string): boolean {
+    if (!band || band.a === band.b) return false;
+    return day >= band.a && day <= band.b;
+  }
+
   function cellClass(day: string): string {
-    if (!band || band.a === band.b || day < band.a || day > band.b) return '';
+    if (!band || !inBand(day)) return '';
     if (day === band.a) return 'bstart';
     if (day === band.b) return 'bend';
     return 'band';
   }
+
+  /** The selected day, or either end of the range. */
+  const isEdge = (day: string) => band !== null && (day === band.a || day === band.b);
 </script>
 
 <div class="month">
@@ -62,19 +72,19 @@
     <button class="nav" aria-label="Next month" onclick={() => shift(1)}><Icon name="chevronRight" size={12} stroke={2.5} /></button>
   </div>
   <div class="grid">
-    {#each ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'] as wd (wd)}<span class="wd">{wd}</span>{/each}
+    {#each WEEKDAY_HEADS as wd (wd)}<span class="wd">{wd}</span>{/each}
     {#each cells as day, i (day ?? `pad${i}`)}
       <span class="cell {day ? cellClass(day) : ''}">
         {#if day}
           <button
             class="dd"
             class:today={day === now}
-            class:edge={band !== null && (day === band.a || day === band.b)}
+            class:edge={isEdge(day)}
             class:past={dimPast && day < now}
             aria-label={day}
             onclick={() => onpick(day)}
             onmouseenter={() => onhover?.(day)}>
-            {Number(day.slice(8))}
+            {dayOfMonth(day)}
             {#if marked.has(day)}<span class="dot"></span>{/if}
           </button>
         {/if}

@@ -15,8 +15,12 @@
   let anchor = $state<HTMLElement>();
   const person = $derived(people.byId(value));
 
-  const match = (p: PersonRow, q: string) =>
-    !q || [displayName(p), p.firstName, p.lastName, p.email ?? '', p.phone ?? ''].some((s) => s.toLowerCase().includes(q));
+  /** True when the query is empty or any of the person's names, email or phone contains it. */
+  function match(p: PersonRow, q: string): boolean {
+    if (!q) return true;
+    const fields = [displayName(p), p.firstName, p.lastName, p.email ?? '', p.phone ?? ''];
+    return fields.some((s) => s.toLowerCase().includes(q));
+  }
 
   function pick(p: PersonRow) {
     open = false;

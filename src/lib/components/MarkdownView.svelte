@@ -11,15 +11,17 @@
     ondblclick,
   }: { text: string; variant?: 'note' | 'ui'; empty?: string; ondblclick?: () => void } = $props();
 
+  const EXTERNAL_LINK = /^(https?|mailto):/i;
+
   const html = $derived(renderMarkdown(text));
 
   // Links open in the default browser instead of replacing the app.
   function onclick(e: MouseEvent) {
-    const a = (e.target as HTMLElement).closest('a');
-    if (!a) return;
+    const link = (e.target as HTMLElement).closest('a');
+    if (!link) return;
     e.preventDefault();
-    const href = a.getAttribute('href') ?? '';
-    if (/^(https?|mailto):/i.test(href)) openUrl(href);
+    const href = link.getAttribute('href') ?? '';
+    if (EXTERNAL_LINK.test(href)) openUrl(href);
   }
 </script>
 

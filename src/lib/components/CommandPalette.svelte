@@ -1,7 +1,11 @@
 <script lang="ts">
+  import type { QuickKind } from '#lib/types/ui.type.ts';
+  import { settingKeys } from '#lib/config/settings.config.ts';
+  import { timerStartedText } from '#lib/util/timer-text.ts';
   // ⌘K: commands in groups, title search across notes and tasks, and quick-create phrases
   // ("task: …", "note: …", "person: …", "timer 10m …"). ↑↓ move, ↵ runs, Esc closes.
   import type { Command } from '#lib/types/command.type.ts';
+  import type { PaletteItem } from '#lib/types/palette.type.ts';
   import type { Phrase } from '#lib/types/quick-parse.type.ts';
   import { goto } from '$app/navigation';
   import Icon from './Icon.svelte';
@@ -16,16 +20,18 @@
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { keyParts } from '#lib/util/keys.ts';
+  import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
+  import { groupItems, hasAllWords } from '#lib/util/palette-items.ts';
   import { nameFromTitle, parsePhrase } from '#lib/util/quick-parse.ts';
   import { routes } from '#lib/util/routes.ts';
 
   let { onclose }: { onclose: () => void } = $props();
 
-  type Item = { key: string; group: string; icon: string; label: string; sub?: string; keys?: string; isNew?: boolean; run: () => void | Promise<void> };
-
   const ICONS: Record<string, string> = { 'Go to': '→', Create: '+', Notes: '¶', Tasks: '☐', App: '⌘' };
   const MAX_CMDS = 8;
   const MAX_HITS = 4;
+  const WIDTH = 600;
+  const TOP = 96;
 
   let query = $state('');
   let hi = $state(0);
@@ -33,99 +39,140 @@
   if (!notes.notes.length) notes.load();
   if (!tasks.tasks.length) tasks.load();
 
-  const lastPath = (kind: string) => settings.get<string>(`quick.last_path.${kind}`, '');
-  const taskRoot = $derived(settings.get('tasks.root_name', 'tasks'));
+  const lastPath = (kind: QuickKind) => settings.get<string>(settingKeys.quickLastPath(kind), '');
+  const taskRoot = $derived(settings.get(settingKeys.tasksRootName, 'tasks'));
 
-  function phraseItem(p: Phrase): Item {
-    switch (p.kind) {
-      case 'task': {
-        const path = lastPath('task');
-        return {
-          key: 'p:task', group: 'Create', icon: '+', isNew: true,
-          label: `Task: ${p.title}`, sub: `${tasks.statuses[0]?.label ?? 'Not started'} · ${path || taskRoot}`,
-          run: async () => {
-            await tasks.create({ path, title: p.title });
-            toast.show(`Task added to ${path || taskRoot}`);
-          },
-        };
-      }
-      case 'note': {
-        const path = lastPath('note');
-        return {
-          key: 'p:note', group: 'Create', icon: '+', isNew: true,
-          label: `Note: ${p.title}`, sub: `notes/${path ? `${path}/` : ''}${nameFromTitle(p.title)}.md`,
-          run: async () => {
-            const row = await notes.create(path, nameFromTitle(p.title));
-            goto(routes.note(row.id, true));
-          },
-        };
-      }
-      case 'person':
-        return {
-          key: 'p:person', group: 'Create', icon: '+', isNew: true,
-          label: `Person: ${[p.first, p.last].filter(Boolean).join(' ')}`, sub: 'People',
-          run: async () => {
-            const id = await peopleAPI.create({ first: p.first, last: p.last });
-            await people.load();
-            goto(routes.person(id));
-          },
-        };
-      case 'timer':
-        return {
-          key: 'p:timer', group: 'Create', icon: '+', isNew: true,
-          label: `Timer ${p.label}${p.title ? `: ${p.title}` : ''}`, sub: 'starts now',
-          run: async () => {
-            if (await timers.add(p.title, p.ms)) toast.show(`Timer started · ${p.label}${p.title ? ` · ${p.title}` : ''}`);
-          },
-        };
-    }
-  }
+  // ---- quick-create phrases
 
-  const words = (q: string) => q.toLowerCase().split(/\s+/).filter(Boolean);
-  const hit = (text: string, q: string) => words(q).every((w) => text.toLowerCase().includes(w));
-
-  function commandItem(c: Command, searching: boolean): Item {
-    const group = c.group === 'Go to' || c.group === 'Create' ? c.group : 'Commands';
-    return { key: c.id, group, icon: ICONS[c.group], label: c.label, sub: searching ? undefined : c.example, keys: c.keys, run: c.run };
-  }
-
-  const items = $derived.by((): Item[] => {
-    const q = query.trim();
-    const out: Item[] = [];
-    const phrase = parsePhrase(q);
-    if (phrase) out.push(phraseItem(phrase));
-    const usable = commands.filter(available);
-    if (!q) {
-      usable.filter((c) => c.group === 'Go to' || c.group === 'Create').forEach((c) => out.push(commandItem(c, false)));
-      return out;
-    }
-    usable
-      .filter((c) => hit(`${c.label} ${c.group}`, q))
-      .slice(0, MAX_CMDS)
-      .forEach((c) => out.push(commandItem(c, true)));
-    notes.notes
-      .filter((n) => hit(`${n.title} ${n.name}`, q))
-      .slice(0, MAX_HITS)
-      .forEach((n) => out.push({ key: `n:${n.id}`, group: 'Notes', icon: '¶', label: n.title, sub: n.folder || undefined, run: () => goto(routes.note(n.id)) }));
-    tasks.tasks
-      .filter((t) => hit(t.title, q))
-      .slice(0, MAX_HITS)
-      .forEach((t) => out.push({ key: `t:${t.id}`, group: 'Tasks', icon: '☐', label: t.title, sub: t.path || undefined, run: () => goto(routes.task(t.id)) }));
-    return out;
+  const createItem = (item: Omit<PaletteItem, 'group' | 'icon' | 'isNew'>): PaletteItem => ({
+    ...item,
+    group: 'Create',
+    icon: '+',
+    isNew: true,
   });
 
-  // Same group order as they first appear.
-  const groups = $derived.by(() => {
-    const out: { name: string; items: { item: Item; index: number }[] }[] = [];
-    items.forEach((item, index) => {
-      let g = out.find((x) => x.name === item.group);
-      if (!g) out.push((g = { name: item.group, items: [] }));
-      g.items.push({ item, index });
+  function taskPhrase(title: string): PaletteItem {
+    const path = lastPath('task');
+    const where = path || taskRoot;
+    const status = tasks.statuses[0]?.label ?? 'Not started';
+    return createItem({
+      key: 'p:task',
+      label: `Task: ${title}`,
+      sub: `${status} · ${where}`,
+      run: async () => {
+        await tasks.create({ path, title });
+        toast.show(`Task added to ${where}`);
+      },
     });
-    return out;
+  }
+
+  function notePhrase(title: string): PaletteItem {
+    const path = lastPath('note');
+    const name = nameFromTitle(title);
+    const folder = path ? `${path}/` : '';
+    return createItem({
+      key: 'p:note',
+      label: `Note: ${title}`,
+      sub: `notes/${folder}${name}.md`,
+      run: async () => {
+        const row = await notes.create({ folder: path, name });
+        goto(routes.note(row.id, { edit: true }));
+      },
+    });
+  }
+
+  function personPhrase(first: string, last: string): PaletteItem {
+    const fullName = [first, last].filter(Boolean).join(' ');
+    return createItem({
+      key: 'p:person',
+      label: `Person: ${fullName}`,
+      sub: 'People',
+      run: async () => {
+        const id = await peopleAPI.create({ first, last });
+        await people.load();
+        goto(routes.person(id));
+      },
+    });
+  }
+
+  function timerPhrase(p: Extract<Phrase, { kind: 'timer' }>): PaletteItem {
+    const label = p.title ? `${p.label}: ${p.title}` : p.label;
+    return createItem({
+      key: 'p:timer',
+      label: `Timer ${label}`,
+      sub: 'starts now',
+      run: async () => {
+        const started = await timers.add(p.title, p.ms);
+        if (started) toast.show(timerStartedText({ label: p.label, title: p.title }));
+      },
+    });
+  }
+
+  function phraseItem(p: Phrase): PaletteItem {
+    switch (p.kind) {
+      case 'task':
+        return taskPhrase(p.title);
+      case 'note':
+        return notePhrase(p.title);
+      case 'person':
+        return personPhrase(p.first, p.last);
+      case 'timer':
+        return timerPhrase(p);
+    }
+  }
+
+  // ---- commands and search hits
+
+  const isTopGroup = (c: Command) => c.group === 'Go to' || c.group === 'Create';
+
+  function commandItem(c: Command, { searching }: { searching: boolean }): PaletteItem {
+    const group = isTopGroup(c) ? c.group : 'Commands';
+    const sub = searching ? undefined : c.example;
+    return { key: c.id, group, icon: ICONS[c.group], label: c.label, sub, keys: c.keys, run: c.run };
+  }
+
+  function commandHits(q: string): PaletteItem[] {
+    const usable = commands.filter(available);
+    if (!q) return usable.filter(isTopGroup).map((c) => commandItem(c, { searching: false }));
+    const found = usable.filter((c) => hasAllWords(`${c.label} ${c.group}`, q)).slice(0, MAX_CMDS);
+    return found.map((c) => commandItem(c, { searching: true }));
+  }
+
+  function noteHits(q: string): PaletteItem[] {
+    const found = notes.notes.filter((n) => hasAllWords(`${n.title} ${n.name}`, q)).slice(0, MAX_HITS);
+    return found.map((n) => ({
+      key: `n:${n.id}`,
+      group: 'Notes',
+      icon: ICONS.Notes,
+      label: n.title,
+      sub: n.folder || undefined,
+      run: () => goto(routes.note(n.id)),
+    }));
+  }
+
+  function taskHits(q: string): PaletteItem[] {
+    const found = tasks.tasks.filter((t) => hasAllWords(t.title, q)).slice(0, MAX_HITS);
+    return found.map((t) => ({
+      key: `t:${t.id}`,
+      group: 'Tasks',
+      icon: ICONS.Tasks,
+      label: t.title,
+      sub: t.path || undefined,
+      run: () => goto(routes.task(t.id)),
+    }));
+  }
+
+  const items = $derived.by((): PaletteItem[] => {
+    const q = query.trim();
+    const phrase = parsePhrase(q);
+    const phrases = phrase ? [phraseItem(phrase)] : [];
+    if (!q) return [...phrases, ...commandHits(q)];
+    return [...phrases, ...commandHits(q), ...noteHits(q), ...taskHits(q)];
   });
 
-  async function run(item: Item | undefined) {
+  const groups = $derived(groupItems(items));
+
+  async function run(item: PaletteItem | undefined) {
     if (!item) return;
     onclose();
     try {
@@ -138,24 +185,26 @@
   function onkeydown(e: KeyboardEvent) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      hi = Math.min(hi + 1, items.length - 1);
+      hi = nextIndex(hi, items.length);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      hi = Math.max(hi - 1, 0);
+      hi = prevIndex(hi);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       run(items[hi]);
     }
   }
 
-  function scrollIntoView(node: HTMLElement, on: boolean) {
-    const go = (v: boolean) => v && node.scrollIntoView({ block: 'nearest' });
-    go(on);
-    return { update: go };
+  function scrollIntoView(node: HTMLElement, active: boolean) {
+    const reveal = (on: boolean) => {
+      if (on) node.scrollIntoView({ block: 'nearest' });
+    };
+    reveal(active);
+    return { update: reveal };
   }
 </script>
 
-<Modal label="Command palette" width={600} top={96} shade {onclose}>
+<Modal label="Command palette" width={WIDTH} top={TOP} shade {onclose}>
   <div class="pal">
     <div class="pin">
       <span class="ic"><Icon name="search" size={16} /></span>

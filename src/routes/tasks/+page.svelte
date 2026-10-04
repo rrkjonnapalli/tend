@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { settingKeys } from '#lib/config/settings.config.ts';
   // Task folder list: views (All · Overdue · My day · Upcoming · date range), then the rows.
   import type { DayRange } from '#lib/types/date.type.ts';
-  import type { Crumb } from '#lib/types/breadcrumb.type.ts';
+  import type { DroppedOrder } from '#lib/types/reorder.type.ts';
+  import type { Task } from '#lib/types/task.type.ts';
   import type { View } from '#lib/types/task-view.type.ts';
+  import { onDestroy } from 'svelte';
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import DateField from '#lib/components/DateField.svelte';
@@ -14,11 +17,11 @@
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { isDone, isManual, viewCounts, viewTasks } from '#lib/util/task-views.ts';
-  import { keyBetween } from '#lib/util/order-key.ts';
+  import { droppedKey, inPreviewOrder } from '#lib/util/task-order.ts';
+  import { folderCrumbs, folderParam, TASK_PARAMS, tasksURL } from '#lib/util/task-urls.ts';
   import { startReorder } from '#lib/util/reorder.ts';
   import { baseOf } from '#lib/util/names.ts';
   import { plural } from '#lib/util/plural.ts';
-  import { routes } from '#lib/util/routes.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
 
   const VIEWS: [View, string][] = [
@@ -36,59 +39,73 @@
   };
 
   const params = $derived(page.url.searchParams);
-  const folder = $derived(params.get('f') ?? '');
-  const view = $derived((params.get('v') as View) || 'all');
-  const range = $derived<DayRange>([params.get('from') ?? tasks.day, params.get('to') ?? params.get('from') ?? tasks.day]);
-  const rootName = $derived(settings.get('tasks.root_name', 'tasks'));
-  const board = $derived(settings.get<string>('tasks.layout', 'list') === 'board');
+  const folder = $derived(params.get(TASK_PARAMS.folder) ?? '');
+  const view = $derived((params.get(TASK_PARAMS.view) as View) || 'all');
+  const range = $derived.by((): DayRange => {
+    const from = params.get(TASK_PARAMS.from) ?? tasks.day;
+    const to = params.get(TASK_PARAMS.to) ?? from;
+    return [from, to];
+  });
+  const rootName = $derived(settings.get(settingKeys.tasksRootName, 'tasks'));
+  const board = $derived(settings.get<string>(settingKeys.tasksLayout, 'list') === 'board');
 
   const ctx = $derived({ today: tasks.day, myDay: tasks.myDay, range });
-  const rows = $derived(viewTasks(tasks.tasks, folder, view, ctx));
-  const counts = $derived(viewCounts(tasks.tasks, folder, ctx));
+  const rows = $derived(viewTasks({ tasks: tasks.tasks, folder, view, ctx }));
+  const counts = $derived(viewCounts({ tasks: tasks.tasks, folder, ctx }));
   const manual = $derived(isManual(view));
   const dueDays = $derived(new Set(tasks.tasks.flatMap((t) => (t.dueDate ? [t.dueDate] : []))));
-
-  let preview = $state<string[] | null>(null);
-  const shown = $derived(preview ? preview.map((id) => rows.find((t) => t.id === id)!).filter(Boolean) : rows);
-  let lifted = $state<string | null>(null);
-
-  const crumbs = $derived.by((): Crumb[] => {
-    const out: Crumb[] = [{ label: rootName, href: routes.tasksFolder('') }];
-    const segs = folder ? folder.split('/') : [];
-    segs.forEach((s, i) => out.push({ label: s, href: routes.tasksFolder(segs.slice(0, i + 1).join('/')) }));
-    return out;
-  });
+  const crumbs = $derived(folderCrumbs({ rootName, path: folder }));
 
   function setView(v: View, extra: Record<string, string> = {}) {
-    const q = new URLSearchParams({ ...(folder ? { f: folder } : {}), ...(v === 'all' ? {} : { v }), ...extra });
-    const s = q.toString();
-    nav.replace(`/tasks${s ? `?${s}` : ''}`);
+    const viewParam: Record<string, string> = v === 'all' ? {} : { [TASK_PARAMS.view]: v };
+    nav.replace(tasksURL({ ...folderParam(folder), ...viewParam, ...extra }));
+  }
+
+  function setRange([from, to]: DayRange) {
+    setView('range', { [TASK_PARAMS.from]: from, [TASK_PARAMS.to]: to });
+  }
+
+  // ---- reorder
+
+  let preview = $state<string[] | null>(null);
+  let lifted = $state<string | null>(null);
+  const shown = $derived(inPreviewOrder(rows, preview));
+  let stopReorder: (() => void) | null = null;
+
+  onDestroy(() => stopReorder?.());
+
+  /** Open and done tasks each move only among themselves. */
+  function groupBounds(id: string) {
+    const done = isDone(rows.find((t) => t.id === id)!);
+    const sameGroup = (t: Task) => isDone(t) === done;
+    const min = rows.findIndex(sameGroup);
+    const size = rows.filter(sameGroup).length;
+    return { min, max: min + size - 1 };
+  }
+
+  function showPreview(p: string[] | null) {
+    preview = p;
+    if (!p) lifted = null;
+  }
+
+  async function saveDrop(id: string, { order, index }: DroppedOrder) {
+    try {
+      await tasks.update(id, { orderKey: droppedKey({ order, index, tasks: tasks.tasks }) });
+    } catch (err) {
+      toast.show(messageOf(err));
+    }
   }
 
   function grab(e: PointerEvent, id: string) {
-    if (!manual || (e.target as HTMLElement).closest('.mini')) return;
-    const keys = rows.map((t) => t.id);
-    const done = isDone(rows.find((t) => t.id === id)!);
-    const group = keys.filter((k) => isDone(rows.find((t) => t.id === k)!) === done);
-    const min = keys.indexOf(group[0]);
+    const onMyDayButton = (e.target as HTMLElement).closest('.mini');
+    if (!manual || onMyDayButton) return;
     lifted = id;
-    startReorder(e, {
-      keys,
+    stopReorder = startReorder(e, {
+      keys: rows.map((t) => t.id),
       key: id,
-      min,
-      max: min + group.length - 1,
-      preview: (p) => {
-        preview = p;
-        if (!p) lifted = null;
-      },
-      drop: async (order, i) => {
-        const key = (k: string | undefined) => (k ? tasks.byId(k)!.orderKey : null);
-        try {
-          await tasks.update(id, { orderKey: keyBetween(key(order[i - 1]), key(order[i + 1])) });
-        } catch (err) {
-          toast.show(messageOf(err));
-        }
-      },
+      ...groupBounds(id),
+      preview: showPreview,
+      drop: (order, index) => saveDrop(id, { order, index }),
     });
   }
 
@@ -98,7 +115,7 @@
   let addInput = $state<HTMLInputElement>();
 
   $effect(() => {
-    if (params.get('add') === '1' && addInput) addInput.focus();
+    if (params.get(TASK_PARAMS.add) === '1' && addInput) addInput.focus();
   });
 
   async function add() {
@@ -110,6 +127,10 @@
     } catch (err) {
       toast.show(messageOf(err));
     }
+  }
+
+  function addKeys(e: KeyboardEvent) {
+    if (e.key === 'Enter') add();
   }
 </script>
 
@@ -129,12 +150,12 @@
         </button>
       {/each}
       <span class="sep" aria-hidden="true">·</span>
-      <DateField mode="range" {range} active={view === 'range'} marked={dueDays} onrange={([a, b]) => setView('range', { from: a, to: b })} />
+      <DateField mode="range" {range} active={view === 'range'} marked={dueDays} onrange={setRange} />
       <span class="lay" role="group" aria-label="Layout">
-        <button class="lbtn" class:on={!board} aria-label="List" aria-pressed={!board} title="List" onclick={() => settings.set('tasks.layout', 'list')}>
+        <button class="lbtn" class:on={!board} aria-label="List" aria-pressed={!board} title="List" onclick={() => settings.set(settingKeys.tasksLayout, 'list')}>
           <Icon name="list" size={14} />
         </button>
-        <button class="lbtn" class:on={board} aria-label="Board" aria-pressed={board} title="Board" onclick={() => settings.set('tasks.layout', 'board')}>
+        <button class="lbtn" class:on={board} aria-label="Board" aria-pressed={board} title="Board" onclick={() => settings.set(settingKeys.tasksLayout, 'board')}>
           <Icon name="board" size={14} />
         </button>
       </span>
@@ -152,7 +173,7 @@
             placeholder="add task"
             aria-label="Add task"
             bind:value={draft}
-            onkeydown={(e) => e.key === 'Enter' && add()} />
+            onkeydown={addKeys} />
         </label>
       {/if}
       {#each shown as task (task.id)}

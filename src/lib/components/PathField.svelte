@@ -1,5 +1,8 @@
 <script lang="ts">
   // A folder path input with suggestions as you type. Tab or Enter takes the highlighted one.
+  import { cleanPath } from '#lib/util/names.ts';
+  import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
+
   let {
     value = $bindable(''),
     folders,
@@ -13,11 +16,12 @@
     label?: string;
   } = $props();
 
-  const MAX = 6;
+  const MAX_SUGGESTIONS = 6;
+
   let focused = $state(false);
   let hi = $state(0);
-  const query = $derived(value.trim().replace(/\/+$/, ''));
-  const suggestions = $derived(folders.filter((f) => f && f !== query && f.includes(query)).slice(0, MAX));
+  const query = $derived(cleanPath(value));
+  const suggestions = $derived(folders.filter((f) => f && f !== query && f.includes(query)).slice(0, MAX_SUGGESTIONS));
   const showing = $derived(focused && suggestions.length > 0);
 
   function take(path: string) {
@@ -28,10 +32,10 @@
   function onkeydown(e: KeyboardEvent) {
     if (e.key === 'ArrowDown' && showing) {
       e.preventDefault();
-      hi = Math.min(hi + 1, suggestions.length - 1);
+      hi = nextIndex(hi, suggestions.length);
     } else if (e.key === 'ArrowUp' && showing) {
       e.preventDefault();
-      hi = Math.max(hi - 1, 0);
+      hi = prevIndex(hi);
     } else if ((e.key === 'Tab' || e.key === 'Enter') && showing) {
       e.preventDefault();
       take(suggestions[hi]);
@@ -39,6 +43,12 @@
       e.preventDefault();
       onenter();
     }
+  }
+
+  /** mousedown, not click, so the input keeps focus and the list stays open. */
+  function onpick(e: MouseEvent, path: string) {
+    e.preventDefault();
+    take(path);
   }
 </script>
 
@@ -57,7 +67,7 @@
   {#if showing}
     <div class="sugg" role="listbox" aria-label="Folders">
       {#each suggestions as s, i (s)}
-        <button class="sg" class:on={i === hi} role="option" aria-selected={i === hi} onmousedown={(e) => (e.preventDefault(), take(s))}>{s}</button>
+        <button class="sg" class:on={i === hi} role="option" aria-selected={i === hi} onmousedown={(e) => onpick(e, s)}>{s}</button>
       {/each}
     </div>
   {/if}

@@ -3,20 +3,25 @@
   // macOS asking for folder access), or why the remembered vault couldn't be opened.
   import { vault } from '#lib/stores/vault.svelte.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
+  import { routes } from '#lib/util/routes.ts';
 
   /** Fast launches skip the loading line entirely. */
   const SHOW_AFTER_MS = 300;
   let slow = $state(false);
   $effect(() => {
-    const t = setTimeout(() => (slow = true), SHOW_AFTER_MS);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => {
+      slow = true;
+    }, SHOW_AFTER_MS);
+    return () => clearTimeout(timer);
   });
 
-  const permission = $derived(vault.problem?.message.includes('permission') ?? false);
+  /** macOS folder-access errors mention this word; they get the System Settings hint. */
+  const PERMISSION_WORD = 'permission';
+  const permission = $derived(vault.problem?.message.includes(PERMISSION_WORD) ?? false);
 
   function chooseAnother() {
     vault.dismiss();
-    nav.replace('/start');
+    nav.replace(routes.start);
   }
 </script>
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, ago, dueLabel, joinTime, monthGrid, nextBirthday, parseDOB, parseTime, shortDate, splitTime, timeLabel } from './dates.ts';
+import { addDays, ago, dayOfMonth, dueLabel, joinTime, monthBounds, monthGrid, mondayIndex, nextBirthday, parseDOB, parseTime, shortDate, splitTime, timeLabel } from './dates.ts';
 
 const NOW = new Date(2026, 9, 4, 12, 0); // Sun 4 Oct 2026, noon
 
@@ -8,6 +8,13 @@ describe('calendar', () => {
     const cells = monthGrid(2026, 9); // October 2026 starts on a Thursday
     expect(cells.slice(0, 4)).toEqual([null, null, null, '2026-10-01']);
     expect(cells.at(-1)).toBe('2026-10-31');
+  });
+
+  it('counts weekdays from Monday and finds month bounds', () => {
+    expect(mondayIndex(new Date(2026, 9, 5))).toBe(0); // Monday
+    expect(mondayIndex(new Date(2026, 9, 4))).toBe(6); // Sunday
+    expect(monthBounds('2026-02-14')).toEqual(['2026-02-01', '2026-02-28']);
+    expect(dayOfMonth('2026-10-09')).toBe(9);
   });
 
   it('adds days across months', () => {
@@ -47,8 +54,8 @@ describe('times', () => {
   it('round-trips 12-hour parts', () => {
     expect(splitTime('17:05')).toEqual({ h: 5, m: 5, pm: true });
     expect(splitTime('00:15')).toEqual({ h: 12, m: 15, pm: false });
-    expect(joinTime(12, 15, false)).toBe('00:15');
-    expect(joinTime(12, 0, true)).toBe('12:00');
+    expect(joinTime({ h: 12, m: 15, pm: false })).toBe('00:15');
+    expect(joinTime({ h: 12, m: 0, pm: true })).toBe('12:00');
     expect(timeLabel('09:30')).toBe('9:30 AM');
   });
 });

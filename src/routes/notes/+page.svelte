@@ -1,45 +1,41 @@
 <script lang="ts">
   // Folder list: every note under the folder (recursive), newest edit first.
-  import type { Crumb } from '#lib/types/breadcrumb.type.ts';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { baseOf, nameError, relativeTo } from '#lib/util/names.ts';
+  import { siblingNames } from '#lib/util/explorer-rows.ts';
+  import { NOTES_ROOT_NAME, folderCrumbs, folderSummary } from '#lib/util/note-paths.ts';
   import { ago } from '#lib/util/dates.ts';
-  import { plural } from '#lib/util/plural.ts';
   import { routes } from '#lib/util/routes.ts';
 
   const folder = $derived(page.url.searchParams.get('f') ?? '');
   const rows = $derived(notes.under(folder));
-  const subfolders = $derived(notes.foldersUnder(folder).length);
-
-  const crumbs = $derived.by((): Crumb[] => {
-    const out: Crumb[] = [{ label: 'notes', href: routes.notesFolder('') }];
-    const segs = folder ? folder.split('/') : [];
-    segs.forEach((s, i) => out.push({ label: s, href: routes.notesFolder(segs.slice(0, i + 1).join('/')) }));
-    return out;
-  });
+  const summary = $derived(folderSummary({ notes: rows.length, folders: notes.foldersUnder(folder).length }));
+  const heading = $derived(folder ? baseOf(folder) : NOTES_ROOT_NAME);
+  const crumbs = $derived(folderCrumbs(folder));
 
   let draft = $state('');
   let error = $state('');
-  const siblings = $derived([
-    ...notes.notes.filter((n) => n.folder === folder).map((n) => n.name),
-    ...notes.folders.filter((f) => f.startsWith(folder ? `${folder}/` : '') && !f.slice(folder ? folder.length + 1 : 0).includes('/')).map(baseOf),
-  ]);
+  const siblings = $derived(siblingNames({ tree: { folders: notes.folders, leaves: notes.notes }, folder }));
   const draftError = $derived(draft.trim() ? nameError(draft.trim(), siblings) : '');
 
   async function create() {
     const name = draft.trim();
     if (!name || draftError) return;
     try {
-      const row = await notes.create(folder, name);
+      const row = await notes.create({ folder, name });
       draft = '';
-      goto(routes.note(row.id, true));
+      goto(routes.note(row.id, { edit: true }));
     } catch (e) {
       error = messageOf(e);
     }
+  }
+
+  function onkeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') create();
   }
 </script>
 
@@ -47,8 +43,8 @@
   <article class="list">
     <div class="head">
       <Breadcrumbs {crumbs} />
-      <h1 class="heading">{folder ? baseOf(folder) : 'notes'}</h1>
-      <span class="caption muted">{plural(rows.length, 'note')}{subfolders ? ` · ${plural(subfolders, 'folder')}` : ''}</span>
+      <h1 class="heading">{heading}</h1>
+      <span class="caption muted">{summary}</span>
     </div>
     <div class="rows">
       <label class="add">
@@ -58,7 +54,7 @@
           aria-label="New note"
           bind:value={draft}
           oninput={() => (error = '')}
-          onkeydown={(e) => e.key === 'Enter' && create()} />
+          {onkeydown} />
       </label>
       {#if draftError || error}<span class="err">{draftError || error}</span>{/if}
       {#each rows as n (n.id)}

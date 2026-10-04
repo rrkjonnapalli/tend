@@ -14,7 +14,7 @@
     if (value) {
       const t = splitTime(value);
       h = String(t.h);
-      m = String(t.m).padStart(2, '0');
+      m = pad2(t.m);
       pm = t.pm;
     } else {
       h = '';
@@ -22,30 +22,56 @@
     }
   });
 
+  const HOURS = 12;
+  const MINUTES = 60;
+
+  /** Saves the typed time; an incomplete or out-of-range one is left unsaved. */
   function emit() {
-    const hn = Number(h);
     if (!h) {
       if (value !== null) onchange(null);
       return;
     }
-    if (hn < 1 || hn > 12) return;
-    const mn = m ? Number(m) : 0;
-    if (mn > 59) return;
-    const next = joinTime(hn, mn, pm);
+    const hour = Number(h);
+    if (hour < 1 || hour > HOURS) return;
+    const minute = m ? Number(m) : 0;
+    if (minute >= MINUTES) return;
+    const next = joinTime({ h: hour, m: minute, pm });
     if (next !== value) onchange(next);
   }
 
   const digits = (s: string) => s.replace(/\D/g, '').slice(0, 2);
+  const pad2 = (n: number) => String(n).padStart(2, '0');
+
+  /** `n` brought into 0..size-1, wrapping round at both ends. */
+  const wrap = (n: number, size: number) => ((n % size) + size) % size;
+
+  function stepHour(by: number) {
+    // From an empty hour, ↑ gives 1 and ↓ gives 12.
+    const fallback = by > 0 ? 0 : 1;
+    const current = Number(h) || fallback;
+    const zeroBased = wrap(current - 1 + by, HOURS);
+    h = String(zeroBased + 1);
+  }
+
+  function stepMinute(by: number) {
+    const current = Number(m) || 0;
+    m = pad2(wrap(current + by, MINUTES));
+    if (!h) h = '12';
+  }
 
   function step(part: 'h' | 'm', by: number) {
-    if (part === 'h') {
-      const cur = Number(h) || (by > 0 ? 0 : 1);
-      h = String(((cur - 1 + by + 12) % 12) + 1);
-    } else {
-      const cur = Number(m) || 0;
-      m = String((cur + by + 60) % 60).padStart(2, '0');
-      if (!h) h = '12';
-    }
+    if (part === 'h') stepHour(by);
+    else stepMinute(by);
+    emit();
+  }
+
+  function finishMinute() {
+    if (m) m = m.padStart(2, '0');
+    emit();
+  }
+
+  function togglePM() {
+    pm = !pm;
     emit();
   }
 
@@ -86,9 +112,9 @@
     bind:value={m}
     oninput={() => (m = digits(m))}
     onkeydown={(e) => key('m', e)}
-    onblur={() => (m && (m = m.padStart(2, '0')), emit())}
+    onblur={finishMinute}
     onfocus={select} />
-  <button class="ap" aria-label="Toggle AM or PM" onclick={() => ((pm = !pm), emit())}>{pm ? 'PM' : 'AM'}</button>
+  <button class="ap" aria-label="Toggle AM or PM" onclick={togglePM}>{pm ? 'PM' : 'AM'}</button>
 </span>
 
 <style>

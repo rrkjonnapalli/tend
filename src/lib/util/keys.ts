@@ -44,14 +44,26 @@ const glyphs: Record<string, string> = {
 
 /** "mod+shift+t" → ["⌘", "⇧", "T"] on macOS, ["Ctrl", "Shift", "T"] elsewhere: one key cap each. */
 export function keyParts(chord: string, mac = isMac): string[] {
-  return chord.split('+').map((p) => {
-    if (mac) return glyphs[p] ?? p.toUpperCase();
-    if (p === 'mod') return 'Ctrl';
-    return p.length === 1 ? p.toUpperCase() : p[0].toUpperCase() + p.slice(1);
+  return chord.split('+').map((part) => {
+    if (mac) return glyphs[part] ?? part.toUpperCase();
+    if (part === 'mod') return 'Ctrl';
+    return capitalise(part);
   });
+}
+
+function capitalise(word: string): string {
+  return word[0].toUpperCase() + word.slice(1);
 }
 
 /** "mod+shift+t" → "⌘⇧T" on macOS, "Ctrl+Shift+T" elsewhere. */
 export function label(chord: string, mac = isMac): string {
   return keyParts(chord, mac).join(mac ? '' : '+');
+}
+
+/** True while focus is in a text field or the note editor, where keys belong to typing. */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const isField = /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName);
+  const inEditor = target.closest('.cm-editor') !== null;
+  return target.isContentEditable || isField || inEditor;
 }

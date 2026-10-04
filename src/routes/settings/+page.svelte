@@ -1,15 +1,13 @@
 <script lang="ts">
-  import type { CommandGroup, Command } from '#lib/types/command.type.ts';
-  import { goto } from '$app/navigation';
   import { page } from '$app/state';
-  import Icon from '#lib/components/Icon.svelte';
   import StatusesEditor from '#lib/components/StatusesEditor.svelte';
-  import { notesAPI } from '#lib/api/notes.ts';
-  import { vault } from '#lib/stores/vault.svelte.ts';
-  import { commands } from '#lib/commands.ts';
-  import { keyParts } from '#lib/util/keys.ts';
-  import { plural } from '#lib/util/plural.ts';
+  import SettingsGeneral from '#lib/components/SettingsGeneral.svelte';
+  import SettingsPalette from '#lib/components/SettingsPalette.svelte';
   import { nav } from '#lib/stores/history.svelte.ts';
+  import { routes } from '#lib/util/routes.ts';
+
+  /** The query parameter holding the open section. */
+  const SECTION_PARAM = 's';
 
   const sections = [
     { id: 'general', label: 'General', sub: 'App-wide preferences.' },
@@ -19,26 +17,11 @@
     { id: 'palette', label: 'Command palette', sub: 'Every command, with its shortcut. Press ⌘K anywhere to open the palette.' },
   ] as const;
 
-  const current = $derived(sections.find((s) => s.id === page.url.searchParams.get('s')) ?? sections[0]);
-
-  let skipped = $state<string[]>([]);
-  let showSkipped = $state(false);
-  $effect(() => {
-    if (current.id === 'general') notesAPI.skipped().then((s) => (skipped = s));
-  });
-
-  const groups = $derived.by(() => {
-    const out: { name: CommandGroup; items: typeof commands }[] = [];
-    for (const c of commands) {
-      let g = out.find((x) => x.name === c.group);
-      if (!g) out.push((g = { name: c.group, items: [] }));
-      g.items.push(c);
-    }
-    return out;
-  });
+  const requested = $derived(page.url.searchParams.get(SECTION_PARAM));
+  const current = $derived(sections.find((s) => s.id === requested) ?? sections[0]);
 
   function show(id: string) {
-    nav.replace(`/settings?s=${id}`);
+    nav.replace(`${routes.settings}?${SECTION_PARAM}=${id}`);
   }
 </script>
 
@@ -61,41 +44,11 @@
     </div>
 
     {#if current.id === 'general'}
-      <section class="group">
-        <h2 class="h2">Vault</h2>
-        <div class="vault">
-          <span class="vpath">{vault.path}</span>
-          <button class="tlink" onclick={() => goto('/start')}>Change vault folder…</button>
-        </div>
-        {#if skipped.length}
-          <button class="skipped" aria-expanded={showSkipped} onclick={() => (showSkipped = !showSkipped)}>
-            <Icon name={showSkipped ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />
-            {plural(skipped.length, 'item')} skipped: names must use a–z, 0–9 and _ only
-          </button>
-          {#if showSkipped}
-            <ul class="skiplist">
-              {#each skipped as item (item)}<li>notes/{item}</li>{/each}
-            </ul>
-          {/if}
-        {/if}
-      </section>
+      <SettingsGeneral />
     {:else if current.id === 'tasks'}
       <StatusesEditor />
     {:else if current.id === 'palette'}
-      <section class="palette">
-        {#each groups as g (g.name)}
-          <div class="group">
-            <h2 class="h2 gh">{g.name}</h2>
-            {#each g.items as c (c.id)}
-              <div class="crow">
-                <span>{c.label}</span>
-                <span class="cex">{c.example ?? ''}</span>
-                <span class="ckeys">{#if c.keys}{#each keyParts(c.keys) as k, i (i)}<kbd>{k}</kbd>{/each}{/if}</span>
-              </div>
-            {/each}
-          </div>
-        {/each}
-      </section>
+      <SettingsPalette />
     {:else}
       <span class="caption muted">Nothing to configure here yet.</span>
     {/if}
@@ -164,117 +117,5 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-  }
-
-  .group {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .h2 {
-    font: 500 15px/20px var(--font-heading);
-    margin: 0;
-  }
-
-  .vault {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    min-height: 32px;
-  }
-
-  .vpath {
-    flex: 1;
-    min-width: 0;
-    font: 400 13px/18px var(--font-mono);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .skipped {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    font: 400 13px/18px var(--font-ui);
-    color: var(--c-muted-2);
-    cursor: pointer;
-    text-align: left;
-  }
-
-  .skipped:hover {
-    color: var(--text);
-  }
-
-  .skiplist {
-    margin: 0;
-    padding: 0 0 0 16px;
-    list-style: none;
-    font: 400 12px/20px var(--font-mono);
-    color: var(--text-muted);
-  }
-
-  .palette {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .group {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .gh {
-    margin-bottom: 6px;
-  }
-
-  .crow {
-    display: grid;
-    grid-template-columns: minmax(0, 220px) minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 16px;
-    min-height: 34px;
-    padding: 0 16px;
-    margin: 0 -16px;
-    border-top: 1px solid var(--c-chip);
-    font: 400 14px/20px var(--font-ui);
-  }
-
-  .crow:hover {
-    background: var(--c-hover);
-  }
-
-  .cex {
-    font: 400 12px/16px var(--font-mono);
-    color: var(--c-muted-2);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .ckeys {
-    display: flex;
-    gap: 4px;
-  }
-
-
-  .tlink {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--link);
-    font: 400 14px/20px var(--font-ui);
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .tlink:hover {
-    color: var(--primary-hover);
-    text-decoration: underline;
   }
 </style>

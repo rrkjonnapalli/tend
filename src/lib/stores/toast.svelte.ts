@@ -9,7 +9,11 @@ class Toast {
   show = (text: string) => {
     this.text = text;
     clearTimeout(this.#timer);
-    this.#timer = setTimeout(() => (this.text = ''), SHOW_MS);
+    this.#timer = setTimeout(this.#hide, SHOW_MS);
+  };
+
+  #hide = () => {
+    this.text = '';
   };
 }
 

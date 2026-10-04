@@ -4,18 +4,18 @@
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
   import { peopleAPI } from '#lib/api/people.ts';
-  import { displayName } from '#lib/util/people.ts';
+  import { displayName, personMatches, splitName } from '#lib/util/people.ts';
   import type { PersonRow } from '#lib/types/person.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
-  import { birthdayLabel, dobOf } from '#lib/util/birthdays.ts';
+  import { personBirthday } from '#lib/util/birthdays.ts';
   import { plural } from '#lib/util/plural.ts';
   import { routes } from '#lib/util/routes.ts';
 
-  people.load();
-
   const UPCOMING_DAYS = 30;
+
+  people.load();
 
   let query = $state('');
   let draft = $state('');
@@ -25,28 +25,32 @@
     if (page.url.searchParams.get('add') === '1') addInput?.focus();
   });
 
-  const matches = (p: PersonRow, q: string) =>
-    !q || [displayName(p), p.firstName, p.lastName, p.phone ?? '', p.email ?? ''].some((s) => s.toLowerCase().includes(q));
-  const shown = $derived(people.people.filter((p) => matches(p, query.trim().toLowerCase())));
+  const needle = $derived(query.trim().toLowerCase());
+  const shown = $derived(people.people.filter((p) => personMatches(p, needle)));
+  const noMatches = $derived(shown.length === 0 && people.people.length > 0);
 
-  const upcoming = $derived(
-    people.people.filter((p) => {
-      const dob = dobOf(p);
-      return dob !== null && birthdayLabel(dob).days <= UPCOMING_DAYS;
-    }).length,
-  );
+  function hasUpcomingBirthday(p: PersonRow): boolean {
+    const birthday = personBirthday(p);
+    return birthday !== null && birthday.days <= UPCOMING_DAYS;
+  }
+
+  const upcoming = $derived(people.people.filter(hasUpcomingBirthday).length);
 
   async function add() {
-    const [first, ...rest] = draft.trim().split(/\s+/);
-    if (!first) return;
+    const name = splitName(draft);
+    if (!name.first) return;
     try {
-      const id = await peopleAPI.create({ first, last: rest.join(' ') });
+      const id = await peopleAPI.create(name);
       draft = '';
       await people.load();
       goto(routes.person(id));
     } catch (e) {
       toast.show(messageOf(e));
     }
+  }
+
+  function addKeys(e: KeyboardEvent) {
+    if (e.key === 'Enter') add();
   }
 </script>
 
@@ -63,12 +67,11 @@
     <div class="table">
       <label class="add">
         <span class="plus">+</span>
-        <input bind:this={addInput} aria-label="Add person" placeholder="add person (first and last name), ↵" bind:value={draft} onkeydown={(e) => e.key === 'Enter' && add()} />
+        <input bind:this={addInput} aria-label="Add person" placeholder="add person (first and last name), ↵" bind:value={draft} onkeydown={addKeys} />
       </label>
       <div class="phead"><span>Name</span><span>Birthday</span><span>Phone</span><span>Email</span></div>
       {#each shown as p (p.id)}
-        {@const dob = dobOf(p)}
-        {@const bd = dob ? birthdayLabel(dob) : null}
+        {@const bd = personBirthday(p)}
         <a class="prow" href={routes.person(p.id)}>
           <span class="nm">{displayName(p)}</span>
           <span class="m" class:soon={bd?.soon}>{bd?.text ?? ''}</span>
@@ -76,7 +79,7 @@
           <span class="m">{p.email ?? ''}</span>
         </a>
       {/each}
-      {#if shown.length === 0 && people.people.length > 0}<span class="caption muted none">No one matches</span>{/if}
+      {#if noMatches}<span class="caption muted none">No one matches</span>{/if}
     </div>
   </div>
 </main>

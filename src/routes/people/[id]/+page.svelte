@@ -1,6 +1,5 @@
 <script lang="ts">
   // Person page: name fields, birthday, contact sections, notes and assigned tasks.
-  import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
@@ -8,45 +7,37 @@
   import ContactSection from '#lib/components/ContactSection.svelte';
   import MarkdownField from '#lib/components/MarkdownField.svelte';
   import EditControls from '#lib/components/EditControls.svelte';
-  import StatusDot from '#lib/components/StatusDot.svelte';
   import DeleteDialog from '#lib/components/DeleteDialog.svelte';
+  import PersonFields from '#lib/components/PersonFields.svelte';
+  import PersonTasks from '#lib/components/PersonTasks.svelte';
   import { peopleAPI } from '#lib/api/people.ts';
   import { displayName } from '#lib/util/people.ts';
-  import type { Person, PersonPatch } from '#lib/types/person.type.ts';
+  import type { ContactKind, Person, PersonPatch } from '#lib/types/person.type.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
-  import { formatDOB, parseDOB, parseTime, timeLabel } from '#lib/util/dates.ts';
-  import { birthdayHint, dobOf } from '#lib/util/birthdays.ts';
-  import { isDone } from '#lib/util/task-views.ts';
   import { routes } from '#lib/util/routes.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
+
+  const CONTACT_SECTIONS: { kind: ContactKind; title: string; placeholder: string }[] = [
+    { kind: 'phone', title: 'Phone', placeholder: '+91 98765 43210' },
+    { kind: 'email', title: 'Email', placeholder: 'name@example.com' },
+    { kind: 'address', title: 'Address', placeholder: 'street, city, postcode' },
+  ];
 
   tasks.load();
 
   const id = $derived(page.params.id!);
   let person = $state<Person | null>(null);
 
-  let first = $state('');
-  let last = $state('');
-  let nick = $state('');
-  let dob = $state('');
-  let tob = $state('');
-
-  function fill(p: Person) {
-    person = p;
-    first = p.firstName;
-    last = p.lastName;
-    nick = p.nickname ?? '';
-    const d = dobOf(p);
-    dob = d ? formatDOB(d) : '';
-    tob = p.tob ? timeLabel(p.tob) : '';
-  }
+  let notesField = $state<MarkdownField>();
+  let notesEditing = $state(false);
+  let deleting = $state(false);
 
   async function load() {
     try {
-      fill(await peopleAPI.get(id));
+      person = await peopleAPI.get(id);
     } catch (e) {
       toast.show(messageOf(e));
     }
@@ -59,67 +50,20 @@
 
   async function save(patch: PersonPatch) {
     try {
-      fill(await peopleAPI.update({ id, patch }));
+      person = await peopleAPI.update({ id, patch });
       people.load();
     } catch (e) {
       toast.show(messageOf(e));
     }
   }
 
-  // ---- fields (saved on blur or Enter)
-
-  const parsedDOB = $derived(parseDOB(dob));
-  const dobBad = $derived(parsedDOB === 'invalid');
-  const parsedTOB = $derived(tob.trim() ? parseTime(tob) : null);
-  const tobBad = $derived(tob.trim() !== '' && parsedTOB === null);
-
-  function saveName() {
-    if (!person) return;
-    if (!first.trim()) {
-      first = person.firstName;
-      return;
-    }
-    const patch: PersonPatch = {};
-    if (first.trim() !== person.firstName) patch.firstName = first;
-    if (last.trim() !== person.lastName) patch.lastName = last;
-    if ((nick.trim() || null) !== person.nickname) patch.nickname = nick.trim() || null;
-    if (Object.keys(patch).length) save(patch);
-  }
-
-  function saveDOB() {
-    if (!person || dobBad) return;
-    const d = parsedDOB === 'invalid' ? null : parsedDOB;
-    const cur = dobOf(person);
-    if ((d ? formatDOB(d) : '') !== (cur ? formatDOB(cur) : '')) save({ dob: d });
-  }
-
-  function saveTOB() {
-    if (!person || tobBad) return;
-    if (parsedTOB !== person.tob) save({ tob: parsedTOB });
-    else tob = person.tob ? timeLabel(person.tob) : '';
-  }
-
-  const enterBlurs = (e: KeyboardEvent) => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur();
-
-  const hint = $derived.by(() => {
-    if (dobBad) return 'use yyyy-mm-dd or mm-dd';
-    return parsedDOB && parsedDOB !== 'invalid' ? birthdayHint(parsedDOB) : '';
-  });
-
-  // ---- notes, tasks, delete
-
-  let notesField = $state<MarkdownField>();
-  let notesEditing = $state(false);
-  const assigned = $derived(tasks.tasks.filter((t) => t.assigneeId === id).sort((a, b) => Number(isDone(a)) - Number(isDone(b))));
-
-  let deleting = $state(false);
-
   async function remove() {
     deleting = false;
+    const name = person ? displayName(person) : '';
     await peopleAPI.remove(id);
     await Promise.all([people.load(), tasks.load()]);
-    toast.show(`Deleted ${person ? displayName(person) : ''}`);
-    nav.back('/people');
+    toast.show(`Deleted ${name}`);
+    nav.back(routes.people);
   }
 </script>
 
@@ -127,39 +71,20 @@
   {#if person}
     <div class="page">
       <div class="bar caption">
-        <button class="icon-btn sm back" aria-label="Back" title="Back" onclick={() => nav.back('/people')}><Icon name="back" size={13} /></button>
-        <Breadcrumbs crumbs={[{ label: 'People', href: '/people' }, { label: displayName(person) }]} />
+        <button class="icon-btn sm back" aria-label="Back" title="Back" onclick={() => nav.back(routes.people)}><Icon name="back" size={13} /></button>
+        <Breadcrumbs crumbs={[{ label: 'People', href: routes.people }, { label: displayName(person) }]} />
         <span class="grow"></span>
         <button class="icon-btn sm danger" aria-label="Delete person" title="Delete" onclick={() => (deleting = true)}><Icon name="trash" size={13} /></button>
       </div>
 
       <div class="body">
         <h1 class="heading">{displayName(person)}</h1>
-        <div class="props">
-          <span class="pl">First name</span>
-          <div class="pv"><input class="fld" style:width="240px" aria-label="First name" bind:value={first} onblur={saveName} onkeydown={enterBlurs} /></div>
-          <span class="pl">Last name</span>
-          <div class="pv"><input class="fld" style:width="240px" aria-label="Last name" bind:value={last} onblur={saveName} onkeydown={enterBlurs} /></div>
-          <span class="pl">Nickname</span>
-          <div class="pv">
-            <input class="fld" style:width="240px" aria-label="Nickname" placeholder="optional, shown instead of the name" bind:value={nick} onblur={saveName} onkeydown={enterBlurs} />
-          </div>
-          <span class="pl">Date of birth</span>
-          <div class="pv">
-            <input class="fld mono" class:bad={dobBad} style:width="112px" aria-label="Date of birth, yyyy-mm-dd or mm-dd" placeholder="yyyy-mm-dd" bind:value={dob} onblur={saveDOB} onkeydown={enterBlurs} />
-            <span class="hint" class:err={dobBad}>{hint}</span>
-          </div>
-          <span class="pl">Time of birth</span>
-          <div class="pv">
-            <input class="fld mono" class:bad={tobBad} style:width="92px" aria-label="Time of birth" placeholder="optional" bind:value={tob} onblur={saveTOB} onkeydown={enterBlurs} />
-            {#if tobBad}<span class="hint err">use a time like 6:30 AM</span>{/if}
-          </div>
-        </div>
+        <PersonFields {person} onsave={save} />
 
         <div class="sections">
-          <ContactSection person={id} kind="phone" title="Phone" placeholder="+91 98765 43210" contacts={person.contacts} onchange={load} />
-          <ContactSection person={id} kind="email" title="Email" placeholder="name@example.com" contacts={person.contacts} onchange={load} />
-          <ContactSection person={id} kind="address" title="Address" placeholder="street, city, postcode" contacts={person.contacts} onchange={load} />
+          {#each CONTACT_SECTIONS as c (c.kind)}
+            <ContactSection person={id} kind={c.kind} title={c.title} placeholder={c.placeholder} contacts={person.contacts} onchange={load} />
+          {/each}
           <Section title="Notes">
             {#snippet actions()}
               <EditControls editing={notesEditing} what="notes" onedit={() => notesField?.edit()} oncancel={() => notesField?.cancel()} onsave={() => notesField?.save()} />
@@ -173,15 +98,7 @@
               empty="No notes"
               label="Notes" />
           </Section>
-          <Section title="Assigned tasks">
-            {#each assigned as t (t.id)}
-              <a class="trow" href={routes.task(t.id)}>
-                <StatusDot value={t.status} />
-                <span class:done={isDone(t)}>{t.title}</span>
-              </a>
-            {/each}
-            {#if assigned.length === 0}<span class="caption muted none">No tasks assigned</span>{/if}
-          </Section>
+          <PersonTasks person={id} />
         </div>
       </div>
     </div>
@@ -234,86 +151,9 @@
     gap: 28px;
   }
 
-  .props {
-    display: grid;
-    grid-template-columns: 120px minmax(0, 1fr);
-    row-gap: 6px;
-    align-items: center;
-  }
-
-  .pl {
-    font: 400 13px/18px var(--font-ui);
-    color: var(--c-muted-2);
-  }
-
-  .pv {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 32px;
-    font: 400 14px/20px var(--font-ui);
-  }
-
-  .fld {
-    height: 28px;
-    padding: 0 8px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    outline: none;
-    background: var(--c-page);
-    font: 400 14px/20px var(--font-ui);
-  }
-
-  .fld:focus {
-    border-color: var(--primary);
-  }
-
-  .fld.mono {
-    font: 400 13px/18px var(--font-mono);
-  }
-
-  .fld.bad {
-    border-color: var(--danger);
-    color: var(--danger);
-  }
-
-  .hint {
-    font: 400 12px/16px var(--font-ui);
-    color: var(--c-muted-2);
-  }
-
-  .hint.err {
-    color: var(--danger);
-  }
-
   .sections {
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .trow {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 32px;
-    padding: 0 16px;
-    margin: 0 -16px;
-    font: 400 14px/20px var(--font-ui);
-    color: var(--text);
-    text-decoration: none;
-  }
-
-  .trow:hover {
-    background: var(--c-hover);
-    color: var(--text);
-  }
-
-  .done {
-    color: var(--c-muted-2);
-  }
-
-  .none {
-    padding: 6px 0;
   }
 </style>

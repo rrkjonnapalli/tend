@@ -32,28 +32,28 @@ const titles = (xs: Task[]) => xs.map((x) => x.id);
 
 describe('views', () => {
   it('All: top-level tasks in manual order, done last, scoped to the folder', () => {
-    expect(titles(viewTasks(tasks, 'work', 'all', ctx))).toEqual(['a', 'c', 'd', 'b', 'g']);
+    expect(titles(viewTasks({ tasks, folder: 'work', view: 'all', ctx }))).toEqual(['a', 'c', 'd', 'b', 'g']);
   });
 
   it('Overdue skips done tasks', () => {
-    expect(titles(viewTasks(tasks, 'work', 'overdue', ctx))).toEqual(['c']);
+    expect(titles(viewTasks({ tasks, folder: 'work', view: 'overdue', ctx }))).toEqual(['c']);
   });
 
   it('Upcoming sorts by due date and includes subtasks', () => {
-    expect(titles(viewTasks(tasks, '', 'upcoming', ctx))).toEqual(['d', 'f', 'e']);
+    expect(titles(viewTasks({ tasks, folder: '', view: 'upcoming', ctx }))).toEqual(['d', 'f', 'e']);
   });
 
   it('Range filters due_date between the two days', () => {
-    expect(titles(viewTasks(tasks, 'work', 'range', ctx))).toEqual(['c', 'd']);
+    expect(titles(viewTasks({ tasks, folder: 'work', view: 'range', ctx }))).toEqual(['c', 'd']);
   });
 
   it('My day: due today by default, plus and minus by hand', () => {
     const c = { ...ctx, myDay: new Map([['a', true], ['d', false]]) };
-    expect(titles(viewTasks(tasks, '', 'myday', c))).toEqual(['a', 'f']);
-    expect(inMyDay(tasks[3], ctx.today, ctx.myDay)).toBe(true);
+    expect(titles(viewTasks({ tasks, folder: '', view: 'myday', ctx: c }))).toEqual(['a', 'f']);
+    expect(inMyDay(tasks[3], ctx)).toBe(true);
   });
 
   it('counts every view', () => {
-    expect(viewCounts(tasks, 'work', ctx)).toEqual({ all: 5, overdue: 1, myday: 1, upcoming: 2, range: 2 });
+    expect(viewCounts({ tasks, folder: 'work', ctx })).toEqual({ all: 5, overdue: 1, myday: 1, upcoming: 2, range: 2 });
   });
 });

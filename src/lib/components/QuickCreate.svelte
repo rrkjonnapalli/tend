@@ -1,20 +1,22 @@
 <script lang="ts">
+  import { settingKeys } from '#lib/config/settings.config.ts';
   // Quick create: ⌘N note · ⌘⇧T task · ⌘⇧N folder (Notes/Tasks) · ⌘T timer.
-  import type { Duration } from '#lib/types/timer.type.ts';
   import type { QuickKind } from '#lib/types/ui.type.ts';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Panel from './Panel.svelte';
   import PathField from './PathField.svelte';
+  import { focusAndSelect } from '#lib/actions/focus.action.ts';
   import { messageOf } from '#lib/api/core.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { timers } from '#lib/stores/timers.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
-  import { isValidPath, join, nameError } from '#lib/util/names.ts';
+  import { cleanPath, isValidPath, join, nameError } from '#lib/util/names.ts';
   import { nameFromTitle } from '#lib/util/quick-parse.ts';
   import { parseDuration } from '#lib/util/timer-parse.ts';
+  import { timerStartedText } from '#lib/util/timer-text.ts';
   import { label as keyLabel } from '#lib/util/keys.ts';
   import { routes } from '#lib/util/routes.ts';
 
@@ -22,10 +24,11 @@
 
   const TITLES: Record<QuickKind, string> = { note: 'New note', task: 'New task', folder: 'New folder', timer: 'New timer' };
   const KEYS: Record<QuickKind, string> = { note: 'mod+n', task: 'mod+shift+t', folder: 'mod+shift+n', timer: 'mod+t' };
+  const PLACEHOLDERS: Record<Exclude<QuickKind, 'timer'>, string> = { note: 'Note title', task: 'Task title', folder: 'folder_name' };
 
   // Folder: Notes or Tasks, defaulting to the section you're in.
-  let tree = $state<'notes' | 'tasks'>(page.url.pathname.startsWith('/tasks') ? 'tasks' : 'notes');
-  const settingKey = $derived(`quick.last_path.${kind}`);
+  let tree = $state<'notes' | 'tasks'>(page.url.pathname.startsWith(routes.tasks) ? 'tasks' : 'notes');
+  const settingKey = $derived(settingKeys.quickLastPath(kind));
   let path = $state('');
   let name = $state('');
   let duration = $state('01:00');
@@ -34,64 +37,84 @@
   let nameInput = $state<HTMLInputElement>();
 
   $effect(() => {
-    path = settings.get<string>(`quick.last_path.${kind}`, '');
-  });
-
-  // Folder data for suggestions.
-  $effect(() => {
-    if ((kind === 'note' || (kind === 'folder' && tree === 'notes')) && !notes.folders.length) notes.load();
-    if ((kind === 'task' || (kind === 'folder' && tree === 'tasks')) && !tasks.folders.length) tasks.load();
+    path = settings.get<string>(settingKey, '');
   });
 
   const inTasks = $derived(kind === 'task' || (kind === 'folder' && tree === 'tasks'));
+  const inNotes = $derived(kind !== 'timer' && !inTasks);
   const folders = $derived(inTasks ? tasks.folders : notes.folders);
-  const target = $derived(path.trim().replace(/\/+$/, ''));
+  const target = $derived(cleanPath(path));
+  const title = $derived(name.trim());
   const willCreate = $derived(target !== '' && !folders.includes(target));
   const dur = $derived(parseDuration(duration));
+
+  // Folder data for suggestions.
+  $effect(() => {
+    if (inNotes && !notes.folders.length) notes.load();
+    if (inTasks && !tasks.folders.length) tasks.load();
+  });
 
   const problem = $derived.by(() => {
     if (kind === 'timer') return dur.ok ? '' : dur.error;
     if (target && !isValidPath(target)) return 'Folder names: a–z, 0–9 and _ only';
-    if (!name.trim()) return '';
-    if (kind === 'folder') return nameError(name.trim(), folders.includes(join(target, name.trim())) ? [name.trim()] : []);
+    if (!title) return '';
+    if (kind === 'folder') return folderProblem();
     if (kind === 'note' && !nameFromTitle(name)) return 'The name needs a letter or digit';
     return '';
   });
+  const message = $derived(error || problem);
+
+  function folderProblem() {
+    const taken = folders.includes(join(target, title));
+    return nameError(title, taken ? [title] : []);
+  }
 
   async function create() {
-    if (problem || (kind !== 'timer' && !name.trim())) return;
+    if (problem) return;
+    if (kind === 'timer') return createTimer();
+    if (!title) return;
     error = '';
     try {
-      if (kind === 'timer') {
-        const t = await timers.add(text, dur.ok ? dur.ms : 0);
-        if (t) toast.show(`Timer started · ${dur.ok ? dur.label : ''}${text.trim() ? ` · ${text.trim()}` : ''}`);
-        onclose();
-        return;
-      }
       settings.set(settingKey, target);
-      if (kind === 'note') {
-        const row = await notes.create(target, nameFromTitle(name));
-        onclose();
-        goto(routes.note(row.id, true));
-      } else if (kind === 'task') {
-        const t = await tasks.create({ path: target, title: name.trim() });
-        onclose();
-        goto(routes.task(t.id));
-      } else {
-        const full = join(target, name.trim());
-        if (tree === 'notes') await notes.createFolder(full);
-        else await tasks.createFolder(full);
-        onclose();
-        goto(tree === 'notes' ? routes.notesFolder(full) : routes.tasksFolder(full));
-      }
+      if (kind === 'note') await createNote();
+      else if (kind === 'task') await createTask();
+      else await createFolder();
     } catch (e) {
       error = messageOf(e);
     }
   }
 
-  function focusSelect(node: HTMLInputElement) {
-    node.focus();
-    node.select();
+  async function createTimer() {
+    if (!dur.ok) return;
+    error = '';
+    const whatFor = text.trim();
+    const t = await timers.add(text, dur.ms);
+    if (t) toast.show(timerStartedText({ label: dur.label, title: whatFor }));
+    onclose();
+  }
+
+  async function createNote() {
+    const row = await notes.create({ folder: target, name: nameFromTitle(name) });
+    onclose();
+    goto(routes.note(row.id, { edit: true }));
+  }
+
+  async function createTask() {
+    const t = await tasks.create({ path: target, title });
+    onclose();
+    goto(routes.task(t.id));
+  }
+
+  async function createFolder() {
+    const full = join(target, title);
+    if (tree === 'notes') await notes.createFolder(full);
+    else await tasks.createFolder(full);
+    onclose();
+    goto(tree === 'notes' ? routes.notesFolder(full) : routes.tasksFolder(full));
+  }
+
+  function onEnter(e: KeyboardEvent) {
+    if (e.key === 'Enter') create();
   }
 </script>
 
@@ -114,10 +137,10 @@
         class:bad={!dur.ok}
         aria-label="Duration, minutes and seconds"
         bind:value={duration}
-        onkeydown={(e) => e.key === 'Enter' && create()}
-        use:focusSelect />
+        onkeydown={onEnter}
+        use:focusAndSelect />
       <span class="vsep"></span>
-      <input class="qi" aria-label="What for" placeholder="what for (optional)" bind:value={text} onkeydown={(e) => e.key === 'Enter' && create()} />
+      <input class="qi" aria-label="What for" placeholder="what for (optional)" bind:value={text} onkeydown={onEnter} />
     </div>
   {:else}
     <div class="row">
@@ -130,17 +153,17 @@
         bind:this={nameInput}
         class="qi"
         aria-label="Name"
-        placeholder={kind === 'note' ? 'Note title' : kind === 'task' ? 'Task title' : 'folder_name'}
+        placeholder={PLACEHOLDERS[kind]}
         bind:value={name}
         oninput={() => (error = '')}
-        onkeydown={(e) => e.key === 'Enter' && create()}
-        use:focusSelect />
+        onkeydown={onEnter}
+        use:focusAndSelect />
     </div>
   {/if}
 
   {#snippet foot()}
-    {#if error || problem}
-      <span class="err">{error || problem}</span>
+    {#if message}
+      <span class="err">{message}</span>
     {:else if kind === 'timer'}
       <span class="note">mm:ss · minutes any length</span>
     {:else if willCreate}

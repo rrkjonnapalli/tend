@@ -2,7 +2,9 @@
   // Tag chips with a red ✕ each, and an inline input that suggests tags from the shared pool.
   import Icon from './Icon.svelte';
   import Popover from './Popover.svelte';
+  import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { tagPool } from '#lib/stores/tags.svelte.ts';
+  import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
 
   let {
     tags,
@@ -11,40 +13,58 @@
   }: { tags: string[]; onchange: (tags: string[]) => void; addLabel?: string } = $props();
 
   const MAX = 6;
+  const PICK_KEYS = ['Enter', ',', 'Tab'];
   let adding = $state(false);
   let draft = $state('');
   let hi = $state(0);
   let input = $state<HTMLInputElement>();
 
   const lower = (s: string) => s.toLowerCase();
-  const query = $derived(lower(draft.trim()));
+  const typed = $derived(draft.trim());
+  const query = $derived(lower(typed));
+  const have = $derived(new Set(tags.map(lower)));
+
   const options = $derived.by(() => {
-    const have = new Set(tags.map(lower));
-    const matches = tagPool.names.filter((t) => !have.has(lower(t)) && (!query || lower(t).includes(query))).slice(0, MAX);
-    const exists = tagPool.names.some((t) => lower(t) === query) || have.has(query);
+    const isSuggestion = (t: string) => !have.has(lower(t)) && (!query || lower(t).includes(query));
+    const matches = tagPool.names.filter(isSuggestion).slice(0, MAX);
     const out = matches.map((t) => ({ label: t, value: t, isNew: false }));
-    if (query && !exists) out.push({ label: `Create “${draft.trim()}”`, value: draft.trim(), isNew: true });
+    const exists = tagPool.names.some((t) => lower(t) === query) || have.has(query);
+    if (query && !exists) out.push({ label: `Create “${typed}”`, value: typed, isNew: true });
     return out;
   });
 
   function add(value: string) {
     const v = value.trim();
-    draft = '';
-    hi = 0;
-    if (!v || tags.some((t) => lower(t) === lower(v))) return;
+    clearDraft();
+    if (!v || have.has(lower(v))) return;
     tagPool.learn([v]);
     onchange([...tags, v]);
   }
 
+  function remove(tag: string) {
+    onchange(tags.filter((t) => t !== tag));
+  }
+
   export function start() {
     adding = true;
-    draft = '';
-    hi = 0;
+    clearDraft();
   }
 
   function stop() {
     adding = false;
+    clearDraft();
+  }
+
+  function clearDraft() {
     draft = '';
+    hi = 0;
+  }
+
+  /** Takes the highlighted suggestion, or the typed text when there is none. */
+  function pick() {
+    if (!options.length) return add(draft);
+    const highlighted = options[Math.min(hi, options.length - 1)];
+    add(highlighted.value);
   }
 
   function onkeydown(e: KeyboardEvent) {
@@ -54,21 +74,29 @@
       stop();
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      hi = Math.min(hi + 1, options.length - 1);
+      hi = nextIndex(hi, options.length);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      hi = Math.max(hi - 1, 0);
-    } else if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+      hi = prevIndex(hi);
+    } else if (PICK_KEYS.includes(e.key)) {
       if (!options.length && !query) return;
       e.preventDefault();
-      add(options.length ? options[Math.min(hi, options.length - 1)].value : draft);
+      pick();
     } else if (e.key === 'Backspace' && !draft && tags.length) {
       onchange(tags.slice(0, -1));
     }
   }
 
-  function focusOnMount(node: HTMLInputElement) {
-    node.focus();
+  // A comma ends a tag, so it never stays in the text.
+  function oninput() {
+    draft = draft.replace(/,/g, '');
+    hi = 0;
+  }
+
+  function choose(e: MouseEvent, value: string) {
+    // Keep focus in the input so its blur doesn't close the list first.
+    e.preventDefault();
+    add(value);
   }
 </script>
 
@@ -76,7 +104,7 @@
   {#each tags as tag (tag)}
     <span class="chip" title={tag}>
       <span class="tl">{tag}</span>
-      <button class="x" aria-label="Remove tag {tag}" title="Remove" onclick={() => onchange(tags.filter((t) => t !== tag))}>
+      <button class="x" aria-label="Remove tag {tag}" title="Remove" onclick={() => remove(tag)}>
         <Icon name="close" size={9} stroke={3} />
       </button>
     </span>
@@ -88,7 +116,7 @@
       aria-label="New tag"
       placeholder="tag"
       bind:value={draft}
-      oninput={() => ((draft = draft.replace(/,/g, '')), (hi = 0))}
+      {oninput}
       {onkeydown}
       onblur={stop}
       use:focusOnMount />
@@ -102,7 +130,7 @@
               class:new={o.isNew}
               role="option"
               aria-selected={i === hi}
-              onmousedown={(e) => (e.preventDefault(), add(o.value))}>{o.label}</button>
+              onmousedown={(e) => choose(e, o.value)}>{o.label}</button>
           {/each}
         </div>
       </Popover>

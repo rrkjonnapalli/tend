@@ -2,6 +2,7 @@
   // The violet timer pill in the bottom bar (soonest countdown, +N more) and its popover.
   import Icon from './Icon.svelte';
   import Popover from './Popover.svelte';
+  import TimerRow from './TimerRow.svelte';
   import { timers } from '#lib/stores/timers.svelte.ts';
   import { ui } from '#lib/stores/ui.svelte.ts';
   import { countdown } from '#lib/util/timer-parse.ts';
@@ -10,6 +11,7 @@
   let chip = $state<HTMLButtonElement>();
   const next = $derived(timers.list[0]);
   const open = $derived(ui.popup === 'timers' && timers.list.length > 0);
+  const more = $derived(timers.list.length - 1);
 </script>
 
 {#if next}
@@ -23,26 +25,19 @@
     onclick={() => ui.toggle('timers')}>
     <Icon name="timer" size={14} />
     <span>{countdown(next.endsAt - timers.now)}</span>
-    {#if timers.list.length > 1}<span class="more">+{timers.list.length - 1}</span>{/if}
+    {#if more > 0}<span class="more">+{more}</span>{/if}
   </button>
 {/if}
 
 {#if open}
-  <Popover anchor={chip} placement="top-end" offset={8} label="Timers" onclose={() => (ui.popup = null)}>
+  <Popover anchor={chip} placement="top-end" offset={8} label="Timers" onclose={ui.closePopup}>
     <div class="pop">
       <div class="head">
         <span>Timers</span>
-        <button class="icon-btn sm x" aria-label="Close" title="Close" onclick={() => (ui.popup = null)}><Icon name="close" size={12} stroke={2.25} /></button>
+        <button class="icon-btn sm x" aria-label="Close" title="Close" onclick={ui.closePopup}><Icon name="close" size={12} stroke={2.25} /></button>
       </div>
-      {#each timers.list as t (t.id)}
-        <div class="row">
-          <span class="tt">{t.title || 'Timer'}</span>
-          <span class="left">{countdown(t.endsAt - timers.now)}</span>
-          <button class="plus" onclick={() => timers.addMinute(t.id)}>+1m</button>
-          <button class="icon-btn sm danger" aria-label="Cancel timer" title="Cancel" onclick={() => timers.cancel(t.id)}>
-            <Icon name="close" size={12} stroke={2.25} />
-          </button>
-        </div>
+      {#each timers.list as timer (timer.id)}
+        <TimerRow {timer} />
       {/each}
       <div class="foot">{keyLabel('mod+t')} starts a new timer</div>
     </div>
@@ -90,43 +85,6 @@
 
   .x {
     margin-left: auto;
-  }
-
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 44px;
-    padding: 0 8px 0 12px;
-    border-top: 1px solid var(--c-chip);
-  }
-
-  .tt {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 14px;
-  }
-
-  .left {
-    font: 500 14px/20px var(--font-mono);
-  }
-
-  .plus {
-    height: 24px;
-    padding: 0 8px;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--primary);
-    font: 400 12px/16px var(--font-ui);
-    cursor: pointer;
-  }
-
-  .plus:hover {
-    background: var(--primary-soft);
   }
 
   .foot {

@@ -35,7 +35,8 @@
   export async function save() {
     if (!editing) return;
     editing = false;
-    if (draft !== value) await onsave(draft);
+    if (draft === value) return;
+    await onsave(draft);
   }
 
   export function cancel() {
@@ -46,7 +47,7 @@
 {#if editing}
   <MarkdownEditor
     value={draft}
-    onchange={(t) => (draft = t)}
+    onchange={(text) => (draft = text)}
     onsave={save}
     oncancel={cancel}
     {placeholder}

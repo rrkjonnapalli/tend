@@ -2,6 +2,7 @@
   // Feedback: Bug / Idea / Other, a text area and Send (⌘↵ also sends). Saved in the vault.
   import Icon from './Icon.svelte';
   import Popover from './Popover.svelte';
+  import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { feedbackAPI } from '#lib/api/feedback.ts';
   import type { FeedbackKind } from '#lib/types/feedback.type.ts';
   import { messageOf } from '#lib/api/core.ts';
@@ -37,10 +38,6 @@
       e.preventDefault();
       send();
     }
-  }
-
-  function focusOnMount(node: HTMLTextAreaElement) {
-    node.focus();
   }
 </script>
 

@@ -6,11 +6,12 @@
 
 <nav class="crumbs caption" aria-label="Breadcrumb">
   {#each crumbs as c, i (i)}
+    {@const isLast = i === crumbs.length - 1}
     {#if i > 0}<span aria-hidden="true">/</span>{/if}
-    {#if c.href && i < crumbs.length - 1}
+    {#if c.href && !isLast}
       <a class="crumb" href={c.href}>{c.label}</a>
     {:else}
-      <span class="cur" aria-current={i === crumbs.length - 1 ? 'page' : undefined}>{c.label}</span>
+      <span class="cur" aria-current={isLast ? 'page' : undefined}>{c.label}</span>
     {/if}
   {/each}
 </nav>

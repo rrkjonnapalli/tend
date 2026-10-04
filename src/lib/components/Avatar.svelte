@@ -1,12 +1,16 @@
 <script lang="ts">
   // A violet circle with a person's initials.
   import { initials, displayName } from '#lib/util/people.ts';
-  import type { PersonRow } from '#lib/types/person.type.ts';
+  import type { PersonName } from '#lib/types/person.type.ts';
 
-  let { person, size = 20 }: { person: Pick<PersonRow, 'firstName' | 'lastName' | 'nickname'>; size?: number } = $props();
+  let { person, size = 20 }: { person: PersonName; size?: number } = $props();
+
+  /** Initials take a little under half the circle's height. */
+  const FONT_RATIO = 0.45;
+  const fontSize = $derived(Math.round(size * FONT_RATIO));
 </script>
 
-<span class="av" style:width="{size}px" style:height="{size}px" style:font-size="{Math.round(size * 0.45)}px" title={displayName(person)}>
+<span class="av" style:width="{size}px" style:height="{size}px" style:font-size="{fontSize}px" title={displayName(person)}>
   {initials(person)}
 </span>
 

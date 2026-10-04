@@ -1,8 +1,13 @@
 // Dev only: lets the UI run in a plain browser (vite dev without Tauri) for layout checks.
 // Commands answer from in-memory fixtures. Add `?vault=0` to the URL to see the start page, `?vault=denied` for the error screen.
 import { mockIPC, mockWindows } from '@tauri-apps/api/mocks';
+import { addDays, today } from '#lib/util/dates.ts';
 
 type Handler = (args: Record<string, unknown>) => unknown;
+
+const DAY_MS = 86_400_000;
+const VAULT_PATH = '/Users/demo/Tend';
+const DENIED_VAULT_PATH = '/Users/demo/Documents/Tend';
 
 const vaultParam = new URLSearchParams(location.search).get('vault');
 const withVault = vaultParam !== '0';
@@ -10,21 +15,19 @@ const settings: Record<string, unknown> = {};
 const now = Date.now();
 const notes = [
   { id: 'wc', folder: 'work/tauri', name: 'window_config', title: 'Window config', modifiedAt: now - 120_000 },
-  { id: 'pl', folder: 'work/tauri', name: 'plugins', title: 'Plugins', modifiedAt: now - 86_400_000 },
-  { id: 'rc', folder: 'work', name: 'release_checklist', title: 'Release checklist', modifiedAt: now - 1.2 * 86_400_000 },
-  { id: 'gr', folder: 'home', name: 'groceries', title: 'Groceries', modifiedAt: now - 3 * 86_400_000 },
-  { id: 'sc', folder: '', name: 'scratch', title: 'Scratch', modifiedAt: now - 14 * 86_400_000 },
+  { id: 'pl', folder: 'work/tauri', name: 'plugins', title: 'Plugins', modifiedAt: now - DAY_MS },
+  { id: 'rc', folder: 'work', name: 'release_checklist', title: 'Release checklist', modifiedAt: now - 1.2 * DAY_MS },
+  { id: 'gr', folder: 'home', name: 'groceries', title: 'Groceries', modifiedAt: now - 3 * DAY_MS },
+  { id: 'sc', folder: '', name: 'scratch', title: 'Scratch', modifiedAt: now - 14 * DAY_MS },
 ];
 const texts: Record<string, string> = {
   wc: '# Window config\n\nHide native decorations. One **hairline** is the only chrome.\n\n## Checklist\n\n- [x] decorations: false\n- [ ] drag region on the explorer toolbar\n- [ ] global shortcut for capture\n\n> Closing hides the window, so timers keep running.\n\n```json\n"decorations": false,\n"minWidth": 900\n```',
 };
 const noteTags: Record<string, string[]> = { wc: ['tauri', 'ui'] };
 
-const day = (n: number) => {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
+/** Today plus `n` days, as YYYY-MM-DD. */
+const day = (n: number) => addDays(today(), n);
+
 const statuses = [
   { value: 'NOT_STARTED', label: 'Not started', color: '#7d8995', position: 0, isDefault: true },
   { value: 'IN_PROGRESS', label: 'In progress', color: '#1259d3', position: 1, isDefault: true },
@@ -32,24 +35,30 @@ const statuses = [
   { value: 'IN_REVIEW', label: 'In review', color: '#6f5ee4', position: 3, isDefault: false },
   { value: 'DONE', label: 'Done', color: '#1e7a55', position: 1000, isDefault: true },
 ];
-const task = (id: string, path: string, title: string, key: string, o: Record<string, unknown> = {}) => ({
-  id, path, title, orderKey: key, parentId: null, status: 'NOT_STARTED', dueDate: null, dueTime: null, assigneeId: null, createdAt: now, completedAt: null, ...o,
-});
+
+type TaskFixture = { id: string; path: string; title: string; orderKey: string } & Record<string, unknown>;
+
+const TASK_DEFAULTS = {
+  parentId: null, status: 'NOT_STARTED', dueDate: null, dueTime: null, assigneeId: null, createdAt: now, completedAt: null,
+};
+
+const task = (fields: TaskFixture) => ({ ...TASK_DEFAULTS, ...fields });
+
 const tasks = [
-  task('ship', 'work/tend_v0_1', 'Ship first build', 'a', { status: 'IN_PROGRESS', dueDate: day(7), assigneeId: 'priya' }),
-  task('setup', 'work/tend_v0_1', 'Set up Tauri + Svelte', 'aa', { parentId: 'ship', status: 'DONE' }),
-  task('nx', 'work/tend_v0_1', 'Notes explorer', 'ab', { parentId: 'ship', status: 'IN_PROGRESS' }),
-  task('rem', 'work/tend_v0_1', 'Reminders', 'ac', { parentId: 'ship' }),
-  task('readme', 'work/tend_v0_1', 'Write README', 'b'),
-  task('ci', 'work/infra', 'Set up CI builds', 'c', { status: 'IN_REVIEW', dueDate: day(9) }),
-  task('certs', 'work/infra', 'Get code signing certificates', 'd', { dueDate: day(-2) }),
-  task('weekly', 'work', 'Weekly review', 'e', { dueDate: day(-1) }),
-  task('settings', 'work/tend_v0_1', 'Settings screen', 'f', { dueDate: day(6) }),
-  task('board', 'work/tend_v0_1', 'Board view', 'g', { dueDate: day(0), status: 'WAITING' }),
-  task('icon', 'work/tend_v0_1', 'App icon', 'h'),
-  task('plan', 'work', 'Plan v0.2 scope', 'i', { dueDate: day(4) }),
-  task('notes', 'work', 'Write release notes', 'j', { status: 'DONE' }),
-  task('milk', 'home', 'Buy milk', 'k'),
+  task({ id: 'ship', path: 'work/tend_v0_1', title: 'Ship first build', orderKey: 'a', status: 'IN_PROGRESS', dueDate: day(7), assigneeId: 'priya' }),
+  task({ id: 'setup', path: 'work/tend_v0_1', title: 'Set up Tauri + Svelte', orderKey: 'aa', parentId: 'ship', status: 'DONE' }),
+  task({ id: 'nx', path: 'work/tend_v0_1', title: 'Notes explorer', orderKey: 'ab', parentId: 'ship', status: 'IN_PROGRESS' }),
+  task({ id: 'rem', path: 'work/tend_v0_1', title: 'Reminders', orderKey: 'ac', parentId: 'ship' }),
+  task({ id: 'readme', path: 'work/tend_v0_1', title: 'Write README', orderKey: 'b' }),
+  task({ id: 'ci', path: 'work/infra', title: 'Set up CI builds', orderKey: 'c', status: 'IN_REVIEW', dueDate: day(9) }),
+  task({ id: 'certs', path: 'work/infra', title: 'Get code signing certificates', orderKey: 'd', dueDate: day(-2) }),
+  task({ id: 'weekly', path: 'work', title: 'Weekly review', orderKey: 'e', dueDate: day(-1) }),
+  task({ id: 'settings', path: 'work/tend_v0_1', title: 'Settings screen', orderKey: 'f', dueDate: day(6) }),
+  task({ id: 'board', path: 'work/tend_v0_1', title: 'Board view', orderKey: 'g', dueDate: day(0), status: 'WAITING' }),
+  task({ id: 'icon', path: 'work/tend_v0_1', title: 'App icon', orderKey: 'h' }),
+  task({ id: 'plan', path: 'work', title: 'Plan v0.2 scope', orderKey: 'i', dueDate: day(4) }),
+  task({ id: 'notes', path: 'work', title: 'Write release notes', orderKey: 'j', status: 'DONE' }),
+  task({ id: 'milk', path: 'home', title: 'Buy milk', orderKey: 'k' }),
 ];
 const timerList = [
   { id: 'tea', title: 'Tea', endsAt: now + 271_000 },
@@ -59,10 +68,10 @@ const comments: { id: string; task: string; body: string; createdAt: number; edi
 const taskFolders = ['home', 'inbox', 'work', 'work/infra', 'work/tend_v0_1'];
 
 const handlers: Record<string, Handler> = {
-  vault_restore: () =>
-    vaultParam === 'denied'
-      ? { path: '/Users/demo/Documents/Tend', error: 'Tend doesn’t have permission to open this folder.' }
-      : { path: withVault ? '/Users/demo/Tend' : null, error: null },
+  vault_restore: () => {
+    if (vaultParam === 'denied') return { path: DENIED_VAULT_PATH, error: 'Tend doesn’t have permission to open this folder.' };
+    return { path: withVault ? VAULT_PATH : null, error: null };
+  },
   vault_open: ({ path }) => ({
     path,
     ok: true,
@@ -75,6 +84,11 @@ const handlers: Record<string, Handler> = {
   'plugin:dialog|open': () => '/Users/demo/Dropbox/Tend',
   'plugin:event|listen': () => 1,
   'plugin:event|unlisten': () => null,
+  'plugin:window|is_maximized': () => false,
+  'plugin:window|is_fullscreen': () => false,
+  'plugin:window|close': () => null,
+  'plugin:window|minimize': () => null,
+  'plugin:window|toggle_maximize': () => null,
   tags_all: () => ['ci', 'docs', 'home', 'reading', 'release', 'tauri', 'ui', 'v0.1'],
   notes_tree: () => ({ folders: ['home', 'work', 'work/tauri'], notes }),
   notes_rescan: () => ({ folders: ['home', 'work', 'work/tauri'], notes }),
@@ -93,7 +107,10 @@ const handlers: Record<string, Handler> = {
     return t;
   },
   timer_ring: () => null,
-  timer_cancel: ({ id }) => timerList.splice(timerList.findIndex((t) => t.id === id), 1),
+  timer_cancel: ({ id }) => {
+    const index = timerList.findIndex((t) => t.id === id);
+    if (index >= 0) timerList.splice(index, 1);
+  },
   timer_add_minute: () => null,
   skipped_items: () => ['Bad Name.md', 'My Folder/'],
   feedback_send: () => null,
@@ -132,10 +149,6 @@ const handlers: Record<string, Handler> = {
     settings[key as string] = value;
   },
 };
-
-export function register(more: Record<string, Handler>) {
-  Object.assign(handlers, more);
-}
 
 mockIPC((cmd, args) => {
   const handler = handlers[cmd];

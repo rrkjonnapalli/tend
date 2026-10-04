@@ -19,15 +19,22 @@
     onclose: () => void;
   } = $props();
 
+  const WIDTH = 440;
+  const TOP = 120;
+
   let typed = $state('');
   const blocked = $derived(confirmWord !== undefined && typed !== confirmWord);
 
   function confirm() {
     if (!blocked) ondelete();
   }
+
+  function onFieldKey(e: KeyboardEvent) {
+    if (e.key === 'Enter') confirm();
+  }
 </script>
 
-<Modal label={title} role="alertdialog" width={440} top={120} shade {onclose}>
+<Modal label={title} role="alertdialog" width={WIDTH} top={TOP} shade {onclose}>
   <div class="dlg">
     <h2>{title}</h2>
     <span>{body}</span>
@@ -42,7 +49,7 @@
         spellcheck="false"
         autofocus
         bind:value={typed}
-        onkeydown={(e) => e.key === 'Enter' && confirm()} />
+        onkeydown={onFieldKey} />
     {/if}
     <div class="foot">
       <button class="btn-ghost" onclick={onclose}>Cancel</button>

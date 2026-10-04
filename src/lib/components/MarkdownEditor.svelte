@@ -1,8 +1,8 @@
 <script lang="ts">
   // The one markdown editor (CodeMirror 6), used by the note page, MarkdownField and comments.
   import { onMount } from 'svelte';
-  import { EditorState } from '@codemirror/state';
-  import { EditorView, keymap, placeholder as placeholderExt } from '@codemirror/view';
+  import { EditorState, type Extension } from '@codemirror/state';
+  import { EditorView, keymap, placeholder as placeholderExt, type ViewUpdate } from '@codemirror/view';
   import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
   import { markdown } from '@codemirror/lang-markdown';
   import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
@@ -51,44 +51,55 @@
   ]);
 
   onMount(() => {
-    view = new EditorView({
-      parent: host,
-      state: EditorState.create({
-        doc: value,
-        extensions: [
-          history(),
-          keymap.of([
-            { key: 'Mod-Enter', run: () => (onsave?.(), !!onsave) },
-            { key: 'Escape', run: () => (oncancel?.(), !!oncancel) },
-            indentWithTab,
-            ...defaultKeymap,
-            ...historyKeymap,
-          ]),
-          markdown(),
-          syntaxHighlighting(highlight),
-          EditorView.lineWrapping,
-          placeholderExt(placeholder),
-          EditorView.contentAttributes.of({ 'aria-label': label }),
-          EditorView.updateListener.of((u) => {
-            if (u.docChanged) onchange(u.state.doc.toString());
-            if (u.focusChanged && !u.view.hasFocus) onblur?.();
-          }),
-        ],
-      }),
-    });
-    if (autofocus) {
-      view.focus();
-      view.dispatch({ selection: { anchor: view.state.doc.length } });
-    }
+    view = new EditorView({ parent: host, state: EditorState.create({ doc: value, extensions: extensions() }) });
+    if (autofocus) focusAtEnd(view);
     return () => view?.destroy();
   });
+
+  function extensions(): Extension[] {
+    return [
+      history(),
+      keymap.of([
+        { key: 'Mod-Enter', run: () => runHandler(onsave) },
+        { key: 'Escape', run: () => runHandler(oncancel) },
+        indentWithTab,
+        ...defaultKeymap,
+        ...historyKeymap,
+      ]),
+      markdown(),
+      syntaxHighlighting(highlight),
+      EditorView.lineWrapping,
+      placeholderExt(placeholder),
+      EditorView.contentAttributes.of({ 'aria-label': label }),
+      EditorView.updateListener.of(onupdate),
+    ];
+  }
+
+  /** Runs a key's handler; returning false lets CodeMirror handle the key when there is none. */
+  function runHandler(handler: (() => void) | undefined): boolean {
+    if (!handler) return false;
+    handler();
+    return true;
+  }
+
+  function onupdate(u: ViewUpdate) {
+    if (u.docChanged) onchange(u.state.doc.toString());
+    const lostFocus = u.focusChanged && !u.view.hasFocus;
+    if (lostFocus) onblur?.();
+  }
+
+  function focusAtEnd(editor: EditorView) {
+    editor.focus();
+    editor.dispatch({ selection: { anchor: editor.state.doc.length } });
+  }
 
   // Outside changes (a file edited elsewhere) replace the text without losing the editor.
   $effect(() => {
     const next = value;
-    if (view && next !== view.state.doc.toString()) {
-      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: next } });
-    }
+    if (!view) return;
+    const current = view.state.doc.toString();
+    if (next === current) return;
+    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: next } });
   });
 
   export function focus() {
