@@ -65,7 +65,7 @@
     position: relative;
     display: grid;
     /* dot · title | edit · My day · count · due · path */
-    grid-template-columns: 8px minmax(0, 1fr) var(--col-edit) var(--col-myday) var(--col-count) var(--col-date) var(--col-path);
+    grid-template-columns: var(--grid-task);
     align-items: center;
     column-gap: var(--col-gap);
     min-height: 36px;
@@ -95,7 +95,6 @@
 
   .title {
     min-width: 0;
-    margin-left: 6px;
     height: 36px;
     padding: 0;
     border: 0;

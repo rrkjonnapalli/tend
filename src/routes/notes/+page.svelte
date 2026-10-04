@@ -5,6 +5,7 @@
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
+  import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import EditButton from '#lib/components/EditButton.svelte';
   import InlineTitle from '#lib/components/InlineTitle.svelte';
   import { overflowTitle } from '#lib/actions/overflow-title.action.ts';
@@ -47,6 +48,9 @@
 
   // ---- rename in place
 
+  /** Titles over the list columns: name | edit · modified · folder. */
+  const COLUMNS = ['Name', '', 'Modified', 'Folder'];
+
   let editingId = $state<string | null>(null);
 
   function stopEditing() {
@@ -69,23 +73,24 @@
   }
 </script>
 
-<main class="main">
+<main class="list-page">
   <PageBar meta={summary}><Breadcrumbs {crumbs} /></PageBar>
-  <article class="list">
-    <SearchLine bind:value={query} label="Search notes" placeholder="Search notes" />
+  <SearchLine bind:value={query} label="Search notes" placeholder="Search notes" />
+  <label class="add">
+    <span>+</span>
+    <input
+      use:plainText
+      use:focusOnMount
+      placeholder="new note"
+      aria-label="New note"
+      bind:value={draft}
+      oninput={() => (error = '')}
+      {onkeydown} />
+  </label>
+  {#if draftError || error}<span class="err">{draftError || error}</span>{/if}
+  <ColumnHeader template="var(--grid-note)" columns={COLUMNS} />
+  <div class="list-scroll">
     <div class="rows">
-      <label class="add">
-        <span>+</span>
-        <input
-          use:plainText
-          use:focusOnMount
-          placeholder="new note"
-          aria-label="New note"
-          bind:value={draft}
-          oninput={() => (error = '')}
-          {onkeydown} />
-      </label>
-      {#if draftError || error}<span class="err">{draftError || error}</span>{/if}
       {#each rows as n (n.id)}
         {#if editingId === n.id}
           <div class="row editing">
@@ -105,22 +110,10 @@
       {/each}
       {#if rows.length === 0}<span class="caption muted empty">{needle ? 'No notes match' : 'No notes here yet'}</span>{/if}
     </div>
-  </article>
+  </div>
 </main>
 
 <style>
-  .main {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: 0 24px 48px;
-    overflow: auto;
-  }
-
-  .list {
-    display: flex;
-    flex-direction: column;
-  }
-
 
   .rows {
     display: flex;
@@ -128,6 +121,7 @@
   }
 
   .add {
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -158,7 +152,7 @@
   .row {
     display: grid;
     /* name | edit · modified · path */
-    grid-template-columns: minmax(0, 1fr) var(--col-edit) var(--col-date) var(--col-path);
+    grid-template-columns: var(--grid-note);
     align-items: center;
     column-gap: var(--col-gap);
     min-height: 36px;

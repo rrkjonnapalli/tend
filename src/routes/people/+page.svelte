@@ -5,6 +5,7 @@
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
+  import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import SearchLine from '#lib/components/SearchLine.svelte';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { peopleAPI } from '#lib/api/people.ts';
@@ -17,6 +18,7 @@
   import { searchNeedle } from '#lib/util/search.ts';
 
   const UPCOMING_DAYS = 30;
+  const COLUMNS = ['Name', 'Birthday', 'Phone', 'Email'];
 
   people.load();
 
@@ -54,16 +56,16 @@
   }
 </script>
 
-<main class="main">
+<main class="list-page">
   <PageBar meta={summary}><Breadcrumbs crumbs={[{ label: 'People' }]} /></PageBar>
-  <div class="page">
-    <SearchLine bind:value={query} label="Search people" placeholder="Search name, phone or email" />
+  <SearchLine bind:value={query} label="Search people" placeholder="Search name, phone or email" />
+  <label class="add">
+    <span class="plus">+</span>
+    <input use:plainText bind:this={addInput} use:focusOnMount aria-label="Add person" placeholder="add person (first and last name)" bind:value={draft} onkeydown={addKeys} />
+  </label>
+  <ColumnHeader template="var(--grid-person)" gap="16px" columns={COLUMNS} />
+  <div class="list-scroll">
     <div class="table">
-      <label class="add">
-        <span class="plus">+</span>
-        <input use:plainText bind:this={addInput} use:focusOnMount aria-label="Add person" placeholder="add person (first and last name)" bind:value={draft} onkeydown={addKeys} />
-      </label>
-      <div class="phead"><span>Name</span><span>Birthday</span><span>Phone</span><span>Email</span></div>
       {#each shown as p (p.id)}
         {@const bd = personBirthday(p)}
         <a class="prow" href={routes.person(p.id)}>
@@ -79,19 +81,6 @@
 </main>
 
 <style>
-  .main {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: 0 24px 72px;
-    overflow: auto;
-  }
-
-  .page {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
 
   .table {
     display: flex;
@@ -99,6 +88,7 @@
   }
 
   .add {
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -125,18 +115,10 @@
     color: var(--c-muted-2);
   }
 
-  .phead,
   .prow {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
+    grid-template-columns: var(--grid-person);
     gap: 16px;
-  }
-
-  .phead {
-    padding: 0 0 6px;
-    border-bottom: 1px solid var(--c-chip);
-    font: 400 12px/16px var(--font-ui);
-    color: var(--c-faint);
   }
 
   .prow {

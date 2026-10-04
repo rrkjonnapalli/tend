@@ -10,6 +10,7 @@
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
+  import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import SearchLine from '#lib/components/SearchLine.svelte';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
@@ -34,6 +35,8 @@
   ];
   /** Views with an "add task" field; a task added in My day joins today's My day. */
   const ADD_VIEWS: View[] = ['myday', 'all'];
+  /** Titles over the list columns: dot · title | edit · My day · count · due · folder. */
+  const COLUMNS = ['', 'Title', '', 'My day', 'Subs', 'Due', 'Folder'];
   const EMPTY: Record<View, string> = {
     all: 'No tasks here yet',
     overdue: 'Nothing overdue',
@@ -139,84 +142,70 @@
   }
 </script>
 
-<main class="main" class:board>
+<main class="list-page">
   <PageBar meta={plural(counts.all, 'task')}><Breadcrumbs {crumbs} /></PageBar>
-  <article class="list">
-    <SearchLine bind:value={query} label="Search tasks" placeholder="Search tasks" />
+  <SearchLine bind:value={query} label="Search tasks" placeholder="Search tasks" />
 
-    <nav class="views" aria-label="Views">
-      {#each VIEWS as [v, label], i (v)}
-        {#if i > 0}<span class="sep" aria-hidden="true">·</span>{/if}
-        <button class="vbtn" class:on={view === v} aria-pressed={view === v} onclick={() => setView(v)}>
-          {label}<span class="vc">{counts[v]}</span>
-        </button>
-      {/each}
-      <span class="sep" aria-hidden="true">·</span>
-      <DateField mode="range" {range} active={view === 'range'} marked={dueDays} onrange={setRange} />
-      <span class="lay" role="group" aria-label="Layout">
-        <button class="lbtn" class:on={!board} aria-label="List" aria-pressed={!board} title="List" onclick={() => settings.set(settingKeys.tasksLayout, 'list')}>
-          <Icon name="list" size={14} />
-        </button>
-        <button class="lbtn" class:on={board} aria-label="Board" aria-pressed={board} title="Board" onclick={() => settings.set(settingKeys.tasksLayout, 'board')}>
-          <Icon name="board" size={14} />
-        </button>
-      </span>
-    </nav>
+  <nav class="views" aria-label="Views">
+    {#each VIEWS as [v, label], i (v)}
+      {#if i > 0}<span class="sep" aria-hidden="true">·</span>{/if}
+      <button class="vbtn" class:on={view === v} aria-pressed={view === v} onclick={() => setView(v)}>
+        {label}<span class="vc">{counts[v]}</span>
+      </button>
+    {/each}
+    <span class="sep" aria-hidden="true">·</span>
+    <DateField mode="range" {range} active={view === 'range'} marked={dueDays} onrange={setRange} />
+    <span class="lay" role="group" aria-label="Layout">
+      <button class="lbtn" class:on={!board} aria-label="List" aria-pressed={!board} title="List" onclick={() => settings.set(settingKeys.tasksLayout, 'list')}>
+        <Icon name="list" size={14} />
+      </button>
+      <button class="lbtn" class:on={board} aria-label="Board" aria-pressed={board} title="Board" onclick={() => settings.set(settingKeys.tasksLayout, 'board')}>
+        <Icon name="board" size={14} />
+      </button>
+    </span>
+  </nav>
 
-    {#if board}
-      <TaskBoard items={rows} {folder} />
-    {:else}
-    <div class="rows" role="list">
-      {#if canAdd}
-        <label class="add">
-          <span class="plus">+</span>
-          <input
-            use:plainText
-            bind:this={addInput}
-            use:focusOnMount
-            placeholder="add task"
-            aria-label="Add task"
-            bind:value={draft}
-            onkeydown={addKeys} />
-        </label>
-      {/if}
-      {#each shown as task (task.id)}
-        <TaskRow
-          {task}
-          {folder}
-          sortable={manual}
-          lifted={lifted === task.id && preview !== null}
-          onpointerdown={(e) => grab(e, task.id)} />
-      {/each}
-      {#if shown.length === 0}<span class="caption muted empty">{needle ? 'No tasks match' : EMPTY[view]}</span>{/if}
-    </div>
+  {#if board}
+    <div class="boardwrap"><TaskBoard items={rows} {folder} /></div>
+  {:else}
+    {#if canAdd}
+      <label class="add">
+        <span class="plus">+</span>
+        <input
+          use:plainText
+          bind:this={addInput}
+          use:focusOnMount
+          placeholder="add task"
+          aria-label="Add task"
+          bind:value={draft}
+          onkeydown={addKeys} />
+      </label>
     {/if}
-  </article>
+    <ColumnHeader template="var(--grid-task)" columns={COLUMNS} />
+    <div class="list-scroll">
+      <div class="rows" role="list">
+        {#each shown as task (task.id)}
+          <TaskRow
+            {task}
+            {folder}
+            sortable={manual}
+            lifted={lifted === task.id && preview !== null}
+            onpointerdown={(e) => grab(e, task.id)} />
+        {/each}
+        {#if shown.length === 0}<span class="caption muted empty">{needle ? 'No tasks match' : EMPTY[view]}</span>{/if}
+      </div>
+    </div>
+  {/if}
 </main>
 
 <style>
-  .main {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: 0 24px 48px;
-    overflow: auto;
-  }
-
-  .list {
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* The board fills the window; its columns scroll on their own. */
-  .main.board {
+  /* The board fills the rest of the window; its columns scroll on their own. */
+  .boardwrap {
+    flex: 1;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     padding-bottom: 12px;
-  }
-
-  .board .list {
-    flex: 1;
-    min-height: 0;
   }
 
   .lay {
@@ -251,6 +240,7 @@
 
   /* The filter line under the bar. */
   .views {
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     min-height: 36px;
@@ -296,10 +286,10 @@
   .rows {
     display: flex;
     flex-direction: column;
-    margin-top: -8px;
   }
 
   .add {
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     gap: 12px;

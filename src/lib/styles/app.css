@@ -339,3 +339,22 @@ body.reordering .sortable:not(.lifted) .grip {
 .inline-field.bad {
   color: var(--danger);
 }
+
+/* A list page (notes, tasks, people): the top (bar, search, add field, column header) stays
+   put and only the rows under it scroll. */
+.list-page {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 24px;
+}
+
+.list-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0 -24px;
+  padding: 0 24px 48px;
+}
