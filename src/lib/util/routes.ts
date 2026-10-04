@@ -17,7 +17,8 @@ export const routes = {
   note: (id: string, { edit = false }: { edit?: boolean } = {}) => `/notes/${id}${edit ? '?edit=1' : ''}`,
   tasksFolder: (path: string) => `/tasks${folderQuery(path)}`,
   task: (id: string) => `/tasks/${id}`,
-  person: (id: string) => `/people/${id}`,
+  /** `isNew` opens it ready to type, with the first name focused. */
+  person: (id: string, { isNew = false }: { isNew?: boolean } = {}) => `/people/${id}${isNew ? '?new=1' : ''}`,
   /** The People page with the add field open. */
   newPerson: '/people?add=1',
 };

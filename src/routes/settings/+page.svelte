@@ -101,7 +101,7 @@
   .main {
     flex: 1 1 auto;
     min-width: 0;
-    padding: 40px 24px 64px;
+    padding: 12px 24px 64px;
     overflow: auto;
   }
 

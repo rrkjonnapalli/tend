@@ -89,7 +89,7 @@
       run: async () => {
         const id = await peopleAPI.create({ first, last });
         await people.load();
-        goto(routes.person(id));
+        goto(routes.person(id, { isNew: true }));
       },
     });
   }

@@ -8,6 +8,8 @@
   import { onDestroy } from 'svelte';
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
+  import PageBar from '#lib/components/PageBar.svelte';
+  import { focusOnMount } from '#lib/actions/focus.action.ts';
   import DateField from '#lib/components/DateField.svelte';
   import TaskRow from '#lib/components/TaskRow.svelte';
   import TaskBoard from '#lib/components/TaskBoard.svelte';
@@ -18,7 +20,6 @@
   import { droppedKey, inPreviewOrder } from '#lib/util/task-order.ts';
   import { folderCrumbs, folderParam, TASK_PARAMS, tasksURL } from '#lib/util/task-urls.ts';
   import { startReorder } from '#lib/util/reorder.ts';
-  import { baseOf } from '#lib/util/names.ts';
   import { plural } from '#lib/util/plural.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
 
@@ -131,12 +132,8 @@
 </script>
 
 <main class="main" class:board>
+  <PageBar meta={plural(counts.all, 'task')}><Breadcrumbs {crumbs} /></PageBar>
   <article class="list">
-    <div class="head">
-      <Breadcrumbs {crumbs} />
-      <h1 class="heading">{folder ? baseOf(folder) : rootName}</h1>
-      <span class="caption muted">{plural(counts.all, 'task')}</span>
-    </div>
 
     <nav class="views" aria-label="Views">
       {#each VIEWS as [v, label], i (v)}
@@ -166,6 +163,7 @@
           <span class="plus">+</span>
           <input
             bind:this={addInput}
+            use:focusOnMount
             placeholder="add task"
             aria-label="Add task"
             bind:value={draft}
@@ -196,10 +194,8 @@
   }
 
   .list {
-    padding-top: 48px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
   }
 
   /* The board fills the window; its columns scroll on their own. */
@@ -244,15 +240,12 @@
     background: var(--c-chip);
   }
 
-  .head {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
+  /* The filter line under the bar. */
   .views {
     display: flex;
     align-items: center;
+    min-height: 36px;
+    margin-bottom: 4px;
     flex-wrap: wrap;
     gap: 4px 8px;
     font: 400 14px/20px var(--font-ui);

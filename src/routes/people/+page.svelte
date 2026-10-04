@@ -3,6 +3,9 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
+  import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
+  import PageBar from '#lib/components/PageBar.svelte';
+  import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { peopleAPI } from '#lib/api/people.ts';
   import { displayName, personMatches, splitName } from '#lib/util/people.ts';
   import type { PersonRow } from '#lib/types/person.type.ts';
@@ -33,6 +36,7 @@
   }
 
   const upcoming = $derived(people.people.filter(hasUpcomingBirthday).length);
+  const summary = $derived(`${plural(people.people.length, 'person', 'people')} · ${plural(upcoming, 'birthday')} in the next ${UPCOMING_DAYS} days`);
 
   async function add() {
     const name = splitName(draft);
@@ -40,7 +44,7 @@
     const id = await peopleAPI.create(name);
     draft = '';
     await people.load();
-    goto(routes.person(id));
+    goto(routes.person(id, { isNew: true }));
   }
 
   function addKeys(e: KeyboardEvent) {
@@ -49,11 +53,8 @@
 </script>
 
 <main class="main">
+  <PageBar meta={summary}><Breadcrumbs crumbs={[{ label: 'People' }]} /></PageBar>
   <div class="page">
-    <div class="head">
-      <h1 class="heading">People</h1>
-      <span class="caption muted">{plural(people.people.length, 'person', 'people')} · {plural(upcoming, 'birthday')} in the next {UPCOMING_DAYS} days</span>
-    </div>
     <label class="search">
       <span class="ic"><Icon name="search" size={14} /></span>
       <input aria-label="Search people" placeholder="Search name, phone or email" bind:value={query} />
@@ -61,7 +62,7 @@
     <div class="table">
       <label class="add">
         <span class="plus">+</span>
-        <input bind:this={addInput} aria-label="Add person" placeholder="add person (first and last name), ↵" bind:value={draft} onkeydown={addKeys} />
+        <input bind:this={addInput} use:focusOnMount aria-label="Add person" placeholder="add person (first and last name), ↵" bind:value={draft} onkeydown={addKeys} />
       </label>
       <div class="phead"><span>Name</span><span>Birthday</span><span>Phone</span><span>Email</span></div>
       {#each shown as p (p.id)}
@@ -82,20 +83,14 @@
   .main {
     flex: 1 1 auto;
     min-width: 0;
-    padding: 40px 24px 72px;
+    padding: 0 24px 72px;
     overflow: auto;
   }
 
   .page {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-  }
-
-  .head {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    gap: 8px;
   }
 
   .search {

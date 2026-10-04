@@ -8,6 +8,7 @@
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
+  import PageBar from '#lib/components/PageBar.svelte';
   import TagEditor from '#lib/components/TagEditor.svelte';
   import MarkdownView from '#lib/components/MarkdownView.svelte';
   import MarkdownEditor from '#lib/components/MarkdownEditor.svelte';
@@ -128,12 +129,9 @@
 </script>
 
 <main class="main">
-  <div class="bar">
-    <button class="icon-btn sm back" aria-label="Back" title="Back" onclick={() => nav.back(routes.notesFolder(row?.folder ?? ''))}>
-      <Icon name="back" size={13} />
-    </button>
+  <PageBar onback={() => nav.back(routes.notesFolder(row?.folder ?? ''))}>
     <Breadcrumbs {crumbs} />
-    <span class="grow"></span>
+    {#snippet actions()}
     <button
       class="icon-btn"
       aria-label={widthLabel}
@@ -146,7 +144,8 @@
     {:else}
       <button class="icon-btn" aria-label="Edit" title="Edit ({keyLabel('mod+e')})" onclick={() => setMode(true)}><Icon name="edit" size={13} /></button>
     {/if}
-  </div>
+    {/snippet}
+  </PageBar>
 
   {#if loadedId === id}
     <article class="note">
@@ -182,26 +181,6 @@
     overflow: auto;
   }
 
-  .bar {
-    position: sticky;
-    top: 0;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 28px;
-    margin: 0 -24px;
-    padding: 10px 24px;
-    background: var(--c-page);
-  }
-
-  .back {
-    margin-left: -6px;
-  }
-
-  .grow {
-    flex: 1;
-  }
 
   .note {
     padding-top: 8px;

@@ -6,6 +6,7 @@
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
+  import PageBar from '#lib/components/PageBar.svelte';
   import TaskTitle from '#lib/components/TaskTitle.svelte';
   import TaskFields from '#lib/components/TaskFields.svelte';
   import TaskSubtasks from '#lib/components/TaskSubtasks.svelte';
@@ -162,10 +163,9 @@
 <main class="main">
   {#if task}
     <article class="page">
-      <div class="bar caption">
-        <button class="icon-btn sm back" aria-label="Back" title="Back" onclick={back}><Icon name="back" size={13} /></button>
+      <PageBar onback={back}>
         <Breadcrumbs {crumbs} />
-        <span class="grow"></span>
+        {#snippet actions()}
         {#if !task.parentId}
           <button class="icon-btn" aria-label="Move to…" title="Move to…" onclick={() => (moving = true)}><Icon name="folder" size={14} /></button>
         {/if}
@@ -173,7 +173,8 @@
         <button class="icon-btn" aria-label={widthLabel} title={widthLabel} onclick={toggleWidth}>
           <Icon name={wide ? 'narrow' : 'widen'} size={14} />
         </button>
-      </div>
+        {/snippet}
+      </PageBar>
 
       <div class="body" style:max-width={wide ? 'none' : 'var(--content-w)'}>
         <TaskTitle value={task.title} onsave={(title) => patch({ title })} />
@@ -240,7 +241,7 @@
   .main {
     flex: 1 1 auto;
     min-width: 0;
-    padding: 28px 24px 64px;
+    padding: 0 24px 64px;
     overflow: auto;
   }
 
@@ -250,26 +251,6 @@
     gap: 12px;
   }
 
-  .bar {
-    position: sticky;
-    top: -28px;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 28px;
-    margin: 0 -24px;
-    padding: 10px 24px;
-    background: var(--c-page);
-  }
-
-  .back {
-    margin-left: -6px;
-  }
-
-  .grow {
-    flex: 1;
-  }
 
   .body {
     width: 100%;

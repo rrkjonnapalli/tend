@@ -3,6 +3,7 @@
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
+  import PageBar from '#lib/components/PageBar.svelte';
   import Section from '#lib/components/Section.svelte';
   import ContactSection from '#lib/components/ContactSection.svelte';
   import MarkdownField from '#lib/components/MarkdownField.svelte';
@@ -28,6 +29,7 @@
   tasks.load();
 
   const id = $derived(page.params.id!);
+  const isNew = $derived(page.url.searchParams.get('new') === '1');
   let person = $state<Person | null>(null);
 
   let notesField = $state<MarkdownField>();
@@ -61,16 +63,16 @@
 <main class="main">
   {#if person}
     <div class="page">
-      <div class="bar caption">
-        <button class="icon-btn sm back" aria-label="Back" title="Back" onclick={() => nav.back(routes.people)}><Icon name="back" size={13} /></button>
+      <PageBar onback={() => nav.back(routes.people)}>
         <Breadcrumbs crumbs={[{ label: 'People', href: routes.people }, { label: displayName(person) }]} />
-        <span class="grow"></span>
-        <button class="icon-btn sm danger" aria-label="Delete person" title="Delete" onclick={() => (deleting = true)}><Icon name="trash" size={13} /></button>
-      </div>
+        {#snippet actions()}
+          <button class="icon-btn sm danger" aria-label="Delete person" title="Delete" onclick={() => (deleting = true)}><Icon name="trash" size={13} /></button>
+        {/snippet}
+      </PageBar>
 
       <div class="body">
         <h1 class="heading">{displayName(person)}</h1>
-        <PersonFields {person} onsave={save} />
+        <PersonFields {person} onsave={save} focusName={isNew} />
 
         <div class="sections">
           {#each CONTACT_SECTIONS as c (c.kind)}
@@ -108,7 +110,7 @@
   .main {
     flex: 1 1 auto;
     min-width: 0;
-    padding: 40px 24px 72px;
+    padding: 0 24px 72px;
     overflow: auto;
   }
 
@@ -118,20 +120,6 @@
     gap: 12px;
   }
 
-  .bar {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 28px;
-  }
-
-  .back {
-    margin-left: -6px;
-  }
-
-  .grow {
-    flex: 1;
-  }
 
   .body {
     width: 100%;

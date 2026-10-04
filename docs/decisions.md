@@ -80,6 +80,8 @@ The user picks one **vault folder**. Tend works only inside it:
 - **Feedback:**
   - A popover with Bug / Idea / Other, a text area and *Send* (⌘/Ctrl+Enter also sends).
   - Stored in the `feedback` table. Confirmation: "Thanks, saved."
+- **Page bar:** every page starts with one 40px row on the same line as the explorer's icon toolbar: back (detail pages) · breadcrumb · a short count ("12 tasks", "5 notes · 3 folders") · actions on the right. List pages have no big title.
+- **List pages** (notes, tasks, people): under the bar, one filter line (task views, people search, empty for notes for now), then the add field, which takes focus when the page opens. A person just added opens with First name focused.
 - **Width toggle:**
   - On note and task pages, the top section (breadcrumb, tags) is full width.
   - Content is centred at **760px**, with an icon to switch to full width.

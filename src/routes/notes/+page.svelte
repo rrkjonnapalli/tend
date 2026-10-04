@@ -3,18 +3,19 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
+  import PageBar from '#lib/components/PageBar.svelte';
+  import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
-  import { baseOf, nameError, relativeTo } from '#lib/util/names.ts';
+  import { nameError, relativeTo } from '#lib/util/names.ts';
   import { siblingNames } from '#lib/util/explorer-rows.ts';
-  import { NOTES_ROOT_NAME, folderCrumbs, folderSummary } from '#lib/util/note-paths.ts';
+  import { folderCrumbs, folderSummary } from '#lib/util/note-paths.ts';
   import { ago } from '#lib/util/dates.ts';
   import { routes } from '#lib/util/routes.ts';
 
   const folder = $derived(page.url.searchParams.get('f') ?? '');
   const rows = $derived(notes.under(folder));
   const summary = $derived(folderSummary({ notes: rows.length, folders: notes.foldersUnder(folder).length }));
-  const heading = $derived(folder ? baseOf(folder) : NOTES_ROOT_NAME);
   const crumbs = $derived(folderCrumbs(folder));
 
   let draft = $state('');
@@ -40,16 +41,15 @@
 </script>
 
 <main class="main">
+  <PageBar meta={summary}><Breadcrumbs {crumbs} /></PageBar>
   <article class="list">
-    <div class="head">
-      <Breadcrumbs {crumbs} />
-      <h1 class="heading">{heading}</h1>
-      <span class="caption muted">{summary}</span>
-    </div>
+    <!-- Kept free for filters. -->
+    <div class="filters"></div>
     <div class="rows">
       <label class="add">
         <span>+</span>
         <input
+          use:focusOnMount
           placeholder="new note"
           aria-label="New note"
           bind:value={draft}
@@ -78,16 +78,13 @@
   }
 
   .list {
-    padding-top: 48px;
     display: flex;
     flex-direction: column;
-    gap: 24px;
   }
 
-  .head {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  .filters {
+    min-height: 36px;
+    margin-bottom: 4px;
   }
 
   .rows {

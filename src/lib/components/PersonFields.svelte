@@ -1,11 +1,21 @@
 <script lang="ts">
+  import { focusWhen } from '#lib/actions/focus.action.ts';
   // Person page name and birth fields. Each is saved on blur or Enter; only changed fields are sent.
   import type { Person, PersonPatch } from '#lib/types/person.type.ts';
   import type { DOB } from '#lib/types/date.type.ts';
   import { formatDOB, parseDOB, parseTime, timeLabel } from '#lib/util/dates.ts';
   import { birthdayHint, dobOf } from '#lib/util/birthdays.ts';
 
-  let { person, onsave }: { person: Person; onsave: (patch: PersonPatch) => void } = $props();
+  let {
+    person,
+    onsave,
+    focusName = false,
+  }: {
+    person: Person;
+    onsave: (patch: PersonPatch) => void;
+    /** Focus the first name on open (a person just created). */
+    focusName?: boolean;
+  } = $props();
 
   let first = $state('');
   let last = $state('');
@@ -77,7 +87,7 @@
 
 <div class="props">
   <span class="pl">First name</span>
-  <div class="pv"><input class="fld" style:width="240px" aria-label="First name" bind:value={first} onblur={saveName} onkeydown={enterBlurs} /></div>
+  <div class="pv"><input class="fld" style:width="240px" aria-label="First name" use:focusWhen={focusName} bind:value={first} onblur={saveName} onkeydown={enterBlurs} /></div>
   <span class="pl">Last name</span>
   <div class="pv"><input class="fld" style:width="240px" aria-label="Last name" bind:value={last} onblur={saveName} onkeydown={enterBlurs} /></div>
   <span class="pl">Nickname</span>
