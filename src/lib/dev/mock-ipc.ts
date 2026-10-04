@@ -60,6 +60,10 @@ const tasks = [
   task({ id: 'notes', path: 'work', title: 'Write release notes', orderKey: 'j', status: 'DONE' }),
   task({ id: 'milk', path: 'home', title: 'Buy milk', orderKey: 'k' }),
 ];
+/** Manual My day choices: task id → included. */
+const myDay = new Map<string, boolean>();
+let createdCount = 0;
+
 const timerList = [
   { id: 'tea', title: 'Tea', endsAt: now + 271_000 },
   { id: 'motor', title: 'Turn off the motor', endsAt: now + 545_000 },
@@ -114,13 +118,24 @@ const handlers: Record<string, Handler> = {
   timer_add_minute: () => null,
   skipped_items: () => ['Bad Name.md', 'My Folder/'],
   feedback_send: () => null,
-  tasks_data: () => ({ folders: taskFolders, tasks, myDay: [] }),
+  tasks_data: () => ({ folders: taskFolders, tasks, myDay: [...myDay] }),
+  task_create: ({ task: input }) => {
+    createdCount += 1;
+    const fields = input as { path: string; title: string; parentId?: string };
+    const created = task({ id: `new${createdCount}`, orderKey: '0', ...fields, parentId: fields.parentId ?? null });
+    tasks.unshift(created);
+    return created;
+  },
   task_update: ({ id, patch }) => {
     const t = tasks.find((x) => x.id === id)!;
     Object.assign(t, patch);
     return t;
   },
-  my_day_set: () => null,
+  my_day_set: ({ id, included }) => {
+    if (included === null) myDay.delete(id as string);
+    else myDay.set(id as string, included as boolean);
+    return null;
+  },
   task_get: ({ id }) => ({ ...tasks.find((t) => t.id === id), description: id === 'ship' ? 'First signed build for macOS and Linux.' : '', tags: id === 'ship' ? ['v0.1'] : [] }),
   people_list: () => [
     { id: 'priya', firstName: 'Priya', lastName: 'Nair', nickname: null, dobYear: 1995, dobMonth: 10, dobDay: 10, phone: '+91 98450 12345', email: 'priya@example.com' },

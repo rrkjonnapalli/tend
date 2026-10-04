@@ -1,5 +1,6 @@
 <script lang="ts">
-  // The task's properties grid: status, due date and time, My day, assignee, tags.
+  // The task's properties grid: location (top-level tasks), status, due date and time, My day,
+  // assignee, tags.
   import type { Task, TaskPatch } from '#lib/types/task.type.ts';
   import StatusSelect from './StatusSelect.svelte';
   import DateField from './DateField.svelte';
@@ -8,13 +9,17 @@
   import TagEditor from './TagEditor.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { inMyDay, isOverdue } from '#lib/util/task-views.ts';
+  import { folderLabel } from '#lib/util/task-urls.ts';
+  import Icon from './Icon.svelte';
 
   let {
     task,
     tags,
     tagsLoaded,
+    rootName,
     onpatch,
     ontags,
+    onmove,
   }: {
     task: Task;
     tags: string[];
@@ -22,7 +27,15 @@
     tagsLoaded: boolean;
     onpatch: (patch: TaskPatch) => void;
     ontags: (tags: string[]) => void;
+    /** The tasks root folder's display name, for the location. */
+    rootName: string;
+    /** Opens Move to…; the location button calls it. */
+    onmove: () => void;
   } = $props();
+
+  // Subtasks live wherever their parent does, so only top-level tasks show a location.
+  const hasLocation = $derived(task.parentId === null);
+  const location = $derived(folderLabel({ rootName, path: task.path }));
 
   let statusSelect = $state<StatusSelect>();
   let dueField = $state<DateField>();
@@ -47,6 +60,12 @@
 </script>
 
 <div class="props">
+  {#if hasLocation}
+    <span class="pl">Location</span>
+    <div class="pv">
+      <button class="loc" title="Move to…" onclick={onmove}><Icon name="folder" size={14} />{location}</button>
+    </div>
+  {/if}
   <span class="pl">Status</span>
   <div class="pv"><StatusSelect bind:this={statusSelect} value={task.status} onchange={(status) => onpatch({ status })} /></div>
   <span class="pl">Due</span>
@@ -112,5 +131,24 @@
 
   .toggle.rem:hover {
     background: var(--danger-soft);
+  }
+
+  .loc {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 8px;
+    margin-left: -8px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text);
+    font: 400 14px/20px var(--font-ui);
+    cursor: pointer;
+  }
+
+  .loc:hover {
+    background: var(--c-hover);
   }
 </style>

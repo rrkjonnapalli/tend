@@ -178,7 +178,15 @@
       <div class="body" style:max-width={wide ? 'none' : 'var(--content-w)'}>
         <TaskTitle value={task.title} onsave={(title) => patch({ title })} />
 
-        <TaskFields bind:this={fields} {task} {tags} tagsLoaded={detailLoaded} onpatch={patch} ontags={setTags} />
+        <TaskFields
+          bind:this={fields}
+          {task}
+          {tags}
+          {rootName}
+          tagsLoaded={detailLoaded}
+          onpatch={patch}
+          ontags={setTags}
+          onmove={() => (moving = true)} />
 
         <div class="sections">
           <Section title="Description">

@@ -20,6 +20,12 @@ export function tasksURL(params: Record<string, string>): string {
 /** The task list of `folder` with its add field focused. */
 export const newTaskURL = (folder: string) => tasksURL({ ...folderParam(folder), [TASK_PARAMS.add]: '1' });
 
+/** Where a task sits, for display: "tasks / work / tend_v0_1". */
+export function folderLabel({ rootName, path }: { rootName: string; path: string }): string {
+  const labels = folderCrumbs({ rootName, path }).map((c) => c.label);
+  return labels.join(' / ');
+}
+
 /** Root, then one crumb per folder down to `path`, each linking to its task list. */
 export function folderCrumbs({ rootName, path }: { rootName: string; path: string }): Crumb[] {
   const crumbs: Crumb[] = [{ label: rootName, href: routes.tasksFolder('') }];

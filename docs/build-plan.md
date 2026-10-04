@@ -136,7 +136,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - Task folders (`task_folders`) in the shared Explorer, folders only. Root display name comes from `settings.tasks.root_name`.
 - **List view:**
   - breadcrumb, title, summary
-  - nav: All · Overdue · My day · Upcoming · date/range picker, with counts
+  - nav: My day · All · Overdue · Upcoming · date/range picker, with counts
   - List/Board toggle (the board comes in M7)
   - `+ add task`
 - **Rows:** status dot (status color; ring for Not started) · title (parent hint outside All) · subtask count · relative path · due (amber if overdue) · `+ my day` / `− my day` on hover.

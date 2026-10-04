@@ -1,6 +1,6 @@
 <script lang="ts">
+  // Task folder list: views (My day · All · Overdue · Upcoming · date range), then the rows.
   import { settingKeys } from '#lib/config/settings.config.ts';
-  // Task folder list: views (All · Overdue · My day · Upcoming · date range), then the rows.
   import type { DayRange } from '#lib/types/date.type.ts';
   import type { DroppedOrder } from '#lib/types/reorder.type.ts';
   import type { Task } from '#lib/types/task.type.ts';
@@ -23,11 +23,13 @@
   import { nav } from '#lib/stores/history.svelte.ts';
 
   const VIEWS: [View, string][] = [
+    ['myday', 'My day'],
     ['all', 'All'],
     ['overdue', 'Overdue'],
-    ['myday', 'My day'],
     ['upcoming', 'Upcoming'],
   ];
+  /** Views with an "add task" field; a task added in My day joins today's My day. */
+  const ADD_VIEWS: View[] = ['myday', 'all'];
   const EMPTY: Record<View, string> = {
     all: 'No tasks here yet',
     overdue: 'Nothing overdue',
@@ -112,11 +114,14 @@
     if (params.get(TASK_PARAMS.add) === '1' && addInput) addInput.focus();
   });
 
+  const canAdd = $derived(ADD_VIEWS.includes(view));
+
   async function add() {
     const title = draft.trim();
     if (!title) return;
-    await tasks.create({ path: folder, title });
+    const created = await tasks.create({ path: folder, title });
     draft = '';
+    if (view === 'myday') await tasks.setMyDay(created.id, true);
   }
 
   function addKeys(e: KeyboardEvent) {
@@ -155,7 +160,7 @@
       <TaskBoard items={rows} {folder} />
     {:else}
     <div class="rows" role="list">
-      {#if view === 'all'}
+      {#if canAdd}
         <label class="add">
           <span class="plus">+</span>
           <input
