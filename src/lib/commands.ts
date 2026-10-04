@@ -23,6 +23,8 @@ export type Command = {
 
 const onPage = (id: PageAction) => ({ when: () => pageActions.has(id), run: () => pageActions.run(id) });
 const onTasksList = () => page.url.pathname === '/tasks';
+/** Notes and Tasks are the sections with an explorer. */
+const hasExplorer = () => /^\/(notes|tasks)(\/|$)/.test(page.url.pathname);
 
 export const commands: Command[] = [
   { id: 'go.notes', group: 'Go to', label: 'Go to Notes', keys: 'mod+1', run: () => goto('/notes') },
@@ -52,7 +54,7 @@ export const commands: Command[] = [
   },
 
   { id: 'app.palette', group: 'App', label: 'Open command palette', keys: 'mod+k', run: () => (ui.palette = true) },
-  { id: 'app.explorer', group: 'App', label: 'Toggle explorer', keys: 'mod+\\', run: ui.toggleExplorer },
+  { id: 'app.explorer', group: 'App', label: 'Toggle explorer', keys: 'mod+b', when: hasExplorer, run: ui.toggleExplorer },
   { id: 'app.nav', group: 'App', label: 'Toggle bottom bar', run: ui.toggleNav },
   { id: 'app.feedback', group: 'App', label: 'Send feedback', run: () => ui.show('feedback') },
   { id: 'app.vault', group: 'App', label: 'Change vault…', run: () => goto('/start') },

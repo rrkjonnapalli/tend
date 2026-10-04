@@ -117,7 +117,7 @@
         <div class="cap keys">
           <span><kbd>{mod}</kbd><kbd>1</kbd>–<kbd>3</kbd></span><span>switch sections</span>
           <span><kbd>{mod}</kbd><kbd>N</kbd></span><span>new note</span>
-          <span><kbd>{mod}</kbd><kbd>\</kbd></span><span>toggle explorer</span>
+          <span><kbd>{mod}</kbd><kbd>B</kbd></span><span>toggle explorer</span>
         </div>
       </section>
     </div>
