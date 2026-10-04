@@ -1,6 +1,8 @@
 <script lang="ts">
   // One task in a list. Left: status dot · type badge · title. Right, each a fixed width so they
   // line up on every row: edit · My day · subtask count · due · assignee · path (cut off, tooltip).
+  // `compact` is the subtask list on a task page: edit · My day · assignee only, shorter rows, and
+  // no subtask badge (every row there is one).
   import type { Task } from '#lib/types/task.type.ts';
   import StatusSelect from './StatusSelect.svelte';
   import Grip from './Grip.svelte';
@@ -19,14 +21,16 @@
 
   let {
     task,
-    folder,
+    folder = '',
+    compact = false,
     sortable = false,
     lifted = false,
     onpointerdown,
   }: {
     task: Task;
     /** Paths are shown relative to this folder. */
-    folder: string;
+    folder?: string;
+    compact?: boolean;
     sortable?: boolean;
     lifted?: boolean;
     onpointerdown?: (e: PointerEvent) => void;
@@ -44,22 +48,24 @@
   }
 </script>
 
-<div class="row reveal-on-hover" class:editing class:sortable class:lifted data-key={task.id} role="listitem" {onpointerdown}>
+<div class="row reveal-on-hover" class:compact class:editing class:sortable class:lifted data-key={task.id} role="listitem" {onpointerdown}>
   {#if sortable}<Grip />{/if}
   <StatusSelect compact value={task.status} onchange={(status) => tasks.update(task.id, { status })} />
   {#if editing}
     <InlineTitle value={task.title} label="Task title" check={titleProblem} onsave={saveTitle} oncancel={() => (editing = false)} />
   {:else}
     <button class="title" onclick={() => goto(routes.task(task.id))}>
-      <SubtaskMark {task} /><span class:done={isDone(task)}>{task.title}</span>
+      {#if !compact}<SubtaskMark {task} />{/if}<span class:done={isDone(task)}>{task.title}</span>
     </button>
   {/if}
   <span class="ed">{#if !editing}<EditButton label="Edit title" onedit={() => (editing = true)} />{/if}</span>
   <span class="md"><MyDayButton {task} /></span>
-  <span class="meta count">{tasks.subtaskCount(task.id)}</span>
-  <span class="due" class:warn={isOverdue(task, now)}>{task.dueDate ? dueLabel(task.dueDate) : ''}</span>
+  {#if !compact}
+    <span class="meta count">{tasks.subtaskCount(task.id)}</span>
+    <span class="due" class:warn={isOverdue(task, now)}>{task.dueDate ? dueLabel(task.dueDate) : ''}</span>
+  {/if}
   <span class="who"><AssigneeBadge value={task.assigneeId} onchange={(assigneeId) => tasks.update(task.id, { assigneeId })} /></span>
-  <span class="meta path" use:overflowTitle>{relativeTo(task.path, folder)}</span>
+  {#if !compact}<span class="meta path" use:overflowTitle>{relativeTo(task.path, folder)}</span>{/if}
 </div>
 
 <style>
@@ -74,6 +80,15 @@
     padding: 0 16px;
     margin: 0 -16px;
     font: 400 14px/20px var(--font-ui);
+  }
+
+  .row.compact {
+    grid-template-columns: var(--grid-subtask);
+    min-height: 32px;
+  }
+
+  .compact .title {
+    height: 32px;
   }
 
   .row.sortable {

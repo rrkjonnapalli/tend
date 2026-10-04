@@ -5,7 +5,7 @@
   import type { Task } from '#lib/types/task.type.ts';
   import { onDestroy } from 'svelte';
   import Icon from './Icon.svelte';
-  import SubtaskRow from './SubtaskRow.svelte';
+  import TaskRow from './TaskRow.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { isDone } from '#lib/util/task-views.ts';
   import { droppedKey, inPreviewOrder, keyAfterLast } from '#lib/util/task-order.ts';
@@ -68,7 +68,7 @@
 </label>
 <div class="subs">
   {#each shown as s (s.id)}
-    <SubtaskRow sub={s} sortable lifted={preview !== null && lifted === s.id} onpointerdown={(e) => grab(e, s.id)} />
+    <TaskRow task={s} compact sortable lifted={preview !== null && lifted === s.id} onpointerdown={(e) => grab(e, s.id)} />
   {/each}
 </div>
 {#if doneSubs.length}
@@ -77,7 +77,7 @@
   </button>
   {#if showDone}
     {#each doneSubs as s (s.id)}
-      <SubtaskRow sub={s} />
+      <TaskRow task={s} compact />
     {/each}
   {/if}
 {/if}

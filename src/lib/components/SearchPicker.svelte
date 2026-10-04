@@ -13,6 +13,7 @@
     label,
     empty = 'No matches',
     row,
+    lead,
     max = 8,
   }: {
     items: T[];
@@ -23,6 +24,8 @@
     label: string;
     empty?: string;
     row: Snippet<[T]>;
+    /** Rows above the matches (e.g. "Unassign"). */
+    lead?: Snippet;
     max?: number;
   } = $props();
 
@@ -47,6 +50,7 @@
 
 <div class="picker">
   <input use:plainText use:focusOnMount {placeholder} aria-label={label} bind:value={query} oninput={() => (hi = 0)} {onkeydown} />
+  {@render lead?.()}
   <div role="listbox" aria-label={label}>
     {#each shown as item, i (item.id)}
       <button class="po" class:on={i === hi} role="option" aria-selected={i === hi} onclick={() => onpick(item)} onmouseenter={() => (hi = i)}>

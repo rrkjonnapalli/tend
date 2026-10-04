@@ -41,7 +41,7 @@
 </button>
 {#if open}
   <PeoplePicker {anchor} onpick={pick} onclose={() => (open = false)}>
-    {#snippet footer()}
+    {#snippet lead()}
       {#if person}<button class="opt unassign" onclick={() => choose(null)}>Unassign</button>{/if}
     {/snippet}
   </PeoplePicker>
@@ -78,6 +78,7 @@
 
   .unassign {
     width: 100%;
+    border-bottom: 1px solid var(--c-chip);
     color: var(--danger);
   }
 </style>

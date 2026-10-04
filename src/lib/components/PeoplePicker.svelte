@@ -1,6 +1,6 @@
 <script lang="ts">
   // A popover with a people search: type to filter, ↑↓ to move, Enter or click to pick.
-  // `footer` adds rows under the list (e.g. "Unassign").
+  // `lead` adds rows above the people (e.g. "Unassign").
   import type { Snippet } from 'svelte';
   import Avatar from './Avatar.svelte';
   import Popover from './Popover.svelte';
@@ -13,20 +13,19 @@
     anchor,
     onpick,
     onclose,
-    footer,
+    lead,
   }: {
     anchor: HTMLElement | undefined;
     onpick: (person: PersonRow) => void;
     onclose: () => void;
-    footer?: Snippet;
+    lead?: Snippet;
   } = $props();
 </script>
 
 <Popover {anchor} {onclose}>
-  <SearchPicker items={people.people} match={personMatches} {onpick} placeholder="Search people…" label="People" empty="No people yet">
+  <SearchPicker items={people.people} match={personMatches} {onpick} {lead} placeholder="Search people…" label="People" empty="No people yet">
     {#snippet row(p)}
       <Avatar person={p} size={18} />{displayName(p)}<span class="sub">{p.email ?? p.phone ?? ''}</span>
     {/snippet}
   </SearchPicker>
-  {@render footer?.()}
 </Popover>

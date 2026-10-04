@@ -121,6 +121,7 @@
   --col-path: 80px;
   /* whole-row templates, shared by each list's rows and its column header */
   --grid-task: 14px minmax(0, 1fr) var(--col-edit) var(--col-myday) var(--col-count) var(--col-date) var(--col-assignee) var(--col-path);
+  --grid-subtask: 14px minmax(0, 1fr) var(--col-edit) var(--col-myday) var(--col-assignee);
   --grid-note: minmax(0, 1fr) var(--col-edit) var(--col-date) var(--col-path);
   --grid-person: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
 }
