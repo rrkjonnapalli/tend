@@ -1,36 +1,29 @@
-// Typed bridge to the Rust commands. Every wrapper in api/ goes through `call`.
+// Typed bridge to the Rust commands. Every wrapper in api/ goes through `call`, and every
+// failure leaves it as an AppError with a registry key (see lib/errors).
 import { invoke } from '@tauri-apps/api/core';
 import { config } from '#lib/config/app.config.ts';
-import type { AppError, CallOptions } from '#lib/types/ipc.type.ts';
-
-export const TIMEOUT_CODE = 'timeout';
+import { AppError, toAppError } from '#lib/errors/app-error.ts';
+import { errors } from '#lib/errors/registry.ts';
+import type { CallOptions } from '#lib/types/ipc.type.ts';
 
 export async function call<T>(cmd: string, { args, timeoutMs = config.callTimeoutMs }: CallOptions = {}): Promise<T> {
-  const reply = invoke<T>(cmd, args);
-  if (timeoutMs === null) return reply;
+  try {
+    return await withDeadline(invoke<T>(cmd, args), timeoutMs);
+  } catch (e) {
+    throw toAppError(e);
+  }
+}
 
+/** `reply`, or a TIMEOUT error once `timeoutMs` passes. `null` waits as long as it takes. */
+async function withDeadline<T>(reply: Promise<T>, timeoutMs: number | null): Promise<T> {
+  if (timeoutMs === null) return reply;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const deadline = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(timeoutError()), timeoutMs);
+    timer = setTimeout(() => reject(new AppError(errors.TIMEOUT)), timeoutMs);
   });
   try {
     return await Promise.race([reply, deadline]);
   } finally {
     clearTimeout(timer);
   }
-}
-
-function timeoutError(): AppError {
-  return { code: TIMEOUT_CODE, message: 'Tend took too long to respond. Try again.' };
-}
-
-export function isAppError(e: unknown): e is AppError {
-  return typeof e === 'object' && e !== null && 'code' in e && 'message' in e;
-}
-
-/** A readable message for any thrown value. */
-export function messageOf(e: unknown): string {
-  if (isAppError(e)) return e.message;
-  if (e instanceof Error) return e.message;
-  return String(e);
 }

@@ -6,7 +6,7 @@ mod tests;
 use rusqlite::{params, Connection};
 use serde::Serialize;
 
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 use crate::util::{new_id, now_ms};
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
@@ -21,7 +21,7 @@ pub struct Comment {
 fn check(body: &str) -> AppResult<&str> {
     let body = body.trim();
     if body.is_empty() {
-        return Err(AppError::rule("empty_comment", "A comment can’t be empty"));
+        return Err(errors::COMMENT_EMPTY.err());
     }
     Ok(body)
 }

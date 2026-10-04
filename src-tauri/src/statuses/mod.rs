@@ -8,7 +8,7 @@ mod tests;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 
 /// Always the first status; new tasks start here.
 pub const FIRST: &str = "NOT_STARTED";
@@ -67,7 +67,7 @@ pub fn add(conn: &Connection, label: &str, value: &str, color: &str) -> AppResul
 fn get(conn: &Connection, value: &str) -> AppResult<Status> {
     conn.query_row(&format!("{ROW_SQL} WHERE value = ?1"), [value], to_status)
         .optional()?
-        .ok_or_else(|| AppError::NotFound("Status".into()))
+        .ok_or_else(|| errors::NOT_FOUND.with("Status was not found"))
 }
 
 pub fn rename(conn: &Connection, value: &str, label: &str) -> AppResult<Status> {
@@ -107,10 +107,7 @@ pub fn reorder(conn: &mut Connection, values: &[String]) -> AppResult<()> {
 pub fn delete(conn: &Connection, value: &str) -> AppResult<()> {
     let s = get(conn, value)?;
     if s.is_default {
-        return Err(AppError::rule(
-            "default",
-            "Default statuses can be renamed, not deleted.",
-        ));
+        return Err(errors::STATUS_DEFAULT.err());
     }
     let used: i64 = conn.query_row(
         "SELECT count(*) FROM tasks WHERE status = ?1",
@@ -118,10 +115,7 @@ pub fn delete(conn: &Connection, value: &str) -> AppResult<()> {
         |r| r.get(0),
     )?;
     if used > 0 {
-        return Err(AppError::rule(
-            "in_use",
-            format!("Can’t delete “{}”: some tasks still have this status. Move them to another status first.", s.label),
-        ));
+        return Err(errors::STATUS_IN_USE.with(format!("Can’t delete “{}”: some tasks still have this status. Move them to another status first.", s.label)));
     }
     conn.execute("DELETE FROM statuses WHERE value = ?1", [value])?;
     Ok(())

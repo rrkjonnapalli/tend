@@ -5,8 +5,6 @@
   import EditControls from './EditControls.svelte';
   import { commentsAPI } from '#lib/api/comments.ts';
   import type { Comment } from '#lib/types/comment.type.ts';
-  import { messageOf } from '#lib/api/core.ts';
-  import { toast } from '#lib/stores/toast.svelte.ts';
   import { ago } from '#lib/util/dates.ts';
   import { label as keyLabel } from '#lib/util/keys.ts';
 
@@ -31,23 +29,15 @@
 
   async function post() {
     if (!draft.trim()) return;
-    try {
-      await commentsAPI.add({ task, body: draft });
-      draft = '';
-      composerKey += 1;
-      await load();
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await commentsAPI.add({ task, body: draft });
+    draft = '';
+    composerKey += 1;
+    await load();
   }
 
   async function save(c: Comment, body: string) {
-    try {
-      await commentsAPI.edit({ id: c.id, body });
-      await load();
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await commentsAPI.edit({ id: c.id, body });
+    await load();
   }
 </script>
 

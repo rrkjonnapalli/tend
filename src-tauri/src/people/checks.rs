@@ -1,7 +1,7 @@
 //! The rules for person fields. Each check returns the cleaned value or a rule error.
 
 use super::{Dob, Patch};
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 
 const KINDS: [&str; 3] = ["phone", "email", "address"];
 
@@ -22,7 +22,7 @@ pub fn patch(p: &Patch) -> AppResult<()> {
 pub fn first_name(name: &str) -> AppResult<String> {
     let trimmed = name.trim();
     if trimmed.is_empty() {
-        return Err(AppError::rule("empty_name", "A first name is needed"));
+        return Err(errors::FIRST_NAME_EMPTY.err());
     }
     Ok(trimmed.to_string())
 }
@@ -49,14 +49,14 @@ pub fn dob(d: &Dob) -> AppResult<()> {
     let month_ok = (1..=12).contains(&d.month);
     let day_ok = month_ok && (1..=days_in_month(d.year, d.month)).contains(&d.day);
     if !(year_ok && day_ok) {
-        return Err(AppError::rule("bad_dob", "Use yyyy-mm-dd or mm-dd"));
+        return Err(errors::DOB_INVALID.err());
     }
     Ok(())
 }
 
 /// Time of birth as `HH:MM`, 24-hour.
 pub fn tob(t: &str) -> AppResult<()> {
-    let bad = || AppError::rule("bad_tob", "Use a time like 6:30 AM");
+    let bad = || errors::TOB_INVALID.err();
     let shaped = t.len() == 5 && t.as_bytes()[2] == b':';
     if !shaped {
         return Err(bad());
@@ -71,14 +71,11 @@ pub fn tob(t: &str) -> AppResult<()> {
 
 pub fn contact(kind: &str, value: &str) -> AppResult<String> {
     if !KINDS.contains(&kind) {
-        return Err(AppError::rule(
-            "bad_kind",
-            format!("Unknown contact kind {kind}"),
-        ));
+        return Err(errors::CONTACT_KIND.with(format!("Unknown contact kind {kind}")));
     }
     let trimmed = value.trim();
     if trimmed.is_empty() {
-        return Err(AppError::rule("empty_value", "Enter a value"));
+        return Err(errors::CONTACT_EMPTY.err());
     }
     Ok(trimmed.to_string())
 }

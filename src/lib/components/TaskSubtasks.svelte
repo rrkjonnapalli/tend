@@ -3,13 +3,11 @@
   import type { DroppedOrder } from '#lib/types/reorder.type.ts';
   import type { Task } from '#lib/types/task.type.ts';
   import { onDestroy } from 'svelte';
-  import { messageOf } from '#lib/api/core.ts';
   import Icon from './Icon.svelte';
   import Grip from './Grip.svelte';
   import StatusDot from './StatusDot.svelte';
   import MyDayButton from './MyDayButton.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
-  import { toast } from '#lib/stores/toast.svelte.ts';
   import { isDone } from '#lib/util/task-views.ts';
   import { droppedKey, inPreviewOrder, keyAfterLast } from '#lib/util/task-order.ts';
   import { startReorder } from '#lib/util/reorder.ts';
@@ -26,12 +24,8 @@
   async function add() {
     const title = draft.trim();
     if (!title) return;
-    try {
-      await tasks.create({ path: task.path, title, parentId: task.id, orderKey: keyAfterLast(openSubs) });
-      draft = '';
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await tasks.create({ path: task.path, title, parentId: task.id, orderKey: keyAfterLast(openSubs) });
+    draft = '';
   }
 
   function addKeys(e: KeyboardEvent) {
@@ -54,7 +48,7 @@
 
   function saveDrop(id: string, { order, index }: DroppedOrder) {
     const orderKey = droppedKey({ order, index, tasks: tasks.tasks });
-    tasks.update(id, { orderKey }).catch((err) => toast.show(messageOf(err)));
+    tasks.update(id, { orderKey });
   }
 
   function grab(e: PointerEvent, id: string) {

@@ -5,11 +5,9 @@
   import type { BoardSpot } from '#lib/types/task-board.type.ts';
   import type { Task, TaskPatch } from '#lib/types/task.type.ts';
   import { onDestroy } from 'svelte';
-  import { messageOf } from '#lib/api/core.ts';
   import TaskBoardColumn from './TaskBoardColumn.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { people } from '#lib/stores/people.svelte.ts';
-  import { toast } from '#lib/stores/toast.svelte.ts';
   import { byOrderKey } from '#lib/util/task-views.ts';
   import { keyAt } from '#lib/util/order-key.ts';
   import { clearDragging, markDragging, pointOf, swallowReleaseClick, trackPointer } from '#lib/util/drag-session.ts';
@@ -104,11 +102,7 @@
     const others = columnTasks(spot.col, task.id);
     const orderKey = keyAt(others.map((t) => t.orderKey), spot.idx);
     const patch: TaskPatch = spot.col === task.status ? { orderKey } : { orderKey, status: spot.col };
-    try {
-      await tasks.update(task.id, patch);
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await tasks.update(task.id, patch);
   }
 </script>
 

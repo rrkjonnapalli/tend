@@ -1,4 +1,5 @@
 use super::*;
+use crate::error::errors;
 
 #[test]
 fn name_rule() {
@@ -6,8 +7,8 @@ fn name_rule() {
     for bad in ["", "Work", "my notes", "a-b", "a.b", "é"] {
         assert!(!is_valid(bad), "{bad:?} should be invalid");
     }
-    assert!(matches!(check(""), Err(AppError::InvalidName(m)) if m == EMPTY));
-    assert!(matches!(check("A"), Err(AppError::InvalidName(m)) if m == CHARS));
+    assert!(check("").unwrap_err().is(errors::NAME_EMPTY));
+    assert!(check("A").unwrap_err().is(errors::NAME_CHARS));
 }
 
 #[test]

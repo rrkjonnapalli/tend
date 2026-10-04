@@ -99,7 +99,7 @@ fn notes_round_trip_through_ipc() {
     let err = h
         .call("note_create", json!({ "folder": "", "name": "Bad Name" }))
         .unwrap_err();
-    assert_eq!(err["code"], "invalid_name");
+    assert_eq!(err["key"], "NAME_CHARS");
 
     h.ok(
         "item_delete",
@@ -215,7 +215,7 @@ fn people_round_trip_through_ipc() {
             json!({ "id": id, "patch": { "dob": { "year": 2023, "month": 2, "day": 29 } } }),
         )
         .unwrap_err();
-    assert_eq!(err["code"], "bad_dob");
+    assert_eq!(err["key"], "DOB_INVALID");
     h.ok(
         "contact_add",
         json!({ "person": id, "kind": "email", "value": "r@k.in", "label": "work" }),
@@ -246,7 +246,7 @@ fn timers_and_feedback_through_ipc() {
     let err = h
         .call("feedback_send", json!({ "kind": "bug", "body": " " }))
         .unwrap_err();
-    assert_eq!(err["code"], "empty_feedback");
+    assert_eq!(err["key"], "FEEDBACK_EMPTY");
 
     let s = h.ok(
         "status_add",
@@ -256,5 +256,5 @@ fn timers_and_feedback_through_ipc() {
     let err = h
         .call("status_delete", json!({ "value": "DONE" }))
         .unwrap_err();
-    assert_eq!(err["code"], "default");
+    assert_eq!(err["key"], "STATUS_DEFAULT");
 }

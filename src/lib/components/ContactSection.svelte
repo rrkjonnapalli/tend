@@ -5,8 +5,6 @@
   import Section from './Section.svelte';
   import { peopleAPI } from '#lib/api/people.ts';
   import type { Contact, ContactKind } from '#lib/types/person.type.ts';
-  import { messageOf } from '#lib/api/core.ts';
-  import { toast } from '#lib/stores/toast.svelte.ts';
 
   let {
     person,
@@ -33,12 +31,8 @@
 
   /** Runs a contact change, then lets the page reload the person. */
   async function run(action: () => Promise<void>) {
-    try {
-      await action();
-      onchange();
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await action();
+    onchange();
   }
 
   function edit(c: Contact) {

@@ -9,7 +9,7 @@ mod tests;
 use rusqlite::{params, Connection, OptionalExtension, ToSql, Transaction};
 use serde::{Deserialize, Serialize};
 
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 use crate::util::{new_id, now_ms};
 
 pub use contacts::{
@@ -99,7 +99,7 @@ pub fn list(conn: &Connection) -> AppResult<Vec<PersonRow>> {
 fn row(conn: &Connection, id: &str) -> AppResult<PersonRow> {
     conn.query_row(&format!("{ROW_SQL} WHERE p.id = ?1"), [id], to_row)
         .optional()?
-        .ok_or_else(|| AppError::NotFound("Person".into()))
+        .ok_or_else(|| errors::NOT_FOUND.with("Person was not found"))
 }
 
 /// Returns the new person's id.

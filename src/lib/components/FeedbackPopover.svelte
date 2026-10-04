@@ -5,7 +5,7 @@
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { feedbackAPI } from '#lib/api/feedback.ts';
   import type { FeedbackKind } from '#lib/types/feedback.type.ts';
-  import { messageOf } from '#lib/api/core.ts';
+  import { messageOf } from '#lib/errors/app-error.ts';
   import { matches } from '#lib/util/keys.ts';
 
   let { anchor, onclose }: { anchor: HTMLElement | undefined; onclose: () => void } = $props();

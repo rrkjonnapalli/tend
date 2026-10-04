@@ -13,7 +13,6 @@
   import { peopleAPI } from '#lib/api/people.ts';
   import { displayName } from '#lib/util/people.ts';
   import type { ContactKind, Person, PersonPatch } from '#lib/types/person.type.ts';
-  import { messageOf } from '#lib/api/core.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
@@ -36,11 +35,7 @@
   let deleting = $state(false);
 
   async function load() {
-    try {
-      person = await peopleAPI.get(id);
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    person = await peopleAPI.get(id);
   }
 
   $effect(() => {
@@ -49,12 +44,8 @@
   });
 
   async function save(patch: PersonPatch) {
-    try {
-      person = await peopleAPI.update({ id, patch });
-      people.load();
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    person = await peopleAPI.update({ id, patch });
+    people.load();
   }
 
   async function remove() {

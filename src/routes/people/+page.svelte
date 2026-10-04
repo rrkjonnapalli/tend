@@ -6,9 +6,7 @@
   import { peopleAPI } from '#lib/api/people.ts';
   import { displayName, personMatches, splitName } from '#lib/util/people.ts';
   import type { PersonRow } from '#lib/types/person.type.ts';
-  import { messageOf } from '#lib/api/core.ts';
   import { people } from '#lib/stores/people.svelte.ts';
-  import { toast } from '#lib/stores/toast.svelte.ts';
   import { personBirthday } from '#lib/util/birthdays.ts';
   import { plural } from '#lib/util/plural.ts';
   import { routes } from '#lib/util/routes.ts';
@@ -39,14 +37,10 @@
   async function add() {
     const name = splitName(draft);
     if (!name.first) return;
-    try {
-      const id = await peopleAPI.create(name);
-      draft = '';
-      await people.load();
-      goto(routes.person(id));
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    const id = await peopleAPI.create(name);
+    draft = '';
+    await people.load();
+    goto(routes.person(id));
   }
 
   function addKeys(e: KeyboardEvent) {

@@ -1,5 +1,6 @@
 use super::*;
 use crate::db::open_memory;
+use crate::error::errors;
 use crate::util::now_ms;
 
 struct Fixture {
@@ -164,17 +165,23 @@ fn create_write_and_read() {
 #[test]
 fn name_validation_and_clashes() {
     let mut f = fixture(&[("work/a.md", "")]);
-    let err = |r: AppResult<NoteRow>| match r {
-        Err(AppError::InvalidName(m)) => m,
-        other => panic!("expected invalid name, got {other:?}"),
-    };
-    assert_eq!(
-        err(create(&mut f.conn, &f.dir, "", "Bad Name")),
-        names::CHARS
-    );
-    assert_eq!(err(create(&mut f.conn, &f.dir, "", "")), names::EMPTY);
-    assert_eq!(err(create(&mut f.conn, &f.dir, "", "work")), names::CLASH);
-    assert_eq!(err(create(&mut f.conn, &f.dir, "work", "a")), names::CLASH);
+    let fails = |r: AppResult<NoteRow>, def| r.unwrap_err().is(def);
+    assert!(fails(
+        create(&mut f.conn, &f.dir, "", "Bad Name"),
+        errors::NAME_CHARS
+    ));
+    assert!(fails(
+        create(&mut f.conn, &f.dir, "", ""),
+        errors::NAME_EMPTY
+    ));
+    assert!(fails(
+        create(&mut f.conn, &f.dir, "", "work"),
+        errors::NAME_TAKEN
+    ));
+    assert!(fails(
+        create(&mut f.conn, &f.dir, "work", "a"),
+        errors::NAME_TAKEN
+    ));
     assert!(folder_create(&mut f.conn, &f.dir, "work").is_err());
     assert!(folder_create(&mut f.conn, &f.dir, "Work2").is_err());
 }

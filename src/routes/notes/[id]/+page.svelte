@@ -13,10 +13,8 @@
   import MarkdownEditor from '#lib/components/MarkdownEditor.svelte';
   import { notesAPI } from '#lib/api/notes.ts';
   import { tagsAPI } from '#lib/api/tags.ts';
-  import { messageOf } from '#lib/api/core.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
-  import { toast } from '#lib/stores/toast.svelte.ts';
   import { label as keyLabel } from '#lib/util/keys.ts';
   import { pageActions } from '#lib/stores/page-actions.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
@@ -48,12 +46,8 @@
   }
 
   async function load({ noteId, edit }: { noteId: string; edit: boolean }) {
-    try {
-      const doc = await notesAPI.read(noteId);
-      show({ noteId, doc, edit });
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    const doc = await notesAPI.read(noteId);
+    show({ noteId, doc, edit });
   }
 
   // Open the note when the id changes.
@@ -79,7 +73,7 @@
   $effect(() => {
     void notes.version;
     if (loadedId === id && isUntouched()) {
-      notesAPI.read(id).then(takeOutsideText, () => {});
+      notesAPI.read(id).then(takeOutsideText);
     }
   });
 
@@ -88,12 +82,8 @@
     if (loadedId === null || text === saved) return;
     const noteId = loadedId;
     const body = text;
-    try {
-      await notesAPI.write({ id: noteId, text: body });
-      if (loadedId === noteId) saved = body;
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await notesAPI.write({ id: noteId, text: body });
+    if (loadedId === noteId) saved = body;
   }
 
   function onchange(next: string) {
@@ -109,11 +99,7 @@
 
   async function setTags(next: string[]) {
     tags = next;
-    try {
-      tags = await tagsAPI.setForNote({ id, tags: next });
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    tags = await tagsAPI.setForNote({ id, tags: next });
   }
 
   beforeNavigate(() => {

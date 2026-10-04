@@ -1,6 +1,6 @@
 // The open vault. `ready` turns true once launch has reopened a vault, found none, or failed.
 import { vaultAPI } from '#lib/api/vault.ts';
-import { messageOf } from '#lib/api/core.ts';
+import { messageOf } from '#lib/errors/app-error.ts';
 import type { Restore, VaultProblem } from '#lib/types/vault.type.ts';
 import { settings } from './settings.svelte.ts';
 import { tagPool } from './tags.svelte.ts';

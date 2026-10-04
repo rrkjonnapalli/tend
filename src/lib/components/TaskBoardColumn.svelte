@@ -3,11 +3,9 @@
   import type { Status } from '#lib/types/status.type.ts';
   import type { Task } from '#lib/types/task.type.ts';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
-  import { messageOf } from '#lib/api/core.ts';
   import StatusDot from './StatusDot.svelte';
   import TaskBoardCard from './TaskBoardCard.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
-  import { toast } from '#lib/stores/toast.svelte.ts';
   import { keyAfterLast } from '#lib/util/task-order.ts';
 
   let {
@@ -47,12 +45,8 @@
   async function add() {
     const title = draft.trim();
     if (!title) return;
-    try {
-      await tasks.create({ path: folder, title, status: status.value, orderKey: keyAfterLast(cards) });
-      draft = '';
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await tasks.create({ path: folder, title, status: status.value, orderKey: keyAfterLast(cards) });
+    draft = '';
   }
 
   function addKeys(e: KeyboardEvent) {

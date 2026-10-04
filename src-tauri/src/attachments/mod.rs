@@ -13,7 +13,7 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 use crate::db::commit_or_undo;
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 use crate::util::{new_id, now_ms};
 
 const OWNERS: [&str; 4] = ["task", "note", "comment", "person"];
@@ -36,10 +36,7 @@ pub struct Link {
 
 fn check_owner(owner: &str) -> AppResult<()> {
     if !OWNERS.contains(&owner) {
-        return Err(AppError::rule(
-            "bad_owner",
-            format!("Unknown owner type {owner}"),
-        ));
+        return Err(errors::OWNER_TYPE.with(format!("Unknown owner type {owner}")));
     }
     Ok(())
 }
@@ -85,7 +82,7 @@ pub fn add_file(
     let original_name = src
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
-        .ok_or_else(|| AppError::NotFound("File".into()))?;
+        .ok_or_else(|| errors::NOT_FOUND.with("File was not found"))?;
     let id = new_id();
     let stored_name = format!("{id}{}", extension(src));
     let dest = store.join(&stored_name);
@@ -221,6 +218,6 @@ pub fn file_path(conn: &Connection, store: &Path, attachment_id: &str) -> AppRes
             |r| r.get(0),
         )
         .optional()?
-        .ok_or_else(|| AppError::NotFound("Attachment".into()))?;
+        .ok_or_else(|| errors::NOT_FOUND.with("Attachment was not found"))?;
     Ok(store.join(stored))
 }

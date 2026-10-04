@@ -8,7 +8,7 @@ use rusqlite::{params, Connection, OptionalExtension, Transaction};
 
 use super::{file_path, mtime, note_path, row, title_of, NoteRow, EXT};
 use crate::db::{commit_or_undo, in_transaction};
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 use crate::names;
 use crate::util::{new_id, now_ms};
 
@@ -51,7 +51,7 @@ fn clash(conn: &Connection, dir: &Path, folder: &str, name: &str) -> AppResult<b
 fn check_new(conn: &Connection, dir: &Path, folder: &str, name: &str) -> AppResult<()> {
     names::check(name)?;
     if clash(conn, dir, folder, name)? {
-        return Err(AppError::InvalidName(names::CLASH.into()));
+        return Err(errors::NAME_TAKEN.err());
     }
     Ok(())
 }
@@ -164,7 +164,7 @@ pub fn rename_note(conn: &mut Connection, dir: &Path, id: &str, name: &str) -> A
 pub fn move_note(conn: &mut Connection, dir: &Path, id: &str, target: &str) -> AppResult<NoteRow> {
     let note = row(conn, id)?;
     if note.folder == target {
-        return Err(AppError::rule("same_folder", "It’s already in that folder"));
+        return Err(errors::SAME_FOLDER.err());
     }
     ensure_folder(conn, dir, target)?;
     check_new(conn, dir, target, &note.name)?;
@@ -219,13 +219,10 @@ pub fn move_folder(
     target: &str,
 ) -> AppResult<String> {
     if names::is_under(target, path) {
-        return Err(AppError::rule(
-            "into_self",
-            "A folder can’t move into itself",
-        ));
+        return Err(errors::INTO_SELF.err());
     }
     if names::parent(path) == target {
-        return Err(AppError::rule("same_folder", "It’s already in that folder"));
+        return Err(errors::SAME_FOLDER.err());
     }
     ensure_folder(conn, dir, target)?;
     let name = names::base(path);
@@ -235,7 +232,7 @@ pub fn move_folder(
 
 fn relocate_folder(conn: &mut Connection, dir: &Path, old: &str, new: &str) -> AppResult<String> {
     if old.is_empty() || !folder_exists(conn, old)? {
-        return Err(AppError::NotFound("Folder".into()));
+        return Err(errors::NOT_FOUND.with("Folder was not found"));
     }
     let from = dir.join(old);
     let to = dir.join(new);
@@ -271,10 +268,10 @@ pub fn delete_note(conn: &mut Connection, dir: &Path, id: &str) -> AppResult<()>
 /// Deletes the folder and everything inside it, from disk and from the index.
 pub fn delete_folder(conn: &mut Connection, dir: &Path, path: &str) -> AppResult<()> {
     if path.is_empty() {
-        return Err(AppError::rule("root", "The root folder can’t be deleted"));
+        return Err(errors::ROOT_FOLDER.err());
     }
     if !folder_exists(conn, path)? {
-        return Err(AppError::NotFound("Folder".into()));
+        return Err(errors::NOT_FOUND.with("Folder was not found"));
     }
     fs::remove_dir_all(dir.join(path))?;
     in_transaction(conn, |tx| {

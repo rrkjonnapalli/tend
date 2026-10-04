@@ -152,7 +152,7 @@ const handlers: Record<string, Handler> = {
 
 mockIPC((cmd, args) => {
   const handler = handlers[cmd];
-  if (!handler) throw { code: 'mock', message: `no mock for ${cmd}` };
+  if (!handler) throw { key: 'MOCK', message: `no mock for ${cmd}` };
   return handler((args ?? {}) as Record<string, unknown>);
 });
 mockWindows('main');

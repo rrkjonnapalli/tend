@@ -7,7 +7,7 @@ mod tests;
 use rusqlite::{params, Connection};
 use serde::Serialize;
 
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 use crate::util::{new_id, now_ms};
 
 const MINUTE_MS: i64 = 60_000;
@@ -46,7 +46,7 @@ pub fn list(conn: &Connection) -> AppResult<Vec<Timer>> {
 
 pub fn start(conn: &Connection, title: &str, duration_ms: i64) -> AppResult<Timer> {
     if duration_ms <= 0 {
-        return Err(AppError::rule("bad_duration", "must be longer than 0"));
+        return Err(errors::TIMER_DURATION.err());
     }
     let now = now_ms();
     let t = Timer {

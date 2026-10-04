@@ -18,7 +18,7 @@ use std::time::UNIX_EPOCH;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 use crate::names;
 
 pub use edit::{
@@ -123,7 +123,7 @@ pub fn row(conn: &Connection, id: &str) -> AppResult<NoteRow> {
         to_row,
     )
     .optional()?
-    .ok_or_else(|| AppError::NotFound("Note".into()))
+    .ok_or_else(|| errors::NOT_FOUND.with("Note was not found"))
 }
 
 pub fn read(conn: &Connection, dir: &Path, id: &str) -> AppResult<NoteDoc> {

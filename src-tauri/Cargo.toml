@@ -25,7 +25,6 @@ ulid = "3.0.0"
 notify = "8.2.0"
 notify-debouncer-full = "0.7.0"
 sha2 = "0.11.0"
-thiserror = "2.0.21"
 mime_guess = "2.0.5"
 
 [target.'cfg(target_os = "macos")'.dependencies]

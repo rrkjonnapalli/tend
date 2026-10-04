@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex, MutexGuard, RwLock};
 
 use rusqlite::Connection;
 
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 
 pub struct Vault {
     pub root: PathBuf,
@@ -63,7 +63,7 @@ impl AppState {
             .read()
             .unwrap_or_else(|e| e.into_inner())
             .clone()
-            .ok_or(AppError::NoVault)
+            .ok_or(errors::NO_VAULT.err())
     }
 
     /// Runs `f` with the open vault's database locked for the whole call.

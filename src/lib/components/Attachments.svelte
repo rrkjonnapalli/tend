@@ -10,7 +10,6 @@
   import { attachmentsAPI } from '#lib/api/attachments.ts';
   import type { AttachmentLink, Owner } from '#lib/types/attachment.type.ts';
   import type { NoteRow } from '#lib/types/note.type.ts';
-  import { messageOf } from '#lib/api/core.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
 
@@ -34,13 +33,13 @@
 
   async function addPaths(paths: string[]) {
     if (!paths.length) return;
+    // Adding stops at the first file that fails; reload either way to show the ones that made it.
     try {
       await attachmentsAPI.add({ owner, id, paths });
       toast.show(paths.length === 1 ? 'File attached' : `${paths.length} files attached`);
-    } catch (e) {
-      toast.show(messageOf(e));
+    } finally {
+      await load();
     }
-    await load();
   }
 
   async function choose() {

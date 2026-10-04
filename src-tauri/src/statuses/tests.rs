@@ -1,13 +1,14 @@
 use super::*;
 use crate::db::open_memory;
+use crate::error::{errors, ErrorDef};
 
 fn values(conn: &Connection) -> Vec<String> {
     list(conn).unwrap().into_iter().map(|s| s.value).collect()
 }
 
-fn code(r: AppResult<impl std::fmt::Debug>) -> &'static str {
+fn fails_with(r: AppResult<impl std::fmt::Debug>, def: ErrorDef) -> bool {
     match r {
-        Err(e) => e.code(),
+        Err(e) => e.is(def),
         Ok(v) => panic!("expected an error, got {v:?}"),
     }
 }
@@ -32,20 +33,35 @@ fn custom_statuses_go_before_done() {
 #[test]
 fn add_rules() {
     let conn = open_memory();
-    assert_eq!(code(add(&conn, "Ready", "done", "#000000")), "bad_value");
-    assert_eq!(code(add(&conn, "Ready", "DONE", "#000000")), "reserved");
-    assert_eq!(
-        code(add(&conn, "Ready", "In_Progress", "#000000")),
-        "bad_value"
-    );
-    assert_eq!(
-        code(add(&conn, "not started", "READY", "#000000")),
-        "label_taken"
-    );
-    assert_eq!(code(add(&conn, "Ready", "READY", "blue")), "bad_color");
+    assert!(fails_with(
+        add(&conn, "Ready", "done", "#000000"),
+        errors::STATUS_VALUE
+    ));
+    assert!(fails_with(
+        add(&conn, "Ready", "DONE", "#000000"),
+        errors::STATUS_RESERVED
+    ));
+    assert!(fails_with(
+        add(&conn, "Ready", "In_Progress", "#000000"),
+        errors::STATUS_VALUE
+    ));
+    assert!(fails_with(
+        add(&conn, "not started", "READY", "#000000"),
+        errors::STATUS_LABEL_TAKEN
+    ));
+    assert!(fails_with(
+        add(&conn, "Ready", "READY", "blue"),
+        errors::STATUS_COLOR
+    ));
     add(&conn, "Ready", "READY", "#000000").unwrap();
-    assert_eq!(code(add(&conn, "Other", "READY", "#000000")), "value_taken");
-    assert_eq!(code(add(&conn, "  ", "X", "#000000")), "empty_label");
+    assert!(fails_with(
+        add(&conn, "Other", "READY", "#000000"),
+        errors::STATUS_VALUE_TAKEN
+    ));
+    assert!(fails_with(
+        add(&conn, "  ", "X", "#000000"),
+        errors::STATUS_LABEL_EMPTY
+    ));
 }
 
 #[test]
@@ -55,7 +71,10 @@ fn rename_and_recolor() {
         rename(&conn, "NOT_STARTED", "Ready").unwrap().label,
         "Ready"
     );
-    assert_eq!(code(rename(&conn, "IN_PROGRESS", "ready")), "label_taken");
+    assert!(fails_with(
+        rename(&conn, "IN_PROGRESS", "ready"),
+        errors::STATUS_LABEL_TAKEN
+    ));
     assert_eq!(
         rename(&conn, "IN_PROGRESS", "In Progress").unwrap().label,
         "In Progress"
@@ -77,27 +96,24 @@ fn reorder_keeps_first_and_last() {
         values(&conn),
         vec!["NOT_STARTED", "WAITING", "IN_PROGRESS", "DONE"]
     );
-    assert_eq!(
-        code(reorder(
+    assert!(fails_with(
+        reorder(
             &mut conn,
             &order(&["WAITING", "NOT_STARTED", "IN_PROGRESS", "DONE"])
-        )),
-        "bad_order"
-    );
-    assert_eq!(
-        code(reorder(
-            &mut conn,
-            &order(&["NOT_STARTED", "IN_PROGRESS", "DONE"])
-        )),
-        "bad_order"
-    );
+        ),
+        errors::STATUS_ORDER
+    ));
+    assert!(fails_with(
+        reorder(&mut conn, &order(&["NOT_STARTED", "IN_PROGRESS", "DONE"])),
+        errors::STATUS_ORDER
+    ));
 }
 
 #[test]
 fn delete_rules() {
     let mut conn = open_memory();
     add(&conn, "Waiting", "WAITING", "#d57149").unwrap();
-    assert_eq!(code(delete(&conn, "DONE")), "default");
+    assert!(fails_with(delete(&conn, "DONE"), errors::STATUS_DEFAULT));
     let t = crate::tasks::create(
         &mut conn,
         &crate::tasks::NewTask {
@@ -107,7 +123,7 @@ fn delete_rules() {
         },
     )
     .unwrap();
-    assert_eq!(code(delete(&conn, "WAITING")), "in_use");
+    assert!(fails_with(delete(&conn, "WAITING"), errors::STATUS_IN_USE));
     crate::tasks::delete(&conn, &t.id).unwrap();
     delete(&conn, "WAITING").unwrap();
     assert_eq!(values(&conn), vec!["NOT_STARTED", "IN_PROGRESS", "DONE"]);

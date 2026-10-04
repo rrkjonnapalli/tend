@@ -28,7 +28,6 @@
     withAncestors,
   } from '#lib/util/explorer-rows.ts';
   import { dropTargetAt, trackDrag } from '#lib/util/explorer-drag.ts';
-  import { messageOf } from '#lib/api/core.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { ui } from '#lib/stores/ui.svelte.ts';
 
@@ -165,11 +164,7 @@
       return;
     }
     editing = null;
-    try {
-      await save(edit, name);
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await save(edit, name);
   }
 
   function onEditKey(e: KeyboardEvent) {
@@ -193,13 +188,9 @@
 
   async function moveTo(row: ExplorerRow, target: string) {
     moving = null;
-    try {
-      await actions.move(row.item, target);
-      expanded = { ...expanded, [target]: true };
-      toast.show(`Moved to ${target || rootName}/`);
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await actions.move(row.item, target);
+    expanded = { ...expanded, [target]: true };
+    toast.show(`Moved to ${target || rootName}/`);
   }
 
   function canDrag(row: ExplorerRow, e: PointerEvent): boolean {
@@ -258,12 +249,8 @@
 
   async function confirmDelete(row: ExplorerRow) {
     deleting = null;
-    try {
-      await actions.remove(row.item);
-      toast.show(`Deleted ${displayName(row)}`);
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await actions.remove(row.item);
+    toast.show(`Deleted ${displayName(row)}`);
   }
 
   function deleteCopy(row: ExplorerRow) {

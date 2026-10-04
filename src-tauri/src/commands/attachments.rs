@@ -47,7 +47,7 @@ pub fn attachment_unlink(state: State<AppState>, link: String) -> AppResult<()> 
 }
 
 fn opener_error(e: tauri_plugin_opener::Error) -> crate::error::AppError {
-    std::io::Error::other(e.to_string()).into()
+    crate::error::errors::OPEN_FAILED.with(e.to_string())
 }
 
 /// Opens the file with the OS default app.

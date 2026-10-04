@@ -17,6 +17,8 @@
   import { inTauri, watchFilled } from '#lib/util/window.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
+  import { toast } from '#lib/stores/toast.svelte.ts';
+  import { installErrorHandler } from '#lib/errors/handler.ts';
 
   let { children }: { children: Snippet } = $props();
 
@@ -28,6 +30,9 @@
   const inVault = $derived(Boolean(vault.path) && !onStart);
 
   afterNavigate(nav.record);
+
+  // Errors nobody handled (a failed command, a thrown error) show here as a toast.
+  $effect(() => installErrorHandler(toast.show));
 
   // Once launch is settled: no vault → start page; "/" → Notes.
   $effect(() => {

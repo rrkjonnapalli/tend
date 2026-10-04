@@ -12,7 +12,6 @@
   import Modal from './Modal.svelte';
   import { available, commands } from '#lib/commands.ts';
   import { peopleAPI } from '#lib/api/people.ts';
-  import { messageOf } from '#lib/api/core.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { timers } from '#lib/stores/timers.svelte.ts';
@@ -175,11 +174,7 @@
   async function run(item: PaletteItem | undefined) {
     if (!item) return;
     onclose();
-    try {
-      await item.run();
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await item.run();
   }
 
   function onkeydown(e: KeyboardEvent) {

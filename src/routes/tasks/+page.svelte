@@ -14,8 +14,6 @@
   import Icon from '#lib/components/Icon.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
-  import { toast } from '#lib/stores/toast.svelte.ts';
-  import { messageOf } from '#lib/api/core.ts';
   import { isDone, isManual, viewCounts, viewTasks } from '#lib/util/task-views.ts';
   import { droppedKey, inPreviewOrder } from '#lib/util/task-order.ts';
   import { folderCrumbs, folderParam, TASK_PARAMS, tasksURL } from '#lib/util/task-urls.ts';
@@ -89,11 +87,7 @@
   }
 
   async function saveDrop(id: string, { order, index }: DroppedOrder) {
-    try {
-      await tasks.update(id, { orderKey: droppedKey({ order, index, tasks: tasks.tasks }) });
-    } catch (err) {
-      toast.show(messageOf(err));
-    }
+    await tasks.update(id, { orderKey: droppedKey({ order, index, tasks: tasks.tasks }) });
   }
 
   function grab(e: PointerEvent, id: string) {
@@ -121,12 +115,8 @@
   async function add() {
     const title = draft.trim();
     if (!title) return;
-    try {
-      await tasks.create({ path: folder, title });
-      draft = '';
-    } catch (err) {
-      toast.show(messageOf(err));
-    }
+    await tasks.create({ path: folder, title });
+    draft = '';
   }
 
   function addKeys(e: KeyboardEvent) {

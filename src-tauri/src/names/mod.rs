@@ -3,11 +3,7 @@
 #[cfg(test)]
 mod tests;
 
-use crate::error::{AppError, AppResult};
-
-pub const EMPTY: &str = "Name can’t be empty";
-pub const CHARS: &str = "Only a–z, 0–9 and _ (no spaces or capitals)";
-pub const CLASH: &str = "Something with this name already exists here";
+use crate::error::{errors, AppResult};
 
 pub fn is_valid(name: &str) -> bool {
     !name.is_empty()
@@ -18,10 +14,10 @@ pub fn is_valid(name: &str) -> bool {
 
 pub fn check(name: &str) -> AppResult<()> {
     if name.is_empty() {
-        return Err(AppError::InvalidName(EMPTY.into()));
+        return Err(errors::NAME_EMPTY.err());
     }
     if !is_valid(name) {
-        return Err(AppError::InvalidName(CHARS.into()));
+        return Err(errors::NAME_CHARS.err());
     }
     Ok(())
 }

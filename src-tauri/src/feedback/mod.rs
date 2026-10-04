@@ -5,19 +5,16 @@ mod tests;
 
 use rusqlite::{params, Connection};
 
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 use crate::util::{new_id, now_ms};
 
 pub fn add(conn: &Connection, kind: &str, body: &str, app_version: &str) -> AppResult<()> {
     if !["bug", "idea", "other"].contains(&kind) {
-        return Err(AppError::rule(
-            "bad_kind",
-            "Feedback is a bug, an idea or other.",
-        ));
+        return Err(errors::FEEDBACK_KIND.err());
     }
     let body = body.trim();
     if body.is_empty() {
-        return Err(AppError::rule("empty_feedback", "Write something first."));
+        return Err(errors::FEEDBACK_EMPTY.err());
     }
     conn.execute(
         "INSERT INTO feedback (id, kind, body, app_version, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",

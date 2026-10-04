@@ -8,7 +8,7 @@ mod tests;
 use rusqlite::{params, Connection, OptionalExtension, ToSql, Transaction};
 use serde::{Deserialize, Serialize};
 
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 use crate::statuses::{DONE, FIRST};
 use crate::util::{new_id, now_ms};
 
@@ -97,7 +97,7 @@ pub fn get(conn: &Connection, id: &str) -> AppResult<Task> {
         to_task,
     )
     .optional()?
-    .ok_or_else(|| AppError::NotFound("Task".into()))
+    .ok_or_else(|| errors::NOT_FOUND.with("Task was not found"))
 }
 
 pub fn description(conn: &Connection, id: &str) -> AppResult<String> {
@@ -130,7 +130,7 @@ pub fn data(conn: &Connection, day: &str) -> AppResult<TaskData> {
 fn check_title(title: &str) -> AppResult<&str> {
     let trimmed = title.trim();
     if trimmed.is_empty() {
-        return Err(AppError::rule("empty_title", "A task needs a title"));
+        return Err(errors::TASK_TITLE_EMPTY.err());
     }
     Ok(trimmed)
 }
@@ -223,7 +223,7 @@ fn set_status(tx: &Transaction, id: &str, status: &str, now: i64) -> AppResult<(
 pub fn move_to(conn: &mut Connection, id: &str, target: &str) -> AppResult<Task> {
     let task = get(conn, id)?;
     if task.parent_id.is_some() {
-        return Err(AppError::rule("subtask", "Subtasks move with their parent"));
+        return Err(errors::SUBTASK_MOVE.err());
     }
     let tx = conn.transaction()?;
     folders::ensure(&tx, target)?;

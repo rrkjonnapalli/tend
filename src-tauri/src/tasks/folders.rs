@@ -3,7 +3,7 @@
 
 use rusqlite::{params, Connection, OptionalExtension, Transaction};
 
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 use crate::names;
 use crate::util::now_ms;
 
@@ -19,7 +19,7 @@ fn exists(conn: &Connection, path: &str) -> AppResult<bool> {
 fn check_new(conn: &Connection, parent: &str, name: &str) -> AppResult<()> {
     names::check(name)?;
     if exists(conn, &names::join(parent, name))? {
-        return Err(AppError::InvalidName(names::CLASH.into()));
+        return Err(errors::NAME_TAKEN.err());
     }
     Ok(())
 }
@@ -28,7 +28,7 @@ fn check_new(conn: &Connection, parent: &str, name: &str) -> AppResult<()> {
 pub fn create(conn: &mut Connection, path: &str) -> AppResult<()> {
     names::check_path(path)?;
     if path.is_empty() || exists(conn, path)? {
-        return Err(AppError::InvalidName(names::CLASH.into()));
+        return Err(errors::NAME_TAKEN.err());
     }
     let tx = conn.transaction()?;
     ensure(&tx, path)?;
@@ -66,13 +66,10 @@ pub fn rename(conn: &mut Connection, path: &str, name: &str) -> AppResult<String
 
 pub fn move_to(conn: &mut Connection, path: &str, target: &str) -> AppResult<String> {
     if names::is_under(target, path) {
-        return Err(AppError::rule(
-            "into_self",
-            "A folder can’t move into itself",
-        ));
+        return Err(errors::INTO_SELF.err());
     }
     if names::parent(path) == target {
-        return Err(AppError::rule("same_folder", "It’s already in that folder"));
+        return Err(errors::SAME_FOLDER.err());
     }
     let name = names::base(path);
     check_new(conn, target, name)?;
@@ -86,7 +83,7 @@ pub fn move_to(conn: &mut Connection, path: &str, target: &str) -> AppResult<Str
 
 fn relocate(tx: &Transaction, old: &str, new: &str) -> AppResult<()> {
     if old.is_empty() || !exists(tx, old)? {
-        return Err(AppError::NotFound("Folder".into()));
+        return Err(errors::NOT_FOUND.with("Folder was not found"));
     }
     tx.execute(
         "UPDATE task_folders SET path = ?2 || substr(path, length(?1) + 1)
@@ -99,7 +96,7 @@ fn relocate(tx: &Transaction, old: &str, new: &str) -> AppResult<()> {
 /// Deletes the folder, its subfolders and every task in them.
 pub fn delete(conn: &mut Connection, path: &str) -> AppResult<()> {
     if path.is_empty() {
-        return Err(AppError::rule("root", "The root folder can’t be deleted"));
+        return Err(errors::ROOT_FOLDER.err());
     }
     let tx = conn.transaction()?;
     tx.execute(

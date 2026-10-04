@@ -4,7 +4,7 @@
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import { notes } from '#lib/stores/notes.svelte.ts';
-  import { messageOf } from '#lib/api/core.ts';
+  import { messageOf } from '#lib/errors/app-error.ts';
   import { baseOf, nameError, relativeTo } from '#lib/util/names.ts';
   import { siblingNames } from '#lib/util/explorer-rows.ts';
   import { NOTES_ROOT_NAME, folderCrumbs, folderSummary } from '#lib/util/note-paths.ts';

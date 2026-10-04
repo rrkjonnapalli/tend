@@ -17,7 +17,6 @@
   import MoveToDialog from '#lib/components/MoveToDialog.svelte';
   import DeleteDialog from '#lib/components/DeleteDialog.svelte';
   import { tasksAPI } from '#lib/api/tasks.ts';
-  import { messageOf } from '#lib/api/core.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
@@ -46,35 +45,24 @@
   const detailLoaded = $derived(detailFor === id);
 
   function loadDetail(taskId: string) {
-    tasksAPI.get(taskId).then(
-      (d) => {
-        // Another task may have opened while this one loaded.
-        if (taskId !== id) return;
-        description = d.description;
-        tags = d.tags;
-        detailFor = taskId;
-      },
-      (e) => toast.show(messageOf(e)),
-    );
+    tasksAPI.get(taskId).then((d) => {
+      // Another task may have opened while this one loaded.
+      if (taskId !== id) return;
+      description = d.description;
+      tags = d.tags;
+      detailFor = taskId;
+    });
   }
 
   $effect(() => loadDetail(id));
 
   async function patch(p: TaskPatch) {
-    try {
-      await tasks.update(id, p);
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await tasks.update(id, p);
   }
 
   async function setTags(next: string[]) {
     tags = next;
-    try {
-      tags = await tasksAPI.setTags({ id, tags: next });
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    tags = await tasksAPI.setTags({ id, tags: next });
   }
 
   let descField = $state<MarkdownField>();
@@ -130,12 +118,8 @@
 
   async function moveTo(target: string) {
     moving = false;
-    try {
-      await tasks.move({ id, target });
-      toast.show(`Moved to ${target || rootName}/`);
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await tasks.move({ id, target });
+    toast.show(`Moved to ${target || rootName}/`);
   }
 
   async function remove() {

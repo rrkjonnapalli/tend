@@ -8,7 +8,7 @@
   import StatusSwatchPicker from './StatusSwatchPicker.svelte';
   import { statusesAPI } from '#lib/api/statuses.ts';
   import type { Status, StatusPosition } from '#lib/types/status.type.ts';
-  import { messageOf } from '#lib/api/core.ts';
+  import { messageOf } from '#lib/errors/app-error.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { startReorder } from '#lib/util/reorder.ts';
 

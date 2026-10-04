@@ -4,8 +4,6 @@
   import Icon from './Icon.svelte';
   import { attachmentsAPI } from '#lib/api/attachments.ts';
   import type { AttachmentLink } from '#lib/types/attachment.type.ts';
-  import { messageOf } from '#lib/api/core.ts';
-  import { toast } from '#lib/stores/toast.svelte.ts';
   import { attachmentIcon, attachmentMeta } from '#lib/util/attachments.ts';
   import { routes } from '#lib/util/routes.ts';
 
@@ -17,11 +15,7 @@
       return;
     }
     if (!link.attachmentId) return;
-    try {
-      await attachmentsAPI.open(link.attachmentId);
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    await attachmentsAPI.open(link.attachmentId);
   }
 
 </script>

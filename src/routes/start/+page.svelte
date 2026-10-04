@@ -5,7 +5,7 @@
   import StartChecklist from '#lib/components/StartChecklist.svelte';
   import { vaultAPI } from '#lib/api/vault.ts';
   import type { Check } from '#lib/types/vault.type.ts';
-  import { messageOf } from '#lib/api/core.ts';
+  import { messageOf } from '#lib/errors/app-error.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
   import { isMac } from '#lib/util/keys.ts';
   import { nav } from '#lib/stores/history.svelte.ts';

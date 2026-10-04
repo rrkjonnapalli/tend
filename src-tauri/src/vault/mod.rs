@@ -11,7 +11,7 @@ use rusqlite::Connection;
 use serde::Serialize;
 
 use crate::db::{self, Opened};
-use crate::error::AppError;
+use crate::error::{errors, AppError};
 use crate::state::Vault;
 
 #[derive(Debug, Serialize, PartialEq, Eq, Clone, Copy)]
@@ -188,8 +188,8 @@ fn opened_step(how: Opened) -> Step {
 
 fn db_error_detail(e: AppError) -> String {
     match e {
-        AppError::IncompatibleDb => INCOMPATIBLE.to_string(),
-        AppError::Io(io) => io_detail(&io),
+        e if e.is(errors::INCOMPATIBLE_DB) => INCOMPATIBLE.to_string(),
+        e if e.is(errors::NO_PERMISSION) => NO_PERMISSION.to_string(),
         other => other.to_string(),
     }
 }

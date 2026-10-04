@@ -2,7 +2,6 @@
 // down), so it stays right after sleep or throttling. A timer rings once `now ≥ endsAt`.
 // The clock only ticks while there are timers to count down.
 import { timersAPI } from '#lib/api/timers.ts';
-import { messageOf } from '#lib/api/core.ts';
 import type { Timer } from '#lib/types/timer.type.ts';
 import { allowNotifications, chime, notify } from '#lib/util/notify.ts';
 import { timerName } from '#lib/util/timer-text.ts';
@@ -42,14 +41,11 @@ class TimersStore {
 
   add = async (title: string, ms: number) => {
     // Ask now, while the user is here, rather than when the timer rings.
+    // Denied or unavailable is fine: the window still rings and shows a toast.
     allowNotifications().catch(() => {});
-    try {
-      const t = await timersAPI.start({ title, ms });
-      this.#setList([...this.list, t].sort(bySoonest));
-      return t;
-    } catch (e) {
-      toast.show(messageOf(e));
-    }
+    const t = await timersAPI.start({ title, ms });
+    this.#setList([...this.list, t].sort(bySoonest));
+    return t;
   };
 
   addMinute = async (id: string) => {

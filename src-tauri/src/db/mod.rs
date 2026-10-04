@@ -7,7 +7,7 @@ use std::path::Path;
 
 use rusqlite::{Connection, OpenFlags, OptionalExtension, Transaction};
 
-use crate::error::{AppError, AppResult};
+use crate::error::{errors, AppResult};
 
 pub const APP_ID: &str = "tend";
 
@@ -54,7 +54,7 @@ pub fn open(path: &Path) -> AppResult<(Connection, Opened)> {
 /// Tend and is not newer than this app.
 pub fn check(path: &Path) -> AppResult<i64> {
     let conn = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)
-        .map_err(|_| AppError::IncompatibleDb)?;
+        .map_err(|_| errors::INCOMPATIBLE_DB.err())?;
     let meta = |key: &str| -> Option<String> {
         conn.query_row("SELECT value FROM meta WHERE key = ?1", [key], |r| r.get(0))
             .optional()
@@ -65,7 +65,7 @@ pub fn check(path: &Path) -> AppResult<i64> {
     let version = meta("schema_version").and_then(|v| v.parse::<i64>().ok());
     match (app_id.as_deref(), version) {
         (Some(APP_ID), Some(v)) if v >= 1 && v <= schema_version() => Ok(v),
-        _ => Err(AppError::IncompatibleDb),
+        _ => Err(errors::INCOMPATIBLE_DB.err()),
     }
 }
 

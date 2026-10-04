@@ -7,7 +7,7 @@
   import Panel from './Panel.svelte';
   import PathField from './PathField.svelte';
   import { focusAndSelect } from '#lib/actions/focus.action.ts';
-  import { messageOf } from '#lib/api/core.ts';
+  import { messageOf } from '#lib/errors/app-error.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { timers } from '#lib/stores/timers.svelte.ts';
