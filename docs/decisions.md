@@ -263,7 +263,7 @@ The user picks one **vault folder**. Tend works only inside it:
 - **Timer:**
   - Minutes ≥ 0 with no upper limit; seconds 0–59; total > 0.
   - A bare number means minutes.
-- **Shortcuts:** ⌘1 Notes · ⌘2 Tasks · ⌘3 People · ⌘, Settings · ⌘K palette.
+- **Shortcuts:** ⌘1 Notes · ⌘2 Tasks · ⌘3 People · ⌘, Settings · ⌘K palette · ⌘D toggle the dock (bottom bar).
 
 ## 13. Settings
 

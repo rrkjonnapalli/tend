@@ -56,7 +56,7 @@ export const commands: Command[] = [
 
   { id: 'app.palette', group: 'App', label: 'Open command palette', keys: 'mod+k', run: openPalette },
   { id: 'app.explorer', group: 'App', label: 'Toggle explorer', keys: 'mod+b', when: hasExplorer, run: ui.toggleExplorer },
-  { id: 'app.nav', group: 'App', label: 'Toggle bottom bar', run: ui.toggleNav },
+  { id: 'app.nav', group: 'App', label: 'Toggle dock (bottom bar)', keys: 'mod+d', run: ui.toggleNav },
   { id: 'app.feedback', group: 'App', label: 'Send feedback', run: () => ui.show('feedback') },
   { id: 'app.vault', group: 'App', label: 'Change vault…', run: () => goto(routes.start) },
 ];
