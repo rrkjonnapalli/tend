@@ -87,3 +87,43 @@ fn settings_and_restore() {
     let restored = h.ok("vault_restore", json!({}));
     assert_eq!(restored, json!(h.vault.path().to_string_lossy()));
 }
+
+#[test]
+fn tasks_round_trip_through_ipc() {
+    let h = Harness::new();
+    let parent = h.ok("task_create", json!({ "task": { "path": "work", "title": "Ship" } }));
+    let pid = parent["id"].as_str().unwrap();
+    let sub = h.ok("task_create", json!({ "task": { "path": "", "title": "Sign", "parentId": pid, "orderKey": "z" } }));
+    assert_eq!(sub["path"], "work");
+
+    let t = h.ok("task_update", json!({ "id": pid, "patch": { "dueDate": "2026-10-10", "dueTime": "17:30", "status": "DONE" } }));
+    assert_eq!((t["dueDate"].as_str(), t["status"].as_str()), (Some("2026-10-10"), Some("DONE")));
+    assert!(t["completedAt"].is_number());
+    let t = h.ok("task_update", json!({ "id": pid, "patch": { "dueTime": null } }));
+    assert!(t["dueTime"].is_null() && t["dueDate"] == "2026-10-10");
+
+    h.ok("my_day_set", json!({ "id": pid, "day": "2026-10-04", "included": true }));
+    let data = h.ok("tasks_data", json!({ "day": "2026-10-04" }));
+    assert_eq!(data["myDay"], json!([[pid, true]]));
+    assert_eq!(data["folders"], json!(["work"]));
+
+    h.ok("task_tags_set", json!({ "id": pid, "tags": ["v0.1"] }));
+    h.ok("comment_add", json!({ "task": pid, "body": "looks good" }));
+    let detail = h.ok("task_get", json!({ "id": pid }));
+    assert_eq!(detail["tags"], json!(["v0.1"]));
+    assert_eq!(h.ok("comments_list", json!({ "task": pid }))[0]["body"], "looks good");
+
+    let file = h.vault.path().join("report.txt");
+    std::fs::write(&file, "x").unwrap();
+    h.ok("attachments_add", json!({ "owner": "task", "id": pid, "paths": [file] }));
+    let links = h.ok("attachments_list", json!({ "owner": "task", "id": pid }));
+    assert_eq!(links[0]["name"], "report.txt");
+    assert_eq!(std::fs::read_dir(h.vault.path().join(".attachments")).unwrap().count(), 1);
+
+    h.ok("task_move", json!({ "id": pid, "target": "home" }));
+    assert_eq!(h.ok("task_get", json!({ "id": sub["id"] }))["path"], "home");
+    h.ok("task_folder_rename", json!({ "path": "home", "name": "house" }));
+    assert_eq!(h.ok("task_get", json!({ "id": pid }))["path"], "house");
+    h.ok("task_delete", json!({ "id": pid }));
+    assert_eq!(h.ok("tasks_data", json!({ "day": "x" }))["tasks"], json!([]));
+}

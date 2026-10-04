@@ -5,6 +5,8 @@
   import Breadcrumbs, { type Crumb } from '#lib/components/Breadcrumbs.svelte';
   import DateField, { type Range } from '#lib/components/DateField.svelte';
   import TaskRow from '#lib/components/TaskRow.svelte';
+  import TaskBoard from '#lib/components/TaskBoard.svelte';
+  import Icon from '#lib/components/Icon.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
@@ -35,6 +37,7 @@
   const view = $derived((params.get('v') as View) || 'all');
   const range = $derived<Range>([params.get('from') ?? tasks.day, params.get('to') ?? params.get('from') ?? tasks.day]);
   const rootName = $derived(settings.get('tasks.root_name', 'tasks'));
+  const board = $derived(settings.get<string>('tasks.layout', 'list') === 'board');
 
   const ctx = $derived({ today: tasks.day, myDay: tasks.myDay, range });
   const rows = $derived(viewTasks(tasks.tasks, folder, view, ctx));
@@ -107,7 +110,7 @@
   }
 </script>
 
-<main class="main">
+<main class="main" class:board>
   <article class="list">
     <div class="head">
       <Breadcrumbs {crumbs} />
@@ -124,8 +127,19 @@
       {/each}
       <span class="sep" aria-hidden="true">·</span>
       <DateField mode="range" {range} active={view === 'range'} marked={dueDays} onrange={([a, b]) => setView('range', { from: a, to: b })} />
+      <span class="lay" role="group" aria-label="Layout">
+        <button class="lbtn" class:on={!board} aria-label="List" aria-pressed={!board} title="List" onclick={() => settings.set('tasks.layout', 'list')}>
+          <Icon name="list" size={14} />
+        </button>
+        <button class="lbtn" class:on={board} aria-label="Board" aria-pressed={board} title="Board" onclick={() => settings.set('tasks.layout', 'board')}>
+          <Icon name="board" size={14} />
+        </button>
+      </span>
     </nav>
 
+    {#if board}
+      <TaskBoard items={rows} {folder} />
+    {:else}
     <div class="rows" role="list">
       {#if view === 'all'}
         <label class="add">
@@ -149,6 +163,7 @@
       {/each}
       {#if shown.length === 0}<span class="caption muted empty">{EMPTY[view]}</span>{/if}
     </div>
+    {/if}
   </article>
 </main>
 
@@ -165,6 +180,48 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+  }
+
+  /* The board fills the window; its columns scroll on their own. */
+  .main.board {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 12px;
+  }
+
+  .board .list {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .lay {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+  }
+
+  .lbtn {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--c-muted-2);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+
+  .lbtn:hover {
+    color: var(--text);
+    background: var(--c-hover);
+  }
+
+  .lbtn.on {
+    color: var(--text);
+    background: var(--c-chip);
   }
 
   .head {

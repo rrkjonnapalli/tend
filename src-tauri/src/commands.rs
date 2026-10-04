@@ -11,7 +11,7 @@ use tauri::{AppHandle, Runtime, State};
 use crate::config::ConfigDir;
 use crate::error::AppResult;
 use crate::state::AppState;
-use crate::{config, notes, settings, statuses, tags, tasks, vault};
+use crate::{attachments, comments, config, notes, people, settings, statuses, tags, tasks, vault};
 
 /// Makes `vault` the open vault and starts what runs alongside it.
 fn activate<R: Runtime>(app: &AppHandle<R>, state: &AppState, vault: crate::state::Vault) -> AppResult<()> {
@@ -255,4 +255,71 @@ pub fn task_folder_move(state: State<AppState>, path: String, target: String) ->
 #[tauri::command]
 pub fn task_folder_delete(state: State<AppState>, path: String) -> AppResult<()> {
     state.with(|db, _| tasks::folder_delete(db, &path))
+}
+
+// ---- comments
+
+#[tauri::command]
+pub fn comments_list(state: State<AppState>, task: String) -> AppResult<Vec<comments::Comment>> {
+    state.with(|db, _| comments::list(db, &task))
+}
+
+#[tauri::command]
+pub fn comment_add(state: State<AppState>, task: String, body: String) -> AppResult<()> {
+    state.with(|db, _| comments::add(db, &task, &body))
+}
+
+#[tauri::command]
+pub fn comment_edit(state: State<AppState>, id: String, body: String) -> AppResult<()> {
+    state.with(|db, _| comments::edit(db, &id, &body))
+}
+
+// ---- attachments
+
+#[tauri::command]
+pub fn attachments_list(state: State<AppState>, owner: String, id: String) -> AppResult<Vec<attachments::Link>> {
+    state.with(|db, _| attachments::list(db, &owner, &id))
+}
+
+/// Copies each file into the vault and links it. Stops at the first file that fails.
+#[tauri::command]
+pub fn attachments_add(state: State<AppState>, owner: String, id: String, paths: Vec<String>) -> AppResult<()> {
+    state.with(|db, v| {
+        let store = v.attachments_dir();
+        paths.iter().try_for_each(|p| attachments::add_file(db, &store, &owner, &id, std::path::Path::new(p)))
+    })
+}
+
+#[tauri::command]
+pub fn attachment_link_note(state: State<AppState>, owner: String, id: String, note: String) -> AppResult<()> {
+    state.with(|db, _| attachments::link_note(db, &owner, &id, &note))
+}
+
+#[tauri::command]
+pub fn attachment_unlink(state: State<AppState>, link: String) -> AppResult<()> {
+    state.with(|db, _| attachments::unlink(db, &link))
+}
+
+fn opener_error(e: tauri_plugin_opener::Error) -> crate::error::AppError {
+    std::io::Error::other(e.to_string()).into()
+}
+
+/// Opens the file with the OS default app.
+#[tauri::command]
+pub fn attachment_open(state: State<AppState>, attachment: String) -> AppResult<()> {
+    let path = state.with(|db, v| attachments::file_path(db, &v.attachments_dir(), &attachment))?;
+    tauri_plugin_opener::open_path(path, None::<&str>).map_err(opener_error)
+}
+
+#[tauri::command]
+pub fn attachment_reveal(state: State<AppState>, attachment: String) -> AppResult<()> {
+    let path = state.with(|db, v| attachments::file_path(db, &v.attachments_dir(), &attachment))?;
+    tauri_plugin_opener::reveal_item_in_dir(path).map_err(opener_error)
+}
+
+// ---- people
+
+#[tauri::command]
+pub fn people_list(state: State<AppState>) -> AppResult<Vec<people::PersonRow>> {
+    state.with(|db, _| people::list(db))
 }

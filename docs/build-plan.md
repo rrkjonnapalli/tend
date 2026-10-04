@@ -159,7 +159,9 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M7 · Tasks: task page and board  ☐
+## M7 · Tasks: task page and board  ☑
+
+> Done. Files are added through the dialog or dropped from the OS. Dropped files arrive as Tauri drag-drop events, which are hit-tested against the drop zone. Open and Show in folder go through Rust (`attachment_open` / `attachment_reveal`), so the UI only ever passes attachment ids. Also added: a task page *Move to…* and *Delete task* (see `docs/open-questions.md`). `ipc_tests.rs` covers the task, comment and attachment commands.
 
 **Read:** decisions §6 (Statuses, Task page, Board), §8 · `png/task-page.png`, `png/tasks-board.png`
 

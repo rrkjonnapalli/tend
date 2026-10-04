@@ -35,6 +35,10 @@ impl Vault {
     pub fn notes_dir(&self) -> PathBuf {
         self.root.join("notes")
     }
+
+    pub fn attachments_dir(&self) -> PathBuf {
+        self.root.join(".attachments")
+    }
 }
 
 /// Anything that lives as long as the open vault (the file watcher) and must stop with it.

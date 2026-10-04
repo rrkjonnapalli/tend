@@ -9,3 +9,10 @@ Choices made where the spec was unclear or the stack had moved on. Each one is t
 - **Bun** runs the scripts (`bun run check`, `bun run test`, `bun run tauri dev`). The `npm run …` commands in CLAUDE.md work the same way.
 - **shadcn-svelte and Tailwind were removed.** Their CSS variables (`--primary`, `--border`, `--accent`) clash with `tokens.css`, and CLAUDE.md asks for plain CSS.
 - **Note editor:** CodeMirror 6 (markdown mode) instead of a plain `<textarea>`, at the owner's request. It keeps the monospace look from the mockups.
+
+## Tasks
+
+- **Deleting and moving a task.** The spec has no UI for either. The task page top bar now has *Move to…* (folder icon, ⌘⇧M; it reuses the explorer's Move dialog) and *Delete task* (trash icon, with a confirmation). Subtasks move and get deleted with their parent. Subtasks themselves can't be moved on their own.
+- **New tasks** go to the top of the global order. The board's `+ add task` puts the task at the bottom of its column.
+- **Comments** show "You · 2h", because v1 has a single user.
+- **Board scope.** The board shows the tasks of the current view (All, Overdue, …), grouped into one column per status.

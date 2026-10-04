@@ -1,6 +1,6 @@
 // Dev only: lets the UI run in a plain browser (vite dev without Tauri) for layout checks.
 // Commands answer from in-memory fixtures. Add `?vault=0` to the URL to see the start page.
-import { mockIPC } from '@tauri-apps/api/mocks';
+import { mockIPC, mockWindows } from '@tauri-apps/api/mocks';
 
 type Handler = (args: Record<string, unknown>) => unknown;
 
@@ -84,6 +84,13 @@ const handlers: Record<string, Handler> = {
     return t;
   },
   my_day_set: () => null,
+  task_get: ({ id }) => ({ ...tasks.find((t) => t.id === id), description: id === 'ship' ? 'First signed build for macOS and Linux.' : '', tags: id === 'ship' ? ['v0.1'] : [] }),
+  people_list: () => [
+    { id: 'priya', firstName: 'Priya', lastName: 'Nair', nickname: null, dobYear: 1995, dobMonth: 10, dobDay: 10, phone: '+91 98450 12345', email: 'priya@example.com' },
+    { id: 'ravi', firstName: 'Ravi', lastName: 'Kumar', nickname: null, dobYear: null, dobMonth: 3, dobDay: 2, phone: null, email: 'ravi@example.com' },
+  ],
+  comments_list: () => [],
+  attachments_list: () => [],
   settings_all: () => settings,
   settings_set: ({ key, value }) => {
     settings[key as string] = value;
@@ -99,3 +106,4 @@ mockIPC((cmd, args) => {
   if (!handler) throw { code: 'mock', message: `no mock for ${cmd}` };
   return handler((args ?? {}) as Record<string, unknown>);
 });
+mockWindows('main');

@@ -1,4 +1,6 @@
+mod attachments;
 mod commands;
+mod comments;
 mod config;
 mod db;
 mod error;
@@ -7,6 +9,7 @@ mod ipc_tests;
 mod names;
 mod notes;
 mod order;
+mod people;
 mod settings;
 mod state;
 mod statuses;
@@ -69,6 +72,16 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
         commands::task_folder_rename,
         commands::task_folder_move,
         commands::task_folder_delete,
+        commands::comments_list,
+        commands::comment_add,
+        commands::comment_edit,
+        commands::attachments_list,
+        commands::attachments_add,
+        commands::attachment_link_note,
+        commands::attachment_unlink,
+        commands::attachment_open,
+        commands::attachment_reveal,
+        commands::people_list,
     ])
 }
 

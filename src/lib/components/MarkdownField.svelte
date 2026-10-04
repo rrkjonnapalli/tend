@@ -19,6 +19,7 @@
     placeholder?: string;
     /** Shown when there is nothing to render. */
     empty?: string;
+    /** Minimum height of the editor in px. */
     minHeight?: number;
     label: string;
   } = $props();
@@ -52,7 +53,7 @@
     {label}
     autofocus />
 {:else}
-  <div class="view" style:min-height="{minHeight}px">
+  <div class="view">
     <MarkdownView text={value} {empty} ondblclick={edit} />
   </div>
 {/if}
