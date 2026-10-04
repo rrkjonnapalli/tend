@@ -10,11 +10,13 @@ use crate::error::{AppError, AppResult};
 pub struct Vault {
     pub root: PathBuf,
     conn: Mutex<Connection>,
+    /// Items the last scan skipped because their names break the rule.
+    skipped: Mutex<Vec<String>>,
 }
 
 impl Vault {
     pub fn new(root: PathBuf, conn: Connection) -> Self {
-        Vault { root, conn: Mutex::new(conn) }
+        Vault { root, conn: Mutex::new(conn), skipped: Mutex::default() }
     }
 
     pub fn db(&self) -> MutexGuard<'_, Connection> {
@@ -22,12 +24,16 @@ impl Vault {
         self.conn.lock().unwrap_or_else(|e| e.into_inner())
     }
 
-    pub fn notes_dir(&self) -> PathBuf {
-        self.root.join("notes")
+    pub fn skipped(&self) -> Vec<String> {
+        self.skipped.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 
-    pub fn attachments_dir(&self) -> PathBuf {
-        self.root.join(".attachments")
+    pub fn set_skipped(&self, items: Vec<String>) {
+        *self.skipped.lock().unwrap_or_else(|e| e.into_inner()) = items;
+    }
+
+    pub fn notes_dir(&self) -> PathBuf {
+        self.root.join("notes")
     }
 }
 
@@ -47,6 +53,13 @@ impl AppState {
             .unwrap_or_else(|e| e.into_inner())
             .clone()
             .ok_or(AppError::NoVault)
+    }
+
+    /// Runs `f` with the open vault's database locked for the whole call.
+    pub fn with<T>(&self, f: impl FnOnce(&mut Connection, &Vault) -> AppResult<T>) -> AppResult<T> {
+        let vault = self.vault()?;
+        let mut db = vault.db();
+        f(&mut db, &vault)
     }
 
     pub fn set(&self, vault: Arc<Vault>) {

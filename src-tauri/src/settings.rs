@@ -19,16 +19,6 @@ pub fn all(conn: &Connection) -> AppResult<HashMap<String, Value>> {
     Ok(out)
 }
 
-pub fn get(conn: &Connection, key: &str) -> AppResult<Option<Value>> {
-    let text: Option<String> = conn
-        .query_row("SELECT value FROM settings WHERE key = ?1", [key], |r| r.get(0))
-        .ok();
-    Ok(match text {
-        Some(t) => Some(serde_json::from_str(&t)?),
-        None => None,
-    })
-}
-
 pub fn set(conn: &Connection, key: &str, value: &Value) -> AppResult<()> {
     conn.execute(
         "INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, ?3)
@@ -45,12 +35,12 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn set_get_and_overwrite() {
+    fn set_and_overwrite() {
         let conn = open_memory();
-        assert_eq!(get(&conn, "ui.nav_open").unwrap(), None);
         set(&conn, "ui.nav_open", &json!(false)).unwrap();
         set(&conn, "ui.nav_open", &json!(true)).unwrap();
-        assert_eq!(get(&conn, "ui.nav_open").unwrap(), Some(json!(true)));
-        assert_eq!(all(&conn).unwrap().len(), 1);
+        let all = all(&conn).unwrap();
+        assert_eq!(all.len(), 1);
+        assert_eq!(all["ui.nav_open"], json!(true));
     }
 }

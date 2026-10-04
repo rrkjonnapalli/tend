@@ -61,7 +61,9 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M3 · Notes index: scan, watcher, sync  ☐
+## M3 · Notes index: scan, watcher, sync  ☑
+
+> Done. A file renamed or moved outside Tend keeps its id when its mtime and title still match a note that vanished in the same scan. Folder prefix updates use `substr` instead of `LIKE`, because `_` is a `LIKE` wildcard and folder names may contain it. Non-`.md` files and invalid names are skipped; dotfiles are ignored silently. The watcher rescans the whole tree after each debounced batch.
 
 **Read:** decisions §5 (Sync), §5a (Names) · `schema.sql` §2
 

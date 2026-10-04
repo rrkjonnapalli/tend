@@ -2,18 +2,30 @@ mod commands;
 mod config;
 mod db;
 mod error;
+mod names;
+mod notes;
 mod settings;
 mod state;
 mod util;
 mod vault;
+mod watcher;
+
+use std::sync::Arc;
 
 use tauri::AppHandle;
 
 use crate::error::AppResult;
 use crate::state::{AppState, Vault};
 
-/// Runs once a vault becomes the open vault.
-fn on_vault_open(_app: &AppHandle, _state: &AppState, _vault: &Vault) -> AppResult<()> {
+/// Runs once a vault becomes the open vault: index the notes, then watch them.
+fn on_vault_open(app: &AppHandle, state: &AppState, vault: &Arc<Vault>) -> AppResult<()> {
+    watcher::rescan(vault)?;
+    let app = app.clone();
+    let guard = watcher::start(vault.clone(), move |v| {
+        // A failed rescan leaves the index as it was; the next event or reload retries.
+        let _ = watcher::rescan_and_emit(&app, v);
+    })?;
+    state.set_guard(guard);
     Ok(())
 }
 
@@ -30,6 +42,16 @@ pub fn run() {
             commands::vault_current,
             commands::settings_all,
             commands::settings_set,
+            commands::skipped_items,
+            commands::notes_tree,
+            commands::notes_rescan,
+            commands::note_read,
+            commands::note_write,
+            commands::note_create,
+            commands::folder_create,
+            commands::item_rename,
+            commands::item_move,
+            commands::item_delete,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

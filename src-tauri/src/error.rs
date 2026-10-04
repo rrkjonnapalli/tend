@@ -10,8 +10,6 @@ pub enum AppError {
     NoVault,
     #[error("{0}")]
     InvalidName(String),
-    #[error("{0} already exists")]
-    Exists(String),
     #[error("{0} was not found")]
     NotFound(String),
     /// A domain rule was broken (status rules, moves into self, …). `code` is stable for the UI.
@@ -37,7 +35,6 @@ impl AppError {
             AppError::IncompatibleDb => "incompatible_db",
             AppError::NoVault => "no_vault",
             AppError::InvalidName(_) => "invalid_name",
-            AppError::Exists(_) => "exists",
             AppError::NotFound(_) => "not_found",
             AppError::Rule { code, .. } => code,
             AppError::Io(_) => "io",
