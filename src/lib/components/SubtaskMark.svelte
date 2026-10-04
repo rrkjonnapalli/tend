@@ -1,17 +1,14 @@
 <script lang="ts">
-  // A tiny "s" badge before a subtask's title in task lists and on board cards; hover names
-  // its parent.
+  // A tiny "s" badge before a subtask's title in task lists and on board cards; hover says "Subtask".
   import type { Task } from '#lib/types/task.type.ts';
-  import { tasks } from '#lib/stores/tasks.svelte.ts';
 
   let { task }: { task: Task } = $props();
 
-  const parent = $derived(task.parentId ? tasks.byId(task.parentId) : undefined);
-  const hint = $derived(parent ? `Subtask of ${parent.title}` : 'Subtask');
+  const HINT = 'Subtask';
 </script>
 
 {#if task.parentId}
-  <span class="mark" title={hint} aria-label={hint} role="img">s</span>
+  <span class="mark" title={HINT} aria-label={HINT} role="img">s</span>
 {/if}
 
 <style>

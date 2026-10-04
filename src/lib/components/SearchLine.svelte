@@ -1,6 +1,8 @@
 <script lang="ts">
   // A list page's search line: one row under the page bar, the field at the right end.
+  // While it's on screen, ⌘L (the "page.search" action) focuses it.
   import Icon from './Icon.svelte';
+  import { pageActions } from '#lib/stores/page-actions.svelte.ts';
 
   let {
     value = $bindable(''),
@@ -12,12 +14,21 @@
     label: string;
     placeholder: string;
   } = $props();
+
+  let input = $state<HTMLInputElement>();
+
+  function focusSearch() {
+    input?.focus();
+    input?.select();
+  }
+
+  $effect(() => pageActions.provide({ 'page.search': focusSearch }));
 </script>
 
 <div class="line">
   <label class="search">
     <span class="ic"><Icon name="search" size={14} /></span>
-    <input aria-label={label} {placeholder} bind:value />
+    <input bind:this={input} aria-label={label} {placeholder} bind:value />
   </label>
 </div>
 
