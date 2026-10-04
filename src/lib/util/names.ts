@@ -1,0 +1,31 @@
+// The name rule for folders and note files (same as src-tauri/src/names.rs).
+
+const RULE = /^[a-z0-9_]+$/;
+
+export const nameErrors = {
+  empty: 'Name can’t be empty',
+  chars: 'Only a–z, 0–9 and _ (no spaces or capitals)',
+  clash: 'Something with this name already exists here',
+} as const;
+
+export const isValidName = (name: string) => RULE.test(name);
+
+/** The message to show under a name field, or '' when the name is fine. */
+export function nameError(name: string, siblings: Iterable<string> = []): string {
+  if (!name) return nameErrors.empty;
+  if (!isValidName(name)) return nameErrors.chars;
+  for (const s of siblings) if (s === name) return nameErrors.clash;
+  return '';
+}
+
+/** Every segment of a folder path follows the rule ('' is the root). */
+export const isValidPath = (path: string) => path === '' || path.split('/').every(isValidName);
+
+export const join = (folder: string, name: string) => (folder ? `${folder}/${name}` : name);
+export const parentOf = (path: string) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
+export const baseOf = (path: string) => path.slice(path.lastIndexOf('/') + 1);
+/** `path` is `root` or inside it. '' contains everything. */
+export const isUnder = (path: string, root: string) => root === '' || path === root || path.startsWith(root + '/');
+/** `path` relative to `root`, '' when they are the same. */
+export const relativeTo = (path: string, root: string) =>
+  path === root ? '' : root === '' ? path : path.slice(root.length + 1);

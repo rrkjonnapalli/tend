@@ -14,6 +14,14 @@ class Ui {
     settings.set('ui.nav_open', !this.navOpen);
   };
 
+  get explorerOpen(): boolean {
+    return settings.get('ui.explorer_open', true);
+  }
+
+  toggleExplorer = () => {
+    settings.set('ui.explorer_open', !this.explorerOpen);
+  };
+
   toggle = (p: Exclude<Popup, null>) => {
     this.popup = this.popup === p ? null : p;
   };

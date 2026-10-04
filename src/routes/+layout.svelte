@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import BottomNav from '#lib/components/BottomNav.svelte';
+  import Toast from '#lib/components/Toast.svelte';
   import { blocked, commands } from '#lib/commands.ts';
   import { matches } from '#lib/util/keys.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
@@ -43,6 +44,7 @@
     <div class="page">{@render children()}</div>
     {#if !onStart && vault.path}<BottomNav />{/if}
   </div>
+  <Toast />
 {/if}
 
 <style>

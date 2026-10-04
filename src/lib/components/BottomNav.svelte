@@ -71,11 +71,12 @@
   }
 
   .tog {
-    position: relative;
+    position: absolute;
+    top: -8px;
+    left: calc(50% - 14px);
     z-index: 1;
     width: 28px;
     height: 16px;
-    margin-bottom: -8px;
     padding: 0;
     border: 0;
     border-radius: var(--radius-sm);
@@ -92,11 +93,9 @@
   }
 
   .tog.closed {
-    position: absolute;
-    left: calc(50% - 14px);
+    top: auto;
     bottom: 6px;
     z-index: 6;
-    margin: 0;
     background: transparent;
   }
 

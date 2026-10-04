@@ -207,3 +207,76 @@ kbd,
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* Option rows inside popovers: menus, suggestions, dropdowns. */
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: 400 13px/18px var(--font-ui);
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.opt:hover,
+.opt.on {
+  background: var(--c-hover);
+}
+
+.opt.new {
+  color: var(--primary);
+}
+
+.opt.danger {
+  color: var(--danger);
+}
+
+.opt.danger:hover {
+  background: var(--danger-soft);
+}
+
+.opt .hint {
+  margin-left: auto;
+  font: 400 11px/16px var(--font-mono);
+  color: var(--c-faint);
+}
+
+.opt-sep {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--c-chip);
+}
+
+/* Bordered secondary button (Cancel, Change). */
+.btn-ghost {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--c-page);
+  color: var(--text);
+  font: 400 13px/18px var(--font-ui);
+  cursor: pointer;
+}
+
+.btn-ghost:hover {
+  border-color: var(--c-muted-2);
+}
+
+/* Controls that appear only while their row is hovered or focused. */
+.on-hover {
+  visibility: hidden;
+}
+
+.reveal-on-hover:hover .on-hover,
+.reveal-on-hover:focus-within .on-hover,
+.on-hover:focus-visible {
+  visibility: visible;
+}

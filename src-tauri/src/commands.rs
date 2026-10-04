@@ -10,7 +10,7 @@ use tauri::{AppHandle, Manager, State};
 
 use crate::error::AppResult;
 use crate::state::AppState;
-use crate::{config, notes, settings, vault};
+use crate::{config, notes, settings, tags, vault};
 
 fn config_dir(app: &AppHandle) -> AppResult<PathBuf> {
     app.path().app_config_dir().map_err(|e| std::io::Error::other(e.to_string()).into())
@@ -132,4 +132,16 @@ pub fn item_delete(state: State<AppState>, item: Item) -> AppResult<()> {
         Item::Note { id } => notes::delete_note(db, &v.notes_dir(), &id),
         Item::Folder { path } => notes::delete_folder(db, &v.notes_dir(), &path),
     })
+}
+
+// ---- tags
+
+#[tauri::command]
+pub fn tags_all(state: State<AppState>) -> AppResult<Vec<String>> {
+    state.with(|db, _| tags::all(db))
+}
+
+#[tauri::command]
+pub fn note_tags_set(state: State<AppState>, id: String, tags: Vec<String>) -> AppResult<Vec<String>> {
+    state.with(|db, _| tags::set(db, tags::Owner::Note, &id, &tags))
 }

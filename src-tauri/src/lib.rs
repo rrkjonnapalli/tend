@@ -6,6 +6,7 @@ mod names;
 mod notes;
 mod settings;
 mod state;
+mod tags;
 mod util;
 mod vault;
 mod watcher;
@@ -52,6 +53,8 @@ pub fn run() {
             commands::item_rename,
             commands::item_move,
             commands::item_delete,
+            commands::tags_all,
+            commands::note_tags_set,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

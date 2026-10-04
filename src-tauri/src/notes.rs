@@ -40,6 +40,7 @@ pub struct NoteDoc {
     #[serde(flatten)]
     pub row: NoteRow,
     pub text: String,
+    pub tags: Vec<String>,
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -263,7 +264,8 @@ pub fn row(conn: &Connection, id: &str) -> AppResult<NoteRow> {
 pub fn read(conn: &Connection, dir: &Path, id: &str) -> AppResult<NoteDoc> {
     let row = row(conn, id)?;
     let text = fs::read_to_string(file_path(dir, &row.folder, &format!("{}{EXT}", row.name)))?;
-    Ok(NoteDoc { row, text })
+    let tags = crate::tags::of(conn, crate::tags::Owner::Note, id)?;
+    Ok(NoteDoc { row, text, tags })
 }
 
 pub fn write(conn: &Connection, dir: &Path, id: &str, text: &str) -> AppResult<NoteRow> {

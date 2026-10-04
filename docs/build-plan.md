@@ -86,7 +86,9 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M4 · Shared components  ☐
+## M4 · Shared components  ☑
+
+> Done. Also built: `Popover` / `Modal` share one Esc stack (`util/layers.ts`), `Panel` is the header/rows/footer shell for Move to…, quick create and ⌘K, and `Section` + `EditControls` sit around `MarkdownField`. The markdown editor is CodeMirror 6 (`MarkdownEditor`), used by every markdown field. `/playground` exists only in dev builds (`import.meta.env.DEV`). The explorer selection colour follows the spec (`#eef3f6`), not the darker grey in `notes.png`.
 
 **Read:** decisions §4, §5a · `screens/folders.html` + `png/folders-*.png` · task page in `screens/tasks.html` (description, tags, due) · `design/README.md` (logic to reuse)
 
