@@ -35,6 +35,8 @@ pub const ROOT_FOLDER: ErrorDef = def("ROOT_FOLDER", "The root folder can’t be
 // ---- tasks and comments
 pub const TASK_TITLE_EMPTY: ErrorDef = def("TASK_TITLE_EMPTY", "A task needs a title");
 pub const SUBTASK_MOVE: ErrorDef = def("SUBTASK_MOVE", "Subtasks move with their parent");
+pub const SUBTASK_DEPTH: ErrorDef =
+    def("SUBTASK_DEPTH", "A subtask can't have subtasks of its own");
 pub const COMMENT_EMPTY: ErrorDef = def("COMMENT_EMPTY", "A comment can’t be empty");
 
 // ---- statuses

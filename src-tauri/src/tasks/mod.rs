@@ -142,10 +142,20 @@ fn top_key(conn: &Connection) -> AppResult<String> {
     Ok(crate::order::before(first.as_deref()))
 }
 
+/// The folder a new subtask goes in: its parent's. Subtasks are one level deep, so the parent
+/// must be a top-level task.
+fn parent_path(conn: &Connection, parent_id: &str) -> AppResult<String> {
+    let parent = get(conn, parent_id)?;
+    if parent.parent_id.is_some() {
+        return Err(errors::SUBTASK_DEPTH.err());
+    }
+    Ok(parent.path)
+}
+
 pub fn create(conn: &mut Connection, new: &NewTask) -> AppResult<Task> {
     let title = check_title(&new.title)?;
     let path = match &new.parent_id {
-        Some(parent) => get(conn, parent)?.path,
+        Some(parent) => parent_path(conn, parent)?,
         None => new.path.clone(),
     };
     let key = match &new.order_key {

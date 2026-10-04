@@ -206,9 +206,12 @@
             {/if}
           </Section>
 
-          <Section title="Subtasks" extra={tasks.subtaskCount(id)}>
-            <TaskSubtasks {task} />
-          </Section>
+          <!-- One level only: a subtask has no subtasks of its own. -->
+          {#if !task.parentId}
+            <Section title="Subtasks" extra={tasks.subtaskCount(id)}>
+              <TaskSubtasks {task} />
+            </Section>
+          {/if}
 
           <Section title="Attachments">
             <Attachments owner="task" {id} />

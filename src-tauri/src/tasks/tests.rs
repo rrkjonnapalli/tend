@@ -242,3 +242,34 @@ fn my_day_overrides() {
     assert!(data(&conn, "2026-10-04").unwrap().my_day.is_empty());
     assert!(data(&conn, "2026-10-05").unwrap().my_day.is_empty());
 }
+
+#[test]
+fn subtasks_are_one_level_deep() {
+    let mut conn = open_memory();
+    let parent = create(
+        &mut conn,
+        &NewTask {
+            title: "Parent".into(),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let sub = create(
+        &mut conn,
+        &NewTask {
+            title: "Sub".into(),
+            parent_id: Some(parent.id.clone()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let deeper = create(
+        &mut conn,
+        &NewTask {
+            title: "Deeper".into(),
+            parent_id: Some(sub.id.clone()),
+            ..Default::default()
+        },
+    );
+    assert!(deeper.unwrap_err().is(crate::error::errors::SUBTASK_DEPTH));
+}
