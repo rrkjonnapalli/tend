@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tend mockup · start</title>
+<script src="../dc-runtime.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+button,input{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid #1070e3;outline-offset:2px}
+.mark{font:600 32px/40px 'Montserrat',sans-serif;color:#303841;letter-spacing:-.01em}
+.mark i{font-style:normal;color:#6f5ee4}
+.h3{font:500 15px/20px 'Montserrat',sans-serif;color:#303841;margin:0}
+.lead{font:400 15px/22px 'Lato',sans-serif;color:#5f6b76;margin:0}
+.cap{font:400 13px/18px 'Lato',sans-serif;color:#7d8995}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px;color:#5f6b76}
+.pbtn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border:0;border-radius:8px;background:#1259d3;color:#ffffff;cursor:pointer;font:700 14px/20px 'Lato',sans-serif}
+.pbtn:hover{background:#113eb0}
+.gbtn{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border:1px solid #dce3e8;border-radius:8px;background:#ffffff;color:#303841;cursor:pointer;font:400 14px/20px 'Lato',sans-serif}
+.gbtn:hover{border-color:#7d8995}
+kbd{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border:1px solid #dce3e8;border-bottom-width:2px;border-radius:4px;background:#ffffff;font:400 11px/14px 'JetBrains Mono',monospace;color:#5f6b76}
+.recent{display:flex;flex-direction:column}
+.rv{display:flex;align-items:center;gap:10px;min-height:36px;padding:0 10px;margin:0 -10px;border-radius:6px;cursor:pointer;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.rv:hover{background:#f7fbfc}
+.rv .mono{margin-left:auto;color:#7d8995}
+
+.aside{flex:0 0 232px;border-right:1px solid #dce3e8;box-sizing:border-box;padding:12px 16px;display:flex;flex-direction:column;gap:6px}
+.ghost{height:10px;border-radius:5px;background:#f2f5f7}
+.main{flex:1;display:flex;flex-direction:column}
+.cols{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:72px;padding:112px 0 0;box-sizing:border-box;width:960px;max-width:100%;margin:0 auto}
+.sec{display:flex;flex-direction:column;gap:12px}
+.act{display:flex;align-items:center;gap:10px;min-height:34px;color:#1259d3;font:400 14px/20px 'Lato',sans-serif;cursor:pointer}
+.act:hover{color:#113eb0;text-decoration:underline}
+.cmd{display:flex;align-items:center;gap:12px;min-height:34px;padding:0 12px;border:1px solid #dce3e8;border-radius:6px;font:400 13px/18px 'Lato',sans-serif;color:#5f6b76}
+.cmd .mono{color:#303841;flex:1}
+.brow{display:flex;justify-content:center;align-items:center;gap:14px;height:44px;border-top:1px solid #dce3e8;color:#b8c4ce}
+.path{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 12px;border:1px solid #dce3e8;border-radius:8px}
+.path span.p{flex:1;min-width:0;font:400 13px/18px 'JetBrains Mono',monospace;color:#303841;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.steps{display:flex;flex-direction:column;gap:8px;padding-left:4px}
+.step{display:flex;align-items:center;gap:10px;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.step .ic{flex:0 0 14px;display:grid;place-items:center}
+.step .st{color:#7d8995;font-size:13px}
+.step.wait{color:#b8c4ce}
+.step.wait .ic::before{content:'';width:6px;height:6px;border-radius:3px;background:#dce3e8}
+.step.run .ic::before{content:'';width:10px;height:10px;border:2px solid #dce3e8;border-top-color:#1259d3;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{padding:10px 12px;border-radius:6px;background:#ffebeb;color:#7a0f2f;font:400 13px/18px 'Lato',sans-serif}
+.demo{position:absolute;left:24px;bottom:16px;display:flex;align-items:center;gap:6px;font:400 12px/16px 'Lato',sans-serif;color:#b8c4ce}
+.demo button{height:22px;padding:0 6px;border:0;border-radius:4px;background:transparent;color:#7d8995;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.demo button:hover{color:#303841}
+.demo button.on{color:#303841;background:#f2f5f7}
+.gbtn.sm{height:28px;padding:0 10px;font-size:13px}
+.vlist{display:flex;flex-direction:column;gap:6px}
+.vlist div{display:flex;align-items:baseline;gap:12px}
+.vlist .mono{flex:0 0 110px}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: 800px; display: flex; color: #303841; font-family: 'Lato', sans-serif">
+  <div class="main">
+    <div class="cols">
+      <div style="display: flex; flex-direction: column; gap: 36px">
+        <div style="display: flex; flex-direction: column; gap: 6px"><div class="mark">tend<i>.</i></div><span class="cap" style="font-size: 14px">Notes · Tasks · People</span></div>
+        <div class="sec"><h3 class="h3">Start</h3>
+          <sc-if value="{{isWelcome}}" hint-placeholder-val="{{ true }}">
+            <a class="act" href="#" onClick="{{openVault}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h6l2 2h10v11H3z"></path></svg>Choose vault folder…</a>
+            <div class="vlist">
+              <div><span class="mono">notes/</span><span class="cap">your notes, used if it exists</span></div>
+              <div><span class="mono">.attachments/</span><span class="cap">attached files, created if missing</span></div>
+              <div><span class="mono">db/app.sqlite</span><span class="cap">everything else, created if missing</span></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{isPicked}}" hint-placeholder-val="{{ false }}">
+            <div class="path"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h6l2 2h10v11H3z"></path></svg><span class="p">{{path}}</span><button class="gbtn sm" onClick="{{back}}">Change</button></div>
+            <div class="steps">
+              <sc-for list="{{steps}}" as="st" hint-placeholder-count="3">
+                <div class="{{st.cls}}"><span class="ic"><sc-if value="{{st.ok}}" hint-placeholder-val="{{ true }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1e7a55" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></sc-if><sc-if value="{{st.bad}}" hint-placeholder-val="{{ false }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#da0037" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></sc-if></span><span class="mono" style="flex: 0 0 120px">{{st.name}}</span><span class="st">{{st.note}}</span></div>
+              </sc-for>
+            </div>
+            <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+              <div class="err" role="alert">An incompatible database exists in <span class="mono" style="color: #7a0f2f">db/app.sqlite</span>. Choose another folder, or move that file out of the way and try again.</div>
+              <div><button class="pbtn" onClick="{{openVault}}">Choose another folder</button></div>
+            </sc-if>
+            <sc-if value="{{isReady}}" hint-placeholder-val="{{ false }}">
+              <div><a class="pbtn" href="notes.html">Open vault →</a></div>
+            </sc-if>
+          </sc-if>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 36px; padding-top: 82px">
+        <div class="sec"><h3 class="h3">Command palette</h3>
+          <span class="cap">Press <kbd>⌘</kbd><kbd>K</kbd> anywhere. Type to search, or write what you want:</span>
+          <div class="cmd"><span class="mono">task: Write README</span>adds a task</div>
+          <div class="cmd"><span class="mono">person: Ravi Kumar</span>adds a person</div>
+          <div class="cmd"><span class="mono">timer 10m tea</span>timer</div>
+        </div>
+        <div class="sec"><h3 class="h3">Shortcuts</h3>
+          <div class="cap" style="display: grid; grid-template-columns: 90px 1fr; row-gap: 8px; align-items: center"><span><kbd>⌘</kbd><kbd>1</kbd>–<kbd>3</kbd></span><span>switch sections</span><span><kbd>⌘</kbd><kbd>N</kbd></span><span>new note</span><span><kbd>⌘</kbd><kbd>\</kbd></span><span>toggle explorer</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="demo" aria-label="Demo scenario">Demo folder:
+      <sc-for list="{{demos}}" as="dm" hint-placeholder-count="3"><button class="{{dm.cls}}" onClick="{{dm.go}}">{{dm.label}}</button></sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { phase: 'welcome', demo: 'existing', mode: 'open', shown: 0 };
+  }
+  componentWillUnmount() { clearInterval(this._iv); }
+  renderVals() {
+    const s = this.state;
+    const SC = {
+      new: { path: '~/Documents/Tend', steps: [['notes/', 'created'], ['.attachments/', 'created'], ['db/app.sqlite', 'created']], bad: false },
+      existing: { path: '~/Dropbox/Tend', steps: [['notes/', 'found · 42 notes'], ['.attachments/', 'found · 9 files'], ['db/app.sqlite', 'schema matches']], bad: false },
+      broken: { path: '~/Projects/old-vault', steps: [['notes/', 'found · 12 notes'], ['.attachments/', 'created'], ['db/app.sqlite', 'incompatible schema']], bad: true }
+    };
+    const sc = SC[s.demo];
+    const n = sc.steps.length;
+    const done = s.phase === 'picked' && s.shown >= n;
+    const steps = sc.steps.map((x, i) => {
+      const st = i < s.shown ? (sc.bad && i === n - 1 ? 'bad' : 'ok') : (i === s.shown ? 'run' : 'wait');
+      return { name: x[0], note: i < s.shown ? x[1] : (st === 'run' ? 'checking…' : ''), cls: 'step ' + st, ok: st === 'ok', bad: st === 'bad' };
+    });
+    const start = (mode) => (e) => {
+      if (e && e.preventDefault) e.preventDefault();
+      clearInterval(this._iv);
+      this.setState({ phase: 'picked', mode: mode, shown: 0 });
+      this._iv = setInterval(() => { const k = this.state.shown + 1; this.setState({ shown: k }); if (k >= 3) clearInterval(this._iv); }, 450);
+    };
+    return {
+      isWelcome: s.phase === 'welcome', isPicked: s.phase === 'picked',
+      path: sc.path, steps: steps,
+      isError: done && sc.bad, isReady: done && !sc.bad,
+      openVault: start('open'),
+      back: () => { clearInterval(this._iv); this.setState({ phase: 'welcome', shown: 0 }); },
+      demos: [['existing', 'existing vault'], ['new', 'empty folder'], ['broken', 'incompatible db']].map((d) => ({ label: d[1], cls: s.demo === d[0] ? 'on' : '', go: () => { clearInterval(this._iv); this.setState({ demo: d[0], phase: 'welcome', shown: 0 }); } }))
+    };
+  }
+}
+</script>
+</body>
+</html>

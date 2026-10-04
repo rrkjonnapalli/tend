@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tend mockup · people</title>
+<script src="../dc-runtime.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#303841}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #1070e3;outline-offset:2px}
+.heading{font:500 28px/36px 'Montserrat',sans-serif}
+.caption{font:400 13px/18px 'Lato',sans-serif}
+.muted{color:#7d8995}
+.back{width:24px;height:24px;margin-left:-6px;padding:0;border:0;border-radius:4px;background:transparent;color:#5f6b76;display:grid;place-items:center;cursor:pointer}
+.back:hover{background:#f7fbfc;color:#303841}
+.crumb{color:#7d8995;text-decoration:none;cursor:pointer}.crumb:hover{color:#303841}
+.search{display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border:1px solid #dce3e8;border-radius:6px;max-width:320px}
+.search input{flex:1;border:0;outline:none;background:transparent;font:400 14px/20px 'Lato',sans-serif}
+.add{display:flex;align-items:center;gap:12px;min-height:36px;font:400 14px/20px 'Lato',sans-serif;color:#7d8995}
+.add input{flex:1;border:0;outline:none;background:transparent;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.prow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr);align-items:center;gap:16px;min-height:40px;padding:0 16px;margin:0 -16px;cursor:pointer;font:400 14px/20px 'Lato',sans-serif;color:#303841;border:0;background:transparent;text-align:left;width:calc(100% + 32px)}
+.prow:hover{background:#f7fbfc}
+.prow .m{color:#7d8995;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prow .soon{color:#6f5ee4}
+.phead{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr);gap:16px;padding:0 0 6px;border-bottom:1px solid #f2f5f7;font:400 12px/16px 'Lato',sans-serif;color:#b8c4ce}
+.props{display:grid;grid-template-columns:120px minmax(0,1fr);row-gap:6px;align-items:center}
+.pl{font:400 13px/18px 'Lato',sans-serif;color:#7d8995}
+.pv{display:flex;align-items:center;gap:10px;min-height:32px;font:400 14px/20px 'Lato',sans-serif}
+.fld{height:28px;padding:0 8px;border:1px solid #dce3e8;border-radius:4px;outline:none;background:#ffffff;box-sizing:border-box;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.fld:focus{border-color:#1259d3}
+.fld.mono{font:400 13px/18px 'JetBrains Mono',monospace}
+.fld.bad{border-color:#da0037;color:#da0037}
+.hint{font:400 12px/16px 'Lato',sans-serif;color:#7d8995}
+.hint.err{color:#da0037}
+.tog{display:inline-flex;gap:2px;padding:2px;border-radius:6px;background:#f2f5f7}
+.tog button{height:24px;padding:0 10px;border:0;border-radius:4px;background:transparent;color:#5f6b76;cursor:pointer;font:400 13px/18px 'Lato',sans-serif}
+.tog button.on{background:#ffffff;color:#303841;box-shadow:0 0 0 1px #dce3e8}
+.sh{display:flex;align-items:center;gap:6px;height:28px;padding:0 16px;margin:0 -16px 4px;border:0;background:transparent;font:400 13px/18px 'Lato',sans-serif;color:#7d8995;cursor:pointer;text-align:left}
+.sh:hover{background:#f7fbfc;color:#303841}
+.crow{display:grid;grid-template-columns:minmax(0,1fr) 140px 84px;align-items:center;gap:12px;min-height:36px;padding:0 16px 0 32px;margin:0 -16px;font:400 14px/20px 'Lato',sans-serif}
+.crow:hover{background:#f7fbfc}
+.crow.editing,.crow.addr{background:transparent}
+.crow.addr{grid-template-columns:16px minmax(0,1fr) 140px 84px;color:#7d8995}
+.cv{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl{font:400 12px/16px 'Lato',sans-serif;color:#7d8995}
+.acts{display:flex;justify-content:flex-end;gap:2px;visibility:hidden}
+.crow:hover .acts,.crow.editing .acts{visibility:visible}
+.ein{min-width:0;height:28px;padding:0 8px;margin-left:-8px;border:0;border-radius:4px;background:#f7fbfc;outline:none;font:400 14px/20px 'Lato',sans-serif}
+.ein.lab{font-size:13px;margin-left:0}
+.ain{min-width:0;border:0;outline:none;background:transparent;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.ain.lab{font-size:13px}
+.ain::placeholder{color:#b8c4ce}
+.plus{text-align:center}
+.icb{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;display:grid;place-items:center;cursor:pointer}
+.icb.ok{color:#1e7a55}.icb.ok:hover{background:#e3f7ee}
+.icb.no{color:#da0037}.icb.no:hover{background:#ffebeb}
+.icb.ed{color:#1259d3}.icb.ed:hover{background:#dbfaff}
+.notes{width:100%;min-height:88px;box-sizing:border-box;padding:10px 12px;border:1px solid #dce3e8;border-radius:6px;outline:none;resize:vertical;font:400 14px/22px 'Lato',sans-serif;color:#303841}
+.notes:focus{border-color:#1259d3}
+.trow{display:flex;align-items:center;gap:10px;min-height:32px;font:400 14px/20px 'Lato',sans-serif;text-decoration:none;padding:0 16px 0 32px;margin:0 -16px}
+.trow:hover{background:#f7fbfc}
+.dot{width:8px;height:8px;border-radius:4px;flex:0 0 8px}
+.shrow{display:flex;align-items:center;margin:0 -16px 4px}
+.shrow:hover{background:#f7fbfc}
+.shrow .sh{flex:1;margin:0}
+.shrow .sh:hover{background:transparent}
+.shacts{display:flex;align-items:center;gap:2px;padding-right:10px}
+.icb.pen{color:#7d8995}.icb.pen:hover{background:#dce3e8;color:#303841}
+.mde{margin:0 0 8px 16px;display:flex;flex-direction:column}
+.mdta{display:block;width:100%;box-sizing:border-box;border:0;outline:none;resize:vertical;padding:6px 0;margin:0;font:400 14px/22px 'JetBrains Mono',ui-monospace,monospace;color:#303841;background:transparent;height:168px;min-height:120px;max-height:360px}
+.mdta::placeholder{color:#7d8995}
+.mdpv{padding:6px 0;overflow:auto;max-height:360px;box-sizing:border-box;cursor:text}
+.mdh{font:500 16px/24px 'Montserrat',sans-serif;margin:2px 0 6px}
+.mdp{margin:0 0 6px;font:400 14px/22px 'Lato',sans-serif}
+.mdli{display:flex;gap:8px;font:400 14px/22px 'Lato',sans-serif}
+.mdc{margin:4px 0 8px;padding:8px 10px;background:#f7fbfc;border-radius:4px;font:400 13px/20px 'JetBrains Mono',ui-monospace,monospace;white-space:pre-wrap}
+.sg-b{font-weight:700}.sg-i{font-style:italic}
+.sg-c{font:400 13px/20px 'JetBrains Mono',ui-monospace,monospace;background:#f7fbfc;padding:0 3px;border-radius:2px}
+.bnav{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.bnav>*{pointer-events:auto}
+.btog{position:relative;z-index:1;width:28px;height:16px;margin-bottom:-8px;padding:0;border:0;border-radius:4px;background:#ffffff;color:#b8c4ce;display:grid;place-items:center;cursor:pointer}
+.btog:hover{color:#303841;background:#f7fbfc}
+.btog.closed{margin-bottom:6px;background:transparent}
+.btog.closed:hover{background:#f7fbfc}
+.brow{align-self:stretch;display:flex;justify-content:center;align-items:center;gap:14px;padding:8px 10px 10px;background:#ffffff;border-top:1px solid #dce3e8}
+.bico{position:relative;display:grid;place-items:center;width:28px;height:26px;color:#7d8995;text-decoration:none}
+.bico:hover{color:#303841}
+.bico.cur{color:#6f5ee4}
+.brow{position:relative}
+.bset{position:absolute;right:48px;top:8px}
+.btm{position:absolute;right:80px;top:8px;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 8px;border-radius:13px;background:#ede9ff;color:#6f5ee4;text-decoration:none;font:500 12px/16px 'JetBrains Mono',monospace}
+.btm:hover{background:#e2dcff;color:#6f5ee4}
+.btm .more{font:400 11px/16px 'Lato',sans-serif;color:#7d8995}
+.tpop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;box-sizing:border-box;display:flex;flex-direction:column;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.tpop .fbhead{padding:10px 12px 8px}
+.trw{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px 0 12px;border-top:1px solid #f2f5f7}
+.trw .tt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.trw .tl{font:500 14px/20px 'JetBrains Mono',monospace;color:#303841}
+.trw .tl.rang{color:#6f5ee4}
+.tadd{padding:10px 12px;border-top:1px solid #f2f5f7;color:#7d8995;font-size:12px}
+
+.bfb{position:absolute;right:16px;top:8px}
+.bnotif{position:absolute;right:48px;top:8px}
+.bnotif.on{color:#303841}
+.nbadge{position:absolute;top:1px;right:3px;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;background:#da0037;color:#ffffff;font:700 9px/14px 'Lato',sans-serif;text-align:center}
+.nbadge.blink{animation:nblink 1s ease-in-out infinite}
+@keyframes nblink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.85)}}
+.npop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;box-sizing:border-box;display:flex;flex-direction:column;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.npop .fbhead{padding:10px 12px 8px}
+.nrow{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px 0 12px;border-top:1px solid #f2f5f7}
+.nrow .nt{flex:1;min-width:0;display:flex;flex-direction:column}
+.nrow .nt b{font-weight:400;font-size:14px;line-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nrow .nt span{font-size:12px;line-height:16px;color:#7d8995}
+.nrow .nt span.late{color:#a84f2c}
+.nact{height:24px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:#1259d3;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.nact:hover{background:#dbfaff}
+.ndone{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#1e7a55;display:grid;place-items:center;cursor:pointer}
+.ndone:hover{background:#e3f7ee}
+.nempty{padding:14px 12px;border-top:1px solid #f2f5f7;color:#7d8995}
+.bfb.on{color:#303841}
+.fbback{position:absolute;inset:0;z-index:20}
+.fbpop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;padding:12px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.fbhead{display:flex;align-items:center;gap:8px;font:500 14px/20px 'Montserrat',sans-serif}
+.fbx{margin-left:auto;width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#5f6b76;display:grid;place-items:center;cursor:pointer}
+.fbx:hover{background:#f7fbfc;color:#303841}
+.fbkinds{display:flex;gap:4px}
+.fbk{height:24px;padding:0 8px;border:1px solid #dce3e8;border-radius:12px;background:#ffffff;color:#5f6b76;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.fbk:hover{color:#303841;border-color:#b8c4ce}
+.fbk.on{color:#1259d3;border-color:#1259d3;background:#dbfaff}
+.fbta{width:100%;min-height:96px;box-sizing:border-box;padding:8px;border:1px solid #dce3e8;border-radius:6px;outline:none;resize:vertical;font:400 13px/20px 'Lato',sans-serif;color:#303841;background:#ffffff}
+.fbta:focus{border-color:#1259d3}
+.fbta::placeholder{color:#7d8995}
+.fbfoot{display:flex;align-items:center;gap:8px}
+.fbsend{margin-left:auto;height:28px;padding:0 12px;border:0;border-radius:6px;background:#1259d3;color:#ffffff;cursor:pointer;font:700 13px/18px 'Lato',sans-serif}
+.fbsend:hover{background:#113eb0}
+.fbsend:disabled{background:#dce3e8;color:#7d8995;cursor:default}
+.fbok{color:#1e7a55}
+.bico.cur::after{content:'';position:absolute;bottom:-6px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:2px;background:#6f5ee4}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: 800px; box-sizing: border-box; display: flex; background: #ffffff; color: #303841; font-family: 'Lato', sans-serif">
+  <sc-if value="{{tmOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fbback" onClick="{{closeTm}}"></div>
+    <div class="tpop" role="dialog" aria-label="Timers">
+      <div class="fbhead"><span>Timers</span><button class="fbx" aria-label="Close" title="Close" onClick="{{closeTm}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      <sc-for list="{{tmList}}" as="tm" hint-placeholder-count="2">
+        <div class="trw"><span class="tt">{{tm.title}}</span><span class="{{tm.cls}}">{{tm.left}}</span><button class="nact" onClick="{{tm.plus}}">+1m</button><button class="fbx" style="margin-left: 0; color: #da0037" aria-label="Cancel timer" title="Cancel" onClick="{{tm.cancel}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      </sc-for>
+      <div class="tadd">⌘T starts a new timer</div>
+    </div>
+  </sc-if>
+  <sc-if value="{{fbOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fbback" onClick="{{closeFb}}"></div>
+    <div class="fbpop" role="dialog" aria-label="Send feedback">
+      <div class="fbhead"><span>Feedback</span><button class="fbx" aria-label="Close" title="Close" onClick="{{closeFb}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      <sc-if value="{{fbWriting}}" hint-placeholder-val="{{ true }}">
+        <div class="fbkinds" role="group" aria-label="Kind"><sc-for list="{{fbKinds}}" as="fk" hint-placeholder-count="3"><button class="{{fk.cls}}" aria-pressed="{{fk.on}}" onClick="{{fk.go}}">{{fk.label}}</button></sc-for></div>
+        <textarea class="fbta" aria-label="Feedback" placeholder="A bug, an idea, something you’d like…" value="{{fbDraft}}" onInput="{{onFb}}" onKeyDown="{{fbKey}}"></textarea>
+        <div class="fbfoot"><span class="muted" style="font-size: 12px">Saved in your vault</span><button class="fbsend" disabled="{{fbEmpty}}" onClick="{{sendFb}}">Send</button></div>
+      </sc-if>
+      <sc-if value="{{fbSent}}" hint-placeholder-val="{{ false }}">
+        <span class="fbok">Thanks, saved. You can send another anytime.</span>
+        <div class="fbfoot"><button class="fbk" onClick="{{fbAgain}}">Write another</button></div>
+      </sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{navOpen}}" hint-placeholder-val="{{ true }}">
+    <div class="bnav">
+      <button class="btog" aria-label="Hide sections bar" title="Hide" onClick="{{toggleNav}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+      <nav class="brow" aria-label="Sections">
+        <a class="bico" href="notes.html" aria-label="Notes" title="Notes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h5"></path></svg></a>
+        <a class="bico" href="tasks.html" aria-label="Tasks" title="Tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></a>
+        <a class="bico cur" aria-current="page" href="people.html" aria-label="People" title="People"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+        <sc-if value="{{tmHas}}" hint-placeholder-val="{{ true }}"><a class="{{tmCls}}" href="#" aria-label="Running timers" title="Timers" aria-haspopup="dialog" aria-expanded="{{tmOpen}}" onClick="{{toggleTm}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path><path d="M9 2h6"></path></svg><span>{{tmNext}}</span><sc-if value="{{tmMore}}" hint-placeholder-val="{{ true }}"><span class="more">{{tmMoreN}}</span></sc-if></a></sc-if>
+        <a class="bico bset" href="settings.html" aria-label="Settings" title="Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
+        <a class="{{fbBtnCls}}" href="#" aria-label="Feedback" title="Feedback" aria-haspopup="dialog" aria-expanded="{{fbOpen}}" onClick="{{toggleFb}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M8.5 11h7M8.5 14.5h4"></path></svg></a>
+      </nav>
+    </div>
+  </sc-if>
+  <sc-if value="{{navClosed}}" hint-placeholder-val="{{ false }}">
+    <div class="bnav"><button class="btog closed" aria-label="Show sections bar" title="Show" onClick="{{toggleNav}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button></div>
+  </sc-if>
+
+  <main style="flex: 1 1 auto; min-width: 0; padding: 40px 24px 72px; overflow: auto">
+    <sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <h1 class="heading" style="margin: 0">People</h1>
+        <span class="caption muted">{{summary}}</span>
+      </div>
+      <label class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg><input aria-label="Search people" placeholder="Search name, phone or email" value="{{q}}" onInput="{{onQ}}"></label>
+      <div style="display: flex; flex-direction: column">
+        <label class="add"><span style="width: 16px; text-align: center">+</span><input aria-label="Add person" placeholder="add person (first and last name), ↵" value="{{newName}}" onInput="{{onNew}}" onKeyDown="{{newKey}}"></label>
+        <div class="phead"><span>Name</span><span>Birthday</span><span>Phone</span><span>Email</span></div>
+        <sc-for list="{{list}}" as="pr" hint-placeholder-count="5">
+          <button class="prow" onClick="{{pr.open}}"><span>{{pr.name}}</span><span class="{{pr.bdCls}}">{{pr.bd}}</span><span class="m">{{pr.phone}}</span><span class="m">{{pr.email}}</span></button>
+        </sc-for>
+        <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}"><span class="caption muted" style="padding: 10px 0">No one matches</span></sc-if>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{isPerson}}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div class="caption" style="min-height: 28px; display: flex; align-items: center; gap: 6px; color: #7d8995">
+        <button class="back" aria-label="Back to people" title="Back" onClick="{{goList}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg></button>
+        <a class="crumb" href="#" onClick="{{goList}}">People</a><span>/</span><span style="color: #303841">{{p.name}}</span>
+        <span style="flex: 1"></span>
+        <button class="icb no" aria-label="Delete person" title="Delete"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg></button>
+      </div>
+      <div style="width: 100%; max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px">
+        <h1 class="heading" style="margin: 0">{{p.name}}</h1>
+        <div class="props">
+          <span class="pl">First name</span><div class="pv"><input class="fld" style="width: 240px" aria-label="First name" value="{{p.first}}" onInput="{{p.onFirst}}"></div>
+          <span class="pl">Last name</span><div class="pv"><input class="fld" style="width: 240px" aria-label="Last name" value="{{p.last}}" onInput="{{p.onLast}}"></div>
+          <span class="pl">Nickname</span><div class="pv"><input class="fld" style="width: 240px" aria-label="Nickname" placeholder="optional, shown instead of the name" value="{{p.nick}}" onInput="{{p.onNick}}"></div>
+          <span class="pl">Date of birth</span><div class="pv"><input class="{{p.dobCls}}" style="width: 112px" aria-label="Date of birth, yyyy-mm-dd or mm-dd" value="{{p.dob}}" onInput="{{p.onDob}}"><span class="{{p.dobHintCls}}">{{p.dobHint}}</span></div>
+          <span class="pl">Time of birth</span><div class="pv"><input class="{{p.tobCls}}" style="width: 92px" aria-label="Time of birth" placeholder="optional" value="{{p.tob}}" onInput="{{p.onTob}}"><span class="hint">{{p.tobHint}}</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+        <section style="display: flex; flex-direction: column">
+          <button class="sh" aria-expanded="{{p.sec.phone}}" onClick="{{p.toggle.phone}}"><sc-if value="{{p.sec.phone}}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></sc-if><sc-if value="{{p.secClosed.phone}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if><span>Phone</span></button>
+          <sc-if value="{{p.sec.phone}}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{p.rows.phone}}" as="r" hint-placeholder-count="2">
+              <div class="{{r.cls}}">
+                <sc-if value="{{r.viewing}}" hint-placeholder-val="{{ true }}"><span class="cv">{{r.value}}</span><span class="cl">{{r.label}}</span></sc-if>
+                <sc-if value="{{r.editing}}" hint-placeholder-val="{{ false }}"><input class="ein" aria-label="Phone value" value="{{edValue}}" onInput="{{onEdValue}}" onKeyDown="{{edKey}}"><input class="ein lab" aria-label="Label" placeholder="label" value="{{edLabel}}" onInput="{{onEdLabel}}" onKeyDown="{{edKey}}"></sc-if>
+                <span class="acts">
+                  <button class="icb no" aria-label="Delete" title="Delete" onClick="{{r.remove}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg></button>
+                  <sc-if value="{{r.viewing}}" hint-placeholder-val="{{ true }}"><button class="icb ed" aria-label="Edit" title="Edit" onClick="{{r.edit}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></sc-if>
+                  <sc-if value="{{r.editing}}" hint-placeholder-val="{{ false }}"><button class="icb ok" aria-label="Save" title="Save" onClick="{{saveEd}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button><button class="icb no" aria-label="Cancel" title="Cancel" onClick="{{cancelEd}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if>
+                </span>
+              </div>
+            </sc-for>
+            <div class="crow addr"><span class="plus">+</span><input class="ain" aria-label="New Phone" placeholder="+91 98765 43210" value="{{p.add.phone.value}}" onInput="{{p.add.phone.onValue}}" onKeyDown="{{p.add.phone.key}}"><input class="ain lab" aria-label="Label" placeholder="label" value="{{p.add.phone.label}}" onInput="{{p.add.phone.onLabel}}" onKeyDown="{{p.add.phone.key}}"><span class="acts" style="visibility: visible"><sc-if value="{{p.add.phone.can}}" hint-placeholder-val="{{ false }}"><button class="icb ok" aria-label="Add" title="Add" onClick="{{p.add.phone.go}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button></sc-if></span></div>
+          </sc-if>
+        </section>
+        <section style="display: flex; flex-direction: column">
+          <button class="sh" aria-expanded="{{p.sec.email}}" onClick="{{p.toggle.email}}"><sc-if value="{{p.sec.email}}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></sc-if><sc-if value="{{p.secClosed.email}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if><span>Email</span></button>
+          <sc-if value="{{p.sec.email}}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{p.rows.email}}" as="r" hint-placeholder-count="2">
+              <div class="{{r.cls}}">
+                <sc-if value="{{r.viewing}}" hint-placeholder-val="{{ true }}"><span class="cv">{{r.value}}</span><span class="cl">{{r.label}}</span></sc-if>
+                <sc-if value="{{r.editing}}" hint-placeholder-val="{{ false }}"><input class="ein" aria-label="Email value" value="{{edValue}}" onInput="{{onEdValue}}" onKeyDown="{{edKey}}"><input class="ein lab" aria-label="Label" placeholder="label" value="{{edLabel}}" onInput="{{onEdLabel}}" onKeyDown="{{edKey}}"></sc-if>
+                <span class="acts">
+                  <button class="icb no" aria-label="Delete" title="Delete" onClick="{{r.remove}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg></button>
+                  <sc-if value="{{r.viewing}}" hint-placeholder-val="{{ true }}"><button class="icb ed" aria-label="Edit" title="Edit" onClick="{{r.edit}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></sc-if>
+                  <sc-if value="{{r.editing}}" hint-placeholder-val="{{ false }}"><button class="icb ok" aria-label="Save" title="Save" onClick="{{saveEd}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button><button class="icb no" aria-label="Cancel" title="Cancel" onClick="{{cancelEd}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if>
+                </span>
+              </div>
+            </sc-for>
+            <div class="crow addr"><span class="plus">+</span><input class="ain" aria-label="New Email" placeholder="name@example.com" value="{{p.add.email.value}}" onInput="{{p.add.email.onValue}}" onKeyDown="{{p.add.email.key}}"><input class="ain lab" aria-label="Label" placeholder="label" value="{{p.add.email.label}}" onInput="{{p.add.email.onLabel}}" onKeyDown="{{p.add.email.key}}"><span class="acts" style="visibility: visible"><sc-if value="{{p.add.email.can}}" hint-placeholder-val="{{ false }}"><button class="icb ok" aria-label="Add" title="Add" onClick="{{p.add.email.go}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button></sc-if></span></div>
+          </sc-if>
+        </section>
+        <section style="display: flex; flex-direction: column">
+          <button class="sh" aria-expanded="{{p.sec.address}}" onClick="{{p.toggle.address}}"><sc-if value="{{p.sec.address}}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></sc-if><sc-if value="{{p.secClosed.address}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if><span>Address</span></button>
+          <sc-if value="{{p.sec.address}}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{p.rows.address}}" as="r" hint-placeholder-count="2">
+              <div class="{{r.cls}}">
+                <sc-if value="{{r.viewing}}" hint-placeholder-val="{{ true }}"><span class="cv">{{r.value}}</span><span class="cl">{{r.label}}</span></sc-if>
+                <sc-if value="{{r.editing}}" hint-placeholder-val="{{ false }}"><input class="ein" aria-label="Address value" value="{{edValue}}" onInput="{{onEdValue}}" onKeyDown="{{edKey}}"><input class="ein lab" aria-label="Label" placeholder="label" value="{{edLabel}}" onInput="{{onEdLabel}}" onKeyDown="{{edKey}}"></sc-if>
+                <span class="acts">
+                  <button class="icb no" aria-label="Delete" title="Delete" onClick="{{r.remove}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg></button>
+                  <sc-if value="{{r.viewing}}" hint-placeholder-val="{{ true }}"><button class="icb ed" aria-label="Edit" title="Edit" onClick="{{r.edit}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></sc-if>
+                  <sc-if value="{{r.editing}}" hint-placeholder-val="{{ false }}"><button class="icb ok" aria-label="Save" title="Save" onClick="{{saveEd}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button><button class="icb no" aria-label="Cancel" title="Cancel" onClick="{{cancelEd}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if>
+                </span>
+              </div>
+            </sc-for>
+            <div class="crow addr"><span class="plus">+</span><input class="ain" aria-label="New Address" placeholder="street, city, postcode" value="{{p.add.address.value}}" onInput="{{p.add.address.onValue}}" onKeyDown="{{p.add.address.key}}"><input class="ain lab" aria-label="Label" placeholder="label" value="{{p.add.address.label}}" onInput="{{p.add.address.onLabel}}" onKeyDown="{{p.add.address.key}}"><span class="acts" style="visibility: visible"><sc-if value="{{p.add.address.can}}" hint-placeholder-val="{{ false }}"><button class="icb ok" aria-label="Add" title="Add" onClick="{{p.add.address.go}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button></sc-if></span></div>
+          </sc-if>
+        </section>
+        <section style="display: flex; flex-direction: column">
+          <div class="shrow">
+            <button class="sh" aria-expanded="{{p.sec.notes}}" onClick="{{p.toggle.notes}}"><sc-if value="{{p.sec.notes}}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></sc-if><sc-if value="{{p.secClosed.notes}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if><span>Notes</span></button>
+            <span class="shacts">
+              <sc-if value="{{p.md.notes.view}}" hint-placeholder-val="{{ true }}"><button class="icb pen" aria-label="Edit notes" title="Edit" onClick="{{p.md.notes.edit}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></sc-if>
+              <sc-if value="{{p.md.notes.editing}}" hint-placeholder-val="{{ false }}"><button class="icb no" aria-label="Cancel" title="Cancel" onClick="{{p.md.notes.cancel}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button><button class="icb ok" aria-label="Save" title="Save" onClick="{{p.md.notes.save}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button></sc-if>
+            </span>
+          </div>
+          <sc-if value="{{p.sec.notes}}" hint-placeholder-val="{{ true }}">
+            <div class="mde">
+              <sc-if value="{{p.md.notes.editing}}" hint-placeholder-val="{{ false }}"><textarea class="mdta" aria-label="Notes" placeholder="Anything worth remembering (markdown)" value="{{p.md.notes.draft}}" onInput="{{p.md.notes.onDraft}}" onKeyDown="{{p.md.notes.key}}"></textarea></sc-if>
+              <sc-if value="{{p.md.notes.view}}" hint-placeholder-val="{{ true }}">
+                <div class="mdpv" onDoubleClick="{{p.md.notes.edit}}">
+                  <sc-for list="{{p.md.notes.blocks}}" as="bk" hint-placeholder-count="2">
+                    <sc-if value="{{bk.isH}}" hint-placeholder-val="{{ false }}"><div class="mdh"><sc-for list="{{bk.segs}}" as="sg" hint-placeholder-count="1"><span class="{{sg.cls}}">{{sg.text}}</span></sc-for></div></sc-if>
+                    <sc-if value="{{bk.isP}}" hint-placeholder-val="{{ true }}"><p class="mdp"><sc-for list="{{bk.segs}}" as="sg" hint-placeholder-count="1"><span class="{{sg.cls}}">{{sg.text}}</span></sc-for></p></sc-if>
+                    <sc-if value="{{bk.isLi}}" hint-placeholder-val="{{ false }}"><div class="mdli"><span class="muted">{{bk.bullet}}</span><span><sc-for list="{{bk.segs}}" as="sg" hint-placeholder-count="1"><span class="{{sg.cls}}">{{sg.text}}</span></sc-for></span></div></sc-if>
+                    <sc-if value="{{bk.isCode}}" hint-placeholder-val="{{ false }}"><pre class="mdc">{{bk.text}}</pre></sc-if>
+                  </sc-for>
+                  <sc-if value="{{p.md.notes.empty}}" hint-placeholder-val="{{ false }}"><span class="muted" style="font: 400 14px/22px 'Lato', sans-serif">{{p.md.notes.emptyText}}</span></sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </section>
+
+        <section style="display: flex; flex-direction: column">
+          <button class="sh" aria-expanded="{{p.sec.tasks}}" onClick="{{p.toggle.tasks}}"><sc-if value="{{p.sec.tasks}}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></sc-if><sc-if value="{{p.secClosed.tasks}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if><span>Assigned tasks</span></button>
+          <sc-if value="{{p.sec.tasks}}" hint-placeholder-val="{{ true }}"><sc-for list="{{p.tasks}}" as="t" hint-placeholder-count="2"><a class="trow" href="tasks.html"><span class="dot" style="background: {{t.color}}"></span><span>{{t.title}}</span><span class="hint" style="margin-left: auto">{{t.due}}</span></a></sc-for><sc-if value="{{p.noTasks}}" hint-placeholder-val="{{ false }}"><span class="hint" style="padding: 6px 0 6px 16px">Nothing assigned</span></sc-if></sc-if>
+        </section>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      nav: true, timers: [{ id: 1, title: 'Tea', ends: Date.now() + 272000 }, { id: 2, title: 'Turn off the motor', ends: Date.now() + 545000 }], tmOpen: false, notifs: [{ id: 1, title: 'Call Ravi', when: 'Today, 5:00 PM · now' }, { id: 2, title: 'Take out the trash', when: 'Today, 4:30 PM · 2m late', late: true }], nSeen: false, nOpen: false, fb: false, fbSent: false, fbDraft: '', fbKind: 'idea', 
+      view: 'list', cur: null, mdEdit: {}, mdDraft: {}, q: '', newName: '', ed: null, edValue: '', edLabel: '', adds: {},
+      secs: { phone: true, email: true, address: true, notes: true, tasks: true },
+      people: [
+        { id: 'p1', first: 'Ravi', last: 'Kumar', nick: '', dob: '1995-10-09', tob: '6:30 AM', rem: true, notes: 'Prefers calls after **6 PM**.\n\n- Likes filter coffee\n- Kids: Anu, Dev', contacts: [
+          { id: 'c1', kind: 'phone', value: '+91 98765 43210', label: 'personal' }, { id: 'c2', kind: 'phone', value: '+91 80 4123 9876', label: 'work' },
+          { id: 'c3', kind: 'email', value: 'ravi.kumar@example.com', label: 'personal' }, { id: 'c4', kind: 'address', value: '12 Lake View Rd, Bengaluru 560034', label: 'home' }] },
+        { id: 'p2', first: 'Kiran', last: 'Rao', nick: '', dob: '10-03', tob: '', rem: true, notes: '', contacts: [{ id: 'c5', kind: 'phone', value: '+91 99001 22334', label: 'mobile' }] },
+        { id: 'p3', first: 'Priya', last: 'Nair', nick: '', dob: '1992-01-17', tob: '', rem: false, notes: '', contacts: [{ id: 'c6', kind: 'email', value: 'priya@work.example.com', label: 'work' }] },
+        { id: 'p4', first: 'Asha', last: 'Menon', nick: 'Ashu', dob: '', tob: '', rem: false, notes: '', contacts: [] }
+      ]
+    };
+  }
+  renderVals() {
+    if (!this._tmIv && typeof setInterval === 'function') this._tmIv = setInterval(() => { if ((this.state.timers || []).length) this.setState({ tmTick: Date.now() }); }, 1000);
+    const s = this.state;
+    const TODAY = new Date(2026, 9, 3);
+
+    const inline = (txt) => {
+      const out = []; const re = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*\s][^*]*\*|_[^_\s][^_]*_)/g; let last = 0, mt;
+      while ((mt = re.exec(txt))) {
+        if (mt.index > last) out.push({ text: txt.slice(last, mt.index), cls: '' });
+        const tok = mt[0];
+        if (tok.startsWith('**')) out.push({ text: tok.slice(2, -2), cls: 'sg-b' });
+        else if (tok.startsWith('`')) out.push({ text: tok.slice(1, -1), cls: 'sg-c' });
+        else out.push({ text: tok.slice(1, -1), cls: 'sg-i' });
+        last = mt.index + tok.length;
+      }
+      if (last < txt.length) out.push({ text: txt.slice(last), cls: '' });
+      return out;
+    };
+    const md = (text) => {
+      const lines = String(text || '').split('\n'); const blocks = []; let para = [], code = null;
+      const B = (o) => Object.assign({ isH: false, isP: false, isLi: false, isCode: false, segs: [], text: '', bullet: '' }, o);
+      const flush = () => { if (para.length) { blocks.push(B({ isP: true, segs: inline(para.join(' ')) })); para = []; } };
+      lines.forEach((ln) => {
+        if (code !== null) { if (/^```/.test(ln)) { blocks.push(B({ isCode: true, text: code.join('\n') })); code = null; } else code.push(ln); return; }
+        if (/^```/.test(ln)) { flush(); code = []; return; }
+        let mm;
+        if ((mm = ln.match(/^#{1,3}\s+(.*)/))) { flush(); blocks.push(B({ isH: true, segs: inline(mm[1]) })); return; }
+        if ((mm = ln.match(/^\s*[-*]\s+\[( |x)\]\s+(.*)/i))) { flush(); blocks.push(B({ isLi: true, bullet: mm[1].trim() ? '☑' : '☐', segs: inline(mm[2]) })); return; }
+        if ((mm = ln.match(/^\s*[-*]\s+(.*)/))) { flush(); blocks.push(B({ isLi: true, bullet: '•', segs: inline(mm[1]) })); return; }
+        if ((mm = ln.match(/^\s*(\d+)\.\s+(.*)/))) { flush(); blocks.push(B({ isLi: true, bullet: mm[1] + '.', segs: inline(mm[2]) })); return; }
+        if (!ln.trim()) { flush(); return; }
+        para.push(ln.trim());
+      });
+      if (code !== null) blocks.push(B({ isCode: true, text: code.join('\n') }));
+      flush(); return blocks;
+    };
+    const grow = (el) => { if (!el) return; el.style.height = 'auto'; el.style.height = Math.min(Math.max(el.scrollHeight + 2, 120), 360) + 'px'; };
+    // one markdown field: state.mdEdit[key] (bool), state.mdDraft[key]; text comes from the caller, onSave stores it
+    const mdObj = (key, text, emptyText, onSave, openSec) => {
+      const editing = !!(this.state.mdEdit || {})[key];
+      const setE = (v, draft) => this.setState({ mdEdit: Object.assign({}, this.state.mdEdit, { [key]: v }), mdDraft: Object.assign({}, this.state.mdDraft, { [key]: draft != null ? draft : (this.state.mdDraft || {})[key] }) });
+      const save = () => { onSave((this.state.mdDraft || {})[key] || ''); setE(false); };
+      const blocks = md(text);
+      return {
+        editing: editing, view: !editing, draft: (this.state.mdDraft || {})[key] || '', blocks: blocks, empty: blocks.length === 0, emptyText: emptyText,
+        edit: () => { if (openSec) openSec(); setE(true, text); setTimeout(() => { const el = document.querySelector('.mdta'); if (el) { el.focus(); grow(el); } }, 0); },
+        cancel: () => setE(false), save: save,
+        onDraft: (e) => { grow(e.target); this.setState({ mdDraft: Object.assign({}, this.state.mdDraft, { [key]: e.target.value }) }); },
+        key: (e) => { if (e.key === 'Escape') setE(false); if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); save(); } }
+      };
+    };
+
+    const MS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const nameOf = (p) => p.nick || ((p.first + ' ' + p.last).trim() || 'Unnamed');
+    const parseDob = (x) => {
+      const v = (x || '').trim(); if (!v) return { ok: true, empty: true };
+      let m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/); let y = null, mo, d;
+      if (m) { y = +m[1]; mo = +m[2]; d = +m[3]; } else { m = v.match(/^(\d{2})-(\d{2})$/); if (!m) return { ok: false }; mo = +m[1]; d = +m[2]; }
+      const t = new Date(y || 2000, mo - 1, d); if (t.getMonth() !== mo - 1 || t.getDate() !== d) return { ok: false };
+      return { ok: true, y: y, mo: mo, d: d };
+    };
+    const nextBd = (b) => {
+      if (!b.ok || b.empty) return null;
+      let n = new Date(TODAY.getFullYear(), b.mo - 1, b.d); if (n < TODAY) n = new Date(TODAY.getFullYear() + 1, b.mo - 1, b.d);
+      const days = Math.round((n - TODAY) / 86400000);
+      return { date: n, days: days, age: b.y ? n.getFullYear() - b.y : null };
+    };
+    const bdText = (p) => {
+      const b = parseDob(p.dob); const n = nextBd(b); if (!n) return { t: '', soon: false };
+      const when = n.days === 0 ? 'today' : n.days === 1 ? 'tomorrow' : 'in ' + n.days + ' days';
+      return { t: b.d + ' ' + MS[b.mo - 1] + ' · ' + when + (n.age ? ' · turns ' + n.age : ''), soon: n.days <= 14 };
+    };
+    const tOk = (x) => { const v = (x || '').trim().toLowerCase().replace(/\s+/g, ''); if (!v) return true; return /^(\d{1,2})(:\d{2})?(am|pm)$/.test(v) || /^([01]?\d|2[0-3]):[0-5]\d$/.test(v); };
+    const upd = (id, patch) => this.setState({ people: this.state.people.map((x) => x.id === id ? Object.assign({}, x, patch) : x) });
+    const ql = s.q.trim().toLowerCase();
+    const first = (p, k) => (p.contacts.find((c) => c.kind === k) || { value: '' }).value;
+    const listP = s.people.filter((p) => !ql || [nameOf(p), p.first, p.last].concat(p.contacts.map((c) => c.value)).join(' ').toLowerCase().indexOf(ql) >= 0)
+      .slice().sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
+    const soonCount = s.people.filter((p) => { const n = nextBd(parseDob(p.dob)); return n && n.days <= 30; }).length;
+    const vals = {
+      navOpen: s.nav, navClosed: !s.nav,
+      tmOpen: !!s.tmOpen && (s.timers || []).length > 0,
+      tmHas: (s.timers || []).length > 0,
+      tmCls: 'btm',
+      tmNext: (() => { const t = (s.timers || []).slice().sort((a, b) => a.ends - b.ends)[0]; if (!t) return ''; const ms = Math.max(0, t.ends - Date.now()); const sec = Math.ceil(ms / 1000); return ms <= 0 ? 'done' : Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); })(),
+      tmMore: (s.timers || []).length > 1, tmMoreN: '+' + ((s.timers || []).length - 1),
+      toggleTm: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ tmOpen: !this.state.tmOpen, fb: false }); },
+      closeTm: () => this.setState({ tmOpen: false }),
+      tmList: (s.timers || []).slice().sort((a, b) => a.ends - b.ends).map((t) => { const ms = Math.max(0, t.ends - Date.now()); const sec = Math.ceil(ms / 1000); return { title: t.title, left: ms <= 0 ? 'done' : Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'), cls: 'tl' + (ms <= 0 ? ' rang' : ''), plus: () => this.setState({ timers: this.state.timers.map((x) => x.id === t.id ? Object.assign({}, x, { ends: Math.max(x.ends, Date.now()) + 60000 }) : x) }), cancel: () => this.setState({ timers: this.state.timers.filter((x) => x.id !== t.id) }) }; }),
+      nOpen: !!s.nOpen, nEmpty: (s.notifs || []).length === 0,
+      bellCls: 'bico bnotif' + (s.nOpen ? ' on' : ''),
+      nHasBadge: (s.notifs || []).length > 0, nCount: String((s.notifs || []).length),
+      nBadgeCls: 'nbadge' + (s.nSeen ? '' : ' blink'),
+      toggleN: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ nOpen: !this.state.nOpen, nSeen: true, fb: false }); },
+      closeN: () => this.setState({ nOpen: false }),
+      nList: (s.notifs || []).map((n) => ({ title: n.title, when: n.when, whenCls: n.late ? 'late' : '', done: () => this.setState({ notifs: this.state.notifs.filter((x) => x.id !== n.id) }), snooze: () => this.setState({ notifs: this.state.notifs.filter((x) => x.id !== n.id) }) })),
+      fbOpen: !!s.fb, fbWriting: !s.fbSent, fbSent: !!s.fbSent, fbDraft: s.fbDraft || '', fbEmpty: !(s.fbDraft || '').trim(),
+      fbBtnCls: 'bico bfb' + (s.fb ? ' on' : ''),
+      toggleFb: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ fb: !this.state.fb, fbSent: false, nOpen: false }); setTimeout(() => { const el = document.querySelector('.fbta'); if (el) el.focus(); }, 0); },
+      closeFb: () => this.setState({ fb: false }),
+      fbKinds: [['bug', 'Bug'], ['idea', 'Idea'], ['other', 'Other']].map((x) => ({ label: x[1], on: (s.fbKind || 'idea') === x[0], cls: 'fbk' + ((s.fbKind || 'idea') === x[0] ? ' on' : ''), go: () => this.setState({ fbKind: x[0] }) })),
+      onFb: (e) => this.setState({ fbDraft: e.target.value }),
+      fbKey: (e) => { if (e.key === 'Escape') this.setState({ fb: false }); if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && (this.state.fbDraft || '').trim()) this.setState({ fbSent: true, fbDraft: '' }); },
+      // stored in db/app.sqlite → feedback(id, kind, text, created_at)
+      sendFb: () => { if ((this.state.fbDraft || '').trim()) this.setState({ fbSent: true, fbDraft: '' }); },
+      fbAgain: () => this.setState({ fbSent: false }),
+      toggleNav: () => this.setState({ nav: !this.state.nav }),
+      isList: s.view === 'list', isPerson: s.view === 'person',
+      summary: s.people.length + ' people' + (soonCount ? ' · ' + soonCount + ' birthday' + (soonCount > 1 ? 's' : '') + ' in the next 30 days' : ''),
+      q: s.q, onQ: (e) => this.setState({ q: e.target.value }),
+      newName: s.newName, onNew: (e) => this.setState({ newName: e.target.value }),
+      newKey: (e) => {
+        if (e.key !== 'Enter') return; const t = this.state.newName.trim(); if (!t) return;
+        const parts = t.split(/\s+/); const id = 'p' + Date.now();
+        this.setState({ people: this.state.people.concat([{ id: id, first: parts[0], last: parts.slice(1).join(' '), nick: '', dob: '', tob: '', rem: true, notes: '', contacts: [] }]), newName: '', view: 'person', cur: id });
+      },
+      list: listP.map((p) => { const b = bdText(p); return { name: nameOf(p), bd: b.t, bdCls: b.soon ? 'm soon' : 'm', phone: first(p, 'phone'), email: first(p, 'email'), open: () => this.setState({ view: 'person', cur: p.id, ed: null }) }; }),
+      empty: listP.length === 0,
+      goList: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ view: 'list', ed: null }); },
+      edValue: s.edValue, edLabel: s.edLabel,
+      onEdValue: (e) => this.setState({ edValue: e.target.value }), onEdLabel: (e) => this.setState({ edLabel: e.target.value }),
+      p: { sec: {}, secClosed: {}, toggle: {}, rows: {}, count: {}, add: { phone: {}, email: {}, address: {} }, tasks: [] }
+    };
+    const P = s.people.find((x) => x.id === s.cur);
+    if (P) {
+      const saveEd = () => { const st = this.state; if (!st.edValue.trim()) return; upd(P.id, { contacts: P.contacts.map((c) => c.id === st.ed ? Object.assign({}, c, { value: st.edValue.trim(), label: st.edLabel.trim() }) : c) }); this.setState({ ed: null }); };
+      vals.saveEd = saveEd; vals.cancelEd = () => this.setState({ ed: null });
+      vals.edKey = (e) => { if (e.key === 'Enter') saveEd(); if (e.key === 'Escape') this.setState({ ed: null }); };
+      const b = parseDob(P.dob); const n = nextBd(b);
+      const kinds = ['phone', 'email', 'address'];
+      const secKeys = kinds.concat(['notes', 'tasks']);
+      const p = {
+        name: nameOf(P), first: P.first, last: P.last, nick: P.nick, dob: P.dob, tob: P.tob, notes: P.notes,
+        onFirst: (e) => upd(P.id, { first: e.target.value }), onLast: (e) => upd(P.id, { last: e.target.value }), onNick: (e) => upd(P.id, { nick: e.target.value }),
+        onDob: (e) => upd(P.id, { dob: e.target.value.replace(/[^\d-]/g, '').slice(0, 10) }), onTob: (e) => upd(P.id, { tob: e.target.value }),
+        onNotes: (e) => upd(P.id, { notes: e.target.value }),
+        dobCls: 'fld mono' + (b.ok ? '' : ' bad'), dobHintCls: 'hint' + (b.ok ? '' : ' err'),
+        dobHint: !b.ok ? 'yyyy-mm-dd, or mm-dd if the year is unknown' : b.empty ? 'yyyy-mm-dd, or mm-dd if the year is unknown' : 'next birthday ' + n.date.getDate() + ' ' + MS[n.date.getMonth()] + (n.age ? ', turns ' + n.age : '') + (n.days === 0 ? ' · today' : ' · in ' + n.days + ' days'),
+        tobCls: 'fld mono' + (tOk(P.tob) ? '' : ' bad'), tobHint: tOk(P.tob) ? (P.tob ? '' : 'like 6:30 AM or 18:30') : 'like 6:30 AM or 18:30',
+        remYes: P.rem ? 'on' : '', remNo: P.rem ? '' : 'on', setYes: () => upd(P.id, { rem: true }), setNo: () => upd(P.id, { rem: false }),
+        remHint: P.rem ? (b.ok && !b.empty ? 'a yearly reminder on ' + b.d + ' ' + MS[b.mo - 1] + ' at 9:00 AM' : 'needs a date of birth') : 'no reminder',
+        sec: {}, secClosed: {}, toggle: {}, rows: {}, count: {}, add: {},
+        tasks: P.id === 'p1' ? [{ title: 'Call the bank', due: '6 Oct', color: '#7d8995' }, { title: 'Ship first build', due: '10 Oct', color: '#1259d3' }] : []
+      };
+      p.noTasks = p.tasks.length === 0;
+      p.md = { notes: mdObj('notes:' + P.id, P.notes, 'No notes', (v) => upd(P.id, { notes: v }), () => this.setState({ secs: Object.assign({}, this.state.secs, { notes: true }) })) };
+      secKeys.forEach((k) => { p.sec[k] = !!s.secs[k]; p.secClosed[k] = !s.secs[k]; p.toggle[k] = () => this.setState({ secs: Object.assign({}, this.state.secs, { [k]: !this.state.secs[k] }) }); });
+      kinds.forEach((k) => {
+        const cs = P.contacts.filter((c) => c.kind === k);
+        p.count[k] = String(cs.length || '');
+        p.rows[k] = cs.map((c) => ({ value: c.value, label: c.label, cls: 'crow' + (s.ed === c.id ? ' editing' : ''), viewing: s.ed !== c.id, editing: s.ed === c.id,
+          edit: () => { this.setState({ ed: c.id, edValue: c.value, edLabel: c.label }); setTimeout(() => { const el = document.querySelector('.crow.editing .ein'); if (el) el.focus(); }, 0); },
+          remove: () => upd(P.id, { contacts: P.contacts.filter((x) => x.id !== c.id) }) }));
+        const a = s.adds[k] || { value: '', label: '' };
+        const setA = (patch) => this.setState({ adds: Object.assign({}, this.state.adds, { [k]: Object.assign({ value: '', label: '' }, this.state.adds[k], patch) }) });
+        const go = () => { const cur = this.state.adds[k] || {}; const v = (cur.value || '').trim(); if (!v) return; upd(P.id, { contacts: P.contacts.concat([{ id: 'c' + Date.now(), kind: k, value: v, label: (cur.label || '').trim() }]) }); setA({ value: '', label: '' }); };
+        p.add[k] = { value: a.value, label: a.label, can: !!(a.value || '').trim(), onValue: (e) => setA({ value: e.target.value }), onLabel: (e) => setA({ label: e.target.value }), key: (e) => { if (e.key === 'Enter') go(); }, go: go };
+      });
+      vals.p = p;
+    }
+    return vals;
+  }
+}
+</script>
+</body>
+</html>

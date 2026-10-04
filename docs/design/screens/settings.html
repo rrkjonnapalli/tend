@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tend mockup · settings</title>
+<script src="../dc-runtime.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#303841}a:hover{color:#1259d3}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #1070e3;outline-offset:2px}
+.heading{font:500 28px/36px 'Montserrat',sans-serif}
+.caption{font:400 13px/18px 'Lato',sans-serif}
+.muted{color:#7d8995}
+.sec{display:flex;align-items:center;min-height:32px;padding:0 16px;border:0;background:transparent;text-align:left;font:400 14px/20px 'Lato',sans-serif;color:#5f6b76;cursor:pointer}
+.sec:hover{background:#f7fbfc;color:#303841}
+.sec.on{background:#f2f5f7;color:#303841}
+.shd{display:flex;align-items:center;gap:8px;height:32px;padding:0 16px;margin:0 -16px;border:0;background:transparent;color:#7d8995;cursor:pointer;text-align:left}
+.shd:hover{background:#f7fbfc}
+.vault{display:flex;align-items:center;gap:16px;min-height:32px}
+.tlink{color:#1259d3;text-decoration:none;font:400 14px/20px 'Lato',sans-serif;white-space:nowrap}
+.tlink:hover{color:#113eb0;text-decoration:underline}
+.vpath{flex:1;min-width:0;font:400 13px/18px 'JetBrains Mono',monospace;color:#303841;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vbtn2{height:28px;padding:0 10px;border:1px solid #dce3e8;border-radius:6px;background:#ffffff;color:#303841;cursor:pointer;font:400 13px/18px 'Lato',sans-serif}
+.vbtn2:hover{border-color:#7d8995}
+.vtree{display:flex;flex-direction:column;gap:6px;padding-left:12px;font:400 13px/18px 'Lato',sans-serif}
+.vtree>div{display:flex;gap:12px}
+.vdir{flex:0 0 120px;font:400 12px/18px 'JetBrains Mono',monospace;color:#5f6b76}
+.crow{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr) auto;align-items:center;gap:16px;min-height:34px;padding:0 16px;margin:0 -16px;border-top:1px solid #f2f5f7;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.crow:hover{background:#f7fbfc}
+.cex{font:400 12px/16px 'JetBrains Mono',monospace;color:#7d8995;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ckeys{display:flex;gap:4px}
+kbd{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border:1px solid #dce3e8;border-bottom-width:2px;border-radius:4px;background:#ffffff;font:400 11px/14px 'JetBrains Mono',monospace;color:#5f6b76}
+.h2{font:500 15px/20px 'Montserrat',sans-serif;color:#303841;margin:0}
+.srow{position:relative;display:grid;grid-template-columns:16px 14px minmax(0,1fr) auto 84px;align-items:center;gap:12px;min-height:36px;padding:0 16px;margin:0 -16px;font:400 14px/20px 'Lato',sans-serif;color:#303841;user-select:none;-webkit-user-select:none}
+.srow:hover{background:#f7fbfc}
+.srow.editing{background:transparent}
+.srow.lifted{background:#ffffff;box-shadow:inset 0 0 0 1px #dce3e8;z-index:2}
+.nosel .srow:hover{background:transparent}
+.nosel .srow.lifted{background:#ffffff}
+.sgrip{display:grid;place-items:center;width:16px;height:28px;color:#7d8995;visibility:hidden;cursor:grab;touch-action:none}
+.srow:hover .sgrip,.srow.lifted .sgrip{visibility:visible}
+.nosel .srow:not(.lifted) .sgrip{visibility:hidden}
+.sval{font:400 12px/16px 'JetBrains Mono',monospace;color:#b8c4ce;letter-spacing:.02em}
+.sacts{display:flex;align-items:center;justify-content:flex-end;gap:2px;visibility:hidden}
+.srow:hover .sacts,.srow.editing .sacts,.sacts:focus-within{visibility:visible}
+.nosel .sacts{visibility:hidden !important}
+.icb{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;display:grid;place-items:center;cursor:pointer}
+.icb.ed{color:#1259d3}.icb.ed:hover{background:#dbfaff}
+.icb.no{color:#da0037}.icb.no:hover{background:#ffebeb}
+.icb.ok{color:#1e7a55}.icb.ok:hover{background:#e3f7ee}
+.etxt{min-width:0;height:28px;padding:0 8px;margin-left:-8px;border:0;border-radius:4px;background:#f7fbfc;outline:none;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.err{grid-column:3 / -1;padding:0 0 8px;font:400 12px/16px 'Lato',sans-serif;color:#da0037}
+.backdrop{position:absolute;inset:0;z-index:4}
+.swwrap{position:relative;display:inline-flex}
+.sw{width:14px;height:14px;padding:0;border:0;border-radius:7px;cursor:pointer;display:block}
+.sw.ring{background:transparent !important;box-shadow:inset 0 0 0 2px var(--c)}
+.sw:hover{outline:2px solid #dce3e8;outline-offset:2px}
+.swpop{position:absolute;top:22px;left:-8px;z-index:5;display:grid;grid-template-columns:repeat(5,18px);gap:8px;padding:10px;background:#ffffff;border:1px solid #dce3e8;border-radius:8px}
+.swopt{width:18px;height:18px;padding:0;border:0;border-radius:9px;cursor:pointer}
+.swopt.on{outline:2px solid #303841;outline-offset:2px}
+.swopt:hover{outline:2px solid #b8c4ce;outline-offset:2px}
+.swopt.on:hover{outline-color:#303841}
+.pin{font:400 11px/16px 'Lato',sans-serif;color:#b8c4ce}
+.addrow{display:grid;grid-template-columns:16px 14px minmax(0,1fr) 150px 84px;align-items:center;gap:12px;min-height:36px;font:400 14px/20px 'Lato',sans-serif;color:#7d8995}
+.addrow input{min-width:0;border:0;outline:none;background:transparent;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.addrow input.vin{font:400 12px/16px 'JetBrains Mono',monospace;color:#5f6b76;letter-spacing:.02em}
+.addrow input::placeholder{color:#7d8995}
+.addrow input.vin::placeholder{color:#b8c4ce}
+.adderr{padding:0 0 0 54px;font:400 12px/16px 'Lato',sans-serif;color:#da0037}
+.bnav{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.bnav>*{pointer-events:auto}
+.btog{position:relative;z-index:1;width:28px;height:16px;margin-bottom:-8px;padding:0;border:0;border-radius:4px;background:#ffffff;color:#b8c4ce;display:grid;place-items:center;cursor:pointer}
+.btog:hover{color:#303841;background:#f7fbfc}
+.btog.closed{margin-bottom:6px;background:transparent}
+.btog.closed:hover{background:#f7fbfc}
+.brow{align-self:stretch;display:flex;justify-content:center;align-items:center;gap:14px;padding:8px 10px 10px;background:#ffffff;border-top:1px solid #dce3e8}
+.bico{position:relative;display:grid;place-items:center;width:28px;height:26px;color:#7d8995;text-decoration:none}
+.bico:hover{color:#303841}
+.bico.cur{color:#6f5ee4}
+.brow{position:relative}
+.bset{position:absolute;right:48px;top:8px}
+.btm{position:absolute;right:80px;top:8px;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 8px;border-radius:13px;background:#ede9ff;color:#6f5ee4;text-decoration:none;font:500 12px/16px 'JetBrains Mono',monospace}
+.btm:hover{background:#e2dcff;color:#6f5ee4}
+.btm .more{font:400 11px/16px 'Lato',sans-serif;color:#7d8995}
+.tpop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;box-sizing:border-box;display:flex;flex-direction:column;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.tpop .fbhead{padding:10px 12px 8px}
+.trw{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px 0 12px;border-top:1px solid #f2f5f7}
+.trw .tt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.trw .tl{font:500 14px/20px 'JetBrains Mono',monospace;color:#303841}
+.trw .tl.rang{color:#6f5ee4}
+.tadd{padding:10px 12px;border-top:1px solid #f2f5f7;color:#7d8995;font-size:12px}
+
+.bfb{position:absolute;right:16px;top:8px}
+.bnotif{position:absolute;right:48px;top:8px}
+.bnotif.on{color:#303841}
+.nbadge{position:absolute;top:1px;right:3px;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;background:#da0037;color:#ffffff;font:700 9px/14px 'Lato',sans-serif;text-align:center}
+.nbadge.blink{animation:nblink 1s ease-in-out infinite}
+@keyframes nblink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.85)}}
+.npop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;box-sizing:border-box;display:flex;flex-direction:column;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.npop .fbhead{padding:10px 12px 8px}
+.nrow{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px 0 12px;border-top:1px solid #f2f5f7}
+.nrow .nt{flex:1;min-width:0;display:flex;flex-direction:column}
+.nrow .nt b{font-weight:400;font-size:14px;line-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nrow .nt span{font-size:12px;line-height:16px;color:#7d8995}
+.nrow .nt span.late{color:#a84f2c}
+.nact{height:24px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:#1259d3;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.nact:hover{background:#dbfaff}
+.ndone{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#1e7a55;display:grid;place-items:center;cursor:pointer}
+.ndone:hover{background:#e3f7ee}
+.nempty{padding:14px 12px;border-top:1px solid #f2f5f7;color:#7d8995}
+
+.bfb.on{color:#303841}
+.fbback{position:absolute;inset:0;z-index:20}
+.fbpop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;padding:12px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.fbhead{display:flex;align-items:center;gap:8px;font:500 14px/20px 'Montserrat',sans-serif}
+.fbx{margin-left:auto;width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#5f6b76;display:grid;place-items:center;cursor:pointer}
+.fbx:hover{background:#f7fbfc;color:#303841}
+.fbkinds{display:flex;gap:4px}
+.fbk{height:24px;padding:0 8px;border:1px solid #dce3e8;border-radius:12px;background:#ffffff;color:#5f6b76;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.fbk:hover{color:#303841;border-color:#b8c4ce}
+.fbk.on{color:#1259d3;border-color:#1259d3;background:#dbfaff}
+.fbta{width:100%;min-height:96px;box-sizing:border-box;padding:8px;border:1px solid #dce3e8;border-radius:6px;outline:none;resize:vertical;font:400 13px/20px 'Lato',sans-serif;color:#303841;background:#ffffff}
+.fbta:focus{border-color:#1259d3}
+.fbta::placeholder{color:#7d8995}
+.fbfoot{display:flex;align-items:center;gap:8px}
+.fbsend{margin-left:auto;height:28px;padding:0 12px;border:0;border-radius:6px;background:#1259d3;color:#ffffff;cursor:pointer;font:700 13px/18px 'Lato',sans-serif}
+.fbsend:hover{background:#113eb0}
+.fbsend:disabled{background:#dce3e8;color:#7d8995;cursor:default}
+.fbok{color:#1e7a55}
+
+.bico.cur::after{content:'';position:absolute;bottom:-6px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:2px;background:#6f5ee4}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: 800px; box-sizing: border-box; display: flex; background: #ffffff; color: #303841; font-family: 'Lato', sans-serif">
+  <sc-if value="{{swAny}}" hint-placeholder-val="{{ false }}"><div class="backdrop" onClick="{{closeSw}}"></div></sc-if>
+  <sc-if value="{{navOpen}}" hint-placeholder-val="{{ true }}">
+    <div class="bnav">
+      <button class="btog" aria-label="Hide sections bar" title="Hide" onClick="{{toggleNav}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+      <nav class="brow" aria-label="Sections">
+        <a class="bico" href="notes.html" aria-label="Notes" title="Notes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h5"></path></svg></a>
+        <a class="bico" href="tasks.html" aria-label="Tasks" title="Tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></a>
+        <a class="bico" href="people.html" aria-label="People" title="People"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+        <sc-if value="{{tmHas}}" hint-placeholder-val="{{ true }}"><a class="{{tmCls}}" href="#" aria-label="Running timers" title="Timers" aria-haspopup="dialog" aria-expanded="{{tmOpen}}" onClick="{{toggleTm}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path><path d="M9 2h6"></path></svg><span>{{tmNext}}</span><sc-if value="{{tmMore}}" hint-placeholder-val="{{ true }}"><span class="more">{{tmMoreN}}</span></sc-if></a></sc-if>
+        <a class="bico bset cur" href="settings.html" aria-label="Settings" aria-current="page" title="Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
+        <a class="{{fbBtnCls}}" href="#" aria-label="Feedback" title="Feedback" aria-haspopup="dialog" aria-expanded="{{fbOpen}}" onClick="{{toggleFb}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M8.5 11h7M8.5 14.5h4"></path></svg></a>
+      </nav>
+    </div>
+  </sc-if>
+  <sc-if value="{{navClosed}}" hint-placeholder-val="{{ false }}">
+    <div class="bnav"><button class="btog closed" aria-label="Show sections bar" title="Show" onClick="{{toggleNav}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button></div>
+  </sc-if>
+
+  <sc-if value="{{tmOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fbback" onClick="{{closeTm}}"></div>
+    <div class="tpop" role="dialog" aria-label="Timers">
+      <div class="fbhead"><span>Timers</span><button class="fbx" aria-label="Close" title="Close" onClick="{{closeTm}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      <sc-for list="{{tmList}}" as="tm" hint-placeholder-count="2">
+        <div class="trw"><span class="tt">{{tm.title}}</span><span class="{{tm.cls}}">{{tm.left}}</span><button class="nact" onClick="{{tm.plus}}">+1m</button><button class="fbx" style="margin-left: 0; color: #da0037" aria-label="Cancel timer" title="Cancel" onClick="{{tm.cancel}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      </sc-for>
+      <div class="tadd">⌘T starts a new timer</div>
+    </div>
+  </sc-if>
+  <sc-if value="{{fbOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fbback" onClick="{{closeFb}}"></div>
+    <div class="fbpop" role="dialog" aria-label="Send feedback">
+      <div class="fbhead"><span>Feedback</span><button class="fbx" aria-label="Close" title="Close" onClick="{{closeFb}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      <sc-if value="{{fbWriting}}" hint-placeholder-val="{{ true }}">
+        <div class="fbkinds" role="group" aria-label="Kind"><sc-for list="{{fbKinds}}" as="fk" hint-placeholder-count="3"><button class="{{fk.cls}}" aria-pressed="{{fk.on}}" onClick="{{fk.go}}">{{fk.label}}</button></sc-for></div>
+        <textarea class="fbta" aria-label="Feedback" placeholder="A bug, an idea, something you’d like…" value="{{fbDraft}}" onInput="{{onFb}}" onKeyDown="{{fbKey}}"></textarea>
+        <div class="fbfoot"><span class="muted" style="font-size: 12px">Saved in your vault</span><button class="fbsend" disabled="{{fbEmpty}}" onClick="{{sendFb}}">Send</button></div>
+      </sc-if>
+      <sc-if value="{{fbSent}}" hint-placeholder-val="{{ false }}">
+        <span class="fbok">Thanks, saved. You can send another anytime.</span>
+        <div class="fbfoot"><button class="fbk" onClick="{{fbAgain}}">Write another</button></div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <aside aria-label="Settings sections" style="position: relative; flex: 0 0 232px; box-sizing: border-box; border-right: 1px solid #dce3e8; display: flex; flex-direction: column">
+    <div data-tauri-drag-region="" style="flex: 0 0 40px; display: flex; align-items: center; padding: 0 16px; box-sizing: border-box"><span class="caption muted">Settings</span></div>
+    <nav style="display: flex; flex-direction: column">
+      <sc-for list="{{secs}}" as="sc" hint-placeholder-count="5">
+        <button class="{{sc.cls}}" aria-current="{{sc.cur}}" onClick="{{sc.go}}">{{sc.label}}</button>
+      </sc-for>
+    </nav>
+  </aside>
+
+  <main data-tauri-drag-region="" style="flex: 1 1 auto; min-width: 0; padding: 40px 24px 64px; overflow: auto">
+    <article style="max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <h1 class="heading" style="margin: 0">{{secTitle}}</h1>
+        <span class="caption muted">{{secSub}}</span>
+      </div>
+
+      <sc-if value="{{isTasks}}" hint-placeholder-val="{{ true }}">
+      <section style="display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <button class="shd" aria-expanded="{{stOpen}}" onClick="{{toggleSt}}"><sc-if value="{{stOpen}}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></sc-if><sc-if value="{{stClosed}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if><h2 class="h2">Statuses</h2><span class="caption muted">{{stCount}}</span></button>
+          <span class="caption muted">Each status is a column on the board; its color is used for the status dot everywhere. {{firstLabel}} is always first and {{lastLabel}} always last; new tasks start as {{firstLabel}}.</span>
+        </div>
+        <sc-if value="{{stOpen}}" hint-placeholder-val="{{ true }}">
+        <div class="{{listCls}}" style="display: flex; flex-direction: column; padding-top: 4px">
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+            <div class="{{r.cls}}" data-sk="{{r.value}}">
+              <sc-if value="{{r.draggable}}" hint-placeholder-val="{{ true }}"><span class="sgrip" title="Drag to reorder" onPointerDown="{{r.grab}}"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor" aria-hidden="true"><circle cx="2" cy="2" r="1.2"></circle><circle cx="6" cy="2" r="1.2"></circle><circle cx="2" cy="7" r="1.2"></circle><circle cx="6" cy="7" r="1.2"></circle><circle cx="2" cy="12" r="1.2"></circle><circle cx="6" cy="12" r="1.2"></circle></svg></span></sc-if>
+              <sc-if value="{{r.pinned}}" hint-placeholder-val="{{ false }}"><span></span></sc-if>
+              <span class="swwrap"><button class="{{r.swCls}}" style="background: {{r.hex}}; --c: {{r.hex}}" aria-label="Color for {{r.label}}: {{r.colorName}}" title="Color" aria-haspopup="listbox" aria-expanded="{{r.swOpen}}" onClick="{{r.toggleSw}}"></button>
+                <sc-if value="{{r.swOpen}}" hint-placeholder-val="{{ false }}"><div class="swpop" role="listbox" aria-label="Status color"><sc-for list="{{r.swOpts}}" as="o" hint-placeholder-count="10"><button class="{{o.cls}}" style="background: {{o.hex}}" role="option" aria-selected="{{o.on}}" aria-label="{{o.name}}" title="{{o.name}}" onClick="{{o.pick}}"></button></sc-for></div></sc-if>
+              </span>
+              <sc-if value="{{r.viewing}}" hint-placeholder-val="{{ true }}"><span style="display: flex; align-items: baseline; gap: 10px; min-width: 0"><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.label}}</span><span class="pin">{{r.pinNote}}</span></span></sc-if>
+              <sc-if value="{{r.editing}}" hint-placeholder-val="{{ false }}"><input class="etxt" aria-label="Status label" value="{{edLabel}}" onInput="{{onEdLabel}}" onKeyDown="{{edKey}}"></sc-if>
+              <span class="sval" title="Value (can't be changed)">{{r.value}}</span>
+              <span class="sacts">
+                <sc-if value="{{r.canDelete}}" hint-placeholder-val="{{ false }}"><button class="icb no" aria-label="Delete {{r.label}}" title="Delete" onClick="{{r.remove}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg></button></sc-if>
+                <sc-if value="{{r.viewing}}" hint-placeholder-val="{{ true }}"><button class="icb ed" aria-label="Edit {{r.label}}" title="Edit" onClick="{{r.edit}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></sc-if>
+                <sc-if value="{{r.editing}}" hint-placeholder-val="{{ false }}"><button class="icb ok" aria-label="Save" title="Save" onClick="{{saveEd}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button><button class="icb no" aria-label="Cancel" title="Cancel" onClick="{{cancelEd}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></sc-if>
+              </span>
+              <sc-if value="{{r.hasErr}}" hint-placeholder-val="{{ false }}"><span class="err" role="alert">{{r.err}}</span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div class="addrow">
+          <span style="text-align: center">+</span>
+          <span></span>
+          <input aria-label="New status label" placeholder="add status" value="{{nl}}" onInput="{{onNL}}" onKeyDown="{{addKey}}">
+          <input class="vin" aria-label="New status value" placeholder="VALUE" value="{{nv}}" onInput="{{onNV}}" onKeyDown="{{addKey}}">
+          <span style="display: flex; justify-content: flex-end">
+            <sc-if value="{{canAdd}}" hint-placeholder-val="{{ false }}"><button class="icb ok" aria-label="Add status" title="Add" onClick="{{add}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button></sc-if>
+          </span>
+        </div>
+        <sc-if value="{{hasAddErr}}" hint-placeholder-val="{{ false }}"><span class="adderr" role="alert">{{addErr}}</span></sc-if>
+        </sc-if>
+      </section>
+      </sc-if>
+
+      <sc-if value="{{isGeneral}}" hint-placeholder-val="{{ false }}">
+      <section style="display: flex; flex-direction: column; gap: 12px">
+        <h2 class="h2">Vault</h2>
+        <div class="vault">
+          <span class="vpath">{{vaultPath}}</span>
+          <a class="tlink" href="#" onClick="{{changeVault}}">Change vault folder…</a>
+        </div>
+      </section>
+      </sc-if>
+
+      <sc-if value="{{isPalette}}" hint-placeholder-val="{{ false }}">
+      <section style="display: flex; flex-direction: column; gap: 24px">
+        <sc-for list="{{cmdGroups}}" as="cg" hint-placeholder-count="3">
+          <div style="display: flex; flex-direction: column">
+            <h2 class="h2" style="margin-bottom: 6px">{{cg.name}}</h2>
+            <sc-for list="{{cg.items}}" as="ci" hint-placeholder-count="4">
+              <div class="crow">
+                <span>{{ci.label}}</span>
+                <span class="cex"><sc-if value="{{ci.hasEx}}" hint-placeholder-val="{{ false }}">{{ci.ex}}</sc-if></span>
+                <span class="ckeys"><sc-for list="{{ci.keys}}" as="ky" hint-placeholder-count="2"><kbd>{{ky.k}}</kbd></sc-for></span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </section>
+      </sc-if>
+
+      <sc-if value="{{isOther}}" hint-placeholder-val="{{ false }}">
+        <span class="caption muted">Nothing to configure here yet.</span>
+      </sc-if>
+    </article>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      nav: true, timers: [{ id: 1, title: 'Tea', ends: Date.now() + 272000 }, { id: 2, title: 'Turn off the motor', ends: Date.now() + 545000 }], tmOpen: false, notifs: [{ id: 1, title: 'Call Ravi', when: 'Today, 5:00 PM · now' }, { id: 2, title: 'Take out the trash', when: 'Today, 4:30 PM · 2m late', late: true }], nSeen: false, nOpen: false, fb: false, fbSent: false, fbDraft: '', fbKind: 'idea', sec: 'tasks', stOpen: true,
+      sts: [
+        { v: 'NOT_STARTED', label: 'Not started', color: 'gray' },
+        { v: 'IN_PROGRESS', label: 'In progress', color: 'blue' },
+        { v: 'WAITING', label: 'Waiting', color: 'orange' },
+        { v: 'IN_REVIEW', label: 'In review', color: 'violet' },
+        { v: 'DONE', label: 'Done', color: 'green' }
+      ],
+      // statuses that tasks currently use (the app checks this on delete)
+      used: { NOT_STARTED: true, IN_PROGRESS: true, IN_REVIEW: true, DONE: true },
+      ed: null, edLabel: '', err: null, sw: null, nl: '', nv: '', nvTouched: false, addErr: '', drag: null, preview: null
+    };
+  }
+  renderVals() {
+    if (!this._tmIv && typeof setInterval === 'function') this._tmIv = setInterval(() => { if ((this.state.timers || []).length) this.setState({ tmTick: Date.now() }); }, 1000);
+    const s = this.state;
+    const DEF = { NOT_STARTED: 1, IN_PROGRESS: 1, DONE: 1 };
+    const PAL = [['gray', 'Grey', '#7d8995'], ['blue', 'Blue', '#1259d3'], ['sky', 'Sky', '#429ff5'], ['violet', 'Violet', '#6f5ee4'], ['lilac', 'Lilac', '#b1b2ff'], ['green', 'Green', '#1e7a55'], ['mint', 'Mint', '#62d2a2'], ['orange', 'Orange', '#d57149'], ['red', 'Red', '#da0037'], ['pink', 'Pink', '#f67280']];
+    const hexOf = (c) => (PAL.find((x) => x[0] === c) || PAL[0])[2];
+    const slug = (x) => x.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 32);
+    const list = s.preview || s.sts;
+    const n = list.length;
+    const labelTaken = (lab, except) => this.state.sts.some((x) => x.v !== except && x.label.trim().toLowerCase() === lab.trim().toLowerCase());
+    const saveEd = () => {
+      const st = this.state; const lab = (st.edLabel || '').trim();
+      if (!lab) { this.setState({ err: { v: st.ed, msg: 'Label can’t be empty.' } }); return; }
+      if (labelTaken(lab, st.ed)) { this.setState({ err: { v: st.ed, msg: 'Another status already uses this label.' } }); return; }
+      this.setState({ sts: st.sts.map((x) => x.v === st.ed ? Object.assign({}, x, { label: lab }) : x), ed: null, err: null });
+    };
+    const add = () => {
+      const st = this.state; const lab = (st.nl || '').trim(); const v = slug(st.nv || '');
+      if (!lab) { this.setState({ addErr: 'Give the status a label.' }); return; }
+      if (!v) { this.setState({ addErr: 'Give the status a value.' }); return; }
+      if (DEF[v]) { this.setState({ addErr: v + ' is reserved for a default status.' }); return; }
+      if (st.sts.some((x) => x.v === v)) { this.setState({ addErr: v + ' is already used by another status.' }); return; }
+      if (labelTaken(lab, null)) { this.setState({ addErr: 'Another status already uses this label.' }); return; }
+      const usedC = st.sts.map((x) => x.color); const free = PAL.find((x) => usedC.indexOf(x[0]) < 0); const sts = st.sts.slice(); sts.splice(sts.length - 1, 0, { v: v, label: lab, color: free ? free[0] : 'gray' });
+      this.setState({ sts: sts, nl: '', nv: '', nvTouched: false, addErr: '' });
+    };
+    const grab = (v) => (e) => {
+      if (!e || (e.button != null && e.button !== 0)) return;
+      e.preventDefault();
+      const rowEl = e.currentTarget.closest('[data-sk]');
+      const els = Array.prototype.slice.call(rowEl.parentElement.querySelectorAll('[data-sk]'));
+      const top0 = els[0].getBoundingClientRect().top;
+      const h = rowEl.getBoundingClientRect().height || 36;
+      const base = this.state.sts.slice();
+      this.setState({ drag: v, preview: base, ed: null, err: null });
+      const onMove = (ev) => {
+        let idx = Math.floor((ev.clientY - top0) / h);
+        idx = Math.max(1, Math.min(base.length - 2, idx));
+        const cur = base.filter((x) => x.v !== v);
+        cur.splice(idx, 0, base.find((x) => x.v === v));
+        const pv = this.state.preview || base;
+        if (cur.map((x) => x.v).join('|') !== pv.map((x) => x.v).join('|')) this.setState({ preview: cur });
+      };
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+        this.setState({ sts: this.state.preview || base, drag: null, preview: null });
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
+    };
+    const SECS = [['general', 'General', 'App-wide preferences.'], ['notes', 'Notes', 'Notes folder and editor.'], ['tasks', 'Tasks', 'Statuses and board columns.'], ['people', 'People', 'Contacts and birthdays.'], ['palette', 'Command palette', 'Every command, with its shortcut. Press ⌘K anywhere to open the palette.']];
+    const cur = SECS.find((x) => x[0] === s.sec);
+    const CMDS = [
+      { g: 'Go to', id: 'go-notes', label: 'Go to Notes', keys: ['⌘', '1'], ex: '' },
+      { g: 'Go to', id: 'go-tasks', label: 'Go to Tasks', keys: ['⌘', '2'], ex: '' },
+      { g: 'Go to', id: 'go-people', label: 'Go to People', keys: ['⌘', '3'], ex: '' },
+      { g: 'Go to', id: 'go-set', label: 'Open Settings', keys: ['⌘', ','], ex: '' },
+      { g: 'Create', id: 'new-note', label: 'New note', keys: ['⌘', 'N'], ex: 'note: Meeting notes' },
+      { g: 'Create', id: 'new-task', label: 'New task', keys: ['⌘', '⇧', 'T'], ex: 'task: Write README' },
+      { g: 'Create', id: 'new-folder', label: 'New folder', keys: ['⌘', '⇧', 'N'], ex: '' },
+      { g: 'Create', id: 'new-timer', label: 'New timer', keys: ['⌘', 'T'], ex: 'timer 10m turn off the motor' },
+      { g: 'Create', id: 'new-person', label: 'New person', keys: [], ex: 'person: Ravi Kumar' },
+      { g: 'Notes', id: 'note-mode', label: 'Toggle read / edit', keys: ['⌘', 'E'], ex: '' },
+      { g: 'Notes', id: 'note-tag', label: 'Add tag to note', keys: [], ex: '' },
+      { g: 'Notes', id: 'width', label: 'Toggle content width', keys: [], ex: '' },
+      { g: 'Tasks', id: 'task-status', label: 'Set status…', keys: [], ex: '' },
+      { g: 'Tasks', id: 'task-due', label: 'Set due date…', keys: [], ex: '' },
+      { g: 'Tasks', id: 'task-myday', label: 'Add to My day', keys: [], ex: '' },
+      { g: 'Tasks', id: 'task-layout', label: 'Switch list / board', keys: [], ex: '' },
+      { g: 'App', id: 'palette', label: 'Open command palette', keys: ['⌘', 'K'], ex: '' },
+      { g: 'App', id: 'explorer', label: 'Toggle explorer', keys: ['⌘', '\\'], ex: '' },
+      { g: 'App', id: 'bottombar', label: 'Toggle bottom bar', keys: [], ex: '' },
+      { g: 'App', id: 'feedback', label: 'Send feedback', keys: [], ex: '' },
+      { g: 'App', id: 'vault', label: 'Change vault…', keys: [], ex: '' }
+    ];
+    const groups = [];
+    CMDS.forEach((c) => { let g = groups.find((x) => x.name === c.g); if (!g) { g = { name: c.g, items: [] }; groups.push(g); } g.items.push({ label: c.label, ex: c.ex, hasEx: !!c.ex, keys: c.keys.map((k) => ({ k: k })), hasKeys: c.keys.length > 0 }); });
+    const rows = list.map((x, i) => {
+      const pinned = i === 0 || i === n - 1;
+      const editing = s.ed === x.v;
+      const hasErr = !!s.err && s.err.v === x.v;
+      return {
+        value: x.v, label: x.label,
+        hex: hexOf(x.color), colorName: (PAL.find((y) => y[0] === x.color) || PAL[0])[1],
+        swCls: 'sw' + (x.v === 'NOT_STARTED' ? ' ring' : ''),
+        swOpen: s.sw === x.v,
+        toggleSw: () => this.setState({ sw: this.state.sw === x.v ? null : x.v }),
+        swOpts: PAL.map((c) => ({ name: c[1], hex: c[2], on: c[0] === x.color, cls: 'swopt' + (c[0] === x.color ? ' on' : ''), pick: () => this.setState({ sts: this.state.sts.map((y) => y.v === x.v ? Object.assign({}, y, { color: c[0] }) : y), sw: null }) })),
+        cls: 'srow' + (editing ? ' editing' : '') + (s.drag === x.v ? ' lifted' : ''),
+        pinned: pinned, draggable: !pinned,
+        pinNote: i === 0 ? 'always first' : (i === n - 1 ? 'always last' : ''),
+        viewing: !editing, editing: editing,
+        canDelete: !DEF[x.v],
+        hasErr: hasErr, err: hasErr ? s.err.msg : '',
+        grab: grab(x.v),
+        edit: () => { this.setState({ ed: x.v, edLabel: x.label, err: null }); setTimeout(() => { const el = document.querySelector('.srow.editing .etxt'); if (el) { el.focus(); el.select(); } }, 0); },
+        remove: () => {
+          if (DEF[x.v]) return;
+          if (this.state.used[x.v]) { this.setState({ err: { v: x.v, msg: 'Can’t delete “' + x.label + '”: some tasks still have this status. Move them to another status first.' } }); return; }
+          this.setState({ sts: this.state.sts.filter((y) => y.v !== x.v), err: null, ed: this.state.ed === x.v ? null : this.state.ed });
+        }
+      };
+    });
+    return {
+      navOpen: s.nav, navClosed: !s.nav,
+      tmOpen: !!s.tmOpen && (s.timers || []).length > 0,
+      tmHas: (s.timers || []).length > 0,
+      tmCls: 'btm',
+      tmNext: (() => { const t = (s.timers || []).slice().sort((a, b) => a.ends - b.ends)[0]; if (!t) return ''; const ms = Math.max(0, t.ends - Date.now()); const sec = Math.ceil(ms / 1000); return ms <= 0 ? 'done' : Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); })(),
+      tmMore: (s.timers || []).length > 1, tmMoreN: '+' + ((s.timers || []).length - 1),
+      toggleTm: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ tmOpen: !this.state.tmOpen, fb: false }); },
+      closeTm: () => this.setState({ tmOpen: false }),
+      tmList: (s.timers || []).slice().sort((a, b) => a.ends - b.ends).map((t) => { const ms = Math.max(0, t.ends - Date.now()); const sec = Math.ceil(ms / 1000); return { title: t.title, left: ms <= 0 ? 'done' : Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'), cls: 'tl' + (ms <= 0 ? ' rang' : ''), plus: () => this.setState({ timers: this.state.timers.map((x) => x.id === t.id ? Object.assign({}, x, { ends: Math.max(x.ends, Date.now()) + 60000 }) : x) }), cancel: () => this.setState({ timers: this.state.timers.filter((x) => x.id !== t.id) }) }; }),
+      nOpen: !!s.nOpen, nEmpty: (s.notifs || []).length === 0,
+      bellCls: 'bico bnotif' + (s.nOpen ? ' on' : ''),
+      nHasBadge: (s.notifs || []).length > 0, nCount: String((s.notifs || []).length),
+      nBadgeCls: 'nbadge' + (s.nSeen ? '' : ' blink'),
+      toggleN: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ nOpen: !this.state.nOpen, nSeen: true, fb: false }); },
+      closeN: () => this.setState({ nOpen: false }),
+      nList: (s.notifs || []).map((n) => ({ title: n.title, when: n.when, whenCls: n.late ? 'late' : '', done: () => this.setState({ notifs: this.state.notifs.filter((x) => x.id !== n.id) }), snooze: () => this.setState({ notifs: this.state.notifs.filter((x) => x.id !== n.id) }) })),
+      fbOpen: !!s.fb, fbWriting: !s.fbSent, fbSent: !!s.fbSent, fbDraft: s.fbDraft || '', fbEmpty: !(s.fbDraft || '').trim(),
+      fbBtnCls: 'bico bfb' + (s.fb ? ' on' : ''),
+      toggleFb: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ fb: !this.state.fb, fbSent: false, nOpen: false }); setTimeout(() => { const el = document.querySelector('.fbta'); if (el) el.focus(); }, 0); },
+      closeFb: () => this.setState({ fb: false }),
+      fbKinds: [['bug', 'Bug'], ['idea', 'Idea'], ['other', 'Other']].map((x) => ({ label: x[1], on: (s.fbKind || 'idea') === x[0], cls: 'fbk' + ((s.fbKind || 'idea') === x[0] ? ' on' : ''), go: () => this.setState({ fbKind: x[0] }) })),
+      onFb: (e) => this.setState({ fbDraft: e.target.value }),
+      fbKey: (e) => { if (e.key === 'Escape') this.setState({ fb: false }); if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && (this.state.fbDraft || '').trim()) this.setState({ fbSent: true, fbDraft: '' }); },
+      // stored in db/app.sqlite → feedback(id, kind, text, created_at)
+      sendFb: () => { if ((this.state.fbDraft || '').trim()) this.setState({ fbSent: true, fbDraft: '' }); },
+      fbAgain: () => this.setState({ fbSent: false }),
+      stOpen: s.stOpen, stClosed: !s.stOpen, stCount: String(s.sts.length), toggleSt: () => this.setState({ stOpen: !this.state.stOpen, sw: null, ed: null }),
+      swAny: !!s.sw, closeSw: () => this.setState({ sw: null }),
+      toggleNav: () => this.setState({ nav: !this.state.nav }),
+      secs: SECS.map((x) => ({ label: x[1], cls: 'sec' + (s.sec === x[0] ? ' on' : ''), cur: s.sec === x[0] ? 'page' : 'false', go: () => this.setState({ sec: x[0] }) })),
+      secTitle: cur[1], secSub: cur[2],
+      isTasks: s.sec === 'tasks', isGeneral: s.sec === 'general', isPalette: s.sec === 'palette', isOther: ['tasks', 'general', 'palette'].indexOf(s.sec) < 0,
+      cmdGroups: groups,
+      vaultPath: '~/Documents/Tend',
+      changeVault: (e) => { if (e && e.preventDefault) e.preventDefault(); },
+      firstLabel: s.sts[0].label, lastLabel: s.sts[s.sts.length - 1].label,
+      listCls: s.drag ? 'nosel' : '',
+      rows: rows,
+      edLabel: s.edLabel,
+      onEdLabel: (e) => this.setState({ edLabel: e.target.value, err: null }),
+      edKey: (e) => { if (e.key === 'Enter') saveEd(); if (e.key === 'Escape') this.setState({ ed: null, err: null }); },
+      saveEd: () => saveEd(),
+      cancelEd: () => this.setState({ ed: null, err: null }),
+      nl: s.nl, nv: s.nv,
+      onNL: (e) => { const lab = e.target.value; this.setState({ nl: lab, nv: this.state.nvTouched ? this.state.nv : slug(lab), addErr: '' }); },
+      onNV: (e) => { const raw = e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '').slice(0, 32); this.setState({ nv: raw, nvTouched: raw !== '', addErr: '' }); },
+      addKey: (e) => { if (e.key === 'Enter') add(); if (e.key === 'Escape') this.setState({ nl: '', nv: '', nvTouched: false, addErr: '' }); },
+      canAdd: !!(s.nl || '').trim(),
+      add: () => add(),
+      hasAddErr: !!s.addErr, addErr: s.addErr
+    };
+  }
+}
+</script>
+</body>
+</html>

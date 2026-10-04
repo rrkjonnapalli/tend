@@ -1,0 +1,113 @@
+/* Tend design tokens: Clean Colors (light). Generated from the design system.
+   Fonts: install with `npm i @fontsource/montserrat @fontsource/lato @fontsource/jetbrains-mono`
+   and import montserrat/500.css, montserrat/600.css, lato/400.css, lato/700.css, jetbrains-mono/400.css, jetbrains-mono/500.css. */
+:root {
+  /* palette */
+  --blue-50: #dbfaff;
+  --blue-100: #afebfe;
+  --blue-200: #8dd9fc;
+  --blue-300: #62bcf8;
+  --blue-400: #429ff5;
+  --blue-500: #1070e3;
+  --blue-600: #1259d3;
+  --blue-700: #113eb0;
+  --blue-800: #102889;
+  --white: #ffffff;
+  --slate-50: #f7fbfc;
+  --slate-200: #dce3e8;
+  --slate-300: #b8c4ce;
+  --slate-400: #7d8995;
+  --slate-500: #5f6b76;
+  --slate-700: #4b5966;
+  --slate-800: #3a4750;
+  --slate-900: #303841;
+  --slate-950: #252c33;
+  --indigo-200: #b1b2ff;
+  --indigo-500: #6f5ee4;
+  --red-50: #ffebeb;
+  --red-100: #ffc7c7;
+  --red-400: #f67280;
+  --red-600: #da0037;
+  --red-700: #a0153e;
+  --red-800: #7a0f2f;
+  --red-900: #4a2430;
+  --green-50: #e3f7ee;
+  --green-400: #62d2a2;
+  --green-700: #1e7a55;
+  --green-900: #1f3d33;
+  --orange-50: #fbebe1;
+  --orange-300: #e89f71;
+  --orange-500: #d57149;
+  --orange-700: #a84f2c;
+  --orange-900: #45322a;
+
+  /* semantic */
+  --bg: #f7fbfc;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --border: #dce3e8;
+  --border-strong: #7d8995;
+  --text: #303841;
+  --text-muted: #5f6b76;
+  --primary: #1259d3;
+  --primary-hover: #113eb0;
+  --on-primary: #ffffff;
+  --primary-soft: #dbfaff;
+  --focus-ring: #1070e3;
+  --accent: #6f5ee4;
+  --accent-soft: #b1b2ff;
+  --danger: #da0037;
+  --danger-fill: #da0037;
+  --on-danger: #ffffff;
+  --danger-soft: #ffebeb;
+  --on-danger-soft: #7a0f2f;
+  --success: #1e7a55;
+  --success-soft: #e3f7ee;
+  --warning: #a84f2c;
+  --warning-soft: #fbebe1;
+  --link: #1259d3;
+
+  /* app-specific roles used across the mockups */
+  --c-page: #ffffff;            /* app background (mockups use white; --bg for hover/soft fills) */
+  --c-hover: #f7fbfc;           /* row hover */
+  --c-selected: #eef3f6;        /* selected row */
+  --c-chip: #f2f5f7;            /* chips, segmented control track, kbd */
+  --c-faint: #b8c4ce;           /* faint text, placeholders in popups */
+  --c-muted-2: #7d8995;         /* secondary text, icons */
+  --c-nav-active: #6f5ee4;      /* bottom-nav active icon + dot, timer chip */
+  --c-nav-active-soft: #ede9ff; /* timer chip, assignee chip, person chips */
+  --c-overdue: #a84f2c;
+
+  /* status swatches (statuses.color stores the hex) */
+  --sw-gray: #7d8995; --sw-blue: #1259d3; --sw-sky: #429ff5; --sw-violet: #6f5ee4; --sw-lilac: #b1b2ff;
+  --sw-green: #1e7a55; --sw-mint: #62d2a2; --sw-orange: #d57149; --sw-red: #da0037; --sw-pink: #f67280;
+
+  /* type */
+  --font-heading: 'Montserrat', sans-serif;   /* 28/36 500 page titles; 15–16 500 section titles */
+  --font-ui: 'Lato', sans-serif;              /* 14/20 body UI; 13/18 captions; 12/16 meta */
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;  /* note editor 15/26, values, paths, kbd */
+
+  --text-display: 600 40px/48px var(--font-heading);
+  --text-heading: 500 28px/36px var(--font-heading);
+  --text-title: 500 18px/26px var(--font-heading);
+  --text-body: 400 15px/22px var(--font-mono);
+  --text-label: 500 14px/20px var(--font-ui);
+  --text-caption: 400 13px/18px var(--font-ui);
+
+  /* spacing & radius */
+  --space-0_5: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+
+  /* layout */
+  --explorer-w: 232px;
+  --content-w: 760px;      /* note/task page narrow width */
+  --bottom-nav-h: 44px;
+  --row-h: 32px;
+}

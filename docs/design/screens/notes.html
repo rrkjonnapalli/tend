@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tend mockup · hairline</title>
+<script src="../dc-runtime.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#303841}a:hover{color:#1259d3}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #1070e3;outline-offset:2px}
+.heading{font:500 28px/36px 'Montserrat',sans-serif}
+.body{font:400 15px/26px 'JetBrains Mono',ui-monospace,monospace}
+.caption{font:400 13px/18px 'Lato',sans-serif}
+.f{display:flex;align-items:center;gap:6px;width:100%;height:28px;padding:0 16px;border:0;border-radius:0;background:transparent;font:400 14px/20px 'Lato',sans-serif;color:#303841;text-align:left;text-decoration:none;cursor:pointer;box-sizing:border-box}
+.f:hover{background:#f7fbfc}
+.kids{display:flex;flex-direction:column}
+.kids .f{padding-left:32px}
+.kids .kids .f{padding-left:48px}
+.file{color:#5f6b76;padding-left:32px}
+.kids .file{padding-left:48px}
+.kids .kids .file{padding-left:64px}
+.kids .kids .kids .f{padding-left:64px}
+.kids .kids .kids .file{padding-left:80px}
+.f.sel{background:#dce3e8;color:#303841}
+.chev{flex:0 0 10px;color:#7d8995}
+.tb{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#7d8995;display:grid;place-items:center;cursor:pointer}
+.tb:hover{background:#f7fbfc;color:#303841}
+.ntr{font:600 15px/20px 'Montserrat',sans-serif;text-decoration:none;color:#7d8995;padding:4px 2px}
+.caret{position:absolute;width:14px;height:28px;padding:0;border:1px solid #dce3e8;background:#ffffff;color:#5f6b76;display:grid;place-items:center;cursor:pointer;z-index:2}
+.tab{left:0;border-left:0;border-radius:0 4px 4px 0}
+.navbar{display:flex;align-items:center;justify-content:center;gap:16px;padding:0 20px;box-sizing:border-box;height:48px}
+.p0{padding-left:16px}.p1{padding-left:32px}.p2{padding-left:48px}.p3{padding-left:64px}.p4{padding-left:80px}
+.p0.leaf{padding-left:32px}.p1.leaf{padding-left:48px}.p2.leaf{padding-left:64px}.p3.leaf{padding-left:80px}.p4.leaf{padding-left:96px}
+.note{color:#5f6b76}
+.f .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.muted{color:#7d8995}
+.crumb{color:#5f6b76;text-decoration:none}
+.crumb:hover{color:#1259d3}
+.add{display:flex;align-items:center;gap:12px;min-height:36px;font:400 14px/20px 'Lato',sans-serif;color:#7d8995}
+.add input{flex:1;border:0;outline:none;background:transparent;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.lrow{display:grid;grid-template-columns:minmax(0,1fr) auto 64px;align-items:center;gap:12px;min-height:36px;padding:0 16px;margin:0 -16px;font:400 14px/20px 'Lato',sans-serif;color:#303841;text-decoration:none}
+.lrow:hover{background:#f7fbfc}
+.meta{font:400 13px/18px 'Lato',sans-serif;color:#7d8995}
+.right{text-align:right}
+.wbox{width:100%;margin:0 auto;box-sizing:border-box}
+.stickybar{position:sticky;top:0;z-index:3;background:#ffffff;margin:0 -24px;padding:10px 24px}
+.modebtn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;padding:0;border:0;border-radius:4px;background:transparent;color:#5f6b76;cursor:pointer;font:400 13px/18px 'Lato',sans-serif}
+.modebtn:hover{background:#f7fbfc;color:#303841}
+.noteed{display:block;width:100%;min-height:640px;box-sizing:border-box;border:0;outline:none;resize:none;padding:0;margin:0;background:transparent;font:400 15px/26px 'JetBrains Mono',ui-monospace,monospace;color:#303841}
+.noteed::placeholder{color:#7d8995}
+.mdview{min-height:600px}
+.tagrow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;min-height:26px}
+.chip{font:400 13px/18px 'Lato',sans-serif;padding:2px 8px;border-radius:4px;background:#f7fbfc;color:#5f6b76}
+.tagchip{display:inline-flex;align-items:center;gap:4px;padding-right:4px;max-width:152px;box-sizing:border-box}
+.tl{min-width:0;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tagx{flex:0 0 14px;width:14px;height:14px;padding:0;border:0;border-radius:2px;background:transparent;color:#da0037;display:grid;place-items:center;cursor:pointer}
+.tagx:hover{background:#ffebeb;color:#da0037}
+.taginput{width:96px;height:22px;padding:0 8px;border:0;border-radius:4px;background:#f7fbfc;outline:none;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.taginput::placeholder{color:#7d8995}
+.addtag{height:22px;padding:0 6px;border:0;border-radius:4px;background:transparent;color:#7d8995;cursor:pointer;font:400 13px/18px 'Lato',sans-serif}
+.addtag:hover{background:#f7fbfc;color:#303841}
+.pw{position:relative;display:inline-flex}
+.sugg{position:absolute;top:28px;left:0;z-index:5;display:flex;flex-direction:column;min-width:160px;padding:4px 0;background:#ffffff;border:1px solid #dce3e8;border-radius:8px}
+.sug{height:28px;padding:0 12px;border:0;background:transparent;text-align:left;cursor:pointer;font:400 13px/18px 'Lato',sans-serif;color:#303841;white-space:nowrap}
+.sug:hover,.sug.on{background:#f7fbfc}
+.sug.new{color:#1259d3}
+.mdh2{font:500 18px/26px 'Montserrat',sans-serif;margin:20px 0 8px}
+.mdp{margin:0 0 14px;font:400 15px/26px 'JetBrains Mono',ui-monospace,monospace}
+.mdli{display:flex;gap:10px;font:400 15px/26px 'JetBrains Mono',ui-monospace,monospace}
+.mdq{margin:0 0 14px;padding-left:14px;box-shadow:inset 2px 0 0 #dce3e8;color:#5f6b76;font:400 15px/26px 'JetBrains Mono',ui-monospace,monospace}
+.mdhr{border:0;height:1px;background:#dce3e8;margin:20px 0}
+.mdc{margin:4px 0 14px;padding:10px 12px;background:#f7fbfc;border-radius:4px;font:400 13px/20px 'JetBrains Mono',ui-monospace,monospace;white-space:pre-wrap}
+.sg-b{font-weight:700}
+.sg-i{font-style:italic}
+.sg-c{font-size:13px;background:#f7fbfc;padding:0 4px;border-radius:2px}
+.chevbtn{flex:0 0 10px;width:10px;height:28px;padding:0;border:0;background:transparent;color:#7d8995;display:grid;place-items:center;cursor:pointer}
+.nmbtn{flex:1;min-width:0;height:28px;padding:0;border:0;background:transparent;text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:400 14px/20px 'Lato',sans-serif;color:inherit}
+.back{width:24px;height:24px;margin-left:-6px;padding:0;border:0;border-radius:4px;background:transparent;color:#5f6b76;display:grid;place-items:center;cursor:pointer}
+.back:hover{background:#f7fbfc;color:#303841}
+.bnav{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.bnav>*{pointer-events:auto}
+.btog{position:relative;z-index:1;width:28px;height:16px;margin-bottom:-8px;padding:0;border:0;border-radius:4px;background:#ffffff;color:#b8c4ce;display:grid;place-items:center;cursor:pointer}
+.btog:hover{color:#303841;background:#f7fbfc}
+.btog.closed{margin-bottom:6px;background:transparent}
+.btog.closed:hover{background:#f7fbfc}
+.brow{align-self:stretch;display:flex;justify-content:center;align-items:center;gap:14px;padding:8px 10px 10px;background:#ffffff;border-top:1px solid #dce3e8}
+.bico{position:relative;display:grid;place-items:center;width:28px;height:26px;color:#7d8995;text-decoration:none}
+.bico:hover{color:#303841}
+.bico.cur{color:#6f5ee4}
+.brow{position:relative}
+.bset{position:absolute;right:48px;top:8px}
+.btm{position:absolute;right:80px;top:8px;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 8px;border-radius:13px;background:#ede9ff;color:#6f5ee4;text-decoration:none;font:500 12px/16px 'JetBrains Mono',monospace}
+.btm:hover{background:#e2dcff;color:#6f5ee4}
+.btm .more{font:400 11px/16px 'Lato',sans-serif;color:#7d8995}
+.tpop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;box-sizing:border-box;display:flex;flex-direction:column;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.tpop .fbhead{padding:10px 12px 8px}
+.trw{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px 0 12px;border-top:1px solid #f2f5f7}
+.trw .tt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.trw .tl{font:500 14px/20px 'JetBrains Mono',monospace;color:#303841}
+.trw .tl.rang{color:#6f5ee4}
+.tadd{padding:10px 12px;border-top:1px solid #f2f5f7;color:#7d8995;font-size:12px}
+
+.bfb{position:absolute;right:16px;top:8px}
+.bnotif{position:absolute;right:48px;top:8px}
+.bnotif.on{color:#303841}
+.nbadge{position:absolute;top:1px;right:3px;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;background:#da0037;color:#ffffff;font:700 9px/14px 'Lato',sans-serif;text-align:center}
+.nbadge.blink{animation:nblink 1s ease-in-out infinite}
+@keyframes nblink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.85)}}
+.npop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;box-sizing:border-box;display:flex;flex-direction:column;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.npop .fbhead{padding:10px 12px 8px}
+.nrow{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px 0 12px;border-top:1px solid #f2f5f7}
+.nrow .nt{flex:1;min-width:0;display:flex;flex-direction:column}
+.nrow .nt b{font-weight:400;font-size:14px;line-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nrow .nt span{font-size:12px;line-height:16px;color:#7d8995}
+.nrow .nt span.late{color:#a84f2c}
+.nact{height:24px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:#1259d3;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.nact:hover{background:#dbfaff}
+.ndone{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#1e7a55;display:grid;place-items:center;cursor:pointer}
+.ndone:hover{background:#e3f7ee}
+.nempty{padding:14px 12px;border-top:1px solid #f2f5f7;color:#7d8995}
+
+.bfb.on{color:#303841}
+.fbback{position:absolute;inset:0;z-index:20}
+.fbpop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;padding:12px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.fbhead{display:flex;align-items:center;gap:8px;font:500 14px/20px 'Montserrat',sans-serif}
+.fbx{margin-left:auto;width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#5f6b76;display:grid;place-items:center;cursor:pointer}
+.fbx:hover{background:#f7fbfc;color:#303841}
+.fbkinds{display:flex;gap:4px}
+.fbk{height:24px;padding:0 8px;border:1px solid #dce3e8;border-radius:12px;background:#ffffff;color:#5f6b76;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.fbk:hover{color:#303841;border-color:#b8c4ce}
+.fbk.on{color:#1259d3;border-color:#1259d3;background:#dbfaff}
+.fbta{width:100%;min-height:96px;box-sizing:border-box;padding:8px;border:1px solid #dce3e8;border-radius:6px;outline:none;resize:vertical;font:400 13px/20px 'Lato',sans-serif;color:#303841;background:#ffffff}
+.fbta:focus{border-color:#1259d3}
+.fbta::placeholder{color:#7d8995}
+.fbfoot{display:flex;align-items:center;gap:8px}
+.fbsend{margin-left:auto;height:28px;padding:0 12px;border:0;border-radius:6px;background:#1259d3;color:#ffffff;cursor:pointer;font:700 13px/18px 'Lato',sans-serif}
+.fbsend:hover{background:#113eb0}
+.fbsend:disabled{background:#dce3e8;color:#7d8995;cursor:default}
+.fbok{color:#1e7a55}
+
+.bico.cur::after{content:'';position:absolute;bottom:-6px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:2px;background:#6f5ee4}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: 800px; box-sizing: border-box; display: flex; background: #ffffff; color: #303841; font-family: 'Lato', sans-serif">
+
+  <sc-if value="{{exOpen}}" hint-placeholder-val="{{ true }}">
+    <aside aria-label="Explorer" style="position: relative; flex: 0 0 232px; box-sizing: border-box; border-right: 1px solid #dce3e8; display: flex; flex-direction: column">
+      <div data-tauri-drag-region="" role="toolbar" aria-label="Explorer actions" style="flex: 0 0 40px; display: flex; align-items: center; justify-content: flex-end; gap: 0; padding: 0 8px; box-sizing: border-box">
+        <button class="tb" aria-label="New note" title="New note" onClick="{{newNote}}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M12 10v6M9 13h6"></path></svg>
+        </button>
+        <button class="tb" aria-label="New folder" title="New folder">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h6l2 2h10v11H3z"></path><path d="M12 11v5M9.5 13.5h5"></path></svg>
+        </button>
+        <button class="tb" aria-label="Reload" title="Reload">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"></path><path d="M20 4v5h-5"></path></svg>
+        </button>
+        <button class="tb" aria-label="Collapse all" title="Collapse all" onClick="{{collapseAll}}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4l4 4 4-4"></path><path d="M8 20l4-4 4 4"></path><path d="M5 12h14"></path></svg>
+        </button>
+      </div>
+      <div role="tree" style="flex: 1; min-height: 0; overflow: auto; padding: 0 0 16px; display: flex; flex-direction: column">
+        <sc-for list="{{tree}}" as="n" hint-placeholder-count="9">
+          <sc-if value="{{n.isFolder}}" hint-placeholder-val="{{ true }}">
+            <div class="{{n.cls}}" role="treeitem" aria-selected="{{n.selected}}">
+              <button class="chevbtn" aria-label="Expand or collapse folder" aria-expanded="{{n.expanded}}" onClick="{{n.toggle}}">
+                <sc-if value="{{n.expanded}}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></sc-if>
+                <sc-if value="{{n.collapsed}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if>
+              </button>
+              <button class="nmbtn" onClick="{{n.list}}">{{n.name}}</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{n.isNote}}" hint-placeholder-val="{{ false }}">
+            <a class="{{n.cls}}" href="#" role="treeitem" onClick="{{n.open}}"><span class="nm">{{n.name}}</span></a>
+          </sc-if>
+        </sc-for>
+      </div>
+
+      <button class="caret" aria-label="Collapse explorer" onClick="{{toggleEx}}" style="right: -8px; top: calc(50% - 14px); border-radius: 4px">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+      </button>
+    </aside>
+  </sc-if>
+
+  <sc-if value="{{exClosed}}" hint-placeholder-val="{{ false }}">
+    <button class="caret tab" aria-label="Expand explorer" onClick="{{toggleEx}}" style="top: calc(50% - 14px)">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+    </button>
+  </sc-if>
+
+  <sc-if value="{{navOpen}}" hint-placeholder-val="{{ true }}">
+    <div class="bnav">
+      <button class="btog" aria-label="Hide sections bar" title="Hide" onClick="{{toggleNav}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+      <nav class="brow" aria-label="Sections">
+        <a class="bico cur" href="notes.html" aria-label="Notes" aria-current="page" title="Notes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h5"></path></svg></a>
+        <a class="bico" href="tasks.html" aria-label="Tasks" title="Tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></a>
+        <a class="bico" href="people.html" aria-label="People" title="People"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+        <sc-if value="{{tmHas}}" hint-placeholder-val="{{ true }}"><a class="{{tmCls}}" href="#" aria-label="Running timers" title="Timers" aria-haspopup="dialog" aria-expanded="{{tmOpen}}" onClick="{{toggleTm}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path><path d="M9 2h6"></path></svg><span>{{tmNext}}</span><sc-if value="{{tmMore}}" hint-placeholder-val="{{ true }}"><span class="more">{{tmMoreN}}</span></sc-if></a></sc-if>
+        <a class="bico bset" href="settings.html" aria-label="Settings" title="Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
+        <a class="{{fbBtnCls}}" href="#" aria-label="Feedback" title="Feedback" aria-haspopup="dialog" aria-expanded="{{fbOpen}}" onClick="{{toggleFb}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M8.5 11h7M8.5 14.5h4"></path></svg></a>
+      </nav>
+    </div>
+  </sc-if>
+  <sc-if value="{{navClosed}}" hint-placeholder-val="{{ false }}">
+    <div class="bnav"><button class="btog closed" aria-label="Show sections bar" title="Show" onClick="{{toggleNav}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button></div>
+  </sc-if>
+
+  <sc-if value="{{tmOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fbback" onClick="{{closeTm}}"></div>
+    <div class="tpop" role="dialog" aria-label="Timers">
+      <div class="fbhead"><span>Timers</span><button class="fbx" aria-label="Close" title="Close" onClick="{{closeTm}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      <sc-for list="{{tmList}}" as="tm" hint-placeholder-count="2">
+        <div class="trw"><span class="tt">{{tm.title}}</span><span class="{{tm.cls}}">{{tm.left}}</span><button class="nact" onClick="{{tm.plus}}">+1m</button><button class="fbx" style="margin-left: 0; color: #da0037" aria-label="Cancel timer" title="Cancel" onClick="{{tm.cancel}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      </sc-for>
+      <div class="tadd">⌘T starts a new timer</div>
+    </div>
+  </sc-if>
+  <sc-if value="{{fbOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fbback" onClick="{{closeFb}}"></div>
+    <div class="fbpop" role="dialog" aria-label="Send feedback">
+      <div class="fbhead"><span>Feedback</span><button class="fbx" aria-label="Close" title="Close" onClick="{{closeFb}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      <sc-if value="{{fbWriting}}" hint-placeholder-val="{{ true }}">
+        <div class="fbkinds" role="group" aria-label="Kind"><sc-for list="{{fbKinds}}" as="fk" hint-placeholder-count="3"><button class="{{fk.cls}}" aria-pressed="{{fk.on}}" onClick="{{fk.go}}">{{fk.label}}</button></sc-for></div>
+        <textarea class="fbta" aria-label="Feedback" placeholder="A bug, an idea, something you’d like…" value="{{fbDraft}}" onInput="{{onFb}}" onKeyDown="{{fbKey}}"></textarea>
+        <div class="fbfoot"><span class="muted" style="font-size: 12px">Saved in your vault</span><button class="fbsend" disabled="{{fbEmpty}}" onClick="{{sendFb}}">Send</button></div>
+      </sc-if>
+      <sc-if value="{{fbSent}}" hint-placeholder-val="{{ false }}">
+        <span class="fbok">Thanks, saved. You can send another anytime.</span>
+        <div class="fbfoot"><button class="fbk" onClick="{{fbAgain}}">Write another</button></div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <main data-tauri-drag-region="" style="flex: 1 1 auto; min-width: 0; padding: 0 24px 48px; overflow: auto">
+    <sc-if value="{{isNote}}" hint-placeholder-val="{{ true }}">
+    <div class="stickybar">
+      <div class="caption" style="max-width: none; margin: 0; display: flex; align-items: center; gap: 6px; min-height: 28px; color: #7d8995">
+        <button class="back" aria-label="Back to list" title="Back" onClick="{{goBack}}">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>
+        </button>
+        <sc-for list="{{crumbs}}" as="cr" hint-placeholder-count="3">
+          <sc-if value="{{cr.sep}}" hint-placeholder-val="{{ true }}"><span>/</span></sc-if>
+          <sc-if value="{{cr.link}}" hint-placeholder-val="{{ false }}"><a class="crumb" href="#" onClick="{{cr.go}}">{{cr.label}}</a></sc-if>
+          <sc-if value="{{cr.current}}" hint-placeholder-val="{{ true }}"><span aria-current="page" style="color: #303841">{{cr.label}}</span></sc-if>
+        </sc-for>
+        <span style="flex: 1"></span>
+        <button class="modebtn" aria-label="{{widthLabel}}" title="{{widthLabel}}" onClick="{{toggleWide}}"><sc-if value="{{isNarrow}}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h18"></path><path d="M7 8l-4 4 4 4"></path><path d="M17 8l4 4-4 4"></path></svg></sc-if><sc-if value="{{isWide}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h6M15 12h6"></path><path d="M6 8l4 4-4 4"></path><path d="M18 8l-4 4 4 4"></path></svg></sc-if></button>
+        <sc-if value="{{note.reading}}" hint-placeholder-val="{{ true }}"><button class="modebtn" aria-label="Edit" title="Edit" onClick="{{note.toEdit}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></sc-if>
+        <sc-if value="{{note.editing}}" hint-placeholder-val="{{ false }}"><button class="modebtn" aria-label="Read" title="Read (Ctrl + E)" onClick="{{note.toRead}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></button></sc-if>
+      </div>
+    </div>
+    <article style="max-width: none; margin: 0; padding-top: 8px">
+      <div class="tagrow" aria-label="Tags">
+        <sc-for list="{{note.tags}}" as="tg" hint-placeholder-count="2">
+          <span class="chip tagchip" title="{{tg.label}}"><span class="tl">{{tg.label}}</span><button class="tagx" aria-label="{{tg.aria}}" title="Remove" onClick="{{tg.remove}}"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></span>
+        </sc-for>
+        <sc-if value="{{tagAdding}}" hint-placeholder-val="{{ false }}">
+          <span class="pw">
+            <input class="taginput" aria-label="New tag" placeholder="tag" value="{{tagDraft}}" onInput="{{onTagInput}}" onKeyDown="{{onTagKey}}" onBlur="{{onTagBlur}}">
+            <sc-if value="{{hasSugg}}" hint-placeholder-val="{{ false }}">
+              <div class="sugg" role="listbox" aria-label="Tag suggestions">
+                <sc-for list="{{sugg}}" as="sg" hint-placeholder-count="3">
+                  <button class="{{sg.cls}}" role="option" aria-selected="{{sg.on}}" onMouseDown="{{sg.pick}}">{{sg.label}}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </span>
+        </sc-if>
+        <sc-if value="{{tagIdle}}" hint-placeholder-val="{{ true }}">
+          <button class="addtag" aria-label="Add tag" title="Add tag" onClick="{{startTag}}">+ tag</button>
+        </sc-if>
+      </div>
+      <div style="height: 16px"></div>
+      <div class="wbox" style="max-width: {{contentW}}">
+      <sc-if value="{{note.reading}}" hint-placeholder-val="{{ true }}">
+        <div class="mdview" onDoubleClick="{{note.toEdit}}">
+          <sc-for list="{{note.blocks}}" as="bk" hint-placeholder-count="4">
+            <sc-if value="{{bk.isH1}}" hint-placeholder-val="{{ false }}"><h1 class="heading" style="margin: 0 0 12px"><sc-for list="{{bk.segs}}" as="sg" hint-placeholder-count="1"><span class="{{sg.cls}}">{{sg.text}}</span></sc-for></h1></sc-if>
+            <sc-if value="{{bk.isH2}}" hint-placeholder-val="{{ false }}"><h2 class="mdh2"><sc-for list="{{bk.segs}}" as="sg" hint-placeholder-count="1"><span class="{{sg.cls}}">{{sg.text}}</span></sc-for></h2></sc-if>
+            <sc-if value="{{bk.isP}}" hint-placeholder-val="{{ true }}"><p class="mdp"><sc-for list="{{bk.segs}}" as="sg" hint-placeholder-count="1"><span class="{{sg.cls}}">{{sg.text}}</span></sc-for></p></sc-if>
+            <sc-if value="{{bk.isLi}}" hint-placeholder-val="{{ false }}"><div class="mdli"><span class="muted">{{bk.bullet}}</span><span><sc-for list="{{bk.segs}}" as="sg" hint-placeholder-count="1"><span class="{{sg.cls}}">{{sg.text}}</span></sc-for></span></div></sc-if>
+            <sc-if value="{{bk.isQuote}}" hint-placeholder-val="{{ false }}"><blockquote class="mdq"><sc-for list="{{bk.segs}}" as="sg" hint-placeholder-count="1"><span class="{{sg.cls}}">{{sg.text}}</span></sc-for></blockquote></sc-if>
+            <sc-if value="{{bk.isHr}}" hint-placeholder-val="{{ false }}"><hr class="mdhr"></sc-if>
+            <sc-if value="{{bk.isCode}}" hint-placeholder-val="{{ false }}"><pre class="mdc">{{bk.text}}</pre></sc-if>
+          </sc-for>
+          <sc-if value="{{note.empty}}" hint-placeholder-val="{{ false }}"><span class="muted body">Empty note</span></sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{note.editing}}" hint-placeholder-val="{{ false }}">
+        <textarea class="noteed" aria-label="Note" placeholder="# Title
+
+Start writing…" value="{{note.text}}" onInput="{{note.onInput}}" onKeyDown="{{note.onKey}}"></textarea>
+      </sc-if>
+      </div>
+    </article>
+    </sc-if>
+
+    <sc-if value="{{isList}}" hint-placeholder-val="{{ false }}">
+    <article style="max-width: none; margin: 0; padding-top: 48px; display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <div class="caption" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-height: 24px; color: #7d8995">
+          <sc-for list="{{crumbs}}" as="cr" hint-placeholder-count="3">
+            <sc-if value="{{cr.sep}}" hint-placeholder-val="{{ true }}"><span>/</span></sc-if>
+            <sc-if value="{{cr.link}}" hint-placeholder-val="{{ false }}"><a class="crumb" href="#" onClick="{{cr.go}}">{{cr.label}}</a></sc-if>
+            <sc-if value="{{cr.current}}" hint-placeholder-val="{{ true }}"><span aria-current="page" style="color: #303841">{{cr.label}}</span></sc-if>
+          </sc-for>
+        </div>
+        <h1 class="heading" style="margin: 0">{{list.title}}</h1>
+        <span class="caption muted">{{list.summary}}</span>
+      </div>
+      <div style="display: flex; flex-direction: column">
+        <label class="add"><span>+</span><input placeholder="new note" aria-label="New note" value="{{ndraft}}" onInput="{{onNDraft}}" onKeyDown="{{onNKey}}"></label>
+        <sc-for list="{{list.rows}}" as="r" hint-placeholder-count="5">
+          <a class="lrow" href="#" onClick="{{r.open}}">
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.name}}</span>
+            <span class="meta">{{r.rel}}</span>
+            <span class="meta right">{{r.edited}}</span>
+          </a>
+        </sc-for>
+        <sc-if value="{{list.empty}}" hint-placeholder-val="{{ false }}"><span class="caption muted" style="padding-top: 8px">No notes here yet</span></sc-if>
+      </div>
+    </article>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      wide: false, ex: true, nav: true, timers: [{ id: 1, title: 'Tea', ends: Date.now() + 272000 }, { id: 2, title: 'Turn off the motor', ends: Date.now() + 545000 }], tmOpen: false, notifs: [{ id: 1, title: 'Call Ravi', when: 'Today, 5:00 PM · now' }, { id: 2, title: 'Take out the trash', when: 'Today, 4:30 PM · 2m late', late: true }], nSeen: false, nOpen: false, fb: false, fbSent: false, fbDraft: '', fbKind: 'idea', rootName: 'notes',
+      view: 'note', note: 'wc', folder: 'tauri',
+      open: { root: true, work: true, tauri: true, home: false },
+      texts: {}, modes: {}, extra: {}, ndraft: '', tagsOv: {}, tagAdding: false, tagDraft: '', tagHi: 0
+    };
+  }
+  flip(k) {
+    return () => this.setState({ [k]: !this.state[k] });
+  }
+  renderVals() {
+    if (!this._tmIv && typeof setInterval === 'function') this._tmIv = setInterval(() => { if ((this.state.timers || []).length) this.setState({ tmTick: Date.now() }); }, 1000);
+    const s = this.state;
+    const F = [
+      { k: 'root', name: s.rootName, path: '', d: 0 },
+      { k: 'work', name: 'work', path: 'work', d: 1, parent: 'root' },
+      { k: 'tauri', name: 'tauri', path: 'work/tauri', d: 2, parent: 'work' },
+      { k: 'home', name: 'home', path: 'home', d: 1, parent: 'root' }
+    ];
+    const N = {
+      wc: { name: 'window_config', path: 'work/tauri', edited: '2m', tags: ['tauri', 'ui'], text: '# Window config\n\nHide native decorations. One **hairline** is the only chrome.\n\n## Checklist\n\n- [x] decorations: false\n- [ ] drag region on the explorer toolbar\n- [ ] global shortcut for capture\n\n> Closing hides the window, so timers keep running.\n\n```json\n"decorations": false,\n"minWidth": 900\n```' },
+      plugins: { name: 'plugins', path: 'work/tauri', edited: '1d', tags: ['tauri'], text: '# Plugins\n\n- `sql`\n- `fs`\n- `global-shortcut`\n- `notification`' },
+      release: { name: 'release_checklist', path: 'work', edited: 'Yesterday', tags: ['release'], text: '# Release checklist\n\n1. Sign the macOS build\n2. Notarize\n3. Write the changelog' },
+      groceries: { name: 'groceries', path: 'home', edited: 'Mon', tags: ['home'], text: '# Groceries\n\nRice, curd, coriander, coffee beans.' },
+      books: { name: 'books', path: 'home', edited: 'Sep 24', tags: ['reading'], text: '# Books\n\nA short list for the long weekend.' },
+      scratch: { name: 'scratch', path: '', edited: 'Sep 20', tags: [], text: '# Scratch\n\nAnything goes here.' }
+    };
+    Object.keys(s.extra).forEach((k) => { N[k] = s.extra[k]; });
+    Object.keys(s.tagsOv).forEach((k) => { if (N[k]) N[k] = Object.assign({}, N[k], { tags: s.tagsOv[k] }); });
+    const byKey = {};
+    const byPath = {};
+    F.forEach((f) => { byKey[f.k] = f; byPath[f.path] = f; });
+    const prevent = (e) => { if (e && e.preventDefault) e.preventDefault(); };
+    const openNote = (k) => (e) => { prevent(e); this.setState({ view: 'note', note: k, tagAdding: false, tagDraft: '' }); };
+    const listFolder = (fk) => (e) => {
+      prevent(e);
+      const open = Object.assign({}, this.state.open);
+      let p = byKey[fk].parent;
+      while (p) { open[p] = true; p = byKey[p].parent; }
+      this.setState({ view: 'list', folder: fk, open: open });
+    };
+    const toggle = (fk) => () => this.setState({ open: Object.assign({}, this.state.open, { [fk]: !this.state.open[fk] }) });
+
+    const rows = [];
+    const walk = (f) => {
+      const isOpen = !!s.open[f.k];
+      const active = s.view === 'list' && s.folder === f.k;
+      rows.push({ isFolder: true, isNote: false, name: f.name, cls: 'f p' + f.d + (active ? ' sel' : ''), selected: active, expanded: isOpen, collapsed: !isOpen, toggle: toggle(f.k), list: listFolder(f.k) });
+      if (!isOpen) return;
+      F.filter((c) => c.parent === f.k).forEach(walk);
+      Object.keys(N).filter((k) => N[k].path === f.path).forEach((k) => {
+        const sel = s.view === 'note' && s.note === k;
+        rows.push({ isFolder: false, isNote: true, name: N[k].name, cls: 'f note leaf p' + f.d + (sel ? ' sel' : ''), open: openNote(k) });
+      });
+    };
+    walk(byKey.root);
+
+    const crumbsFor = (path, extraCurrent) => {
+      const segs = path ? path.split('/') : [];
+      const out = [{ label: s.rootName, k: 'root' }];
+      segs.forEach((seg, i) => { const f = byPath[segs.slice(0, i + 1).join('/')]; out.push({ label: seg, k: f ? f.k : 'root' }); });
+      const res = out.map((c, i) => {
+        const isLast = i === out.length - 1 && !extraCurrent;
+        return { label: c.label, link: !isLast, current: isLast, go: listFolder(c.k) };
+      });
+      if (extraCurrent) res.push({ label: extraCurrent, link: false, current: true });
+      return res.map((c, i) => Object.assign(c, { sep: i > 0 }));
+    };
+
+    const inline = (txt) => {
+      const out = [];
+      const re = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*\s][^*]*\*|_[^_\s][^_]*_)/g;
+      let last = 0, mt;
+      while ((mt = re.exec(txt))) {
+        if (mt.index > last) out.push({ text: txt.slice(last, mt.index), cls: '' });
+        const tok = mt[0];
+        if (tok.startsWith('**')) out.push({ text: tok.slice(2, -2), cls: 'sg-b' });
+        else if (tok.startsWith('`')) out.push({ text: tok.slice(1, -1), cls: 'sg-c' });
+        else out.push({ text: tok.slice(1, -1), cls: 'sg-i' });
+        last = mt.index + tok.length;
+      }
+      if (last < txt.length) out.push({ text: txt.slice(last), cls: '' });
+      return out;
+    };
+    const md = (text) => {
+      const lines = String(text || '').split('\n');
+      const blocks = [];
+      let para = [], code = null;
+      const B = (o) => Object.assign({ isH1: false, isH2: false, isP: false, isLi: false, isQuote: false, isHr: false, isCode: false, segs: [], text: '', bullet: '' }, o);
+      const flush = () => { if (para.length) { blocks.push(B({ isP: true, segs: inline(para.join(' ')) })); para = []; } };
+      lines.forEach((ln) => {
+        if (code !== null) { if (/^```/.test(ln)) { blocks.push(B({ isCode: true, text: code.join('\n') })); code = null; } else code.push(ln); return; }
+        if (/^```/.test(ln)) { flush(); code = []; return; }
+        let mm;
+        if ((mm = ln.match(/^#\s+(.*)/))) { flush(); blocks.push(B({ isH1: true, segs: inline(mm[1]) })); return; }
+        if ((mm = ln.match(/^#{2,6}\s+(.*)/))) { flush(); blocks.push(B({ isH2: true, segs: inline(mm[1]) })); return; }
+        if (/^\s*(---|\*\*\*)\s*$/.test(ln)) { flush(); blocks.push(B({ isHr: true })); return; }
+        if ((mm = ln.match(/^>\s?(.*)/))) { flush(); blocks.push(B({ isQuote: true, segs: inline(mm[1]) })); return; }
+        if ((mm = ln.match(/^\s*[-*]\s+\[( |x)\]\s+(.*)/i))) { flush(); blocks.push(B({ isLi: true, bullet: mm[1].trim() ? '☑' : '☐', segs: inline(mm[2]) })); return; }
+        if ((mm = ln.match(/^\s*[-*]\s+(.*)/))) { flush(); blocks.push(B({ isLi: true, bullet: '•', segs: inline(mm[1]) })); return; }
+        if ((mm = ln.match(/^\s*(\d+)\.\s+(.*)/))) { flush(); blocks.push(B({ isLi: true, bullet: mm[1] + '.', segs: inline(mm[2]) })); return; }
+        if (!ln.trim()) { flush(); return; }
+        para.push(ln.trim());
+      });
+      if (code !== null) blocks.push(B({ isCode: true, text: code.join('\n') }));
+      flush();
+      return blocks;
+    };
+    const textOf = (k) => (s.texts[k] != null ? s.texts[k] : N[k].text);
+    const curFolderKey = () => {
+      if (this.state.view === 'list') return this.state.folder;
+      const n = N[this.state.note];
+      return n && byPath[n.path] ? byPath[n.path].k : 'root';
+    };
+    const createNote = (rawName) => {
+      const name = String(rawName || 'untitled').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'untitled';
+      const fk = curFolderKey();
+      const k = 'n' + Date.now();
+      const title = name.replace(/-/g, ' ').replace(/^./, (c) => c.toUpperCase());
+      const open = Object.assign({}, this.state.open, { [fk]: true });
+      this.setState({
+        extra: Object.assign({}, this.state.extra, { [k]: { name: name, path: byKey[fk].path, edited: 'now', tags: [], text: '# ' + title + '\n\n' } }),
+        modes: Object.assign({}, this.state.modes, { [k]: 'edit' }),
+        view: 'note', note: k, ndraft: '', open: open
+      });
+      setTimeout(() => { const el = document.querySelector('.noteed'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 0);
+    };
+
+    const vals = {
+      ndraft: s.ndraft,
+      onNDraft: (e) => this.setState({ ndraft: e.target.value }),
+      onNKey: (e) => { if (e.key === 'Enter' && this.state.ndraft.trim()) createNote(this.state.ndraft); },
+      newNote: () => createNote('untitled'),
+      exOpen: s.ex, exClosed: !s.ex,
+      navOpen: s.nav, navClosed: !s.nav,
+      tmOpen: !!s.tmOpen && (s.timers || []).length > 0,
+      tmHas: (s.timers || []).length > 0,
+      tmCls: 'btm',
+      tmNext: (() => { const t = (s.timers || []).slice().sort((a, b) => a.ends - b.ends)[0]; if (!t) return ''; const ms = Math.max(0, t.ends - Date.now()); const sec = Math.ceil(ms / 1000); return ms <= 0 ? 'done' : Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); })(),
+      tmMore: (s.timers || []).length > 1, tmMoreN: '+' + ((s.timers || []).length - 1),
+      toggleTm: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ tmOpen: !this.state.tmOpen, fb: false }); },
+      closeTm: () => this.setState({ tmOpen: false }),
+      tmList: (s.timers || []).slice().sort((a, b) => a.ends - b.ends).map((t) => { const ms = Math.max(0, t.ends - Date.now()); const sec = Math.ceil(ms / 1000); return { title: t.title, left: ms <= 0 ? 'done' : Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'), cls: 'tl' + (ms <= 0 ? ' rang' : ''), plus: () => this.setState({ timers: this.state.timers.map((x) => x.id === t.id ? Object.assign({}, x, { ends: Math.max(x.ends, Date.now()) + 60000 }) : x) }), cancel: () => this.setState({ timers: this.state.timers.filter((x) => x.id !== t.id) }) }; }),
+      nOpen: !!s.nOpen, nEmpty: (s.notifs || []).length === 0,
+      bellCls: 'bico bnotif' + (s.nOpen ? ' on' : ''),
+      nHasBadge: (s.notifs || []).length > 0, nCount: String((s.notifs || []).length),
+      nBadgeCls: 'nbadge' + (s.nSeen ? '' : ' blink'),
+      toggleN: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ nOpen: !this.state.nOpen, nSeen: true, fb: false }); },
+      closeN: () => this.setState({ nOpen: false }),
+      nList: (s.notifs || []).map((n) => ({ title: n.title, when: n.when, whenCls: n.late ? 'late' : '', done: () => this.setState({ notifs: this.state.notifs.filter((x) => x.id !== n.id) }), snooze: () => this.setState({ notifs: this.state.notifs.filter((x) => x.id !== n.id) }) })),
+      fbOpen: !!s.fb, fbWriting: !s.fbSent, fbSent: !!s.fbSent, fbDraft: s.fbDraft || '', fbEmpty: !(s.fbDraft || '').trim(),
+      fbBtnCls: 'bico bfb' + (s.fb ? ' on' : ''),
+      toggleFb: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ fb: !this.state.fb, fbSent: false, nOpen: false }); setTimeout(() => { const el = document.querySelector('.fbta'); if (el) el.focus(); }, 0); },
+      closeFb: () => this.setState({ fb: false }),
+      fbKinds: [['bug', 'Bug'], ['idea', 'Idea'], ['other', 'Other']].map((x) => ({ label: x[1], on: (s.fbKind || 'idea') === x[0], cls: 'fbk' + ((s.fbKind || 'idea') === x[0] ? ' on' : ''), go: () => this.setState({ fbKind: x[0] }) })),
+      onFb: (e) => this.setState({ fbDraft: e.target.value }),
+      fbKey: (e) => { if (e.key === 'Escape') this.setState({ fb: false }); if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && (this.state.fbDraft || '').trim()) this.setState({ fbSent: true, fbDraft: '' }); },
+      // stored in db/app.sqlite → feedback(id, kind, text, created_at)
+      sendFb: () => { if ((this.state.fbDraft || '').trim()) this.setState({ fbSent: true, fbDraft: '' }); },
+      fbAgain: () => this.setState({ fbSent: false }),
+      isWide: !!s.wide, isNarrow: !s.wide, widthLabel: s.wide ? 'Narrow width' : 'Full width', contentW: s.wide ? 'none' : '760px',
+      toggleWide: () => this.setState({ wide: !this.state.wide }),
+      tree: rows,
+      isNote: s.view === 'note',
+      isList: s.view === 'list',
+      toggleEx: this.flip('ex'),
+      toggleNav: this.flip('nav'),
+      collapseAll: () => this.setState({ open: { root: true } }),
+      goBack: () => this.setState({ view: 'list' }),
+      note: { blocks: [], reading: true, editing: false, tags: [] },
+      tagAdding: false, tagIdle: true, hasSugg: false, sugg: [],
+      list: { title: '', summary: '', rows: [], empty: false }
+    };
+    if (s.view === 'note') {
+      const n = N[s.note];
+      vals.crumbs = crumbsFor(n.path, n.name);
+      const k = s.note;
+      const mode = s.modes[k] || 'read';
+      const setMode = (m) => () => { this.setState({ modes: Object.assign({}, this.state.modes, { [k]: m }) }); if (m === 'edit') setTimeout(() => { const el = document.querySelector('.noteed'); if (el) el.focus(); }, 0); };
+      const txt = textOf(k);
+      const cur = N[k].tags || [];
+      const setTags = (arr) => this.setState({ tagsOv: Object.assign({}, this.state.tagsOv, { [k]: arr }) });
+      const allTags = Array.from(new Set(Object.keys(N).reduce((acc, x) => acc.concat(N[x].tags || []), ['ci', 'docs', 'home', 'reading', 'release', 'setup', 'tauri', 'ui', 'v0.1']))).sort();
+      const q = s.tagDraft.trim().toLowerCase();
+      const matches = allTags.filter((tg) => cur.indexOf(tg) < 0 && (!q || tg.toLowerCase().indexOf(q) >= 0)).slice(0, 6);
+      const canCreate = q && allTags.map((x) => x.toLowerCase()).indexOf(q) < 0;
+      const options = matches.map((tg) => ({ label: tg, value: tg, isNew: false })).concat(canCreate ? [{ label: 'Create “' + s.tagDraft.trim() + '”', value: s.tagDraft.trim(), isNew: true }] : []);
+      const hi = Math.min(s.tagHi, Math.max(0, options.length - 1));
+      const addTag = (v) => { const val = String(v || '').trim(); if (!val || cur.indexOf(val) >= 0) { this.setState({ tagDraft: '', tagHi: 0 }); return; } this.setState({ tagsOv: Object.assign({}, this.state.tagsOv, { [k]: cur.concat([val]) }), tagDraft: '', tagHi: 0 }); };
+      Object.assign(vals, {
+        tagAdding: s.tagAdding, tagIdle: !s.tagAdding, tagDraft: s.tagDraft,
+        startTag: () => { this.setState({ tagAdding: true, tagDraft: '', tagHi: 0 }); setTimeout(() => { const el = document.querySelector('.taginput'); if (el) el.focus(); }, 0); },
+        onTagInput: (e) => this.setState({ tagDraft: e.target.value.replace(/,/g, ''), tagHi: 0 }),
+        onTagBlur: () => this.setState({ tagAdding: false, tagDraft: '' }),
+        onTagKey: (e) => {
+          if (e.key === 'Escape') { this.setState({ tagAdding: false, tagDraft: '' }); return; }
+          if (e.key === 'ArrowDown') { e.preventDefault(); this.setState({ tagHi: Math.min(hi + 1, options.length - 1) }); return; }
+          if (e.key === 'ArrowUp') { e.preventDefault(); this.setState({ tagHi: Math.max(hi - 1, 0) }); return; }
+          if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') { if (options.length || q) { e.preventDefault(); addTag(options.length ? options[hi].value : s.tagDraft); } return; }
+          if (e.key === 'Backspace' && !s.tagDraft && cur.length) setTags(cur.slice(0, -1));
+        },
+        hasSugg: s.tagAdding && options.length > 0,
+        sugg: options.map((o, i) => ({ label: o.label, on: i === hi, cls: 'sug' + (i === hi ? ' on' : '') + (o.isNew ? ' new' : ''), pick: (e) => { if (e && e.preventDefault) e.preventDefault(); addTag(o.value); } }))
+      });
+      vals.note = {
+        tags: cur.map((tg) => ({ label: tg, aria: 'Remove tag ' + tg, remove: () => setTags(cur.filter((x) => x !== tg)) })),
+        reading: mode !== 'edit', editing: mode === 'edit',
+        text: txt, blocks: md(txt), empty: !txt.trim(),
+        toEdit: setMode('edit'), toRead: setMode('read'),
+        onInput: (e) => { const el = e.target; el.style.height = 'auto'; el.style.height = Math.max(640, el.scrollHeight) + 'px'; this.setState({ texts: Object.assign({}, this.state.texts, { [k]: el.value }) }); },
+        onKey: (e) => {
+          if ((e.ctrlKey || e.metaKey) && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); setMode('read')(); return; }
+          if (e.key === 'Tab') { e.preventDefault(); const el = e.target; const a0 = el.selectionStart, b0 = el.selectionEnd; const v = el.value.slice(0, a0) + '  ' + el.value.slice(b0); this.setState({ texts: Object.assign({}, this.state.texts, { [k]: v }) }); setTimeout(() => { el.selectionStart = el.selectionEnd = a0 + 2; }, 0); }
+        }
+      };
+    } else {
+      const f = byKey[s.folder];
+      const fp = f.path;
+      const keys = Object.keys(N).filter((k) => fp === '' || N[k].path === fp || N[k].path.indexOf(fp + '/') === 0);
+      vals.crumbs = crumbsFor(fp, null);
+      vals.list = {
+        title: f.name,
+        summary: keys.length + (keys.length === 1 ? ' note' : ' notes'),
+        rows: keys.map((k) => ({ name: N[k].name, rel: fp === '' ? N[k].path : (N[k].path === fp ? '' : N[k].path.slice(fp.length + 1)), edited: N[k].edited, open: openNote(k) })),
+        empty: keys.length === 0
+      };
+    }
+    return vals;
+  }
+}
+</script>
+</body>
+</html>

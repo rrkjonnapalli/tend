@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tend mockup · reminders</title>
+<script src="../../design/dc-runtime.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#303841}a:hover{color:#1259d3}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #1070e3;outline-offset:2px}
+.heading{font:500 28px/36px 'Montserrat',sans-serif}
+.caption{font:400 13px/18px 'Lato',sans-serif}
+.muted{color:#7d8995}
+.ntr{font:600 15px/20px 'Montserrat',sans-serif;text-decoration:none;color:#7d8995;padding:4px 2px}
+.caret{position:absolute;width:14px;height:28px;padding:0;border:1px solid #dce3e8;background:#ffffff;color:#5f6b76;display:grid;place-items:center;cursor:pointer;z-index:2}
+.tab{left:0;border-left:0;border-radius:0 4px 4px 0}
+.navbar{display:flex;align-items:center;justify-content:center;gap:16px;padding:0 20px;box-sizing:border-box;height:48px}
+.views{display:flex;align-items:center;gap:8px;font:400 14px/20px 'Lato',sans-serif}
+.vbtn{display:inline-flex;align-items:center;gap:4px;height:28px;padding:2px 2px 0;box-sizing:border-box;border:0;border-bottom:2px solid transparent;background:transparent;color:#7d8995;cursor:pointer;font:400 14px/20px 'Lato',sans-serif}
+.vbtn:hover{color:#303841}
+.vbtn.on{color:#303841;border-bottom-color:#1259d3}
+.vc{font:400 12px/16px 'Lato',sans-serif;color:#7d8995}
+.vsep{color:#7d8995;line-height:28px}
+.cap{display:flex;flex-direction:column;gap:8px}
+.capline{display:flex;align-items:center;gap:12px;min-height:36px;font:400 14px/20px 'Lato',sans-serif;color:#7d8995}
+.capline .txt{flex:1;min-width:0;border:0;outline:none;background:transparent;font:400 15px/22px 'JetBrains Mono',ui-monospace,monospace;color:#303841}
+.capline .txt::placeholder{color:#7d8995}
+.fld{height:28px;padding:0 6px;border:1px solid #dce3e8;border-radius:4px;background:#ffffff;color:#303841;font:400 13px/18px 'Lato',sans-serif;outline:none}
+.fld{display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:0 10px}
+.fld:hover{border-color:#7d8995}
+.pw{position:relative;display:inline-flex}
+.backdrop{position:absolute;inset:0;z-index:4}
+.pop{position:absolute;top:34px;left:0;z-index:5;display:flex;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;overflow:hidden}
+.presets{display:flex;flex-direction:column;padding:8px 0;border-right:1px solid #dce3e8;min-width:116px}
+.pre{height:30px;padding:0 16px;border:0;background:transparent;text-align:left;cursor:pointer;font:400 13px/18px 'Lato',sans-serif;color:#5f6b76}
+.pre:hover{background:#f7fbfc;color:#303841}
+.pre.on{color:#303841;font-weight:700}
+.month{display:flex;flex-direction:column;gap:8px;padding:12px 14px 14px}
+.calhead{display:flex;align-items:center;justify-content:space-between;font:500 14px/20px 'Lato',sans-serif}
+.calnav{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#5f6b76;display:grid;place-items:center;cursor:pointer}
+.calnav:hover{background:#f7fbfc}
+.calgrid{display:grid;grid-template-columns:repeat(7,32px);row-gap:2px}
+.wd{font:400 11px/16px 'Lato',sans-serif;color:#7d8995;text-align:center;padding-bottom:4px;letter-spacing:.04em}
+.cell{height:32px;display:grid;place-items:center}
+.dd{width:30px;height:30px;padding:0;border:0;border-radius:15px;background:transparent;color:#303841;cursor:pointer;font:400 13px/18px 'Lato',sans-serif}
+.dd:hover{background:#dce3e8}
+.dd.today{color:#1259d3;font-weight:700}
+.dd.past{color:#b8c4ce}
+.dd.edge{background:#303841;color:#ffffff;font-weight:700}
+.lbl{font:400 11px/16px 'Lato',sans-serif;color:#7d8995;letter-spacing:.04em;text-transform:uppercase}
+.tgrid{display:grid;gap:4px}
+.tfld{gap:2px;cursor:default}
+.tfld:focus-within{border-color:#1259d3}
+.seg{width:20px;padding:0;border:0;outline:none;background:transparent;text-align:center;font:400 13px/18px 'Lato',sans-serif;color:#303841;border-radius:2px}
+.seg:focus{background:#dce3e8}
+.ap{height:20px;margin-left:4px;padding:0 4px;border:0;border-radius:2px;background:transparent;color:#303841;cursor:pointer;font:400 13px/18px 'Lato',sans-serif}
+.ap:hover,.ap:focus-visible{background:#dce3e8}
+.opt{height:30px;padding:0;border:0;border-radius:4px;background:transparent;color:#303841;cursor:pointer;font:400 13px/18px 'Lato',sans-serif}
+.opt:hover{background:#f7fbfc}
+.opt.on{background:#303841;color:#ffffff;font-weight:700}
+.fld:focus{border-color:#1259d3}
+.chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-left:20px}
+.chip{height:24px;padding:0 8px;border:1px solid #dce3e8;border-radius:4px;background:#ffffff;color:#5f6b76;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.chip:hover{border-color:#7d8995;color:#303841}
+.preview{font:400 13px/18px 'Lato',sans-serif;color:#1259d3}
+.grp{display:flex;flex-direction:column}
+.gh{display:flex;align-items:center;gap:6px;height:28px;margin:12px -16px 2px;padding:0 16px;border:0;background:transparent;text-align:left;cursor:pointer;font:400 13px/18px 'Lato',sans-serif;color:#7d8995}
+.gh:hover{background:#f7fbfc;color:#303841}
+.r{position:relative;display:grid;grid-template-columns:16px 64px minmax(0,1fr) auto auto;align-items:center;gap:12px;min-height:36px;padding:0 16px 0 32px;margin:0 -16px 0 -32px;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.r:hover{background:#f7fbfc}
+.when{font:400 13px/18px 'JetBrains Mono',ui-monospace,monospace;color:#7d8995}
+.when.live{color:#1259d3}
+.tag{font:400 12px/16px 'Lato',sans-serif;color:#7d8995;white-space:nowrap}
+.acts{display:flex;gap:2px;visibility:hidden}
+.r:hover .acts,.p:hover .acts,.acts:focus-within{visibility:visible}
+.mini{height:24px;padding:0 6px;border:0;border-radius:4px;background:transparent;color:#5f6b76;cursor:pointer;font:400 12px/16px 'Lato',sans-serif;white-space:nowrap}
+.mini:hover{background:#dce3e8;color:#303841}
+.done .ttl{color:#7d8995;text-decoration:line-through}
+.p{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 80px 96px 56px;align-items:center;gap:12px;min-height:36px;padding:0 16px;margin:0 -16px;font:400 14px/20px 'Lato',sans-serif}
+.p:hover{background:#f7fbfc}
+.soon{color:#1259d3}
+.p .acts{display:flex;gap:2px}
+.rchk{width:16px;height:16px;padding:0;border:1.5px solid #7d8995;border-radius:8px;background:#ffffff;color:transparent;display:grid;place-items:center;cursor:pointer;box-sizing:border-box}
+.rchk:hover{border-color:#1e7a55;color:#1e7a55}
+.rchk.on{background:#1e7a55;border-color:#1e7a55;color:#ffffff}
+.rchk.on:hover{background:#ffffff;color:#7d8995;border-color:#7d8995}
+.ib{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#7d8995;display:grid;place-items:center;cursor:pointer}
+.ib{color:#1259d3}
+.ib:hover{background:#dbfaff;color:#1259d3}
+.ib.del{color:#da0037}
+.ib.del:hover{background:#ffebeb;color:#da0037}
+.r.editing,.p.editing{display:block}
+.p.editing:hover,.r.editing:hover{background:transparent}
+.acts{align-items:center}
+.redit{grid-column:1 / -1;display:flex;align-items:center;gap:8px;min-height:40px}
+.etxt{flex:1;min-width:160px;height:28px;padding:0 8px;border:0;border-radius:4px;background:#f7fbfc;outline:none;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.r.editing{background:transparent}
+.icb{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;display:grid;place-items:center;cursor:pointer}
+.icb.ok{color:#1e7a55}
+.icb.ok:hover{background:#e3f7ee}
+.icb.no{color:#da0037}
+.icb.no:hover{background:#ffebeb}
+.rlink{display:inline-flex;align-items:center;gap:4px;color:#1259d3;text-decoration:none;padding:0 4px;border-radius:4px;background:#dbfaff;font-size:13px;vertical-align:1px}
+.rlink:hover{color:#113eb0;text-decoration:underline}
+.done .rlink{background:transparent;color:#7d8995}
+.bnav{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.bnav>*{pointer-events:auto}
+.btog{position:relative;z-index:1;width:28px;height:16px;margin-bottom:-8px;padding:0;border:0;border-radius:4px;background:#ffffff;color:#b8c4ce;display:grid;place-items:center;cursor:pointer}
+.btog:hover{color:#303841;background:#f7fbfc}
+.btog.closed{margin-bottom:6px;background:transparent}
+.btog.closed:hover{background:#f7fbfc}
+.brow{align-self:stretch;display:flex;justify-content:center;align-items:center;gap:14px;padding:8px 10px 10px;background:#ffffff;border-top:1px solid #dce3e8}
+.bico{position:relative;display:grid;place-items:center;width:28px;height:26px;color:#7d8995;text-decoration:none}
+.bico:hover{color:#303841}
+.bico.cur{color:#6f5ee4}
+.brow{position:relative}
+.bset{position:absolute;right:80px;top:8px}
+.bfb{position:absolute;right:16px;top:8px}
+.bnotif{position:absolute;right:48px;top:8px}
+.bnotif.on{color:#303841}
+.nbadge{position:absolute;top:1px;right:3px;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;background:#da0037;color:#ffffff;font:700 9px/14px 'Lato',sans-serif;text-align:center}
+.nbadge.blink{animation:nblink 1s ease-in-out infinite}
+@keyframes nblink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.85)}}
+.npop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;box-sizing:border-box;display:flex;flex-direction:column;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.npop .fbhead{padding:10px 12px 8px}
+.nrow{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px 0 12px;border-top:1px solid #f2f5f7}
+.nrow .nt{flex:1;min-width:0;display:flex;flex-direction:column}
+.nrow .nt b{font-weight:400;font-size:14px;line-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nrow .nt span{font-size:12px;line-height:16px;color:#7d8995}
+.nrow .nt span.late{color:#a84f2c}
+.nact{height:24px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:#1259d3;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.nact:hover{background:#dbfaff}
+.ndone{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#1e7a55;display:grid;place-items:center;cursor:pointer}
+.ndone:hover{background:#e3f7ee}
+.nempty{padding:14px 12px;border-top:1px solid #f2f5f7;color:#7d8995}
+
+.bfb.on{color:#303841}
+.fbback{position:absolute;inset:0;z-index:20}
+.fbpop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;padding:12px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.fbhead{display:flex;align-items:center;gap:8px;font:500 14px/20px 'Montserrat',sans-serif}
+.fbx{margin-left:auto;width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#5f6b76;display:grid;place-items:center;cursor:pointer}
+.fbx:hover{background:#f7fbfc;color:#303841}
+.fbkinds{display:flex;gap:4px}
+.fbk{height:24px;padding:0 8px;border:1px solid #dce3e8;border-radius:12px;background:#ffffff;color:#5f6b76;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.fbk:hover{color:#303841;border-color:#b8c4ce}
+.fbk.on{color:#1259d3;border-color:#1259d3;background:#dbfaff}
+.fbta{width:100%;min-height:96px;box-sizing:border-box;padding:8px;border:1px solid #dce3e8;border-radius:6px;outline:none;resize:vertical;font:400 13px/20px 'Lato',sans-serif;color:#303841;background:#ffffff}
+.fbta:focus{border-color:#1259d3}
+.fbta::placeholder{color:#7d8995}
+.fbfoot{display:flex;align-items:center;gap:8px}
+.fbsend{margin-left:auto;height:28px;padding:0 12px;border:0;border-radius:6px;background:#1259d3;color:#ffffff;cursor:pointer;font:700 13px/18px 'Lato',sans-serif}
+.fbsend:hover{background:#113eb0}
+.fbsend:disabled{background:#dce3e8;color:#7d8995;cursor:default}
+.fbok{color:#1e7a55}
+
+.bico.cur::after{content:'';position:absolute;bottom:-6px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:2px;background:#6f5ee4}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: 800px; box-sizing: border-box; display: flex; background: #ffffff; color: #303841; font-family: 'Lato', sans-serif">
+
+  <sc-if value="{{anyPop}}" hint-placeholder-val="{{ false }}"><div class="backdrop" onClick="{{closePop}}"></div></sc-if>
+  <sc-if value="{{navOpen}}" hint-placeholder-val="{{ true }}">
+    <div class="bnav">
+      <button class="btog" aria-label="Hide sections bar" title="Hide" onClick="{{toggleNav}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+      <nav class="brow" aria-label="Sections">
+        <a class="bico" href="../../design/screens/notes.html" aria-label="Notes" title="Notes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h5"></path></svg></a>
+        <a class="bico" href="../../design/screens/tasks.html" aria-label="Tasks" title="Tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></a>
+        <a class="bico cur" href="reminders.html" aria-label="Reminders" aria-current="page" title="Reminders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg></a>
+        <a class="bico" href="calendar.html" aria-label="Calendar" title="Calendar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg></a>
+        <a class="bico" href="../../design/screens/people.html" aria-label="People" title="People"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+        <a class="bico bset" href="../../design/screens/settings.html" aria-label="Settings" title="Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
+        <a class="{{bellCls}}" href="#" aria-label="Notifications" title="Notifications" aria-haspopup="dialog" aria-expanded="{{nOpen}}" onClick="{{toggleN}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 21h4"></path></svg><sc-if value="{{nHasBadge}}" hint-placeholder-val="{{ true }}"><span class="{{nBadgeCls}}">{{nCount}}</span></sc-if></a>
+        <a class="{{fbBtnCls}}" href="#" aria-label="Feedback" title="Feedback" aria-haspopup="dialog" aria-expanded="{{fbOpen}}" onClick="{{toggleFb}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M8.5 11h7M8.5 14.5h4"></path></svg></a>
+      </nav>
+    </div>
+  </sc-if>
+  <sc-if value="{{navClosed}}" hint-placeholder-val="{{ false }}">
+    <div class="bnav"><button class="btog closed" aria-label="Show sections bar" title="Show" onClick="{{toggleNav}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button></div>
+  </sc-if>
+
+  <sc-if value="{{nOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fbback" onClick="{{closeN}}"></div>
+    <div class="npop" role="dialog" aria-label="Notifications">
+      <div class="fbhead"><span>Notifications</span><button class="fbx" aria-label="Close" title="Close" onClick="{{closeN}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      <sc-for list="{{nList}}" as="nt" hint-placeholder-count="2">
+        <div class="nrow"><span class="nt"><b>{{nt.title}}</b><span class="{{nt.whenCls}}">{{nt.when}}</span></span><button class="nact" onClick="{{nt.snooze}}">+10m</button><button class="ndone" aria-label="Done" title="Done" onClick="{{nt.done}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button></div>
+      </sc-for>
+      <sc-if value="{{nEmpty}}" hint-placeholder-val="{{ false }}"><div class="nempty">Nothing right now. Reminders show up here when they go off.</div></sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{fbOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fbback" onClick="{{closeFb}}"></div>
+    <div class="fbpop" role="dialog" aria-label="Send feedback">
+      <div class="fbhead"><span>Feedback</span><button class="fbx" aria-label="Close" title="Close" onClick="{{closeFb}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      <sc-if value="{{fbWriting}}" hint-placeholder-val="{{ true }}">
+        <div class="fbkinds" role="group" aria-label="Kind"><sc-for list="{{fbKinds}}" as="fk" hint-placeholder-count="3"><button class="{{fk.cls}}" aria-pressed="{{fk.on}}" onClick="{{fk.go}}">{{fk.label}}</button></sc-for></div>
+        <textarea class="fbta" aria-label="Feedback" placeholder="A bug, an idea, something you’d like…" value="{{fbDraft}}" onInput="{{onFb}}" onKeyDown="{{fbKey}}"></textarea>
+        <div class="fbfoot"><span class="muted" style="font-size: 12px">Saved in your vault</span><button class="fbsend" disabled="{{fbEmpty}}" onClick="{{sendFb}}">Send</button></div>
+      </sc-if>
+      <sc-if value="{{fbSent}}" hint-placeholder-val="{{ false }}">
+        <span class="fbok">Thanks, saved. You can send another anytime.</span>
+        <div class="fbfoot"><button class="fbk" onClick="{{fbAgain}}">Write another</button></div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <main data-tauri-drag-region="" style="flex: 1 1 auto; min-width: 0; padding: 48px 24px 96px; overflow: auto">
+    <article style="max-width: 620px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <h1 class="heading" style="margin: 0">{{title}}</h1>
+        <span class="caption muted">{{subtitle}}</span>
+      </div>
+
+
+      <sc-if value="{{isRem}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <div class="cap">
+            <div class="capline">
+              <span style="width: 8px; text-align: center">+</span>
+              <span class="fld tfld" role="group" aria-label="Timer length">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2.5 2"></path><path d="M9 2h6"></path></svg>
+                <input class="seg" inputmode="numeric" maxlength="2" aria-label="Hours" value="{{tmH}}" onInput="{{onTmH}}" onKeyDown="{{keyTmH}}" onFocus="{{selAll}}">
+                <span class="muted">h</span>
+                <input class="seg" inputmode="numeric" maxlength="2" aria-label="Minutes" value="{{tmM}}" onInput="{{onTmM}}" onKeyDown="{{keyTmM}}" onBlur="{{fixTmM}}" onFocus="{{selAll}}">
+                <span class="muted">m</span>
+                <input class="seg" inputmode="numeric" maxlength="2" aria-label="Seconds" value="{{tmS}}" onInput="{{onTmS}}" onKeyDown="{{keyTmS}}" onBlur="{{fixTmS}}" onFocus="{{selAll}}">
+                <span class="muted" style="padding-right: 2px">s</span>
+              </span>
+              <input class="txt" placeholder="timer for…" aria-label="Timer" value="{{tdraft}}" onInput="{{onTDraft}}" onKeyDown="{{onTKey}}">
+            </div>
+            <div class="capline">
+              <span style="width: 8px; text-align: center">+</span>
+              <span class="pw">
+                <button class="fld" aria-haspopup="dialog" aria-expanded="{{pop.date}}" onClick="{{openPop.date}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg>{{dateLabel}}</button>
+                <sc-if value="{{pop.date}}" hint-placeholder-val="{{ false }}">
+                  <div class="pop" role="dialog" aria-label="Pick a date">
+                    <div class="month">
+                      <div class="calhead">
+                        <button class="calnav" aria-label="Previous month" onClick="{{cal.prev}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+                        <span>{{cal.title}}</span>
+                        <button class="calnav" aria-label="Next month" onClick="{{cal.next}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+                      </div>
+                      <div class="calgrid">
+                        <span class="wd">MO</span><span class="wd">TU</span><span class="wd">WE</span><span class="wd">TH</span><span class="wd">FR</span><span class="wd">SA</span><span class="wd">SU</span>
+                        <sc-for list="{{cal.days}}" as="dd" hint-placeholder-count="35">
+                          <span class="cell"><sc-if value="{{dd.real}}" hint-placeholder-val="{{ true }}"><button class="{{dd.cls}}" aria-label="{{dd.aria}}" onClick="{{dd.pick}}">{{dd.n}}</button></sc-if></span>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </div>
+                </sc-if>
+              </span>
+              <span class="fld tfld" role="group" aria-label="Time">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg>
+                <input class="seg" inputmode="numeric" maxlength="2" aria-label="Hour" value="{{tH}}" onInput="{{onH}}" onKeyDown="{{keyH}}" onBlur="{{fixH}}" onFocus="{{selAll}}">
+                <span class="muted">:</span>
+                <input class="seg" inputmode="numeric" maxlength="2" aria-label="Minute" value="{{tM}}" onInput="{{onM}}" onKeyDown="{{keyM}}" onBlur="{{fixM}}" onFocus="{{selAll}}">
+                <button class="ap" aria-label="Toggle AM or PM" onClick="{{toggleAP}}">{{tAP}}</button>
+              </span>
+              <input class="txt" placeholder="remind me to… (links work too)" aria-label="Reminder" value="{{draft}}" onInput="{{onDraft}}" onKeyDown="{{onDraftKey}}">
+            </div>
+          </div>
+
+          <sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+            <section class="grp" aria-label="{{g.label}}">
+              <button class="gh" aria-expanded="{{g.open}}" onClick="{{g.toggle}}">
+                <sc-if value="{{g.open}}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></sc-if>
+                <sc-if value="{{g.closed}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if>
+                <span>{{g.label}}</span><span class="vc">{{g.count}}</span>
+              </button>
+              <sc-if value="{{g.open}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; padding-left: 16px">
+              <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="2">
+                <div class="{{r.cls}}">
+                  <sc-if value="{{r.viewing}}" hint-placeholder-val="{{ true }}">
+                  <button class="{{r.chkCls}}" role="checkbox" aria-checked="{{r.isDone}}" aria-label="{{r.chkLabel}}" title="{{r.chkLabel}}" onClick="{{r.done}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button>
+                  <span class="{{r.whenCls}}">{{r.when}}</span>
+                  <span class="ttl" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap"><sc-for list="{{r.segs}}" as="sg" hint-placeholder-count="1"><sc-if value="{{sg.isLink}}" hint-placeholder-val="{{ false }}"><a class="rlink" href="{{sg.href}}" target="_blank" rel="noopener" title="{{sg.href}}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg>{{sg.text}}</a></sc-if><sc-if value="{{sg.isText}}" hint-placeholder-val="{{ true }}"><span>{{sg.text}}</span></sc-if></sc-for></span>
+                  <span class="tag">{{r.tag}}</span>
+                  <span class="acts">
+                    <sc-if value="{{r.active}}" hint-placeholder-val="{{ true }}">
+                      <button class="mini" title="Snooze 10 minutes" onClick="{{r.snooze}}">+10m</button>
+                    </sc-if>
+                    <sc-if value="{{r.canEdit}}" hint-placeholder-val="{{ true }}"><a class="ib" href="reminder-page.html" aria-label="Open reminder" title="Open"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></a></sc-if>
+                    <button class="ib del" aria-label="Delete" title="Delete" onClick="{{r.remove}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg></button>
+                  </span>
+                  </sc-if>
+                  <sc-if value="{{r.editing}}" hint-placeholder-val="{{ false }}">
+                    <div class="redit">
+                      <sc-if value="{{r.hasWhen}}" hint-placeholder-val="{{ true }}">
+                        <span class="pw">
+                          <button class="fld" aria-haspopup="dialog" aria-expanded="{{pop.edate}}" onClick="{{openPop.edate}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg>{{eDateLabel}}</button>
+                          <sc-if value="{{pop.edate}}" hint-placeholder-val="{{ false }}">
+                  <div class="pop" role="dialog" aria-label="Pick a date" style="top: 30px">
+                    <div class="month">
+                      <div class="calhead">
+                        <button class="calnav" aria-label="Previous month" onClick="{{cal.prev}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+                        <span>{{cal.title}}</span>
+                        <button class="calnav" aria-label="Next month" onClick="{{cal.next}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+                      </div>
+                      <div class="calgrid">
+                        <span class="wd">MO</span><span class="wd">TU</span><span class="wd">WE</span><span class="wd">TH</span><span class="wd">FR</span><span class="wd">SA</span><span class="wd">SU</span>
+                        <sc-for list="{{cal.days}}" as="dd" hint-placeholder-count="35">
+                          <span class="cell"><sc-if value="{{dd.real}}" hint-placeholder-val="{{ true }}"><button class="{{dd.cls}}" aria-label="{{dd.aria}}" onClick="{{dd.pick}}">{{dd.n}}</button></sc-if></span>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </div>
+                          </sc-if>
+                        </span>
+                        <span class="fld tfld" role="group" aria-label="Time">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg>
+                          <input class="seg" inputmode="numeric" maxlength="2" aria-label="Hour" value="{{eH}}" onInput="{{onEH}}" onFocus="{{selAll}}">
+                          <span class="muted">:</span>
+                          <input class="seg" inputmode="numeric" maxlength="2" aria-label="Minute" value="{{eM}}" onInput="{{onEM}}" onFocus="{{selAll}}">
+                          <button class="ap" aria-label="Toggle AM or PM" onClick="{{toggleEAP}}">{{eAP}}</button>
+                        </span>
+                      </sc-if>
+                      <input class="etxt" aria-label="Reminder text" value="{{eTitle}}" onInput="{{onETitle}}" onKeyDown="{{eKey}}">
+                      <button class="icb no" aria-label="Cancel" title="Cancel" onClick="{{cancelEdit}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                      <button class="icb ok" aria-label="Save" title="Save" onClick="{{saveEdit}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              </div>
+              </sc-if>
+            </section>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isPeople}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column">
+          <div class="capline">
+            <span style="width: 8px; text-align: center">+</span>
+            <span class="pw">
+              <button class="fld" aria-haspopup="dialog" aria-expanded="{{pop.pdate}}" onClick="{{openPop.pdate}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg>{{pLabel}}</button>
+              <sc-if value="{{pop.pdate}}" hint-placeholder-val="{{ false }}">
+                <div class="pop" role="dialog" aria-label="Pick a birthday" style="flex-direction: column; padding: 12px 14px 14px; gap: 10px">
+                  <span class="lbl">Month</span>
+                  <div class="tgrid" style="grid-template-columns: repeat(4, 54px)">
+                    <sc-for list="{{monthOpts}}" as="mo" hint-placeholder-count="12"><button class="{{mo.cls}}" onClick="{{mo.go}}">{{mo.label}}</button></sc-for>
+                  </div>
+                  <span class="lbl">Day</span>
+                  <div class="tgrid" style="grid-template-columns: repeat(7, 30px)">
+                    <sc-for list="{{dayOpts}}" as="dy" hint-placeholder-count="31"><button class="{{dy.cls}}" onClick="{{dy.go}}">{{dy.label}}</button></sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </span>
+            <input class="txt" placeholder="name" aria-label="Name" value="{{pdraft}}" onInput="{{onPDraft}}" onKeyDown="{{onPDraftKey}}">
+          </div>
+          <span class="caption muted" style="padding: 0 0 8px 20px">Each birthday reminds you at 09:00 on the day</span>
+          <sc-for list="{{people}}" as="pp" hint-placeholder-count="4">
+            <div class="{{pp.cls}}">
+              <sc-if value="{{pp.viewing}}" hint-placeholder-val="{{ true }}">
+                <span>{{pp.name}}</span>
+                <span class="when">{{pp.date}}</span>
+                <span class="{{pp.inCls}}">{{pp.inText}}</span>
+                <span class="acts">
+                  <button class="ib" aria-label="Edit person" title="Edit" onClick="{{pp.edit}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button>
+                  <button class="ib del" aria-label="Delete person" title="Delete" onClick="{{pp.remove}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg></button>
+                </span>
+              </sc-if>
+              <sc-if value="{{pp.editing}}" hint-placeholder-val="{{ false }}">
+                <div class="redit">
+                  <span class="pw">
+                    <button class="fld" aria-haspopup="dialog" aria-expanded="{{pop.pedate}}" onClick="{{openPop.pedate}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg>{{peLabel}}</button>
+                    <sc-if value="{{pop.pedate}}" hint-placeholder-val="{{ false }}">
+                <div class="pop" role="dialog" aria-label="Pick a birthday" style="top: 30px; flex-direction: column; padding: 12px 14px 14px; gap: 10px">
+                  <span class="lbl">Month</span>
+                  <div class="tgrid" style="grid-template-columns: repeat(4, 54px)">
+                    <sc-for list="{{monthOpts}}" as="mo" hint-placeholder-count="12"><button class="{{mo.cls}}" onClick="{{mo.go}}">{{mo.label}}</button></sc-for>
+                  </div>
+                  <span class="lbl">Day</span>
+                  <div class="tgrid" style="grid-template-columns: repeat(7, 30px)">
+                    <sc-for list="{{dayOpts}}" as="dy" hint-placeholder-count="31"><button class="{{dy.cls}}" onClick="{{dy.go}}">{{dy.label}}</button></sc-for>
+                  </div>
+                </div>
+                    </sc-if>
+                  </span>
+                  <input class="etxt" aria-label="Name" value="{{peName}}" onInput="{{onPeName}}" onKeyDown="{{peKey}}">
+                  <button class="icb no" aria-label="Cancel" title="Cancel" onClick="{{cancelPe}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                  <button class="icb ok" aria-label="Save" title="Save" onClick="{{savePe}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </article>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const B = new Date(2026, 9, 3, 16, 32, 0).getTime();
+    const m = 60000;
+    this.base = B;
+    this.mounted = Date.now();
+    this.state = {
+      nav: true, notifs: [{ id: 1, title: 'Call Ravi', when: 'Today, 5:00 PM · now' }, { id: 2, title: 'Take out the trash', when: 'Today, 4:30 PM · 2m late', late: true }], nSeen: false, nOpen: false, fb: false, fbSent: false, fbDraft: '', fbKind: 'idea', tab: 'rem', openG: { now: true, today: true, week: false, later: false, done: false }, draft: '', pdraft: '', tick: 0, dDate: '2026-10-03', tH: '5', tM: '30', tPM: true, pMonth: '9', pDay: '3', pop: null, calMonth: '2026-10', tmH: '0', tmM: '10', tmS: '0', tdraft: '', editId: null, peId: null, peName: '', peMonth: 0, peDay: 1, eTitle: '', eDate: '2026-10-03', eH: '5', eM: '00', ePM: true,
+      rems: [
+        { id: 'r1', title: 'Turn off the motor', at: B + 7 * m + 42000, timer: true },
+        { id: 'r2', title: 'Call Ravi', at: new Date(2026, 9, 3, 17, 0).getTime() },
+        { id: 'r7', title: 'Design review https://meet.google.com/abc-defg-hij', at: new Date(2026, 9, 3, 18, 0).getTime() },
+        { id: 'r3', title: 'Take out the trash', at: new Date(2026, 9, 3, 21, 0).getTime(), repeat: 'week' },
+        { id: 'r4', title: 'Dentist appointment', at: new Date(2026, 9, 7, 10, 30).getTime() },
+        { id: 'r5', title: 'Pay rent', at: new Date(2026, 10, 1, 9, 0).getTime(), repeat: 'month' },
+        { id: 'r6', title: 'Renew passport', at: new Date(2026, 11, 15, 10, 0).getTime() }
+      ],
+      people: [
+        { id: 'p1', name: 'Kiran', month: 9, day: 3 },
+        { id: 'p2', name: 'Ravi', month: 9, day: 9 },
+        { id: 'p3', name: 'Asha', month: 9, day: 26 },
+        { id: 'p4', name: 'Mom', month: 0, day: 2 }
+      ],
+      bdayDone: {},
+      done: [{ id: 'd1', title: 'Water the plants', at: new Date(2026, 9, 3, 9, 0).getTime() }]
+    };
+  }
+  componentDidMount() {
+    this.timer = setInterval(() => this.setState({ tick: this.state.tick + 1 }), 1000);
+  }
+  componentWillUnmount() {
+    clearInterval(this.timer);
+  }
+  now() {
+    return this.base + (Date.now() - this.mounted);
+  }
+  parse(text) {
+    const MON = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    let t = ' ' + text.trim() + ' ';
+    const now = new Date(this.now());
+    let at = null, timer = false, repeat = null;
+    let mm = t.match(/\sin\s+(\d+)\s*(m|min|mins|minutes?|h|hr|hrs|hours?)\s/i);
+    if (mm) {
+      const n = Number(mm[1]);
+      at = this.now() + n * (/^h/i.test(mm[2]) ? 3600000 : 60000);
+      timer = true;
+      t = t.replace(mm[0], ' ');
+    }
+    let day = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    let hasDay = false;
+    const dm = t.match(/\s(\d{1,2})\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s/i);
+    if (dm) {
+      day = new Date(now.getFullYear(), MON.indexOf(dm[2].toLowerCase().slice(0, 3)), Number(dm[1]));
+      if (day < new Date(now.getFullYear(), now.getMonth(), now.getDate())) day.setFullYear(day.getFullYear() + 1);
+      hasDay = true;
+      t = t.replace(dm[0], ' ');
+    }
+    if (/\stomorrow\s/i.test(t)) { day.setDate(day.getDate() + 1); hasDay = true; t = t.replace(/\stomorrow\s/i, ' '); }
+    const rp = t.match(/\severy\s+(day|week|month|year)\s/i);
+    if (rp) { repeat = rp[1].toLowerCase(); t = t.replace(rp[0], ' '); }
+    const tm = t.match(/\sat\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s/i);
+    if (!timer) {
+      let h = 9, mi = 0;
+      if (tm) {
+        h = Number(tm[1]); mi = Number(tm[2] || 0);
+        const ap = (tm[3] || '').toLowerCase();
+        if (ap === 'pm' && h < 12) h += 12;
+        if (ap === 'am' && h === 12) h = 0;
+        if (!ap && h < 8) h += 12;
+        t = t.replace(tm[0], ' ');
+      } else if (!hasDay) {
+        h = now.getHours() + 1; mi = 0;
+      }
+      day.setHours(h, mi, 0, 0);
+      if (!hasDay && day.getTime() <= this.now()) day.setDate(day.getDate() + 1);
+      at = day.getTime();
+    }
+    let title = t.replace(/\s(remind me( to)?|to)\s/i, ' ').replace(/\s+/g, ' ').trim();
+    if (!title) title = timer ? 'Timer' : 'Reminder';
+    title = title.charAt(0).toUpperCase() + title.slice(1);
+    return { title: title, at: at, timer: timer, repeat: repeat };
+  }
+  renderVals() {
+    const s = this.state;
+    const NOW = this.now();
+    const nd = new Date(NOW);
+    const startOf = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const today0 = startOf(nd);
+    const DAY = 86400000;
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const W = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const clock = (ms) => { const d = new Date(ms); let h = d.getHours(); const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + String(d.getMinutes()).padStart(2, '0') + ' ' + ap; };
+    const left = (ms) => { const x = Math.max(0, Math.round((ms - NOW) / 1000)); const mm = Math.floor(x / 60), ss = x % 60; return mm >= 60 ? Math.floor(mm / 60) + 'h ' + (mm % 60) + 'm' : mm + ':' + String(ss).padStart(2, '0'); };
+    const nextBday = (p) => {
+      let d = new Date(nd.getFullYear(), p.month, p.day, 9, 0);
+      if (startOf(d) < today0 || s.bdayDone[p.id] === nd.getFullYear() && startOf(d) === today0) d = new Date(nd.getFullYear() + 1, p.month, p.day, 9, 0);
+      return d.getTime();
+    };
+    const advance = (at, rep) => { const d = new Date(at); if (rep === 'day') d.setDate(d.getDate() + 1); if (rep === 'week') d.setDate(d.getDate() + 7); if (rep === 'month') d.setMonth(d.getMonth() + 1); if (rep === 'year') d.setFullYear(d.getFullYear() + 1); return d.getTime(); };
+    const repLabel = { day: '↻ daily', week: '↻ weekly', month: '↻ monthly', year: '↻ yearly' };
+
+    const items = s.rems.map((r) => Object.assign({ kind: 'rem' }, r)).concat(
+      s.people.map((p) => ({ kind: 'bday', id: 'b-' + p.id, pid: p.id, title: p.name + '’s birthday', at: nextBday(p), repeat: 'year' }))
+    );
+    const linkSegs = (title) => {
+      const out = [];
+      const re = /(https?:\/\/[^\s]+|(?:meet\.google\.com|zoom\.us|teams\.microsoft\.com)\/[^\s]+)/gi;
+      let last = 0, m;
+      while ((m = re.exec(title))) {
+        if (m.index > last) out.push({ isText: true, isLink: false, text: title.slice(last, m.index) });
+        const raw = m[0].replace(/[).,]+$/, '');
+        const href = /^https?:/i.test(raw) ? raw : 'https://' + raw;
+        let label;
+        label = 'link';
+        out.push({ isText: false, isLink: true, text: label, href: href });
+        last = m.index + raw.length;
+      }
+      if (last < title.length) out.push({ isText: true, isLink: false, text: title.slice(last) });
+      if (!out.length) out.push({ isText: true, isLink: false, text: title });
+      return out;
+    };
+    const logDone = (title, restore) => ({ id: 'd' + Date.now(), title: title, at: this.now(), restore: restore });
+    const mkRow = (it) => {
+      const isNow = it.timer && it.at - NOW < 3600000;
+      const due = it.at <= NOW;
+      let when;
+      if (isNow) when = due ? 'now' : left(it.at);
+      else if (startOf(new Date(it.at)) === today0) when = clock(it.at);
+      else if (it.at - today0 < 7 * DAY) when = W[new Date(it.at).getDay()] + ' ' + new Date(it.at).getDate();
+      else when = new Date(it.at).getDate() + ' ' + M[new Date(it.at).getMonth()];
+      const tag = it.kind === 'bday' ? 'birthday' : (it.repeat ? repLabel[it.repeat] : (it.timer ? 'timer' : ''));
+      return {
+        chkCls: 'rchk', isDone: false, chkLabel: 'Mark done',
+        cls: 'r' + (s.editId === it.id ? ' editing' : ''), viewing: s.editId !== it.id, editing: s.editId === it.id, hasWhen: !it.timer, canEdit: true,
+        edit: () => {
+          if (it.kind === 'bday') { this.setState({ tab: 'people' }); return; }
+          const dd = new Date(it.at); let h = dd.getHours();
+          this.setState({ editId: it.id, eTitle: it.title, eDate: dd.getFullYear() + '-' + String(dd.getMonth() + 1).padStart(2, '0') + '-' + String(dd.getDate()).padStart(2, '0'), eH: String(h % 12 || 12), eM: String(dd.getMinutes()).padStart(2, '0'), ePM: h >= 12, pop: null });
+        },
+        active: true, when: when, whenCls: 'when' + (isNow || due ? ' live' : ''), title: it.title, segs: linkSegs(it.title), tag: tag,
+        snooze: () => {
+          const at = this.now() + 600000;
+          if (it.kind === 'bday') { this.setState({ rems: this.state.rems.concat([{ id: 'r' + Date.now(), title: it.title, at: at, timer: true }]), bdayDone: Object.assign({}, this.state.bdayDone, { [it.pid]: nd.getFullYear() }) }); return; }
+          this.setState({ rems: this.state.rems.map((x) => (x.id === it.id ? Object.assign({}, x, { at: at, timer: true }) : x)) });
+        },
+        done: () => {
+          if (it.kind === 'bday') { this.setState({ done: this.state.done.concat([logDone(it.title, { type: 'bday', pid: it.pid })]), bdayDone: Object.assign({}, this.state.bdayDone, { [it.pid]: nd.getFullYear() }) }); return; }
+          const orig = this.state.rems.find((x) => x.id === it.id);
+          if (it.repeat) this.setState({ done: this.state.done.concat([logDone(it.title, { type: 'repeat', id: it.id, prevAt: orig.at })]), rems: this.state.rems.map((x) => (x.id === it.id ? Object.assign({}, x, { at: advance(x.at, x.repeat) }) : x)) });
+          else this.setState({ done: this.state.done.concat([logDone(it.title, { type: 'rem', rem: orig })]), rems: this.state.rems.filter((x) => x.id !== it.id) });
+        },
+        remove: () => {
+          if (it.kind === 'bday') { this.setState({ people: this.state.people.filter((p) => p.id !== it.pid) }); return; }
+          this.setState({ rems: this.state.rems.filter((x) => x.id !== it.id) });
+        },
+        _sort: it.at,
+        _group: isNow ? 'now' : (startOf(new Date(it.at)) <= today0 ? 'today' : (it.at - today0 < 7 * DAY ? 'week' : 'later'))
+      };
+    };
+    const rows = items.map(mkRow).sort((a, b) => a._sort - b._sort);
+    const G = [['now', 'Now'], ['today', 'Today'], ['week', 'Next 7 days'], ['later', 'Later']];
+    const grp = (key, label, rs) => ({ label: label, rows: rs, count: String(rs.length), open: !!s.openG[key], closed: !s.openG[key], toggle: () => this.setState({ openG: Object.assign({}, this.state.openG, { [key]: !this.state.openG[key] }) }) });
+    const groups = G.map((g) => grp(g[0], g[1], rows.filter((r) => r._group === g[0]))).filter((g) => g.rows.length);
+    const doneToday = s.done.filter((d) => d.at >= today0).slice().reverse();
+    if (doneToday.length) {
+      groups.push(grp('done', 'Done', doneToday.map((d) => ({ cls: 'r done', viewing: true, editing: false, canEdit: false, hasWhen: false, chkCls: 'rchk on', isDone: true, chkLabel: 'Mark not done', done: () => {
+        const rs = d.restore || { type: 'rem', rem: { id: 'r' + Date.now(), title: d.title, at: d.at } };
+        const left = this.state.done.filter((x) => x.id !== d.id);
+        if (rs.type === 'bday') { const bd = Object.assign({}, this.state.bdayDone); delete bd[rs.pid]; this.setState({ done: left, bdayDone: bd }); return; }
+        if (rs.type === 'repeat') { this.setState({ done: left, rems: this.state.rems.map((x) => (x.id === rs.id ? Object.assign({}, x, { at: rs.prevAt }) : x)) }); return; }
+        this.setState({ done: left, rems: this.state.rems.concat([rs.rem]) });
+      }, active: false, when: clock(d.at), whenCls: 'when', title: d.title, segs: linkSegs(d.title), tag: '', remove: () => this.setState({ done: this.state.done.filter((x) => x.id !== d.id) }) }))));
+    }
+
+    const parsed = null;
+    const describe = (p) => {
+      if (!p) return '';
+      const dd = new Date(p.at);
+      let w = p.timer ? 'in ' + left(p.at) + ' · ' + clock(p.at) : (startOf(dd) === today0 ? 'today · ' + clock(p.at) : (startOf(dd) === today0 + DAY ? 'tomorrow · ' + clock(p.at) : dd.getDate() + ' ' + M[dd.getMonth()] + ' · ' + clock(p.at)));
+      if (p.repeat) w += ' · every ' + p.repeat;
+      return p.title + ' — ' + w;
+    };
+    const addParsed = (p) => this.setState({ rems: this.state.rems.concat([Object.assign({ id: 'r' + Date.now() }, p)]), draft: '' });
+    const chipDefs = [['+5m', 5], ['+10m', 10], ['+30m', 30], ['+1h', 60]];
+    const chips = chipDefs.map((c) => ({
+      label: c[0],
+      go: () => {
+        const raw = this.state.draft.trim(); const base = raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : 'Timer';
+        addParsed({ title: base, at: this.now() + c[1] * 60000, timer: true });
+      }
+    }));
+
+    const people = s.people.map((p) => {
+      const at = nextBday(p);
+      const days = Math.round((startOf(new Date(at)) - today0) / DAY);
+      return {
+        name: p.name,
+        date: p.day + ' ' + M[p.month],
+        inText: days === 0 ? 'today' : (days === 1 ? 'tomorrow' : 'in ' + days + ' days'),
+        inCls: 'caption' + (days <= 7 ? ' soon' : ' muted'),
+        remove: () => this.setState({ people: this.state.people.filter((x) => x.id !== p.id) }),
+        cls: 'p' + (s.peId === p.id ? ' editing' : ''), viewing: s.peId !== p.id, editing: s.peId === p.id,
+        edit: () => this.setState({ peId: p.id, peName: p.name, peMonth: p.month, peDay: p.day, pop: null }),
+        _d: days
+      };
+    }).sort((a, b) => a._d - b._d);
+
+    // ---- pickers
+    const MF = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const isoOf = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const todayIso = isoOf(nd);
+    const plusIso = (n) => { const d = new Date(today0); d.setDate(d.getDate() + n); return isoOf(d); };
+    const setPop = (k) => () => this.setState({ pop: this.state.pop === k ? null : k, calMonth: k === 'date' ? this.state.dDate.slice(0, 7) : (k === 'edate' ? this.state.eDate.slice(0, 7) : this.state.calMonth) });
+    const dp = s.dDate.split('-').map(Number);
+    const dObj = new Date(dp[0], dp[1] - 1, dp[2]);
+    const dateLabel = s.dDate === todayIso ? 'Today' : (s.dDate === plusIso(1) ? 'Tomorrow' : W[dObj.getDay()] + ' ' + dObj.getDate() + ' ' + M[dObj.getMonth()]);
+    const datePresets = [['Today', todayIso], ['Tomorrow', plusIso(1)], ['Next week', plusIso(7)]].map((pd) => ({ label: pd[0], cls: 'pre' + (s.dDate === pd[1] ? ' on' : ''), go: () => this.setState({ dDate: pd[1], pop: null }) }));
+    const cm = s.calMonth.split('-').map(Number);
+    const first = new Date(cm[0], cm[1] - 1, 1);
+    const lead = (first.getDay() + 6) % 7;
+    const daysIn = new Date(cm[0], cm[1], 0).getDate();
+    const cdays = [];
+    for (let i = 0; i < lead; i++) cdays.push({ real: false });
+    for (let dn = 1; dn <= daysIn; dn++) {
+      const ds = s.calMonth + '-' + String(dn).padStart(2, '0');
+      cdays.push({ real: true, n: String(dn), aria: dn + ' ' + MF[cm[1] - 1], cls: 'dd' + (ds === todayIso ? ' today' : '') + (ds < todayIso ? ' past' : '') + (ds === (s.pop === 'edate' ? s.eDate : s.dDate) ? ' edge' : ''), pick: () => this.setState(this.state.pop === 'edate' ? { eDate: ds, pop: null } : { dDate: ds, pop: null }) });
+    }
+    const shift = (n) => () => { const d = new Date(cm[0], cm[1] - 1 + n, 1); this.setState({ calMonth: isoOf(d).slice(0, 7) }); };
+    const isPe = s.pop === 'pedate';
+    const pm = isPe ? Number(s.peMonth) : Number(s.pMonth), pdn = isPe ? Number(s.peDay) : Number(s.pDay);
+    const setPD = (mo, dy, close) => this.setState(Object.assign(this.state.pop === 'pedate' ? { peMonth: mo, peDay: dy } : { pMonth: String(mo), pDay: String(dy) }, close ? { pop: null } : {}));
+    const monthOpts = M.map((mo, i) => ({ label: mo, cls: 'opt' + (i === pm ? ' on' : ''), go: () => { const maxD = new Date(2028, i + 1, 0).getDate(); setPD(i, Math.min(pdn, maxD), false); } }));
+    const dayOpts = Array.from({ length: new Date(2028, pm + 1, 0).getDate() }, (x, i) => i + 1).map((d) => ({ label: String(d), cls: 'opt' + (d === pdn ? ' on' : ''), go: () => setPD(pm, d, true) }));
+    const saveEdit = () => {
+      const st = this.state;
+      const r0 = st.rems.find((x) => x.id === st.editId);
+      if (!r0) { this.setState({ editId: null }); return; }
+      const title = st.eTitle.trim() || r0.title;
+      let at = r0.at;
+      if (!r0.timer) {
+        const q = st.eDate.split('-').map(Number);
+        const hh = (Math.min(12, Math.max(1, parseInt(st.eH, 10) || 12)) % 12) + (st.ePM ? 12 : 0);
+        at = new Date(q[0], q[1] - 1, q[2], hh, Math.min(59, parseInt(st.eM, 10) || 0)).getTime();
+      }
+      this.setState({ rems: st.rems.map((x) => (x.id === st.editId ? Object.assign({}, x, { title: title, at: at }) : x)), editId: null, pop: null });
+    };
+    const savePe = () => { const st = this.state; this.setState({ people: st.people.map((x) => (x.id === st.peId ? Object.assign({}, x, { name: st.peName.trim() || x.name, month: Number(st.peMonth), day: Number(st.peDay) }) : x)), peId: null, pop: null }); };
+    const activeCount = rows.length;
+    return {
+      navOpen: s.nav, navClosed: !s.nav,
+      nOpen: !!s.nOpen, nEmpty: (s.notifs || []).length === 0,
+      bellCls: 'bico bnotif' + (s.nOpen ? ' on' : ''),
+      nHasBadge: (s.notifs || []).length > 0, nCount: String((s.notifs || []).length),
+      nBadgeCls: 'nbadge' + (s.nSeen ? '' : ' blink'),
+      toggleN: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ nOpen: !this.state.nOpen, nSeen: true, fb: false }); },
+      closeN: () => this.setState({ nOpen: false }),
+      nList: (s.notifs || []).map((n) => ({ title: n.title, when: n.when, whenCls: n.late ? 'late' : '', done: () => this.setState({ notifs: this.state.notifs.filter((x) => x.id !== n.id) }), snooze: () => this.setState({ notifs: this.state.notifs.filter((x) => x.id !== n.id) }) })),
+      fbOpen: !!s.fb, fbWriting: !s.fbSent, fbSent: !!s.fbSent, fbDraft: s.fbDraft || '', fbEmpty: !(s.fbDraft || '').trim(),
+      fbBtnCls: 'bico bfb' + (s.fb ? ' on' : ''),
+      toggleFb: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ fb: !this.state.fb, fbSent: false, nOpen: false }); setTimeout(() => { const el = document.querySelector('.fbta'); if (el) el.focus(); }, 0); },
+      closeFb: () => this.setState({ fb: false }),
+      fbKinds: [['bug', 'Bug'], ['idea', 'Idea'], ['other', 'Other']].map((x) => ({ label: x[1], on: (s.fbKind || 'idea') === x[0], cls: 'fbk' + ((s.fbKind || 'idea') === x[0] ? ' on' : ''), go: () => this.setState({ fbKind: x[0] }) })),
+      onFb: (e) => this.setState({ fbDraft: e.target.value }),
+      fbKey: (e) => { if (e.key === 'Escape') this.setState({ fb: false }); if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && (this.state.fbDraft || '').trim()) this.setState({ fbSent: true, fbDraft: '' }); },
+      // stored in db/app.sqlite → feedback(id, kind, text, created_at)
+      sendFb: () => { if ((this.state.fbDraft || '').trim()) this.setState({ fbSent: true, fbDraft: '' }); },
+      fbAgain: () => this.setState({ fbSent: false }),
+      toggleNav: () => this.setState({ nav: !this.state.nav }),
+      title: 'Reminders',
+      subtitle: s.tab === 'rem' ? (activeCount + ' upcoming' + (doneToday.length ? ' · ' + doneToday.length + ' done today' : '')) : (s.people.length + ' people · birthdays'),
+      tabs: {
+        rem: { cls: 'vbtn' + (s.tab === 'rem' ? ' on' : ''), on: s.tab === 'rem', count: String(activeCount), go: () => this.setState({ tab: 'rem' }) },
+        people: { cls: 'vbtn' + (s.tab === 'people' ? ' on' : ''), on: s.tab === 'people', count: String(s.people.length), go: () => this.setState({ tab: 'people' }) }
+      },
+      isRem: s.tab === 'rem',
+      isPeople: s.tab === 'people',
+      draft: s.draft,
+      onDraft: (e) => this.setState({ draft: e.target.value }),
+      onDraftKey: (e) => {
+        if (e.key !== 'Enter' || !this.state.draft.trim()) return;
+        const dp = this.state.dDate.split('-').map(Number);
+        const hh = (Math.min(12, Math.max(1, parseInt(this.state.tH, 10) || 12)) % 12) + (this.state.tPM ? 12 : 0);
+        const at = new Date(dp[0], dp[1] - 1, dp[2], hh, Math.min(59, parseInt(this.state.tM, 10) || 0)).getTime();
+        const t = this.state.draft.trim();
+        addParsed({ title: t.charAt(0).toUpperCase() + t.slice(1), at: at });
+      },
+      pop: { date: s.pop === 'date', pdate: s.pop === 'pdate', edate: s.pop === 'edate', pedate: s.pop === 'pedate' },
+      anyPop: !!s.pop,
+      closePop: () => this.setState({ pop: null }),
+      openPop: { date: setPop('date'), pdate: setPop('pdate'), edate: setPop('edate'), pedate: setPop('pedate') },
+      dateLabel: dateLabel,
+      cal: { title: MF[cm[1] - 1] + ' ' + cm[0], days: cdays, prev: shift(-1), next: shift(1) },
+      tH: s.tH, tM: s.tM, tAP: s.tPM ? 'PM' : 'AM',
+      selAll: (e) => { try { e.target.select(); } catch (x) {} },
+      onH: (e) => this.setState({ tH: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      onM: (e) => this.setState({ tM: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      fixH: () => { let h = parseInt(this.state.tH, 10); if (!h || h < 1) h = 12; if (h > 12) h = 12; this.setState({ tH: String(h) }); },
+      fixM: () => { let m = parseInt(this.state.tM, 10); if (isNaN(m) || m < 0) m = 0; if (m > 59) m = 59; this.setState({ tM: String(m).padStart(2, '0') }); },
+      keyH: (e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); let h = parseInt(this.state.tH, 10) || 12; h = e.key === 'ArrowUp' ? (h % 12) + 1 : ((h + 10) % 12) + 1; this.setState({ tH: String(h) }); } },
+      keyM: (e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); let m = parseInt(this.state.tM, 10) || 0; m = (m + (e.key === 'ArrowUp' ? 5 : 55)) % 60; this.setState({ tM: String(m).padStart(2, '0') }); } },
+      toggleAP: () => this.setState({ tPM: !this.state.tPM }),
+      tmH: s.tmH, tmM: s.tmM, tmS: s.tmS, tdraft: s.tdraft,
+      eTitle: s.eTitle, eH: s.eH, eM: s.eM, eAP: s.ePM ? 'PM' : 'AM',
+      eDateLabel: (() => { const q = s.eDate.split('-').map(Number); const o = new Date(q[0], q[1] - 1, q[2]); return s.eDate === todayIso ? 'Today' : (s.eDate === plusIso(1) ? 'Tomorrow' : W[o.getDay()] + ' ' + o.getDate() + ' ' + M[o.getMonth()]); })(),
+      onETitle: (e) => this.setState({ eTitle: e.target.value }),
+      onEH: (e) => this.setState({ eH: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      onEM: (e) => this.setState({ eM: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      toggleEAP: () => this.setState({ ePM: !this.state.ePM }),
+      cancelEdit: () => this.setState({ editId: null, pop: null }),
+      saveEdit: () => saveEdit(),
+      eKey: (e) => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') this.setState({ editId: null, pop: null }); },
+      onTmS: (e) => this.setState({ tmS: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      fixTmS: () => { let x = parseInt(this.state.tmS, 10); if (isNaN(x) || x < 0) x = 0; if (x > 59) x = 59; this.setState({ tmS: String(x) }); },
+      keyTmS: (e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); let x = parseInt(this.state.tmS, 10) || 0; x = (x + (e.key === 'ArrowUp' ? 5 : 55)) % 60; this.setState({ tmS: String(x) }); } },
+      onTmH: (e) => this.setState({ tmH: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      onTmM: (e) => this.setState({ tmM: e.target.value.replace(/\D/g, '').slice(0, 2) }),
+      fixTmM: () => { let m = parseInt(this.state.tmM, 10); if (isNaN(m) || m < 0) m = 0; if (m > 59) m = 59; this.setState({ tmM: String(m) }); },
+      keyTmH: (e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); let h = parseInt(this.state.tmH, 10) || 0; h = Math.max(0, Math.min(23, h + (e.key === 'ArrowUp' ? 1 : -1))); this.setState({ tmH: String(h) }); } },
+      keyTmM: (e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); let m = parseInt(this.state.tmM, 10) || 0; m = (m + (e.key === 'ArrowUp' ? 5 : 55)) % 60; this.setState({ tmM: String(m) }); } },
+      onTDraft: (e) => this.setState({ tdraft: e.target.value }),
+      onTKey: (e) => {
+        if (e.key !== 'Enter') return;
+        const secs = (parseInt(this.state.tmH, 10) || 0) * 3600 + (parseInt(this.state.tmM, 10) || 0) * 60 + Math.min(59, parseInt(this.state.tmS, 10) || 0);
+        if (!secs) return;
+        const raw = this.state.tdraft.trim();
+        this.setState({ rems: this.state.rems.concat([{ id: 'r' + Date.now(), title: raw ? raw.charAt(0).toUpperCase() + raw.slice(1) : 'Timer', at: this.now() + secs * 1000, timer: true }]), tdraft: '' });
+      },
+      hasPreview: !!parsed,
+      preview: describe(parsed),
+      chips: chips,
+      groups: groups,
+      pdraft: s.pdraft,
+      onPDraft: (e) => this.setState({ pdraft: e.target.value }),
+      onPDraftKey: (e) => {
+        if (e.key !== 'Enter' || !this.state.pdraft.trim()) return;
+        this.setState({ people: this.state.people.concat([{ id: 'p' + Date.now(), name: this.state.pdraft.trim(), month: Number(this.state.pMonth), day: Number(this.state.pDay) }]), pdraft: '' });
+      },
+      peName: s.peName,
+      onPeName: (e) => this.setState({ peName: e.target.value }),
+      cancelPe: () => this.setState({ peId: null, pop: null }),
+      savePe: () => savePe(),
+      peKey: (e) => { if (e.key === 'Enter') savePe(); if (e.key === 'Escape') this.setState({ peId: null, pop: null }); },
+      pLabel: Number(s.pDay) + ' ' + M[Number(s.pMonth)],
+      peLabel: s.peDay + ' ' + M[s.peMonth],
+      monthOpts: monthOpts,
+      dayOpts: dayOpts,
+      people: people
+    };
+  }
+}
+</script>
+</body>
+</html>

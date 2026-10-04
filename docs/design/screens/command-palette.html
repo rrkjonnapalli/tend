@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tend mockup · command palette</title>
+<script src="../dc-runtime.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #1070e3;outline-offset:2px}
+.app{position:absolute;inset:0;display:flex}
+.app aside{flex:0 0 232px;border-right:1px solid #dce3e8}
+.ln{display:block;height:10px;border-radius:5px;background:#f2f5f7;margin:14px 16px}
+.shade{position:absolute;inset:0;background:rgba(48,56,65,.12)}
+.pal{position:absolute;left:50%;top:96px;width:600px;margin-left:-300px;display:flex;flex-direction:column;background:#ffffff;border:1px solid #dce3e8;border-radius:10px;overflow:hidden}
+.pin{display:flex;align-items:center;gap:10px;height:52px;padding:0 16px;border-bottom:1px solid #dce3e8}
+.pin input{flex:1;min-width:0;border:0;outline:none;background:transparent;font:400 16px/22px 'Lato',sans-serif;color:#303841}
+.pin input::placeholder{color:#7d8995}
+.res{max-height:420px;overflow:auto;padding:6px 0}
+.grp{padding:8px 16px 4px;font:700 11px/16px 'Lato',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#7d8995}
+.it{display:flex;align-items:center;gap:10px;width:100%;min-height:36px;padding:0 16px;border:0;background:transparent;text-align:left;cursor:pointer;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.it.on{background:#f2f5f7}
+.it .ic{flex:0 0 16px;display:grid;place-items:center;color:#7d8995}
+.it .lb{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.it .sub{color:#7d8995;font-size:13px}
+.it .new{color:#1259d3}
+.keys{display:flex;gap:4px}
+kbd{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;box-sizing:border-box;border:1px solid #dce3e8;border-bottom-width:2px;border-radius:4px;background:#ffffff;font:400 11px/14px 'JetBrains Mono',monospace;color:#5f6b76}
+.foot{display:flex;align-items:center;gap:14px;height:34px;padding:0 16px;border-top:1px solid #dce3e8;font:400 12px/16px 'Lato',sans-serif;color:#7d8995}
+.foot span{display:inline-flex;align-items:center;gap:4px}
+.empty{padding:20px 16px;font:400 13px/18px 'Lato',sans-serif;color:#7d8995}
+.toast{position:absolute;left:50%;bottom:72px;transform:translateX(-50%);padding:8px 14px;border-radius:6px;background:#303841;color:#ffffff;font:400 13px/18px 'Lato',sans-serif}
+.reopen{position:absolute;left:50%;top:120px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;height:36px;padding:0 14px;border:1px solid #dce3e8;border-radius:8px;background:#ffffff;color:#5f6b76;cursor:pointer;font:400 14px/20px 'Lato',sans-serif}
+.reopen:hover{color:#303841;border-color:#7d8995}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: 800px; overflow: hidden; background: #ffffff; font-family: 'Lato', sans-serif" onKeyDown="{{globalKey}}" tabindex="-1">
+  <div class="app" aria-hidden="true">
+    <aside><span class="ln" style="width: 60%; margin-top: 52px"></span><span class="ln" style="width: 45%"></span><span class="ln" style="width: 52%"></span><span class="ln" style="width: 38%"></span></aside>
+    <div style="flex: 1; padding: 48px 24px"><span class="ln" style="width: 120px; height: 14px"></span><span class="ln" style="width: 220px; height: 24px"></span><span class="ln" style="width: 70%"></span><span class="ln" style="width: 64%"></span><span class="ln" style="width: 58%"></span><span class="ln" style="width: 66%"></span></div>
+  </div>
+  <sc-if value="{{open}}" hint-placeholder-val="{{ true }}">
+    <div class="shade" onClick="{{close}}"></div>
+    <div class="pal" role="dialog" aria-label="Command palette">
+      <div class="pin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg><input aria-label="Command or search" placeholder="Type a command, or search notes and tasks…" value="{{q}}" onInput="{{onQ}}" onKeyDown="{{key}}" autofocus><kbd>esc</kbd></div>
+      <div class="res" role="listbox">
+        <sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+          <div class="grp">{{g.name}}</div>
+          <sc-for list="{{g.items}}" as="it" hint-placeholder-count="3">
+            <button class="{{it.cls}}" role="option" aria-selected="{{it.on}}" onMouseEnter="{{it.hover}}" onClick="{{it.run}}">
+              <span class="ic">{{it.icon}}</span>
+              <span class="lb"><span class="{{it.lbCls}}">{{it.label}}</span><sc-if value="{{it.hasSub}}" hint-placeholder-val="{{ false }}"><span class="sub"> · {{it.sub}}</span></sc-if></span>
+              <span class="keys"><sc-for list="{{it.keys}}" as="ky" hint-placeholder-count="2"><kbd>{{ky.k}}</kbd></sc-for></span>
+            </button>
+          </sc-for>
+        </sc-for>
+        <sc-if value="{{none}}" hint-placeholder-val="{{ false }}"><div class="empty">Nothing matches. Try “task: …” or “timer 10m …”.</div></sc-if>
+      </div>
+      <div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> run</span><span><kbd>esc</kbd> close</span><span style="margin-left: auto">All commands in Settings → Command palette</span></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{closed}}" hint-placeholder-val="{{ false }}"><button class="reopen" onClick="{{reopen}}">Press <kbd>⌘</kbd><kbd>K</kbd> or click to open the palette</button></sc-if>
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { open: true, q: '', hi: 0, toast: '' };
+  }
+  componentDidMount() {
+    this._k = (e) => { if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) { e.preventDefault(); this.setState({ open: true, q: '', hi: 0 }); setTimeout(() => { const el = document.querySelector('.pin input'); if (el) el.focus(); }, 0); } };
+    window.addEventListener('keydown', this._k);
+    setTimeout(() => { const el = document.querySelector('.pin input'); if (el) el.focus(); }, 50);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this._k); }
+  renderVals() {
+    const s = this.state;
+    const CMDS = [
+      { g: 'Go to', id: 'go-notes', label: 'Go to Notes', keys: ['⌘', '1'], ex: '' },
+      { g: 'Go to', id: 'go-tasks', label: 'Go to Tasks', keys: ['⌘', '2'], ex: '' },
+      { g: 'Go to', id: 'go-people', label: 'Go to People', keys: ['⌘', '3'], ex: '' },
+      { g: 'Go to', id: 'go-set', label: 'Open Settings', keys: ['⌘', ','], ex: '' },
+      { g: 'Create', id: 'new-note', label: 'New note', keys: ['⌘', 'N'], ex: 'note: Meeting notes' },
+      { g: 'Create', id: 'new-task', label: 'New task', keys: ['⌘', '⇧', 'T'], ex: 'task: Write README' },
+      { g: 'Create', id: 'new-folder', label: 'New folder', keys: ['⌘', '⇧', 'N'], ex: '' },
+      { g: 'Create', id: 'new-timer', label: 'New timer', keys: ['⌘', 'T'], ex: 'timer 10m turn off the motor' },
+      { g: 'Create', id: 'new-person', label: 'New person', keys: [], ex: 'person: Ravi Kumar' },
+      { g: 'Notes', id: 'note-mode', label: 'Toggle read / edit', keys: ['⌘', 'E'], ex: '' },
+      { g: 'Notes', id: 'note-tag', label: 'Add tag to note', keys: [], ex: '' },
+      { g: 'Notes', id: 'width', label: 'Toggle content width', keys: [], ex: '' },
+      { g: 'Tasks', id: 'task-status', label: 'Set status…', keys: [], ex: '' },
+      { g: 'Tasks', id: 'task-due', label: 'Set due date…', keys: [], ex: '' },
+      { g: 'Tasks', id: 'task-myday', label: 'Add to My day', keys: [], ex: '' },
+      { g: 'Tasks', id: 'task-layout', label: 'Switch list / board', keys: [], ex: '' },
+      { g: 'App', id: 'palette', label: 'Open command palette', keys: ['⌘', 'K'], ex: '' },
+      { g: 'App', id: 'explorer', label: 'Toggle explorer', keys: ['⌘', '\\'], ex: '' },
+      { g: 'App', id: 'bottombar', label: 'Toggle bottom bar', keys: [], ex: '' },
+      { g: 'App', id: 'feedback', label: 'Send feedback', keys: [], ex: '' },
+      { g: 'App', id: 'vault', label: 'Change vault…', keys: [], ex: '' }
+    ];
+    const NOTES = ['Meeting notes · 2 Oct', 'Tauri setup', 'Reading list', 'Ideas for v0.2', 'Weekly review template'];
+    const TASKS = ['Ship first build', 'Write README', 'Set up CI builds', 'Get code signing certificates', 'Board view', 'Settings screen'];
+    const icons = { 'Go to': '→', Create: '+', Notes: '¶', Tasks: '☐', App: '⌘' };
+    const q = s.q.trim();
+    const ql = q.toLowerCase();
+    const groups = [];
+    const push = (name, it) => { let g = groups.find((x) => x.name === name); if (!g) { g = { name: name, items: [] }; groups.push(g); } g.items.push(it); };
+    const cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+    // natural-language quick create
+    let m;
+    if ((m = q.match(/^task:?\s+(.+)$/i))) push('Create', { icon: '+', label: 'Task: ' + cap(m[1]), sub: 'Not started · inbox', keys: [], isNew: true, msg: 'Task added to inbox' });
+    if ((m = q.match(/^person:?\s+(.+)$/i))) push('Create', { icon: '+', label: 'Person: ' + m[1], sub: 'People', keys: [], isNew: true, msg: 'Person added' });
+    if ((m = q.match(/^note:?\s+(.+)$/i))) push('Create', { icon: '+', label: 'Note: ' + cap(m[1]), sub: 'notes/', keys: [], isNew: true, msg: 'Note created' });
+    if ((m = q.match(/^timer\s+(\d+\s*[hms](?:\s*\d+\s*[ms])*)\s*(.*)$/i))) push('Create', { icon: '+', label: 'Timer ' + m[1] + (m[2] ? ': ' + cap(m[2]) : ''), sub: 'starts now', keys: [], isNew: true, msg: 'Timer started' });
+    const hit = (t) => !ql || t.toLowerCase().indexOf(ql) >= 0 || ql.split(/\s+/).every((w) => t.toLowerCase().indexOf(w) >= 0);
+    const cmds = CMDS.filter((c) => hit(c.label) || hit(c.g));
+    const shownCmds = ql ? cmds : CMDS.filter((c) => c.g === 'Go to' || c.g === 'Create');
+    shownCmds.slice(0, ql ? 8 : 12).forEach((c) => push(c.g === 'Go to' || c.g === 'Create' ? c.g : 'Commands', { icon: icons[c.g] || '·', label: c.label, sub: c.ex && !ql ? c.ex : '', keys: c.keys, msg: c.label }));
+    if (ql) {
+      NOTES.filter(hit).slice(0, 4).forEach((n) => push('Notes', { icon: '¶', label: n, sub: '', keys: [], msg: 'Open note: ' + n }));
+      TASKS.filter(hit).slice(0, 4).forEach((n) => push('Tasks', { icon: '☐', label: n, sub: '', keys: [], msg: 'Open task: ' + n }));
+    }
+    const flat = [];
+    groups.forEach((g) => g.items.forEach((it) => flat.push(it)));
+    const hi = Math.min(s.hi, Math.max(0, flat.length - 1));
+    const run = (it) => { this.setState({ open: false, toast: it.msg }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 1800); };
+    flat.forEach((it, i) => {
+      it.on = i === hi; it.cls = 'it' + (i === hi ? ' on' : ''); it.lbCls = it.isNew ? 'new' : ''; it.hasSub = !!it.sub;
+      it.keys = it.keys.map((k) => ({ k: k }));
+      it.hover = () => { if (this.state.hi !== i) this.setState({ hi: i }); };
+      it.run = () => run(it);
+    });
+    return {
+      open: s.open, closed: !s.open, q: s.q, groups: groups, none: flat.length === 0,
+      hasToast: !!s.toast, toast: s.toast,
+      onQ: (e) => this.setState({ q: e.target.value, hi: 0 }),
+      key: (e) => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); this.setState({ hi: Math.min(flat.length - 1, hi + 1) }); }
+        if (e.key === 'ArrowUp') { e.preventDefault(); this.setState({ hi: Math.max(0, hi - 1) }); }
+        if (e.key === 'Enter' && flat[hi]) { e.preventDefault(); run(flat[hi]); }
+        if (e.key === 'Escape') this.setState({ open: false });
+      },
+      globalKey: () => {},
+      close: () => this.setState({ open: false }),
+      reopen: () => { this.setState({ open: true, q: '', hi: 0 }); setTimeout(() => { const el = document.querySelector('.pin input'); if (el) el.focus(); }, 0); }
+    };
+  }
+}
+</script>
+</body>
+</html>

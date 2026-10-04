@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tend mockup · folders</title>
+<script src="../dc-runtime.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #1070e3;outline-offset:2px}
+.heading{font:500 28px/36px 'Montserrat',sans-serif}
+.caption{font:400 13px/18px 'Lato',sans-serif}
+.muted{color:#7d8995}
+.mono{font-family:'JetBrains Mono',monospace}
+.tb{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#7d8995;display:grid;place-items:center;cursor:pointer}
+.tb:hover{background:#f7fbfc;color:#303841}
+.tree{display:flex;flex-direction:column;padding-bottom:12px;user-select:none;-webkit-user-select:none}
+.tr{position:relative;display:flex;align-items:center;gap:4px;height:30px;padding-right:6px;font:400 14px/20px 'Lato',sans-serif;color:#303841;cursor:pointer;touch-action:none}
+.tr:hover{background:#f7fbfc}
+.tr.sel{background:#eef3f6}
+.tr.drop{background:#dbfaff;box-shadow:inset 0 0 0 1px #1259d3}
+.tr.ghosted{opacity:.4}
+.tr.bad{background:#ffebeb}
+.tr .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tr .ext{color:#b8c4ce}
+.chev{width:16px;height:16px;padding:0;border:0;background:transparent;color:#7d8995;display:grid;place-items:center;cursor:pointer;flex:0 0 16px}
+.more{width:22px;height:22px;padding:0;border:0;border-radius:4px;background:transparent;color:#7d8995;display:grid;place-items:center;cursor:pointer;visibility:hidden}
+.tr:hover .more,.more.on{visibility:visible}
+.more:hover,.more.on{background:#dce3e8;color:#303841}
+.dragging .tr:hover{background:transparent}
+.dragging .tr.drop{background:#dbfaff}
+.ein{flex:1;min-width:0;height:24px;padding:0 6px;margin-left:-6px;border:1px solid #1259d3;border-radius:4px;outline:none;background:#ffffff;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.ein.bad{border-color:#da0037;color:#da0037}
+.ehint{padding:2px 8px 6px;font:400 12px/16px 'Lato',sans-serif;color:#da0037}
+.menu{position:absolute;z-index:8;min-width:180px;padding:4px 0;background:#ffffff;border:1px solid #dce3e8;border-radius:8px}
+.mi{display:flex;align-items:center;gap:10px;width:100%;height:30px;padding:0 12px;border:0;background:transparent;text-align:left;cursor:pointer;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.mi:hover{background:#f7fbfc}
+.mi .k{margin-left:auto;font:400 11px/16px 'JetBrains Mono',monospace;color:#b8c4ce}
+.mi.del{color:#da0037}.mi.del:hover{background:#ffebeb}
+.msep{height:1px;margin:4px 0;background:#f2f5f7}
+.backdrop{position:absolute;inset:0;z-index:7}
+.shade{position:absolute;inset:0;z-index:9;background:rgba(48,56,65,.08)}
+.dlg{position:absolute;left:50%;top:120px;z-index:10;width:440px;margin-left:-220px;box-sizing:border-box;padding:18px;display:flex;flex-direction:column;gap:12px;background:#ffffff;border:1px solid #dce3e8;border-radius:10px;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.dlg h2{margin:0;font:500 16px/22px 'Montserrat',sans-serif}
+.dlg .key{font:500 13px/18px 'JetBrains Mono',monospace;padding:0 4px;border-radius:3px;background:#f2f5f7}
+.dlg .fld{height:34px;padding:0 10px;border:1px solid #dce3e8;border-radius:6px;outline:none;font:400 14px/20px 'JetBrains Mono',monospace;color:#303841}
+.dlg .fld:focus{border-color:#1259d3}
+.dlg .fld.ok{border-color:#da0037}
+.dfoot{display:flex;justify-content:flex-end;gap:8px}
+.gbtn{height:30px;padding:0 12px;border:1px solid #dce3e8;border-radius:6px;background:#ffffff;cursor:pointer;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.gbtn:hover{border-color:#7d8995}
+.rbtn{height:30px;padding:0 12px;border:0;border-radius:6px;background:#da0037;color:#ffffff;cursor:pointer;font:700 13px/18px 'Lato',sans-serif}
+.rbtn:hover{background:#a0153e}
+.rbtn:disabled{background:#f2d0d8;color:#ffffff;cursor:default}
+.mv{position:absolute;left:50%;top:72px;z-index:10;width:520px;margin-left:-260px;background:#ffffff;border:1px solid #dce3e8;border-radius:8px}
+.mvh{display:flex;align-items:center;gap:8px;height:30px;padding:0 14px;border-bottom:1px solid #f2f5f7;font:400 12px/16px 'Lato',sans-serif;color:#7d8995}
+.mvr{display:flex;align-items:center;gap:10px;height:42px;padding:0 14px}
+.mvr .l{flex:0 0 28px;font:400 12px/16px 'Lato',sans-serif;color:#b8c4ce}
+.mvr input{flex:1;border:0;outline:none;font:400 13px/20px 'JetBrains Mono',monospace;color:#5f6b76}
+.sg{display:block;width:100%;height:28px;padding:0 14px 0 52px;border:0;background:transparent;text-align:left;cursor:pointer;font:400 13px/18px 'JetBrains Mono',monospace;color:#5f6b76}
+.sg.on,.sg:hover{background:#f7fbfc;color:#303841}
+.mvf{display:flex;align-items:center;gap:12px;height:30px;padding:0 14px;border-top:1px solid #f2f5f7;font:400 12px/16px 'Lato',sans-serif;color:#b8c4ce}
+.mvf .err{color:#da0037}
+.toast{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);z-index:11;padding:6px 12px;border-radius:6px;background:#303841;color:#ffffff;font:400 13px/18px 'Lato',sans-serif;white-space:nowrap}
+.ghost{position:fixed;z-index:20;pointer-events:none;padding:2px 8px;border-radius:4px;background:#303841;color:#ffffff;font:400 12px/16px 'Lato',sans-serif;white-space:nowrap}
+.lrow{display:flex;align-items:center;gap:10px;min-height:34px;padding:0 16px;margin:0 -16px;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.lrow:hover{background:#f7fbfc}
+.lrow .p{margin-left:auto;font:400 12px/16px 'JetBrains Mono',monospace;color:#7d8995}
+.rules{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;padding:14px 16px;border-radius:8px;background:#f7fbfc;font:400 13px/18px 'Lato',sans-serif;color:#5f6b76}
+.rules b{font-weight:400;color:#303841}
+.mono.ok{color:#1e7a55}.mono.no{color:#da0037}
+</style>
+</helmet>
+<div class="{{rootCls}}" style="position: relative; width: 100%; height: 800px; box-sizing: border-box; display: flex; background: #ffffff; color: #303841; font-family: 'Lato', sans-serif" onPointerMove="{{noop}}">
+  <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}"><div class="backdrop" onClick="{{closeMenu}}" onContextMenu="{{closeMenu}}"></div></sc-if>
+
+  <aside aria-label="Notes" style="position: relative; flex: 0 0 232px; box-sizing: border-box; border-right: 1px solid #dce3e8; display: flex; flex-direction: column">
+    <div role="toolbar" style="flex: 0 0 40px; display: flex; align-items: center; justify-content: flex-end; gap: 2px; padding: 0 8px">
+      <button class="tb" aria-label="New note" title="New note" onClick="{{newNote}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8.5v7M8.5 12h7"></path></svg></button>
+      <button class="tb" aria-label="New folder" title="New folder" onClick="{{newFolder}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h6l2 2h10v11H3z"></path><path d="M12 11v5M9.5 13.5h5"></path></svg></button>
+    </div>
+    <div class="tree" role="tree">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+        <div class="{{r.cls}}" style="padding-left: {{r.indent}}px" data-fpath="{{r.dropPath}}" data-key="{{r.key}}" role="treeitem" onPointerDown="{{r.down}}" onClick="{{r.click}}" onContextMenu="{{r.ctx}}">
+          <sc-if value="{{r.isFolder}}" hint-placeholder-val="{{ true }}"><button class="chev" aria-label="Expand or collapse" onClick="{{r.toggle}}"><sc-if value="{{r.open}}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></sc-if><sc-if value="{{r.closed}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if></button></sc-if>
+          <sc-if value="{{r.isNote}}" hint-placeholder-val="{{ false }}"><span style="width: 16px; flex: 0 0 16px"></span></sc-if>
+          <sc-if value="{{r.viewing}}" hint-placeholder-val="{{ true }}"><span class="nm">{{r.name}}<sc-if value="{{r.isNote}}" hint-placeholder-val="{{ false }}"><span class="ext">.md</span></sc-if></span></sc-if>
+          <sc-if value="{{r.editing}}" hint-placeholder-val="{{ false }}"><input class="{{einCls}}" aria-label="Name" value="{{edName}}" onInput="{{onEd}}" onKeyDown="{{edKey}}" onBlur="{{edBlur}}" onPointerDown="{{stop}}"></sc-if>
+          <sc-if value="{{r.hasMenu}}" hint-placeholder-val="{{ true }}"><button class="{{r.moreCls}}" aria-label="More actions" title="More" onClick="{{r.more}}" onPointerDown="{{stop}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="19" cy="12" r="1.3"></circle></svg></button></sc-if>
+        </div>
+        <sc-if value="{{r.hasHint}}" hint-placeholder-val="{{ false }}"><div class="ehint" style="padding-left: {{r.indent}}px">{{edErr}}</div></sc-if>
+      </sc-for>
+    </div>
+    <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+      <div class="menu" role="menu" style="left: {{menuX}}px; top: {{menuY}}px">
+        <button class="mi" role="menuitem" onClick="{{mRename}}">Rename<span class="k">F2</span></button>
+        <button class="mi" role="menuitem" onClick="{{mMove}}">Move to…<span class="k">⌘⇧M</span></button>
+        <div class="msep"></div>
+        <button class="mi del" role="menuitem" onClick="{{mDelete}}">Delete…<span class="k">⌫</span></button>
+      </div>
+    </sc-if>
+  </aside>
+
+  <main style="flex: 1 1 auto; min-width: 0; padding: 40px 40px 48px; overflow: auto">
+    <div style="max-width: 760px; display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span class="caption muted mono">{{mainPath}}</span>
+        <h1 class="heading" style="margin: 0">{{mainTitle}}</h1>
+        <span class="caption muted">{{mainSub}}</span>
+      </div>
+      <div style="display: flex; flex-direction: column">
+        <sc-for list="{{listing}}" as="l" hint-placeholder-count="4">
+          <div class="lrow"><sc-if value="{{l.isFolder}}" hint-placeholder-val="{{ false }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h6l2 2h10v11H3z"></path></svg></sc-if><sc-if value="{{l.isNote}}" hint-placeholder-val="{{ true }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h5"></path></svg></sc-if><span>{{l.name}}</span><span class="p">{{l.rel}}</span></div>
+        </sc-for>
+      </div>
+      <div class="rules">
+        <b>Try it</b><span>Hover a row → ⋯ (or right-click) for Rename · Move to… · Delete. Drag any row onto a folder to move it. Same behaviour in the Tasks explorer (folders only).</span>
+        <b>Names</b><span><span class="mono">a–z 0–9 _</span> only, no spaces or capitals, unique in their folder: <span class="mono ok">weekly_plan</span> · <span class="mono no">Weekly Plan</span> · <span class="mono no">notes-2026</span></span>
+        <b>On scan</b><span>Folders and <span class="mono">.md</span> files with other names are skipped and listed in Settings → General.</span>
+      </div>
+    </div>
+  </main>
+
+  <sc-if value="{{delOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="shade" onClick="{{closeDel}}"></div>
+    <div class="dlg" role="alertdialog" aria-label="{{delTitle}}">
+      <h2>{{delTitle}}</h2>
+      <span>{{delBody}}</span>
+      <sc-if value="{{delIsFolder}}" hint-placeholder-val="{{ true }}">
+        <span>Type <span class="key">{{delKey}}</span> to confirm.</span>
+        <input class="{{delFldCls}}" aria-label="Folder name" value="{{delTyped}}" onInput="{{onDelTyped}}" onKeyDown="{{delKeyDown}}" autocomplete="off" spellcheck="false">
+      </sc-if>
+      <div class="dfoot"><button class="gbtn" onClick="{{closeDel}}">Cancel</button><button class="rbtn" disabled="{{delBlocked}}" onClick="{{doDelete}}">{{delBtn}}</button></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{mvOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="shade" style="background: transparent" onClick="{{closeMv}}"></div>
+    <div class="mv" role="dialog" aria-label="Move">
+      <div class="mvh"><span>Move <span class="mono" style="color: #303841">{{mvWhat}}</span> to</span><span style="margin-left: auto" class="mono">⌘⇧M</span></div>
+      <div class="mvr"><span class="l">to</span><input class="mvq" aria-label="Destination folder" placeholder="folder path, empty = top level" value="{{mvQ}}" onInput="{{onMvQ}}" onKeyDown="{{mvKey}}"></div>
+      <sc-for list="{{mvSugg}}" as="g" hint-placeholder-count="4"><button class="{{g.cls}}" onClick="{{g.go}}">{{g.label}}</button></sc-for>
+      <div class="mvf"><sc-if value="{{mvBad}}" hint-placeholder-val="{{ false }}"><span class="err">{{mvErr}}</span></sc-if><sc-if value="{{mvOk}}" hint-placeholder-val="{{ true }}"><span>{{mvInfo}}</span></sc-if><span style="margin-left: auto">↑↓ · ↵ move · esc</span></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{hasGhost}}" hint-placeholder-val="{{ false }}"><div class="ghost" style="left: {{ghostX}}px; top: {{ghostY}}px">{{ghostText}}</div></sc-if>
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      folders: ['', 'home', 'home/recipes', 'inbox', 'reading', 'work', 'work/meetings', 'work/tend_v0_1'],
+      notes: [
+        { id: 'n1', folder: '', name: 'reading_list' }, { id: 'n2', folder: 'work', name: 'weekly_plan' },
+        { id: 'n3', folder: 'work/meetings', name: 'standup_0310' }, { id: 'n4', folder: 'work/meetings', name: 'retro_0926' },
+        { id: 'n5', folder: 'work/tend_v0_1', name: 'ideas' }, { id: 'n6', folder: 'work/tend_v0_1', name: 'schema_notes' },
+        { id: 'n7', folder: 'home', name: 'groceries' }, { id: 'n8', folder: 'home/recipes', name: 'dal_tadka' }
+      ],
+      open: { '': true, work: true, 'work/tend_v0_1': true, home: false },
+      sel: { kind: 'folder', path: 'work' },
+      menu: null, ed: null, edName: '', del: null, delTyped: '', mv: null, mvQ: '', mvHi: 0, drag: null, toast: ''
+    };
+  }
+  renderVals() {
+    const s = this.state;
+    const RX = /^[a-z0-9_]+$/;
+    const base = (p) => p.split('/').pop();
+    const parentOf = (p) => p.indexOf('/') < 0 ? '' : p.slice(0, p.lastIndexOf('/'));
+    const join = (a, b) => a ? a + '/' + b : b;
+    const under = (p, root) => p === root || p.indexOf(root + '/') === 0;
+    const toast = (m) => { this.setState({ toast: m }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 2200); };
+    const nameClash = (folder, name, exceptKey) => s.folders.some((f) => f !== '' && parentOf(f) === folder && base(f) === name && 'f:' + f !== exceptKey) || s.notes.some((n) => n.folder === folder && n.name === name && 'n:' + n.id !== exceptKey);
+    const validate = (name, folder, exceptKey) => !name ? 'Name can’t be empty' : !RX.test(name) ? 'Only a–z, 0–9 and _ (no spaces or capitals)' : nameClash(folder, name, exceptKey) ? 'Something with this name already exists here' : '';
+    // ---- tree rows
+    const rows = [];
+    const kids = (p) => s.folders.filter((f) => f !== '' && parentOf(f) === p).sort();
+    const notesIn = (p) => s.notes.filter((n) => n.folder === p).sort((a, b) => a.name.localeCompare(b.name));
+    const drag = s.drag;
+    const canDrop = (target) => {
+      if (!drag || target == null) return false;
+      if (drag.kind === 'folder') return !under(target, drag.path) && parentOf(drag.path) !== target && !nameClash(target, base(drag.path));
+      const n = s.notes.find((x) => x.id === drag.id); return n && n.folder !== target && !nameClash(target, n.name);
+    };
+    const pushRow = (r) => rows.push(r);
+    const walk = (p, depth) => {
+      const key = 'f:' + p; const isOpen = !!s.open[p];
+      const editing = s.ed && s.ed.key === key;
+      pushRow({ key: key, kind: 'folder', path: p, name: p === '' ? 'notes' : base(p), depth: depth, isFolder: true, isNote: false, open: isOpen, closed: !isOpen, editing: editing, hasMenu: p !== '' });
+      if (s.ed && s.ed.newIn === p && s.ed.newKind === 'folder' && isOpen) pushRow({ key: 'new', kind: 'folder', path: null, name: '', depth: depth + 1, isFolder: true, isNote: false, open: false, closed: true, editing: true, hasMenu: false, isNew: true });
+      if (!isOpen) return;
+      kids(p).forEach((c) => walk(c, depth + 1));
+      if (s.ed && s.ed.newIn === p && s.ed.newKind === 'note') pushRow({ key: 'new', kind: 'note', path: null, name: '', depth: depth + 1, isFolder: false, isNote: true, editing: true, hasMenu: false, isNew: true });
+      notesIn(p).forEach((n) => pushRow({ key: 'n:' + n.id, kind: 'note', id: n.id, path: n.folder, name: n.name, depth: depth + 1, isFolder: false, isNote: true, editing: !!(s.ed && s.ed.key === 'n:' + n.id), hasMenu: true }));
+    };
+    walk('', 0);
+    const edErr = s.ed ? validate(s.edName.trim(), s.ed.folder, s.ed.key) : '';
+    const commitEd = () => {
+      const st = this.state; const e = st.ed; if (!e) return;
+      const name = st.edName.trim(); const err = validate(name, e.folder, e.key);
+      if (err) { if (e.isNew && !name) this.setState({ ed: null }); return; }
+      if (e.isNew && e.newKind === 'folder') { const p = join(e.folder, name); this.setState({ folders: st.folders.concat([p]), ed: null, sel: { kind: 'folder', path: p } }); toast('Folder ' + p + ' created'); return; }
+      if (e.isNew && e.newKind === 'note') { const id = 'n' + Date.now(); this.setState({ notes: st.notes.concat([{ id: id, folder: e.folder, name: name }]), ed: null, sel: { kind: 'note', id: id } }); toast(join(e.folder, name) + '.md created'); return; }
+      if (e.key.indexOf('f:') === 0) {
+        const old = e.key.slice(2); const np = join(parentOf(old), name);
+        if (np !== old) moveFolder(old, np, 'Renamed to ' + np); else this.setState({ ed: null });
+      } else {
+        const id = e.key.slice(2); this.setState({ notes: st.notes.map((n) => n.id === id ? Object.assign({}, n, { name: name }) : n), ed: null }); toast('Renamed to ' + name + '.md');
+      }
+    };
+    const moveFolder = (old, np, msg) => {
+      const st = this.state;
+      const re = (p) => under(p, old) ? np + p.slice(old.length) : p;
+      const open = {}; Object.keys(st.open).forEach((k) => { open[re(k)] = st.open[k]; });
+      open[parentOf(np)] = true;
+      this.setState({ folders: st.folders.map(re), notes: st.notes.map((n) => Object.assign({}, n, { folder: re(n.folder) })), open: open, ed: null, mv: null,
+        sel: st.sel.kind === 'folder' ? { kind: 'folder', path: re(st.sel.path) } : st.sel });
+      toast(msg);
+    };
+    const moveTo = (item, target) => {
+      if (item.kind === 'folder') moveFolder(item.path, join(target, base(item.path)), 'Moved to ' + (target || 'notes') + '/');
+      else { const st = this.state; this.setState({ notes: st.notes.map((n) => n.id === item.id ? Object.assign({}, n, { folder: target }) : n), mv: null, open: Object.assign({}, st.open, { [target]: true }) }); toast('Moved to ' + (target || 'notes') + '/'); }
+    };
+    const startEd = (r) => { this.setState({ ed: { key: r.key, folder: r.kind === 'folder' ? parentOf(r.path) : r.path }, edName: r.name, menu: null }); setTimeout(() => { const el = document.querySelector('.ein'); if (el) { el.focus(); el.select(); } }, 0); };
+    const itemOf = (r) => r.kind === 'folder' ? { kind: 'folder', path: r.path } : { kind: 'note', id: r.id };
+    const openMenu = (r, e) => {
+      if (e && e.preventDefault) e.preventDefault(); if (e && e.stopPropagation) e.stopPropagation();
+      const row = e && e.currentTarget && e.currentTarget.closest ? e.currentTarget.closest('[data-key]') : null;
+      const aside = row ? row.closest('aside') : null;
+      let x = 140, y = 60;
+      if (row && aside) { const rr = row.getBoundingClientRect(), ar = aside.getBoundingClientRect(); y = rr.bottom - ar.top + 2; x = e.type === 'contextmenu' ? Math.min(e.clientX - ar.left, 40) : 44; }
+      this.setState({ menu: { key: r.key, item: itemOf(r), name: r.name, x: x, y: y } });
+    };
+    const down = (r) => (e) => {
+      if (!e || (e.button != null && e.button !== 0) || r.isNew || r.editing || r.path === '' && r.kind === 'folder') return;
+      const x0 = e.clientX, y0 = e.clientY; let started = false; let raf = 0, lastEv = null;
+      const step = () => { raf = 0; if (!lastEv) return; const el = document.elementFromPoint(lastEv.clientX, lastEv.clientY); const row = el && el.closest ? el.closest('[data-fpath]') : null; const tgt = row ? row.getAttribute('data-fpath') : null; this.setState({ drag: Object.assign({}, this.state.drag, { over: tgt === '' || tgt ? tgt : null, gx: lastEv.clientX + 12, gy: lastEv.clientY + 8 }) }); };
+      const mv = (ev) => {
+        if (!started) { if (Math.abs(ev.clientX - x0) + Math.abs(ev.clientY - y0) < 5) return; started = true; this.setState({ drag: Object.assign(itemOf(r), { key: r.key, name: r.name + (r.kind === 'note' ? '.md' : '/'), over: null, gx: ev.clientX + 12, gy: ev.clientY + 8 }), menu: null }); }
+        lastEv = ev; if (!raf) raf = requestAnimationFrame(step);
+      };
+      const up = () => {
+        window.removeEventListener('pointermove', mv); window.removeEventListener('pointerup', up); if (raf) cancelAnimationFrame(raf);
+        if (!started) return;
+        this._noClick = true; setTimeout(() => { this._noClick = false; }, 0);
+        const d = this.state.drag; this.setState({ drag: null });
+        if (d && d.over != null && canDropFor(d, d.over)) moveTo(d, d.over);
+      };
+      window.addEventListener('pointermove', mv); window.addEventListener('pointerup', up);
+    };
+    const canDropFor = (d, target) => {
+      const st = this.state;
+      const clash = (folder, name) => st.folders.some((f) => f !== '' && parentOf(f) === folder && base(f) === name) || st.notes.some((n) => n.folder === folder && n.name === name);
+      if (d.kind === 'folder') return !under(target, d.path) && parentOf(d.path) !== target && !clash(target, base(d.path));
+      const n = st.notes.find((x) => x.id === d.id); return !!n && n.folder !== target && !clash(target, n.name);
+    };
+    const selKey = s.sel.kind === 'folder' ? 'f:' + s.sel.path : 'n:' + s.sel.id;
+    const rowVals = rows.map((r) => {
+      const dropPath = r.kind === 'folder' && !r.isNew ? r.path : (r.kind === 'note' && !r.isNew ? r.path : '');
+      const isTarget = drag && r.kind === 'folder' && drag.over === r.path;
+      return Object.assign({}, r, {
+        indent: 8 + r.depth * 16, viewing: !r.editing, dropPath: dropPath,
+        cls: 'tr' + (selKey === r.key && !drag ? ' sel' : '') + (isTarget ? (canDrop(r.path) ? ' drop' : ' bad') : '') + (drag && drag.key === r.key ? ' ghosted' : ''),
+        moreCls: 'more' + (s.menu && s.menu.key === r.key ? ' on' : ''),
+        hasHint: r.editing && !!edErr && !!s.edName.trim(),
+        toggle: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.setState({ open: Object.assign({}, this.state.open, { [r.path]: !this.state.open[r.path] }) }); },
+        click: () => { if (this._noClick || r.isNew || r.editing) return; this.setState({ sel: r.kind === 'folder' ? { kind: 'folder', path: r.path } : { kind: 'note', id: r.id }, menu: null }); },
+        ctx: (e) => { if (r.hasMenu) openMenu(r, e); else if (e && e.preventDefault) e.preventDefault(); },
+        more: (e) => openMenu(r, e),
+        down: down(r)
+      });
+    });
+    // ---- main pane
+    let mainPath = '', mainTitle = '', mainSub = '', listing = [];
+    if (s.sel.kind === 'folder') {
+      const p = s.sel.path;
+      mainPath = 'notes/' + (p ? p + '/' : ''); mainTitle = p === '' ? 'notes' : base(p);
+      const fs = s.folders.filter((f) => f !== '' && under(f, p) && f !== p); const ns = s.notes.filter((n) => under(n.folder, p) || p === '');
+      mainSub = ns.length + ' notes' + (fs.length ? ' · ' + fs.length + ' folders' : '');
+      listing = ns.slice().sort((a, b) => a.name.localeCompare(b.name)).map((n) => ({ isFolder: false, isNote: true, name: n.name + '.md', rel: n.folder === p ? '' : (p ? n.folder.slice(p.length + 1) : n.folder) }));
+    } else {
+      const n = s.notes.find((x) => x.id === s.sel.id) || s.notes[0];
+      mainPath = 'notes/' + (n.folder ? n.folder + '/' : ''); mainTitle = n.name + '.md'; mainSub = 'Note';
+    }
+    // ---- delete
+    const del = s.del;
+    let delCounts = { f: 0, n: 0 };
+    if (del && del.item.kind === 'folder') { delCounts = { f: s.folders.filter((f) => f !== del.item.path && under(f, del.item.path)).length, n: s.notes.filter((n) => under(n.folder, del.item.path)).length }; }
+    const delKey = del ? (del.item.kind === 'folder' ? base(del.item.path) : '') : '';
+    const doDelete = () => {
+      const st = this.state; const d = st.del; if (!d) return;
+      if (d.item.kind === 'folder') {
+        if (st.delTyped !== base(d.item.path)) return;
+        const p = d.item.path;
+        this.setState({ folders: st.folders.filter((f) => !under(f, p)), notes: st.notes.filter((n) => !under(n.folder, p)), del: null, delTyped: '', sel: under(st.sel.path || '', p) && st.sel.kind === 'folder' ? { kind: 'folder', path: parentOf(p) } : st.sel });
+        toast('Deleted ' + p + '/');
+      } else {
+        const n = st.notes.find((x) => x.id === d.item.id);
+        this.setState({ notes: st.notes.filter((x) => x.id !== d.item.id), del: null, sel: st.sel.kind === 'note' && st.sel.id === d.item.id ? { kind: 'folder', path: n.folder } : st.sel });
+        toast('Deleted ' + n.name + '.md');
+      }
+    };
+    // ---- move dialog
+    const mv = s.mv;
+    const mq = (s.mvQ || '').trim().replace(/\/+$/, '');
+    const allowed = mv ? s.folders.filter((f) => mv.kind === 'folder' ? !under(f, mv.path) && f !== parentOf(mv.path) : f !== (s.notes.find((n) => n.id === mv.id) || {}).folder) : [];
+    const mvSugg = mv ? allowed.filter((f) => !mq || f.indexOf(mq) >= 0).slice(0, 6) : [];
+    const mvHi = Math.min(s.mvHi, Math.max(0, mvSugg.length - 1));
+    const mvTarget = mq;
+    const mvErr = !mv ? '' : (mvTarget && !mvTarget.split('/').every((x) => RX.test(x))) ? 'Folder names: a–z, 0–9 and _ only'
+      : (mv.kind === 'folder' && under(mvTarget, mv.path)) ? 'Can’t move a folder into itself'
+      : (mv.kind === 'folder' ? parentOf(mv.path) === mvTarget : (s.notes.find((n) => n.id === mv.id) || {}).folder === mvTarget) ? 'Already there' : '';
+    const mvInfo = !mv ? '' : (s.folders.indexOf(mvTarget) < 0 ? 'will create ' + mvTarget + '/' : 'into ' + (mvTarget || 'notes') + '/');
+    const doMove = (target) => {
+      const st = this.state; const m = st.mv; if (!m) return;
+      const t = (target != null ? target : (st.mvQ || '').trim().replace(/\/+$/, ''));
+      const errNow = (t && !t.split('/').every((x) => RX.test(x))) || (m.kind === 'folder' && under(t, m.path));
+      if (errNow) return;
+      if (st.folders.indexOf(t) < 0) { const add = []; t.split('/').reduce((acc, seg) => { const p = join(acc, seg); if (st.folders.indexOf(p) < 0) add.push(p); return p; }, ''); this.setState({ folders: st.folders.concat(add) }); }
+      setTimeout(() => moveTo(m, t), 0);
+    };
+    return {
+      rootCls: drag ? 'dragging' : '',
+      noop: () => {}, stop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+      rows: rowVals,
+      einCls: 'ein' + (edErr && s.edName.trim() ? ' bad' : ''), edName: s.edName, edErr: edErr,
+      onEd: (e) => this.setState({ edName: e.target.value }),
+      edKey: (e) => { if (e.key === 'Enter') { e.preventDefault(); commitEd(); } if (e.key === 'Escape') this.setState({ ed: null }); },
+      edBlur: () => { const st = this.state; if (st.ed && (st.ed.isNew ? !st.edName.trim() : validate(st.edName.trim(), st.ed.folder, st.ed.key))) this.setState({ ed: null }); else commitEd(); },
+      newNote: () => { const f = s.sel.kind === 'folder' ? s.sel.path : (s.notes.find((n) => n.id === s.sel.id) || {}).folder || ''; this.setState({ ed: { key: 'new', isNew: true, newKind: 'note', newIn: f, folder: f }, edName: '', open: Object.assign({}, s.open, { [f]: true }) }); setTimeout(() => { const el = document.querySelector('.ein'); if (el) el.focus(); }, 0); },
+      newFolder: () => { const f = s.sel.kind === 'folder' ? s.sel.path : (s.notes.find((n) => n.id === s.sel.id) || {}).folder || ''; this.setState({ ed: { key: 'new', isNew: true, newKind: 'folder', newIn: f, folder: f }, edName: '', open: Object.assign({}, s.open, { [f]: true }) }); setTimeout(() => { const el = document.querySelector('.ein'); if (el) el.focus(); }, 0); },
+      menuOpen: !!s.menu, menuX: s.menu ? s.menu.x : 0, menuY: s.menu ? s.menu.y : 0,
+      closeMenu: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ menu: null }); },
+      mRename: () => { const r = rows.find((x) => x.key === s.menu.key); if (r) startEd(r); },
+      mMove: () => { this.setState({ mv: s.menu.item, mvQ: '', mvHi: 0, menu: null }); setTimeout(() => { const el = document.querySelector('.mvq'); if (el) el.focus(); }, 0); },
+      mDelete: () => { this.setState({ del: { item: s.menu.item, name: s.menu.name }, delTyped: '', menu: null }); setTimeout(() => { const el = document.querySelector('.dlg .fld'); if (el) el.focus(); }, 0); },
+      mainPath: mainPath, mainTitle: mainTitle, mainSub: mainSub, listing: listing,
+      delOpen: !!del, delIsFolder: !!del && del.item.kind === 'folder',
+      delTitle: del ? (del.item.kind === 'folder' ? 'Delete folder ' + base(del.item.path) + '?' : 'Delete ' + del.name + '.md?') : '',
+      delBody: del ? (del.item.kind === 'folder' ? (delCounts.n || delCounts.f ? 'It contains ' + delCounts.n + ' note' + (delCounts.n === 1 ? '' : 's') + (delCounts.f ? ' and ' + delCounts.f + ' folder' + (delCounts.f === 1 ? '' : 's') : '') + '. Everything inside is deleted from disk.' : 'The folder is empty.') : 'The file is deleted from disk. Tags and attachment links on it are removed.') : '',
+      delKey: delKey, delTyped: s.delTyped,
+      delFldCls: 'fld' + (del && del.item.kind === 'folder' && s.delTyped === delKey ? ' ok' : ''),
+      onDelTyped: (e) => this.setState({ delTyped: e.target.value }),
+      delKeyDown: (e) => { if (e.key === 'Enter') doDelete(); if (e.key === 'Escape') this.setState({ del: null }); },
+      delBlocked: !!del && del.item.kind === 'folder' && s.delTyped !== delKey,
+      delBtn: del && del.item.kind === 'folder' ? 'Delete folder' : 'Delete',
+      closeDel: () => this.setState({ del: null }), doDelete: () => doDelete(),
+      mvOpen: !!mv, mvWhat: mv ? (mv.kind === 'folder' ? mv.path + '/' : ((s.notes.find((n) => n.id === mv.id) || {}).name || '') + '.md') : '',
+      mvQ: s.mvQ, onMvQ: (e) => this.setState({ mvQ: e.target.value, mvHi: 0 }),
+      mvSugg: mvSugg.map((f, i) => ({ label: f === '' ? '(top level)' : f, cls: 'sg' + (i === mvHi ? ' on' : ''), go: () => doMove(f) })),
+      mvKey: (e) => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); this.setState({ mvHi: Math.min(mvSugg.length - 1, mvHi + 1) }); }
+        if (e.key === 'ArrowUp') { e.preventDefault(); this.setState({ mvHi: Math.max(0, mvHi - 1) }); }
+        if (e.key === 'Tab' && mvSugg[mvHi] != null) { e.preventDefault(); this.setState({ mvQ: mvSugg[mvHi] }); }
+        if (e.key === 'Enter') { e.preventDefault(); if (mvErr) return; const exact = s.folders.indexOf(mq) >= 0 || mq; doMove(mq && exact ? mq : (mvSugg[mvHi] != null ? mvSugg[mvHi] : mq)); }
+        if (e.key === 'Escape') this.setState({ mv: null });
+      },
+      closeMv: () => this.setState({ mv: null }),
+      mvBad: !!mvErr, mvOk: !mvErr, mvErr: mvErr, mvInfo: mvInfo,
+      hasGhost: !!drag && drag.gx != null, ghostX: drag ? drag.gx : 0, ghostY: drag ? drag.gy : 0,
+      ghostText: drag ? (drag.over != null ? (canDrop(drag.over) ? drag.name + ' → ' + (drag.over || 'notes') + '/' : 'can’t move here') : drag.name) : '',
+      hasToast: !!s.toast, toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

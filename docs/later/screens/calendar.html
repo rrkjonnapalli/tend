@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tend mockup · calendar</title>
+<script src="../../design/dc-runtime.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#303841}a:hover{color:#1259d3}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #1070e3;outline-offset:2px}
+.heading{font:500 28px/36px 'Montserrat',sans-serif}
+.caption{font:400 13px/18px 'Lato',sans-serif}
+.muted{color:#7d8995}
+.ntr{font:600 15px/20px 'Montserrat',sans-serif;text-decoration:none;color:#7d8995;padding:4px 2px}
+.caret{position:absolute;width:14px;height:28px;padding:0;border:1px solid #dce3e8;background:#ffffff;color:#5f6b76;display:grid;place-items:center;cursor:pointer;z-index:2}
+.tab{left:0;border-left:0;border-radius:0 4px 4px 0}
+.navbar{display:flex;align-items:center;justify-content:center;gap:16px;padding:0 20px;box-sizing:border-box;height:48px}
+.views{display:flex;align-items:center;gap:8px;font:400 14px/20px 'Lato',sans-serif}
+.vbtn{display:inline-flex;align-items:center;height:28px;padding:2px 2px 0;box-sizing:border-box;border:0;border-bottom:2px solid transparent;background:transparent;color:#7d8995;cursor:pointer;font:400 14px/20px 'Lato',sans-serif}
+.vbtn:hover{color:#303841}
+.vbtn.on{color:#303841;border-bottom-color:#1259d3}
+.vsep{color:#7d8995;line-height:28px}
+.nav2{display:flex;align-items:center;gap:2px}
+.ib{width:28px;height:28px;padding:0;border:0;border-radius:4px;background:transparent;color:#5f6b76;display:grid;place-items:center;cursor:pointer}
+.ib:hover{background:#f7fbfc;color:#303841}
+.todaybtn{height:28px;padding:0 10px;border:1px solid #dce3e8;border-radius:4px;background:#ffffff;color:#303841;cursor:pointer;font:400 13px/18px 'Lato',sans-serif;margin-right:4px}
+.todaybtn:hover{border-color:#7d8995}
+.legend{display:flex;align-items:center;gap:14px;font:400 12px/16px 'Lato',sans-serif;color:#7d8995}
+.lg{display:inline-flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:2px}
+/* week grid */
+.wk{display:grid;grid-template-columns:52px repeat(7,minmax(0,1fr));}
+.dh{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:4px 8px 8px;border:0;background:transparent;cursor:pointer;text-align:left}
+.dh:hover .dn{color:#1259d3}
+.dw{font:400 11px/16px 'Lato',sans-serif;color:#7d8995;letter-spacing:.04em;text-transform:uppercase}
+.dn{font:500 18px/26px 'Montserrat',sans-serif;color:#303841}
+.dh.today .dn{color:#ffffff;background:#1259d3;border-radius:14px;min-width:28px;height:28px;display:inline-grid;place-items:center;padding:0 6px;box-sizing:border-box;margin-left:-6px}
+.dh.today .dw{color:#1259d3}
+.ad{display:flex;flex-direction:column;gap:2px;padding:0 4px 6px;min-height:22px}
+.adl{font:400 11px/16px 'Lato',sans-serif;color:#7d8995;text-align:right;padding:3px 8px 0 0}
+.chip{display:flex;align-items:center;gap:6px;height:20px;padding:0 6px;border-radius:4px;font:400 12px/16px 'Lato',sans-serif;color:#303841;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-decoration:none}
+.chip.task{background:#f7fbfc}
+.chip.bday{background:#ede9ff}
+.chip .t{overflow:hidden;text-overflow:ellipsis}
+.st{flex:0 0 7px;width:7px;height:7px;border-radius:4px;box-sizing:border-box}
+.st-todo{border:1.5px solid #7d8995}
+.st-doing{background:#1259d3}
+.warn{color:#a84f2c}
+.scroll{position:relative;overflow:auto;border-top:1px solid #dce3e8}
+.hrs{position:relative}
+.hl{position:absolute;left:52px;right:0;height:1px;background:#dce3e8}
+.hl.half{background:repeating-linear-gradient(90deg,#dce3e8 0 4px,transparent 4px 8px)}
+.hl.q{background:#f2f5f7}
+.hlab{position:absolute;left:0;width:44px;text-align:right;font:400 11px/16px 'Lato',sans-serif;color:#7d8995;margin-top:-8px}
+.col{position:absolute;top:0;bottom:0}
+.col{cursor:crosshair}
+.col.today{background:transparent}
+.ev{position:absolute;left:3px;right:3px;box-sizing:border-box;padding:3px 6px;border-radius:4px;background:#dbfaff;box-shadow:inset 2px 0 0 #1259d3;overflow:hidden;font:400 12px/16px 'Lato',sans-serif;color:#303841;cursor:default}
+.ev .et{font-weight:700;overflow-wrap:anywhere}
+.ev .em{color:#5f6b76}
+.ev.past{background:#f7fbfc;box-shadow:inset 2px 0 0 #b8c4ce;color:#7d8995}
+.ev.past .et{font-weight:400}
+.join{display:inline-flex;align-items:center;gap:3px;padding:0 5px;height:16px;border-radius:3px;background:#1259d3;color:#ffffff;text-decoration:none;font:500 11px/16px 'Lato',sans-serif}
+.join:hover{background:#113eb0;color:#ffffff}
+.ev .join{position:absolute;right:4px;bottom:3px;margin:0}
+.ev.haslink:not(.short){padding-bottom:20px}
+.ev.more{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.ev.cont{border-top-left-radius:0;border-top-right-radius:0}
+.ev.short .join{position:static;order:3;margin:0 0 0 auto;height:14px;font-size:10px;line-height:14px}
+.ev.short .et{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dur{display:inline-block;margin-left:5px;padding:0 4px;border-radius:3px;background:rgba(48,56,65,.08);color:#5f6b76;font:400 10px/14px 'Lato',sans-serif;vertical-align:1px}
+.ev .evdur{position:absolute;top:3px;right:4px;margin:0}
+.ev:not(.short) .et{padding-right:34px}
+.ev.short .evdur{position:static;margin-left:auto;flex:0 0 auto}
+.ev.short .join{margin-left:4px}
+.ev.past .dur{background:rgba(48,56,65,.06);color:#7d8995}
+.rm{position:absolute;left:3px;right:3px;height:18px;display:flex;align-items:center;gap:5px;padding:0 4px;font:400 11px/16px 'Lato',sans-serif;color:#303841;white-space:nowrap;overflow:hidden}
+.rm .rd{flex:0 0 6px;width:6px;height:6px;border-radius:3px;background:#6f5ee4}
+.rm .rt{color:#6f5ee4}
+.now{position:absolute;height:2px;background:#da0037;z-index:2}
+.nowlab{position:absolute;right:2px;top:-17px;padding:0 4px;border-radius:3px;background:#da0037;color:#ffffff;font:700 10px/14px 'Lato',sans-serif}
+.draft{position:absolute;left:3px;right:3px;box-sizing:border-box;padding:3px 6px;border-radius:4px;background:rgba(18,89,211,.08);box-shadow:inset 0 0 0 1.5px #1259d3;font:400 12px/16px 'Lato',sans-serif;color:#1259d3;pointer-events:none;z-index:3}
+.qc{position:absolute;z-index:6;width:248px;padding:12px;display:flex;flex-direction:column;gap:10px;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;cursor:default}
+.qc .qt{height:30px;padding:0 8px;border:0;border-radius:4px;background:#f7fbfc;outline:none;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.qc .qt::placeholder{color:#7d8995}
+.qrow{display:flex;align-items:center;gap:6px;font:400 13px/18px 'Lato',sans-serif;color:#5f6b76}
+.dchip{height:24px;padding:0 4px;border:0;border-bottom:2px solid transparent;background:transparent;color:#7d8995;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.dchip:hover{color:#303841}
+.dchip.on{color:#303841;border-bottom-color:#1259d3}
+.lenf{display:inline-flex;align-items:center;height:28px;border:1px solid #dce3e8;border-radius:4px;box-sizing:border-box}
+.lenb{width:26px;height:26px;padding:0;border:0;background:transparent;color:#5f6b76;display:grid;place-items:center;cursor:pointer}
+.lenb:hover{color:#303841;background:#f7fbfc}
+.lenv{display:inline-flex;align-items:center;gap:2px;padding:0 4px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.seg{width:20px;padding:0;border:0;outline:none;background:transparent;text-align:center;font:400 13px/18px 'Lato',sans-serif;color:#303841;border-radius:2px}
+.seg:focus{background:#dce3e8}
+.lenf:focus-within{border-color:#1259d3}
+.icb{width:26px;height:26px;padding:0;border:0;border-radius:4px;background:transparent;display:grid;place-items:center;cursor:pointer}
+.icb.ok{color:#1e7a55}.icb.ok:hover{background:#e3f7ee}
+.icb.no{color:#da0037}.icb.no:hover{background:#ffebeb}
+.icb.ed{color:#1259d3}.icb.ed:hover{background:#dbfaff}
+.qc .ql{font:400 12px/16px 'Lato',sans-serif;color:#7d8995;width:52px;flex:0 0 52px}
+.apm{height:22px;padding:0 4px;border:0;border-radius:3px;background:transparent;color:#303841;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.apm:hover{background:#f7fbfc}
+.dstep{display:inline-flex;align-items:center;height:28px;border:1px solid #dce3e8;border-radius:4px;box-sizing:border-box}
+.dstep span{min-width:84px;text-align:center;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.ev.mine{background:#ede9ff;box-shadow:inset 2px 0 0 #6f5ee4}
+.ev.short{display:flex;align-items:center;gap:6px;padding:0 6px;white-space:nowrap}
+.ev.short .et{flex:0 1 auto;min-width:0}
+.ev.short .em{flex:0 0 auto;font-size:11px}
+.ev.tiny{font-size:11px}
+.draft.short{display:flex;align-items:center;padding:0 6px;font-size:11px;white-space:nowrap;overflow:hidden}
+.step{display:flex;align-items:center;gap:4px}
+.stepb{width:30px;height:24px;padding:0;border:1px solid #dce3e8;border-radius:4px;background:#ffffff;color:#5f6b76;cursor:pointer;font:500 12px/16px 'Lato',sans-serif}
+.stepb:hover{border-color:#7d8995;color:#303841}
+.stepv{min-width:64px;text-align:center;font:500 13px/18px 'Lato',sans-serif;color:#303841}
+.det{gap:8px}
+.drow{display:flex;align-items:center;gap:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.durl{color:#1259d3;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.durl:hover{text-decoration:underline}
+.dsw{flex:0 0 10px;width:10px;height:10px;margin-top:5px;border-radius:2px;background:#dbfaff;box-shadow:inset 2px 0 0 #1259d3}
+.dsw.mine{background:#ede9ff;box-shadow:inset 2px 0 0 #6f5ee4}
+.ev{cursor:pointer}
+.ev.sel{box-shadow:inset 2px 0 0 #1259d3,0 0 0 1.5px #1259d3}
+.ev.mine.sel{box-shadow:inset 2px 0 0 #6f5ee4,0 0 0 1.5px #6f5ee4}
+.mon{flex:1;min-height:0;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);grid-template-rows:auto;border-top:1px solid #dce3e8;border-left:1px solid #dce3e8}
+.mwd{font:400 11px/16px 'Lato',sans-serif;color:#7d8995;letter-spacing:.04em;text-transform:uppercase;padding:6px 8px;border-right:1px solid #dce3e8;border-bottom:1px solid #dce3e8}
+.mcell{display:flex;flex-direction:column;gap:2px;min-width:0;min-height:0;overflow:hidden;padding:4px 4px 6px;border-right:1px solid #dce3e8;border-bottom:1px solid #dce3e8}
+.mcell.out .mnum{color:#b8c4ce}
+.mnum{align-self:flex-start;min-width:24px;height:24px;padding:0 6px;border:0;border-radius:12px;background:transparent;color:#303841;cursor:pointer;font:500 13px/18px 'Montserrat',sans-serif}
+.mnum:hover{background:#f7fbfc}
+.mcell.today .mnum{background:#1259d3;color:#ffffff}
+.mi{display:flex;align-items:center;gap:5px;min-width:0;height:20px;padding:0 5px;border:0;border-radius:3px;background:transparent;cursor:pointer;text-align:left;font:400 12px/16px 'Lato',sans-serif;color:#303841}
+.mi:hover{background:#f7fbfc}
+.mi .mtt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.mi .mtm{flex:0 0 auto;color:#7d8995;font-size:11px}
+.mi.meet::before{content:'';flex:0 0 3px;align-self:stretch;margin:3px 0;border-radius:2px;background:#1259d3}
+.mi.mine::before{content:'';flex:0 0 3px;align-self:stretch;margin:3px 0;border-radius:2px;background:#6f5ee4}
+.mi.rem::before{content:'';flex:0 0 6px;width:6px;height:6px;border-radius:3px;background:#6f5ee4}
+.mi.task{background:#f7fbfc}
+.mi.task.warn .mtt{color:#a84f2c}
+.mi.bday{background:#ede9ff}
+.mi.past{color:#7d8995}
+.mmore{align-self:flex-start;height:18px;padding:0 5px;border:0;border-radius:3px;background:transparent;color:#5f6b76;cursor:pointer;font:400 11px/16px 'Lato',sans-serif}
+.mmore:hover{background:#f7fbfc;color:#303841}
+.newbtn{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 12px;border:0;border-radius:4px;background:#1259d3;color:#ffffff;cursor:pointer;font:500 13px/18px 'Lato',sans-serif;margin-right:8px}
+.newbtn:hover{background:#113eb0}
+.now::before{content:'';position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:4px;background:#da0037}
+/* day view */
+.dl{display:flex;flex-direction:column}
+.dr{display:grid;grid-template-columns:96px 14px minmax(0,1fr) auto;align-items:center;gap:12px;min-height:40px;padding:0 16px;margin:0 -16px}
+.dr:hover{background:#f7fbfc}
+.dr .tm{font:400 13px/18px 'JetBrains Mono',ui-monospace,monospace;color:#7d8995}
+.dr .k{font:400 12px/16px 'Lato',sans-serif;color:#7d8995}
+.mk{width:10px;height:10px;border-radius:2px}
+.dr.nowline{min-height:0;height:2px;padding:0;margin:4px -16px;background:#da0037}
+.dr.nowline:hover{background:#da0037}
+.bnav{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.bnav>*{pointer-events:auto}
+.btog{position:relative;z-index:1;width:28px;height:16px;margin-bottom:-8px;padding:0;border:0;border-radius:4px;background:#ffffff;color:#b8c4ce;display:grid;place-items:center;cursor:pointer}
+.btog:hover{color:#303841;background:#f7fbfc}
+.btog.closed{margin-bottom:6px;background:transparent}
+.btog.closed:hover{background:#f7fbfc}
+.brow{align-self:stretch;display:flex;justify-content:center;align-items:center;gap:14px;padding:8px 10px 10px;background:#ffffff;border-top:1px solid #dce3e8}
+.bico{position:relative;display:grid;place-items:center;width:28px;height:26px;color:#7d8995;text-decoration:none}
+.bico:hover{color:#303841}
+.bico.cur{color:#6f5ee4}
+.brow{position:relative}
+.bset{position:absolute;right:80px;top:8px}
+.bfb{position:absolute;right:16px;top:8px}
+.bnotif{position:absolute;right:48px;top:8px}
+.bnotif.on{color:#303841}
+.nbadge{position:absolute;top:1px;right:3px;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;background:#da0037;color:#ffffff;font:700 9px/14px 'Lato',sans-serif;text-align:center}
+.nbadge.blink{animation:nblink 1s ease-in-out infinite}
+@keyframes nblink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.85)}}
+.npop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;box-sizing:border-box;display:flex;flex-direction:column;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.npop .fbhead{padding:10px 12px 8px}
+.nrow{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px 0 12px;border-top:1px solid #f2f5f7}
+.nrow .nt{flex:1;min-width:0;display:flex;flex-direction:column}
+.nrow .nt b{font-weight:400;font-size:14px;line-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nrow .nt span{font-size:12px;line-height:16px;color:#7d8995}
+.nrow .nt span.late{color:#a84f2c}
+.nact{height:24px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:#1259d3;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.nact:hover{background:#dbfaff}
+.ndone{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#1e7a55;display:grid;place-items:center;cursor:pointer}
+.ndone:hover{background:#e3f7ee}
+.nempty{padding:14px 12px;border-top:1px solid #f2f5f7;color:#7d8995}
+
+.bfb.on{color:#303841}
+.fbback{position:absolute;inset:0;z-index:20}
+.fbpop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;padding:12px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.fbhead{display:flex;align-items:center;gap:8px;font:500 14px/20px 'Montserrat',sans-serif}
+.fbx{margin-left:auto;width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#5f6b76;display:grid;place-items:center;cursor:pointer}
+.fbx:hover{background:#f7fbfc;color:#303841}
+.fbkinds{display:flex;gap:4px}
+.fbk{height:24px;padding:0 8px;border:1px solid #dce3e8;border-radius:12px;background:#ffffff;color:#5f6b76;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.fbk:hover{color:#303841;border-color:#b8c4ce}
+.fbk.on{color:#1259d3;border-color:#1259d3;background:#dbfaff}
+.fbta{width:100%;min-height:96px;box-sizing:border-box;padding:8px;border:1px solid #dce3e8;border-radius:6px;outline:none;resize:vertical;font:400 13px/20px 'Lato',sans-serif;color:#303841;background:#ffffff}
+.fbta:focus{border-color:#1259d3}
+.fbta::placeholder{color:#7d8995}
+.fbfoot{display:flex;align-items:center;gap:8px}
+.fbsend{margin-left:auto;height:28px;padding:0 12px;border:0;border-radius:6px;background:#1259d3;color:#ffffff;cursor:pointer;font:700 13px/18px 'Lato',sans-serif}
+.fbsend:hover{background:#113eb0}
+.fbsend:disabled{background:#dce3e8;color:#7d8995;cursor:default}
+.fbok{color:#1e7a55}
+
+.bico.cur::after{content:'';position:absolute;bottom:-6px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:2px;background:#6f5ee4}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: 800px; box-sizing: border-box; display: flex; background: #ffffff; color: #303841; font-family: 'Lato', sans-serif">
+
+  <sc-if value="{{navOpen}}" hint-placeholder-val="{{ true }}">
+    <div class="bnav">
+      <button class="btog" aria-label="Hide sections bar" title="Hide" onClick="{{toggleNav}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+      <nav class="brow" aria-label="Sections">
+        <a class="bico" href="../../design/screens/notes.html" aria-label="Notes" title="Notes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h5"></path></svg></a>
+        <a class="bico" href="../../design/screens/tasks.html" aria-label="Tasks" title="Tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></a>
+        <a class="bico" href="reminders.html" aria-label="Reminders" title="Reminders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg></a>
+        <a class="bico cur" href="calendar.html" aria-label="Calendar" aria-current="page" title="Calendar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg></a>
+        <a class="bico" href="../../design/screens/people.html" aria-label="People" title="People"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+        <a class="bico bset" href="../../design/screens/settings.html" aria-label="Settings" title="Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
+        <a class="{{bellCls}}" href="#" aria-label="Notifications" title="Notifications" aria-haspopup="dialog" aria-expanded="{{nOpen}}" onClick="{{toggleN}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 21h4"></path></svg><sc-if value="{{nHasBadge}}" hint-placeholder-val="{{ true }}"><span class="{{nBadgeCls}}">{{nCount}}</span></sc-if></a>
+        <a class="{{fbBtnCls}}" href="#" aria-label="Feedback" title="Feedback" aria-haspopup="dialog" aria-expanded="{{fbOpen}}" onClick="{{toggleFb}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M8.5 11h7M8.5 14.5h4"></path></svg></a>
+      </nav>
+    </div>
+  </sc-if>
+  <sc-if value="{{navClosed}}" hint-placeholder-val="{{ false }}">
+    <div class="bnav"><button class="btog closed" aria-label="Show sections bar" title="Show" onClick="{{toggleNav}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button></div>
+  </sc-if>
+
+  <sc-if value="{{nOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fbback" onClick="{{closeN}}"></div>
+    <div class="npop" role="dialog" aria-label="Notifications">
+      <div class="fbhead"><span>Notifications</span><button class="fbx" aria-label="Close" title="Close" onClick="{{closeN}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      <sc-for list="{{nList}}" as="nt" hint-placeholder-count="2">
+        <div class="nrow"><span class="nt"><b>{{nt.title}}</b><span class="{{nt.whenCls}}">{{nt.when}}</span></span><button class="nact" onClick="{{nt.snooze}}">+10m</button><button class="ndone" aria-label="Done" title="Done" onClick="{{nt.done}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button></div>
+      </sc-for>
+      <sc-if value="{{nEmpty}}" hint-placeholder-val="{{ false }}"><div class="nempty">Nothing right now. Reminders show up here when they go off.</div></sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{fbOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fbback" onClick="{{closeFb}}"></div>
+    <div class="fbpop" role="dialog" aria-label="Send feedback">
+      <div class="fbhead"><span>Feedback</span><button class="fbx" aria-label="Close" title="Close" onClick="{{closeFb}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      <sc-if value="{{fbWriting}}" hint-placeholder-val="{{ true }}">
+        <div class="fbkinds" role="group" aria-label="Kind"><sc-for list="{{fbKinds}}" as="fk" hint-placeholder-count="3"><button class="{{fk.cls}}" aria-pressed="{{fk.on}}" onClick="{{fk.go}}">{{fk.label}}</button></sc-for></div>
+        <textarea class="fbta" aria-label="Feedback" placeholder="A bug, an idea, something you’d like…" value="{{fbDraft}}" onInput="{{onFb}}" onKeyDown="{{fbKey}}"></textarea>
+        <div class="fbfoot"><span class="muted" style="font-size: 12px">Saved in your vault</span><button class="fbsend" disabled="{{fbEmpty}}" onClick="{{sendFb}}">Send</button></div>
+      </sc-if>
+      <sc-if value="{{fbSent}}" hint-placeholder-val="{{ false }}">
+        <span class="fbok">Thanks, saved. You can send another anytime.</span>
+        <div class="fbfoot"><button class="fbk" onClick="{{fbAgain}}">Write another</button></div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <main data-tauri-drag-region="" style="flex: 1 1 auto; min-width: 0; padding: 32px 32px 64px; display: flex; flex-direction: column; gap: 16px; overflow: hidden">
+    <div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+      <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 240px">
+        <h1 class="heading" style="margin: 0">{{title}}</h1>
+        <span class="caption muted">{{subtitle}}</span>
+      </div>
+      <div class="nav2">
+        <button class="newbtn" onClick="{{newEvent}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>Event</button>
+        <button class="todaybtn" onClick="{{goToday}}">Today</button>
+        <button class="ib" aria-label="Previous" title="Previous" onClick="{{prev}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+        <button class="ib" aria-label="Next" title="Next" onClick="{{next}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+      <nav class="views" aria-label="View">
+        <button class="{{vDay.cls}}" aria-pressed="{{vDay.on}}" onClick="{{vDay.go}}">Day</button>
+        <span class="vsep" aria-hidden="true">·</span>
+        <button class="{{vWeek.cls}}" aria-pressed="{{vWeek.on}}" onClick="{{vWeek.go}}">Week</button>
+        <span class="vsep" aria-hidden="true">·</span>
+        <button class="{{vMonth.cls}}" aria-pressed="{{vMonth.on}}" onClick="{{vMonth.go}}">Month</button>
+      </nav>
+      <span style="flex: 1"></span>
+      <div class="legend">
+        <span class="lg"><span class="sw" style="background: #dbfaff; box-shadow: inset 2px 0 0 #1259d3"></span>meeting</span>
+        <span class="lg"><span class="sw" style="background: #6f5ee4; border-radius: 5px"></span>reminder</span>
+        <span class="lg"><span class="sw" style="background: #f7fbfc; border: 1px solid #dce3e8; box-sizing: border-box"></span>task due</span>
+        <span class="lg"><span class="sw" style="background: #ede9ff"></span>birthday</span>
+      </div>
+    </div>
+
+    <sc-if value="{{isWeek}}" hint-placeholder-val="{{ true }}">
+      <div style="flex: 1; min-height: 0; display: flex; flex-direction: column">
+        <div class="wk">
+          <span></span>
+          <sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+            <button class="{{d.hcls}}" onClick="{{d.open}}" aria-label="{{d.aria}}"><span class="dw">{{d.dow}}</span><span class="dn">{{d.num}}</span></button>
+          </sc-for>
+          <span class="adl">all-day</span>
+          <sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+            <div class="ad">
+              <sc-for list="{{d.allday}}" as="a" hint-placeholder-count="1">
+                <a class="{{a.cls}}" href="{{a.href}}" title="{{a.title}}"><sc-if value="{{a.isTask}}" hint-placeholder-val="{{ true }}"><span class="{{a.stCls}}"></span></sc-if><span class="t">{{a.title}}</span></a>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <div class="scroll" style="flex: 1; min-height: 0">
+          <div class="hrs" style="height: {{gridH}}px">
+            <sc-for list="{{hours}}" as="h" hint-placeholder-count="13">
+              <div class="{{h.cls}}" style="top: {{h.top}}px"></div>
+              <span class="hlab" style="top: {{h.top}}px">{{h.label}}</span>
+            </sc-for>
+            <sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+              <div class="{{d.colCls}}" style="left: {{d.left}}; width: {{d.width}}" onPointerDown="{{d.down}}" title="Click or drag to add an event">
+                <sc-for list="{{d.events}}" as="e" hint-placeholder-count="1">
+                  <div class="{{e.cls}}" style="top: {{e.top}}px; height: {{e.h}}px" title="{{e.title}} · {{e.range}}" role="button" tabindex="0" onClick="{{e.open}}" onKeyDown="{{e.key}}">
+                    <sc-if value="{{e.hasJoin}}" hint-placeholder-val="{{ false }}"><a class="join" href="{{e.link}}" target="_blank" rel="noopener" onPointerDown="{{stop}}">Join</a></sc-if>
+                    <div class="et">{{e.title}}</div><span class="dur evdur">{{e.dur}}</span>
+                  </div>
+                </sc-for>
+                <sc-for list="{{d.rems}}" as="r" hint-placeholder-count="1">
+                  <a class="rm" href="reminders.html" style="top: {{r.top}}px" title="{{r.title}}"><span class="rd"></span><span class="rt">{{r.time}}</span><span>{{r.title}}</span></a>
+                </sc-for>
+                <sc-if value="{{d.showDet}}" hint-placeholder-val="{{ false }}">
+                  <div class="qc det" style="top: {{det.top}}px; {{d.qcSide}}" role="dialog" aria-label="Event details" onPointerDown="{{stop}}">
+                    <sc-if value="{{det.viewing}}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; align-items: flex-start; gap: 8px">
+                      <span class="{{det.swCls}}"></span>
+                      <div style="flex: 1; min-width: 0; font: 500 15px/20px 'Montserrat', sans-serif; overflow-wrap: anywhere">{{det.title}}</div>
+                      <button class="icb ed" aria-label="Edit event" title="Edit" onClick="{{det.edit}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button><button class="icb no" aria-label="Delete event" title="Delete" onClick="{{det.remove}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg></button>
+                      <button class="icb" aria-label="Close" title="Close" onClick="{{closeDet}}" style="color: #5f6b76"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                    </div>
+                    <div class="drow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg><span>{{det.day}}</span></div>
+                    <div class="drow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg><span>{{det.range}}</span><span class="dur" style="margin-left: 2px">{{det.dur}}</span></div>
+                    <sc-if value="{{det.hasLink}}" hint-placeholder-val="{{ false }}">
+                      <div class="drow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"></path><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"></path></svg><a class="durl" href="{{det.link}}" target="_blank" rel="noopener" title="{{det.link}}">{{det.linkShort}}</a></div>
+                    </sc-if>
+                    <div class="drow" style="justify-content: space-between">
+                      <span class="caption muted">{{det.source}}</span>
+                      <sc-if value="{{det.canJoin}}" hint-placeholder-val="{{ false }}"><a class="join" href="{{det.link}}" target="_blank" rel="noopener" style="height: 24px; padding: 0 10px; font-size: 12px">Join</a></sc-if>
+                    </div>
+                    </sc-if>
+                    <sc-if value="{{det.editing}}" hint-placeholder-val="{{ false }}">
+                      <input class="qt" aria-label="Event title" placeholder="Event title" value="{{ed.title}}" onInput="{{ed.onTitle}}" onKeyDown="{{ed.key}}">
+                      <div class="qrow"><span class="ql">Day</span><span class="dstep"><button class="lenb" aria-label="Previous day" onClick="{{ed.dayPrev}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button><span>{{ed.dayLabel}}</span><button class="lenb" aria-label="Next day" onClick="{{ed.dayNext}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button></span></div>
+                      <div class="qrow"><span class="ql">Starts</span><span class="lenf" role="group" aria-label="Start time"><button class="lenb" aria-label="5 minutes earlier" title="−5 min" onClick="{{ed.startDown}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button><span class="lenv"><input class="seg" inputmode="numeric" maxlength="2" aria-label="Hour" value="{{ed.sh}}" onInput="{{ed.onSH}}" onKeyDown="{{ed.key}}" onFocus="{{selAll}}"><span class="muted">:</span><input class="seg" inputmode="numeric" maxlength="2" aria-label="Minute" value="{{ed.sm}}" onInput="{{ed.onSM}}" onKeyDown="{{ed.key}}" onFocus="{{selAll}}"><button class="apm" aria-label="Toggle AM/PM" onClick="{{ed.togglePM}}">{{ed.ap}}</button></span><button class="lenb" aria-label="5 minutes later" title="+5 min" onClick="{{ed.startUp}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button></span></div>
+                      <div class="qrow"><span class="ql">Duration</span><span class="lenf" role="group" aria-label="Length"><button class="lenb" aria-label="5 minutes shorter" title="−5 min" onClick="{{ed.lenDown}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button><span class="lenv"><input class="seg" inputmode="numeric" maxlength="2" aria-label="Hours" value="{{ed.lh}}" onInput="{{ed.onLH}}" onKeyDown="{{ed.key}}" onFocus="{{selAll}}"><span class="muted">h</span><input class="seg" inputmode="numeric" maxlength="2" aria-label="Minutes" value="{{ed.lm}}" onInput="{{ed.onLM}}" onKeyDown="{{ed.key}}" onFocus="{{selAll}}"><span class="muted">m</span></span><button class="lenb" aria-label="5 minutes longer" title="+5 min" onClick="{{ed.lenUp}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button></span></div>
+                      <div class="qrow"><span class="ql"></span><sc-for list="{{durs}}" as="du" hint-placeholder-count="3"><button class="{{du.cls}}" onClick="{{du.go}}">{{du.label}}</button></sc-for></div>
+                      <input class="qt" aria-label="Link" placeholder="Link (optional)" value="{{ed.link}}" onInput="{{ed.onLink}}" onKeyDown="{{ed.key}}">
+                      <div class="qrow"><span class="caption muted" style="flex: 1">{{ed.range}}</span>
+                        <button class="icb no" aria-label="Cancel" title="Cancel" onClick="{{ed.cancel}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                        <button class="icb ok" aria-label="Save" title="Save" onClick="{{ed.save}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+                <sc-if value="{{d.hasDraft}}" hint-placeholder-val="{{ false }}"><div class="{{draft.cls}}" style="top: {{draft.top}}px; height: {{draft.h}}px">{{draft.range}}</div></sc-if>
+                <sc-if value="{{d.showQC}}" hint-placeholder-val="{{ false }}">
+                  <div class="qc" style="top: {{draft.qcTop}}px; {{d.qcSide}}" role="dialog" aria-label="New event" onPointerDown="{{stop}}">
+                      <input class="qt" aria-label="Event title" placeholder="Event title" value="{{ed.title}}" onInput="{{ed.onTitle}}" onKeyDown="{{ed.key}}">
+                      <div class="qrow"><span class="ql">Day</span><span class="dstep"><button class="lenb" aria-label="Previous day" onClick="{{ed.dayPrev}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button><span>{{ed.dayLabel}}</span><button class="lenb" aria-label="Next day" onClick="{{ed.dayNext}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button></span></div>
+                      <div class="qrow"><span class="ql">Starts</span><span class="lenf" role="group" aria-label="Start time"><button class="lenb" aria-label="5 minutes earlier" title="−5 min" onClick="{{ed.startDown}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button><span class="lenv"><input class="seg" inputmode="numeric" maxlength="2" aria-label="Hour" value="{{ed.sh}}" onInput="{{ed.onSH}}" onKeyDown="{{ed.key}}" onFocus="{{selAll}}"><span class="muted">:</span><input class="seg" inputmode="numeric" maxlength="2" aria-label="Minute" value="{{ed.sm}}" onInput="{{ed.onSM}}" onKeyDown="{{ed.key}}" onFocus="{{selAll}}"><button class="apm" aria-label="Toggle AM/PM" onClick="{{ed.togglePM}}">{{ed.ap}}</button></span><button class="lenb" aria-label="5 minutes later" title="+5 min" onClick="{{ed.startUp}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button></span></div>
+                      <div class="qrow"><span class="ql">Duration</span><span class="lenf" role="group" aria-label="Length"><button class="lenb" aria-label="5 minutes shorter" title="−5 min" onClick="{{ed.lenDown}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button><span class="lenv"><input class="seg" inputmode="numeric" maxlength="2" aria-label="Hours" value="{{ed.lh}}" onInput="{{ed.onLH}}" onKeyDown="{{ed.key}}" onFocus="{{selAll}}"><span class="muted">h</span><input class="seg" inputmode="numeric" maxlength="2" aria-label="Minutes" value="{{ed.lm}}" onInput="{{ed.onLM}}" onKeyDown="{{ed.key}}" onFocus="{{selAll}}"><span class="muted">m</span></span><button class="lenb" aria-label="5 minutes longer" title="+5 min" onClick="{{ed.lenUp}}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button></span></div>
+                      <div class="qrow"><span class="ql"></span><sc-for list="{{durs}}" as="du" hint-placeholder-count="3"><button class="{{du.cls}}" onClick="{{du.go}}">{{du.label}}</button></sc-for></div>
+                      <input class="qt" aria-label="Link" placeholder="Link (optional)" value="{{ed.link}}" onInput="{{ed.onLink}}" onKeyDown="{{ed.key}}">
+                      <div class="qrow"><span class="caption muted" style="flex: 1">{{ed.range}}</span>
+                        <button class="icb no" aria-label="Cancel" title="Cancel" onClick="{{ed.cancel}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                        <button class="icb ok" aria-label="Save" title="Save" onClick="{{ed.save}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button>
+                      </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{d.isToday}}" hint-placeholder-val="{{ false }}"><div class="now" style="top: {{nowTop}}px; left: 0; right: 0" title="Now"><span class="nowlab">{{nowLabel}}</span></div></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isMonth}}" hint-placeholder-val="{{ false }}">
+      <div class="mon">
+        <span class="mwd">Mon</span><span class="mwd">Tue</span><span class="mwd">Wed</span><span class="mwd">Thu</span><span class="mwd">Fri</span><span class="mwd">Sat</span><span class="mwd">Sun</span>
+        <sc-for list="{{mcells}}" as="mc" hint-placeholder-count="35">
+          <div class="{{mc.cls}}">
+            <button class="mnum" aria-label="{{mc.aria}}" onClick="{{mc.open}}">{{mc.num}}</button>
+            <sc-for list="{{mc.items}}" as="mi" hint-placeholder-count="2">
+              <button class="{{mi.cls}}" title="{{mi.full}}" onClick="{{mi.go}}"><sc-if value="{{mi.isTask}}" hint-placeholder-val="{{ false }}"><span class="{{mi.stCls}}"></span></sc-if><sc-if value="{{mi.hasTime}}" hint-placeholder-val="{{ false }}"><span class="mtm">{{mi.time}}</span></sc-if><span class="mtt">{{mi.title}}</span></button>
+            </sc-for>
+            <sc-if value="{{mc.hasMore}}" hint-placeholder-val="{{ false }}"><button class="mmore" onClick="{{mc.open}}">+{{mc.more}} more</button></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isDay}}" hint-placeholder-val="{{ false }}">
+      <div style="flex: 1; min-height: 0; overflow: auto">
+        <div style="max-width: 680px; margin: 0 auto" class="dl">
+          <sc-for list="{{dayItems}}" as="it" hint-placeholder-count="6">
+            <sc-if value="{{it.isNow}}" hint-placeholder-val="{{ false }}"><div class="dr nowline" aria-label="Now"></div></sc-if>
+            <sc-if value="{{it.isItem}}" hint-placeholder-val="{{ true }}">
+              <div class="dr">
+                <span class="tm">{{it.time}}</span>
+                <span class="mk" style="{{it.mkStyle}}"></span>
+                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 14px/20px 'Lato', sans-serif">{{it.title}}</span>
+                <span style="display: flex; align-items: center; gap: 8px">
+                  <span class="k">{{it.kind}}</span>
+                  <sc-if value="{{it.hasJoin}}" hint-placeholder-val="{{ false }}"><a class="join" href="{{it.link}}" target="_blank" rel="noopener" style="margin: 0">Join</a></sc-if>
+                </span>
+              </div>
+            </sc-if>
+          </sc-for>
+          <sc-if value="{{dayEmpty}}" hint-placeholder-val="{{ false }}"><span class="caption muted" style="padding-top: 8px">Nothing on this day</span></sc-if>
+        </div>
+      </div>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { nav: true, notifs: [{ id: 1, title: 'Call Ravi', when: 'Today, 5:00 PM · now' }, { id: 2, title: 'Take out the trash', when: 'Today, 4:30 PM · 2m late', late: true }], nSeen: false, nOpen: false, fb: false, fbSent: false, fbDraft: '', fbKind: 'idea', view: 'week', anchor: '2026-10-03', tick: 0, mine: [], draft: null, qc: false, sel: null, ed: null, over: {}, del: {} };
+    this.mounted = Date.now();
+  }
+  componentDidMount() {
+    setTimeout(() => { const el = document.querySelector('.scroll'); if (el) el.scrollTop = Math.max(0, (16.5 - 2) * 64); }, 50);
+    this.timer = setInterval(() => this.setState({ tick: (this.state.tick || 0) + 1 }), 30000);
+  }
+  componentWillUnmount() {
+    clearInterval(this.timer);
+  }
+  renderVals() {
+    const s = this.state;
+    const TODAY = '2026-10-03';
+    const NOWH = 16 + 32 / 60 + (Date.now() - this.mounted) / 3600000;
+    const START = 0, END = 24, HH = 64;
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const MF = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const W = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const WF = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const parse = (x) => { const p = x.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); };
+    const add = (x, n) => { const d = parse(x); d.setDate(d.getDate() + n); return iso(d); };
+    const hm = (h) => { const hh = Math.floor(h), mm = Math.round((h - hh) * 60); const ap = hh >= 12 ? 'PM' : 'AM'; return (hh % 12 || 12) + (mm ? ':' + String(mm).padStart(2, '0') : '') + ' ' + ap; };
+
+    // ---- sample data (meetings would come from an ICS subscription)
+    const meetings = [];
+    ['2026-09-28', '2026-09-29', '2026-09-30', '2026-10-01', '2026-10-02', '2026-10-05', '2026-10-06', '2026-10-07', '2026-10-08', '2026-10-09'].forEach((d) => meetings.push({ date: d, s: 10, e: 10.25, title: 'Standup', link: 'https://meet.google.com/xyz-stnd-upp' }));
+    meetings.push(
+      { date: '2026-09-29', s: 14, e: 15, title: 'Product sync', link: 'https://meet.google.com/prd-sync-abc' },
+      { date: '2026-09-30', s: 11, e: 12, title: '1:1 with Priya', link: '' },
+      { date: '2026-10-01', s: 15, e: 16, title: 'Roadmap review', link: 'https://zoom.us/j/123456789' },
+      { date: '2026-10-02', s: 16, e: 17, title: 'Sprint demo', link: 'https://meet.google.com/spr-demo-xyz' },
+      { date: '2026-10-03', s: 18, e: 18.75, title: 'Design review', link: 'https://meet.google.com/abc-defg-hij' },
+      { date: '2026-10-06', s: 13, e: 14, title: 'Lunch with Asha', link: '' },
+      { date: '2026-10-07', s: 10.5, e: 11.5, title: 'Dentist', link: '' }
+    );
+    s.mine.forEach((e, i) => meetings.push(Object.assign({ mine: true, mi: i }, e)));
+    meetings.forEach((m, i) => { m.id = m.mine ? 'mine-' + m.mi : 'm' + i; });
+    for (let i = meetings.length - 1; i >= 0; i--) { const m = meetings[i]; if (s.del[m.id]) meetings.splice(i, 1); else if (s.over[m.id]) Object.assign(m, s.over[m.id]); }
+    const reminders = [
+      { date: '2026-10-03', h: 17, title: 'Call Ravi' },
+      { date: '2026-10-03', h: 21, title: 'Take out the trash' },
+      { date: '2026-10-03', h: 9, title: 'Water the plants' },
+      { date: '2026-10-06', h: 16, title: 'Call the bank' }
+    ];
+    const tasks = [
+      { date: '2026-10-01', title: 'Get code signing certificates', st: 'todo' },
+      { date: '2026-10-02', title: 'Weekly review', st: 'todo' },
+      { date: '2026-10-03', title: 'Pick up laundry', st: 'todo' },
+      { date: '2026-10-03', title: 'Read folder from disk', st: 'todo' },
+      { date: '2026-10-04', title: 'Notes explorer', st: 'doing' },
+      { date: '2026-10-08', title: 'Reminders', st: 'todo' },
+      { date: '2026-10-10', title: 'Ship first build', st: 'doing' }
+    ];
+    const bdays = [{ date: '2026-10-03', title: 'Kiran’s birthday' }, { date: '2026-10-09', title: 'Ravi’s birthday' }];
+
+    const a = parse(s.anchor);
+    const monday = add(s.anchor, -((a.getDay() + 6) % 7));
+    const weekDays = Array.from({ length: 7 }, (x, i) => add(monday, i));
+    const selM = meetings.find((m) => m.id === s.sel) || null;
+    const colW = 'calc((100% - 52px) / 7)';
+    const days = weekDays.map((ds, i) => {
+      const d = parse(ds);
+      const isToday = ds === TODAY;
+      const segs = [];
+      meetings.forEach((m) => {
+        if (m.date === ds) segs.push({ m: m, s0: m.s, e0: Math.min(24, m.e), cont: false, more: m.e > 24 });
+        else if (m.e > 24 && add(m.date, 1) === ds) segs.push({ m: m, s0: 0, e0: m.e - 24, cont: true, more: false });
+      });
+      const evs = segs.map((sg) => {
+        const m = sg.m;
+        const endDay = m.e > 24 ? add(m.date, 1) : m.date;
+        const endH = m.e > 24 ? m.e - 24 : m.e;
+        const past = endDay < TODAY || (endDay === TODAY && endH <= NOWH);
+        const h = Math.max(14, (sg.e0 - sg.s0) * HH - 2);
+        const isShort = h < 34;
+        const mins = Math.round((m.e - m.s) * 60); const dl = mins < 60 ? mins + 'm' : Math.floor(mins / 60) + 'h' + (mins % 60 ? ' ' + (mins % 60) + 'm' : '');
+        const openIt = () => this.setState({ sel: m.id, draft: null, qc: false, ed: null });
+        return { open: (e) => { if (e && e.stopPropagation) e.stopPropagation(); openIt(); }, key: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openIt(); } }, isShort: isShort, startLabel: hm(m.s), dur: dl,
+          cls: 'ev' + (m.mine ? ' mine' : '') + (past ? ' past' : '') + (s.sel === m.id ? ' sel' : '') + (m.link && !past ? ' haslink' : '') + (isShort ? ' short' : '') + (h < 20 ? ' tiny' : '') + (sg.more ? ' more' : '') + (sg.cont ? ' cont' : ''),
+          title: (sg.cont ? '↳ ' : '') + m.title, range: hm(m.s) + ' – ' + hm(m.e % 24), top: (sg.s0 - START) * HH + 1, h: h, tall: !isShort, hasJoin: !!m.link && !past, link: m.link };
+      });
+      const rms = reminders.filter((r) => r.date === ds).filter((r) => r.h >= START && r.h <= END).map((r) => ({ title: r.title, time: hm(r.h).replace(' ', '').toLowerCase(), top: (r.h - START) * HH - 9 }));
+      const allday = tasks.filter((t) => t.date === ds).map((t) => ({ isTask: true, cls: 'chip task' + (ds < TODAY ? ' warn' : ''), stCls: 'st st-' + t.st, title: t.title, href: 'BTasks.dc.html' }))
+        .concat(bdays.filter((b) => b.date === ds).map((b) => ({ isTask: false, cls: 'chip bday', title: b.title, href: 'BReminders.dc.html' })));
+      return {
+        dow: W[d.getDay()], num: String(d.getDate()), aria: WF[d.getDay()] + ' ' + d.getDate() + ' ' + M[d.getMonth()] + ', open day',
+        hcls: 'dh' + (isToday ? ' today' : ''), colCls: 'col' + (isToday ? ' today' : ''), isToday: isToday,
+        left: 'calc(52px + ' + i + ' * ' + colW + ')', width: colW,
+        events: evs, rems: rms, allday: allday,
+        open: () => this.setState({ view: 'day', anchor: ds }),
+        hasDraft: !!s.draft && s.draft.date === ds,
+        showDet: !!selM && selM.date === ds,
+        showQC: !!s.draft && s.draft.date === ds && s.qc,
+        qcSide: i >= 4 ? 'right: calc(100% + 6px)' : 'left: calc(100% + 6px)',
+        down: (e) => {
+          if (!e || e.target !== e.currentTarget || (e.button != null && e.button !== 0)) return;
+          if (this.state.sel) { this.setState({ sel: null }); return; }
+          e.preventDefault();
+          const rect = e.currentTarget.getBoundingClientRect();
+          const toH = (y) => Math.max(0, Math.min(24, Math.round(((y - rect.top) / HH) * 4) / 4));
+          const s0 = Math.min(23.75, Math.floor(((e.clientY - rect.top) / HH) * 4) / 4);
+          let moved = false;
+          this.setState({ draft: { date: ds, s: s0, e: s0 + 0.5, title: '' }, qc: false, ed: null });
+          const onMove = (ev) => {
+            const h = toH(ev.clientY);
+            if (Math.abs(ev.clientY - e.clientY) > 4) moved = true;
+            if (!moved) return;
+            const a0 = Math.min(s0, h), a1 = Math.max(s0 + 0.25, h);
+            this.setState({ draft: Object.assign({}, this.state.draft, { s: h < s0 ? h : s0, e: h < s0 ? s0 + 0.25 : Math.max(s0 + 0.25, h) }) });
+          };
+          const onUp = () => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            const dn = this.state.draft;
+            this.setState({ qc: true, ed: Object.assign({ id: 'new', title: '', link: '', date: dn.date }, toEd(dn.s, Math.round((dn.e - dn.s) * 60))) });
+            setTimeout(() => { const el = document.querySelector('.qc .qt'); if (el) el.focus(); }, 0);
+          };
+          window.addEventListener('pointermove', onMove);
+          window.addEventListener('pointerup', onUp);
+        }
+      };
+    });
+    const hours = [];
+    for (let h = START; h <= END; h++) {
+      hours.push({ top: (h - START) * HH, label: h === START || h === END ? '' : hm(h % 24).replace(' ', '').toLowerCase(), cls: 'hl' });
+      if (h < END) {
+        hours.push({ top: (h - START) * HH + HH / 2, label: '', cls: 'hl half' });
+        hours.push({ top: (h - START) * HH + HH / 4, label: '', cls: 'hl q' });
+        hours.push({ top: (h - START) * HH + (3 * HH) / 4, label: '', cls: 'hl q' });
+      }
+    }
+
+    // day view list
+    const ds = s.anchor;
+    const items = [];
+    tasks.filter((t) => t.date === ds).forEach((t) => items.push({ sort: -1, time: 'all day', title: t.title, kind: 'task due', mkStyle: 'background: #f7fbfc; border: 1px solid #dce3e8; box-sizing: border-box' }));
+    bdays.filter((b) => b.date === ds).forEach((b) => items.push({ sort: -1, time: 'all day', title: b.title, kind: 'birthday', mkStyle: 'background: #ede9ff' }));
+    meetings.filter((m) => m.date === ds).forEach((m) => items.push({ sort: m.s, time: hm(m.s), title: m.title, kind: hm(m.s) + ' – ' + hm(m.e), mkStyle: 'background: #dbfaff; box-shadow: inset 2px 0 0 #1259d3', hasJoin: !!m.link && !(ds < TODAY || (ds === TODAY && m.e <= NOWH)), link: m.link }));
+    reminders.filter((r) => r.date === ds).forEach((r) => items.push({ sort: r.h, time: hm(r.h), title: r.title, kind: 'reminder', mkStyle: 'background: #6f5ee4; border-radius: 5px' }));
+    items.sort((x, y) => x.sort - y.sort);
+    const dayItems = [];
+    let nowPlaced = ds !== TODAY;
+    items.forEach((it) => {
+      if (!nowPlaced && it.sort >= NOWH) { dayItems.push({ isNow: true, isItem: false }); nowPlaced = true; }
+      dayItems.push(Object.assign({ isNow: false, isItem: true, hasJoin: false, link: '' }, it));
+    });
+    if (!nowPlaced) dayItems.push({ isNow: true, isItem: false });
+
+    const saveDraft = () => {
+      const d0 = this.state.draft;
+      if (!d0) return;
+      const t = (d0.title || '').trim() || 'New event';
+      const url = (t.match(/https?:\/\/\S+/) || [''])[0];
+      this.setState({ mine: this.state.mine.concat([{ date: d0.date, s: d0.s, e: d0.e, title: url ? t.replace(url, '').trim() || 'Meeting' : t, link: url }]), draft: null, qc: false });
+    };
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const toEd = (st, lenMin) => { const t = Math.round(st * 60); const hh = Math.floor(t / 60) % 24; const L = Math.max(5, Math.min(1440, lenMin)); return { sh: String(hh % 12 || 12), sm: pad2(t % 60), pm: hh >= 12, lh: String(Math.floor(L / 60)), lm: String(L % 60) }; };
+    const fromEd = (q) => { const h = Math.min(12, Math.max(1, parseInt(q.sh, 10) || 12)) % 12 + (q.pm ? 12 : 0); const st = h + Math.min(59, parseInt(q.sm, 10) || 0) / 60; const L = Math.max(5, Math.min(1440, (parseInt(q.lh, 10) || 0) * 60 + Math.min(59, parseInt(q.lm, 10) || 0))); return { s: st, e: st + L / 60, L: L }; };
+    const setEd = (p) => { const n = Object.assign({}, this.state.ed, p); const o = { ed: n }; if (n.id === 'new') { const t = fromEd(n); o.draft = Object.assign({}, this.state.draft, { date: n.date, s: t.s, e: t.e }); } this.setState(o); };
+    const saveEd = () => {
+      const q = this.state.ed; if (!q) return;
+      const t = fromEd(q);
+      const rec = { title: (q.title || '').trim() || (q.id === 'new' ? 'New event' : 'Untitled'), link: (q.link || '').trim(), date: q.date, s: t.s, e: t.e };
+      if (q.id === 'new') { this.setState({ mine: this.state.mine.concat([rec]), draft: null, qc: false, ed: null }); return; }
+      if (q.id.indexOf('mine-') === 0) { const k = parseInt(q.id.slice(5), 10); this.setState({ mine: this.state.mine.map((x, i) => i === k ? Object.assign({}, x, rec) : x), ed: null }); }
+      else this.setState({ over: Object.assign({}, this.state.over, { [q.id]: rec }), ed: null });
+      if (q.date !== this.state.anchor && this.state.view === 'day') this.setState({ anchor: q.date });
+    };
+    // keep popovers inside the visible part of the scrolling grid
+    const fitTop = (top, H) => {
+      let vt = 0, vh = 100000;
+      try { const sc = document.querySelector('.scroll'); if (sc) { vt = sc.scrollTop; vh = sc.clientHeight; } } catch (x) {}
+      const gh = (END - START) * HH + 8;
+      let t = top;
+      if (t + H > vt + vh - 8) t = vt + vh - 8 - H;
+      if (t < vt + 4) t = vt + 4;
+      return Math.max(0, Math.min(t, gh - H));
+    };
+    const cancelEd = () => { if (this.state.ed && this.state.ed.id === 'new') this.setState({ ed: null, draft: null, qc: false }); else this.setState({ ed: null }); };
+    const isWeek = s.view === 'week';
+    const isMonth = s.view === 'month';
+    const mFirst = new Date(a.getFullYear(), a.getMonth(), 1);
+    const mLast = new Date(a.getFullYear(), a.getMonth() + 1, 0);
+    const gStart = add(iso(mFirst), -((mFirst.getDay() + 6) % 7));
+    const nCells = Math.ceil((((mFirst.getDay() + 6) % 7) + mLast.getDate()) / 7) * 7;
+    const MAXI = 3;
+    const mcells = Array.from({ length: nCells }, (x, i) => {
+      const dsx = add(gStart, i);
+      const dd = parse(dsx);
+      const its = [];
+      tasks.filter((t) => t.date === dsx).forEach((t) => its.push({ sort: -2, cls: 'mi task' + (dsx < TODAY ? ' warn' : ''), isTask: true, stCls: 'st st-' + t.st, hasTime: false, title: t.title, full: 'Task due: ' + t.title, go: () => {} }));
+      bdays.filter((b) => b.date === dsx).forEach((b) => its.push({ sort: -1, cls: 'mi bday', isTask: false, hasTime: false, title: b.title, full: b.title, go: () => {} }));
+      meetings.filter((m) => m.date === dsx).forEach((m) => {
+        const pastM = dsx < TODAY || (dsx === TODAY && m.e <= NOWH);
+        its.push({ sort: m.s, cls: 'mi ' + (m.mine ? 'mine' : 'meet') + (pastM ? ' past' : ''), isTask: false, hasTime: true, time: hm(m.s).replace(' ', '').replace(':00', '').toLowerCase(), title: m.title, full: m.title + ' · ' + hm(m.s), go: () => this.setState({ view: 'week', anchor: dsx, sel: m.id }) });
+      });
+      reminders.filter((r) => r.date === dsx).forEach((r) => its.push({ sort: r.h, cls: 'mi rem', isTask: false, hasTime: true, time: hm(r.h).replace(' ', '').replace(':00', '').toLowerCase(), title: r.title, full: 'Reminder: ' + r.title, go: () => {} }));
+      its.sort((p, q) => p.sort - q.sort);
+      const inMonth = dd.getMonth() === mFirst.getMonth();
+      return {
+        num: String(dd.getDate()), aria: WF[dd.getDay()] + ' ' + dd.getDate() + ' ' + M[dd.getMonth()] + ', open day',
+        cls: 'mcell' + (inMonth ? '' : ' out') + (dsx === TODAY ? ' today' : ''),
+        items: its.slice(0, MAXI), hasMore: its.length > MAXI, more: its.length - MAXI,
+        open: () => this.setState({ view: 'day', anchor: dsx })
+      };
+    });
+    const ad = parse(ds);
+    const wEnd = parse(weekDays[6]);
+    const wStart = parse(weekDays[0]);
+    const title = isMonth ? MF[mFirst.getMonth()] + ' ' + mFirst.getFullYear() : isWeek
+      ? (wStart.getMonth() === wEnd.getMonth() ? MF[wStart.getMonth()] + ' ' + wStart.getFullYear() : M[wStart.getMonth()] + ' – ' + M[wEnd.getMonth()] + ' ' + wEnd.getFullYear())
+      : (ds === TODAY ? 'Today' : WF[ad.getDay()]) + ', ' + ad.getDate() + ' ' + M[ad.getMonth()];
+    const inRange = (x) => isMonth ? (x >= iso(mFirst) && x <= iso(mLast)) : isWeek ? (x >= weekDays[0] && x <= weekDays[6]) : x === ds;
+    const cMeet = meetings.filter((m) => inRange(m.date)).length;
+    const cRem = reminders.filter((r) => inRange(r.date)).length;
+    const cTask = tasks.filter((t) => inRange(t.date)).length;
+    return {
+      navOpen: s.nav, navClosed: !s.nav,
+      nOpen: !!s.nOpen, nEmpty: (s.notifs || []).length === 0,
+      bellCls: 'bico bnotif' + (s.nOpen ? ' on' : ''),
+      nHasBadge: (s.notifs || []).length > 0, nCount: String((s.notifs || []).length),
+      nBadgeCls: 'nbadge' + (s.nSeen ? '' : ' blink'),
+      toggleN: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ nOpen: !this.state.nOpen, nSeen: true, fb: false }); },
+      closeN: () => this.setState({ nOpen: false }),
+      nList: (s.notifs || []).map((n) => ({ title: n.title, when: n.when, whenCls: n.late ? 'late' : '', done: () => this.setState({ notifs: this.state.notifs.filter((x) => x.id !== n.id) }), snooze: () => this.setState({ notifs: this.state.notifs.filter((x) => x.id !== n.id) }) })),
+      fbOpen: !!s.fb, fbWriting: !s.fbSent, fbSent: !!s.fbSent, fbDraft: s.fbDraft || '', fbEmpty: !(s.fbDraft || '').trim(),
+      fbBtnCls: 'bico bfb' + (s.fb ? ' on' : ''),
+      toggleFb: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ fb: !this.state.fb, fbSent: false, nOpen: false }); setTimeout(() => { const el = document.querySelector('.fbta'); if (el) el.focus(); }, 0); },
+      closeFb: () => this.setState({ fb: false }),
+      fbKinds: [['bug', 'Bug'], ['idea', 'Idea'], ['other', 'Other']].map((x) => ({ label: x[1], on: (s.fbKind || 'idea') === x[0], cls: 'fbk' + ((s.fbKind || 'idea') === x[0] ? ' on' : ''), go: () => this.setState({ fbKind: x[0] }) })),
+      onFb: (e) => this.setState({ fbDraft: e.target.value }),
+      fbKey: (e) => { if (e.key === 'Escape') this.setState({ fb: false }); if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && (this.state.fbDraft || '').trim()) this.setState({ fbSent: true, fbDraft: '' }); },
+      // stored in db/app.sqlite → feedback(id, kind, text, created_at)
+      sendFb: () => { if ((this.state.fbDraft || '').trim()) this.setState({ fbSent: true, fbDraft: '' }); },
+      fbAgain: () => this.setState({ fbSent: false }),
+      toggleNav: () => this.setState({ nav: !this.state.nav }),
+      title: title,
+      subtitle: cMeet + ' meetings · ' + cRem + ' reminders · ' + cTask + ' tasks due' + (isWeek && !isMonth ? ' · ' + wStart.getDate() + ' ' + M[wStart.getMonth()] + ' – ' + wEnd.getDate() + ' ' + M[wEnd.getMonth()] : ''),
+      isWeek: isWeek, isDay: s.view === 'day', isMonth: isMonth, mcells: mcells,
+      vDay: { on: s.view === 'day', cls: 'vbtn' + (s.view === 'day' ? ' on' : ''), go: () => this.setState({ view: 'day' }) },
+      vMonth: { on: isMonth, cls: 'vbtn' + (isMonth ? ' on' : ''), go: () => this.setState({ view: 'month' }) },
+      vWeek: { on: isWeek, cls: 'vbtn' + (isWeek ? ' on' : ''), go: () => this.setState({ view: 'week' }) },
+      goToday: () => this.setState({ anchor: TODAY }),
+      prev: () => { if (this.state.view === 'month') { const q = parse(this.state.anchor); this.setState({ anchor: iso(new Date(q.getFullYear(), q.getMonth() - 1, 1)) }); return; } this.setState({ anchor: add(this.state.anchor, this.state.view === 'week' ? -7 : -1) }); },
+      next: () => { if (this.state.view === 'month') { const q = parse(this.state.anchor); this.setState({ anchor: iso(new Date(q.getFullYear(), q.getMonth() + 1, 1)) }); return; } this.setState({ anchor: add(this.state.anchor, this.state.view === 'week' ? 7 : 1) }); },
+      days: days, hours: hours, gridH: (END - START) * HH + 8,
+      nowTop: (NOWH - START) * HH,
+      stop: (e) => { if (e && e.stopPropagation) e.stopPropagation(); },
+      closeDet: () => this.setState({ sel: null, ed: null }),
+      det: (() => {
+        if (!selM) return { top: 0, title: '', day: '', range: '', dur: '', link: '', linkShort: '', hasLink: false, canJoin: false, source: '', mine: false, swCls: 'dsw', viewing: true, editing: false };
+        const dd = parse(selM.date);
+        const mins = Math.round((selM.e - selM.s) * 60);
+        const past = selM.date < TODAY || (selM.date === TODAY && selM.e <= NOWH);
+        return {
+          top: fitTop((selM.s - START) * HH, s.ed && s.ed.id !== 'new' ? 290 : (selM.link ? 180 : 152)),
+          title: selM.title,
+          day: WF[dd.getDay()] + ', ' + dd.getDate() + ' ' + M[dd.getMonth()],
+          range: hm(selM.s) + ' – ' + hm(selM.e % 24) + (selM.e > 24 ? ' (next day)' : ''),
+          dur: mins < 60 ? mins + 'm' : Math.floor(mins / 60) + 'h' + (mins % 60 ? ' ' + (mins % 60) + 'm' : ''),
+          link: selM.link || '', hasLink: !!selM.link,
+          linkShort: (selM.link || '').replace(/^https?:\/\//, ''),
+          canJoin: !!selM.link && !past,
+          source: selM.mine ? 'Your event' : 'From your calendar',
+          mine: !!selM.mine,
+          swCls: 'dsw' + (selM.mine ? ' mine' : ''),
+          viewing: !s.ed || s.ed.id === 'new', editing: !!s.ed && s.ed.id !== 'new',
+          edit: () => { const st0 = selM.s; this.setState({ ed: Object.assign({ id: selM.id, title: selM.title, link: selM.link || '', date: selM.date }, toEd(st0, Math.round((selM.e - selM.s) * 60))) }); setTimeout(() => { const el = document.querySelector('.qc.det .qt'); if (el) el.focus(); }, 0); },
+          remove: () => this.setState({ del: Object.assign({}, this.state.del, { [selM.id]: true }), sel: null, ed: null })
+        };
+      })(),
+      draft: (() => {
+        const d0 = s.draft;
+        if (!d0) return { cls: 'draft', dur: '', top: 0, qcTop: 0, h: 0, range: '', title: '', dayLabel: '' };
+        const dd = parse(d0.date);
+        const dh = Math.max(14, (Math.min(24, d0.e) - d0.s) * HH - 2);
+        return { cls: 'draft' + (dh < 34 ? ' short' : ''), dur: (() => { const mins = Math.round((d0.e - d0.s) * 60); return (mins >= 60 ? Math.floor(mins / 60) + ' h' + (mins % 60 ? ' ' : '') : '') + (mins % 60 || mins < 60 ? (mins % 60) + ' min' : ''); })(), top: (d0.s - START) * HH + 1, qcTop: fitTop((d0.s - START) * HH, 292), h: dh, range: hm(d0.s) + ' – ' + hm(d0.e % 24) + (d0.e > 24 ? ' (next day)' : ''), title: d0.title, dayLabel: W[dd.getDay()] + ' ' + dd.getDate() + ' ' + M[dd.getMonth()] };
+      })(),
+      durs: [['+15m', 15, true], ['30m', 30, false], ['1h', 60, false]].map((x) => ({ label: x[0], cls: 'dchip' + (!x[2] && s.ed && fromEd(s.ed).L === x[1] ? ' on' : ''), go: () => { const L = x[2] ? Math.min(1440, fromEd(this.state.ed).L + x[1]) : x[1]; setEd({ lh: String(Math.floor(L / 60)), lm: String(L % 60) }); } })),
+      selAll: (e) => { try { e.target.select(); } catch (x) {} },
+      len: (() => {
+        const d0 = s.draft;
+        const mins = d0 ? (d0.lenRaw ? null : Math.round((d0.e - d0.s) * 60)) : 0;
+        const setMins = (m) => { const st = this.state.draft; const mm = Math.max(5, Math.min(24 * 60, m)); this.setState({ draft: Object.assign({}, st, { e: st.s + mm / 60, lenRaw: null }) }); };
+        const raw = d0 && d0.lenRaw;
+        return {
+          h: raw ? raw.h : String(Math.floor((mins || 0) / 60)),
+          m: raw ? raw.m : String((mins || 0) % 60),
+          onH: (e) => { const st = this.state.draft; const h = e.target.value.replace(/\D/g, '').slice(0, 2); const cur = st.lenRaw || { h: String(Math.floor(Math.round((st.e - st.s) * 60) / 60)), m: String(Math.round((st.e - st.s) * 60) % 60) }; const total = (parseInt(h, 10) || 0) * 60 + (parseInt(cur.m, 10) || 0); this.setState({ draft: Object.assign({}, st, { lenRaw: { h: h, m: cur.m }, e: st.s + Math.max(5, Math.min(24 * 60, total || 5)) / 60 }) }); },
+          onM: (e) => { const st = this.state.draft; const m = e.target.value.replace(/\D/g, '').slice(0, 2); const cur = st.lenRaw || { h: String(Math.floor(Math.round((st.e - st.s) * 60) / 60)), m: String(Math.round((st.e - st.s) * 60) % 60) }; const total = (parseInt(cur.h, 10) || 0) * 60 + Math.min(59, parseInt(m, 10) || 0); this.setState({ draft: Object.assign({}, st, { lenRaw: { h: cur.h, m: m }, e: st.s + Math.max(5, Math.min(24 * 60, total || 5)) / 60 }) }); },
+          fixM: () => { const st = this.state.draft; if (st) this.setState({ draft: Object.assign({}, st, { lenRaw: null }) }); },
+          key: (e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); const st = this.state.draft; setMins(Math.round((st.e - st.s) * 60) + (e.key === 'ArrowUp' ? 5 : -5)); } if (e.key === 'Enter') saveDraft(); }
+        };
+      })(),
+      stepDown: () => { const d0 = this.state.draft; const e2 = Math.max(d0.s + 5 / 60, d0.e - 5 / 60); this.setState({ draft: Object.assign({}, d0, { e: Math.round(e2 * 60) / 60, lenRaw: null }) }); },
+      stepUp: () => { const d0 = this.state.draft; const e2 = Math.min(d0.s + 24, d0.e + 5 / 60); this.setState({ draft: Object.assign({}, d0, { e: Math.round(e2 * 60) / 60, lenRaw: null }) }); },
+      onDraftTitle: (e) => this.setState({ draft: Object.assign({}, this.state.draft, { title: e.target.value }) }),
+      draftKey: (e) => { if (e.key === 'Enter') saveDraft(); if (e.key === 'Escape') this.setState({ draft: null, qc: false }); },
+      cancelDraft: () => this.setState({ draft: null, qc: false }),
+      saveDraft: () => saveDraft(),
+      newEvent: () => {
+        const st = Math.ceil(NOWH * 2) / 2;
+        this.setState({ view: 'week', anchor: TODAY, draft: { date: TODAY, s: st, e: st + 0.5, title: '' }, qc: true, sel: null, ed: Object.assign({ id: 'new', title: '', link: '', date: TODAY }, toEd(st, 30)) });
+        setTimeout(() => { const el = document.querySelector('.qc .qt'); if (el) el.focus(); const sc = document.querySelector('.scroll'); if (sc) sc.scrollTop = Math.max(0, (st - 2) * HH); this.setState({ tick: (this.state.tick || 0) + 1 }); }, 0);
+      },
+      nowLabel: hm(Math.floor(NOWH * 60) / 60),
+      dayItems: dayItems, dayEmpty: items.length === 0,
+      ed: (() => {
+        const q = s.ed;
+        if (!q) return { title: '', link: '', sh: '', sm: '', lh: '', lm: '', ap: 'AM', dayLabel: '', range: '' };
+        const t = fromEd(q); const dd = parse(q.date);
+        const shiftStart = (dm) => { const cur = this.state.ed; const c = fromEd(cur); let st = Math.round((c.s * 60 + dm)); st = Math.max(0, Math.min(1435, st)); setEd(Object.assign({}, toEd(st / 60, c.L))); };
+        const shiftLen = (dm) => { const cur = this.state.ed; const c = fromEd(cur); const L = Math.max(5, Math.min(1440, c.L + dm)); setEd({ lh: String(Math.floor(L / 60)), lm: String(L % 60) }); };
+        const dig = (v) => v.replace(/\D/g, '').slice(0, 2);
+        return {
+          title: q.title, link: q.link, sh: q.sh, sm: q.sm, lh: q.lh, lm: q.lm, ap: q.pm ? 'PM' : 'AM',
+          dayLabel: W[dd.getDay()] + ', ' + dd.getDate() + ' ' + M[dd.getMonth()],
+          range: hm(t.s) + ' – ' + hm(t.e % 24) + (t.e > 24 ? ' (next day)' : ''),
+          onTitle: (e) => setEd({ title: e.target.value }),
+          onLink: (e) => setEd({ link: e.target.value }),
+          onSH: (e) => setEd({ sh: dig(e.target.value) }),
+          onSM: (e) => setEd({ sm: dig(e.target.value) }),
+          onLH: (e) => setEd({ lh: dig(e.target.value) }),
+          onLM: (e) => setEd({ lm: dig(e.target.value) }),
+          togglePM: () => setEd({ pm: !this.state.ed.pm }),
+          startDown: () => shiftStart(-5), startUp: () => shiftStart(5),
+          lenDown: () => shiftLen(-5), lenUp: () => shiftLen(5),
+          dayPrev: () => setEd({ date: add(this.state.ed.date, -1) }),
+          dayNext: () => setEd({ date: add(this.state.ed.date, 1) }),
+          key: (e) => { if (e.key === 'Enter') saveEd(); if (e.key === 'Escape') cancelEd(); },
+          cancel: () => cancelEd(),
+          save: () => saveEd()
+        };
+      })()
+    };
+  }
+}
+</script>
+</body>
+</html>

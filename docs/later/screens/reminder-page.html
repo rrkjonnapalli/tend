@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tend mockup · reminder</title>
+<script src="../../design/dc-runtime.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+a{color:#303841}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #1070e3;outline-offset:2px}
+.heading{font:500 28px/36px 'Montserrat',sans-serif}
+.caption{font:400 13px/18px 'Lato',sans-serif}
+.muted{color:#7d8995}
+.mono{font-family:'JetBrains Mono',monospace}
+.back{width:24px;height:24px;margin-left:-6px;padding:0;border:0;border-radius:4px;background:transparent;color:#5f6b76;display:grid;place-items:center;cursor:pointer;text-decoration:none}
+.back:hover{background:#f7fbfc;color:#303841}
+.crumb{color:#7d8995;text-decoration:none}.crumb:hover{color:#303841}
+.ib{width:26px;height:26px;padding:0;border:0;border-radius:4px;background:transparent;display:grid;place-items:center;cursor:pointer}
+.ib.del{color:#da0037}.ib.del:hover{background:#ffebeb}
+.donebtn{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:1px solid #dce3e8;border-radius:6px;background:#ffffff;color:#1e7a55;cursor:pointer;font:400 13px/18px 'Lato',sans-serif}
+.donebtn:hover{border-color:#1e7a55;background:#e3f7ee}
+.donebtn.on{background:#e3f7ee;border-color:#1e7a55}
+.ttl{width:100%;border:0;outline:none;padding:0;background:transparent;font:500 28px/36px 'Montserrat',sans-serif;color:#303841}
+.props{display:grid;grid-template-columns:96px minmax(0,1fr);row-gap:6px;align-items:center}
+.pl{font:400 13px/18px 'Lato',sans-serif;color:#7d8995}
+.pv{display:flex;align-items:center;gap:10px;min-height:32px;font:400 14px/20px 'Lato',sans-serif;position:relative}
+.fld{height:28px;padding:0 8px;border:1px solid #dce3e8;border-radius:4px;outline:none;background:#ffffff;box-sizing:border-box;font:400 13px/18px 'JetBrains Mono',monospace;color:#303841}
+.fld:focus{border-color:#1259d3}
+.fld.bad{border-color:#da0037;color:#da0037}
+.fld.wide{flex:1;min-width:0;font-family:'Lato',sans-serif;font-size:14px}
+.hint{font:400 12px/16px 'Lato',sans-serif;color:#7d8995}
+.hint.err{color:#da0037}
+.ghost{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 8px;margin-left:-8px;border:0;border-radius:4px;background:transparent;cursor:pointer;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.ghost:hover{background:#f7fbfc}
+.menu{position:absolute;top:32px;left:-8px;z-index:6;min-width:260px;padding:4px 0;background:#ffffff;border:1px solid #dce3e8;border-radius:8px}
+.mi{display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 12px;border:0;background:transparent;text-align:left;cursor:pointer;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.mi:hover{background:#f7fbfc}
+.mi .sub{color:#7d8995;font-size:13px}
+.mi .ck{margin-left:auto;color:#1259d3}
+.msep{height:1px;margin:4px 0;background:#f2f5f7}
+.backdrop{position:absolute;inset:0;z-index:5}
+.custom{display:flex;flex-direction:column;gap:14px;padding:16px;border:1px solid #dce3e8;border-radius:8px}
+.crow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.clab{flex:0 0 96px;font:400 13px/18px 'Lato',sans-serif;color:#7d8995}
+.num{width:48px;text-align:center}
+.seg{display:inline-flex;gap:2px;padding:2px;border-radius:6px;background:#f2f5f7}
+.seg button{height:24px;padding:0 10px;border:0;border-radius:4px;background:transparent;color:#5f6b76;cursor:pointer;font:400 13px/18px 'Lato',sans-serif}
+.seg button.on{background:#ffffff;color:#303841;box-shadow:0 0 0 1px #dce3e8}
+.chips{display:inline-flex;gap:4px;flex-wrap:wrap}
+.chip{min-width:28px;height:28px;padding:0 8px;box-sizing:border-box;border:1px solid #dce3e8;border-radius:14px;background:#ffffff;color:#5f6b76;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.chip:hover{border-color:#b8c4ce;color:#303841}
+.chip.on{background:#1259d3;border-color:#1259d3;color:#ffffff}
+.radio{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:32px}
+.rb{width:16px;height:16px;padding:0;border:1.5px solid #7d8995;border-radius:8px;background:#ffffff;cursor:pointer;display:grid;place-items:center;flex:0 0 16px}
+.rb.on{border-color:#1259d3}
+.rb.on::after{content:'';width:8px;height:8px;border-radius:4px;background:#1259d3}
+.dim{opacity:.45;pointer-events:none}
+.summary{padding:10px 12px;border-radius:6px;background:#f7fbfc;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.summary .muted{display:block;margin-top:2px}
+.cfoot{display:flex;justify-content:flex-end;gap:4px}
+.icb{width:26px;height:26px;padding:0;border:0;border-radius:4px;background:transparent;display:grid;place-items:center;cursor:pointer}
+.icb.ok{color:#1e7a55}.icb.ok:hover{background:#e3f7ee}
+.icb.no{color:#da0037}.icb.no:hover{background:#ffebeb}
+.sh{display:flex;align-items:center;gap:6px;height:28px;padding:0 16px;margin:0 -16px 4px;border:0;background:transparent;font:400 13px/18px 'Lato',sans-serif;color:#7d8995;cursor:pointer;text-align:left}
+.sh:hover{background:#f7fbfc;color:#303841}
+.det{width:100%;min-height:96px;box-sizing:border-box;padding:10px 12px;border:1px solid #dce3e8;border-radius:6px;outline:none;resize:vertical;font:400 14px/22px 'Lato',sans-serif;color:#303841}
+.det:focus{border-color:#1259d3}
+.hrow{display:flex;align-items:center;gap:12px;min-height:32px;font:400 14px/20px 'Lato',sans-serif;color:#303841;border-top:1px solid #f2f5f7}
+.hrow .mono{font-size:12px;color:#5f6b76;flex:0 0 160px}
+.st{font:400 12px/16px 'Lato',sans-serif;padding:0 6px;border-radius:4px}
+.st.done{color:#1e7a55;background:#e3f7ee}.st.missed{color:#a84f2c;background:#fbebe1}.st.next{color:#1259d3;background:#dbfaff}
+.pchip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border-radius:12px;background:#ede9ff;color:#303841;font:400 13px/18px 'Lato',sans-serif;text-decoration:none}
+.shrow{display:flex;align-items:center;margin:0 -16px 4px}
+.shrow:hover{background:#f7fbfc}
+.shrow .sh{flex:1;margin:0}
+.shrow .sh:hover{background:transparent}
+.shacts{display:flex;align-items:center;gap:2px;padding-right:10px}
+.icb.pen{color:#7d8995}.icb.pen:hover{background:#dce3e8;color:#303841}
+.mde{margin:0 0 8px 16px;display:flex;flex-direction:column}
+.mdta{display:block;width:100%;box-sizing:border-box;border:0;outline:none;resize:vertical;padding:6px 0;margin:0;font:400 14px/22px 'JetBrains Mono',ui-monospace,monospace;color:#303841;background:transparent;height:168px;min-height:120px;max-height:360px}
+.mdta::placeholder{color:#7d8995}
+.mdpv{padding:6px 0;overflow:auto;max-height:360px;box-sizing:border-box;cursor:text}
+.mdh{font:500 16px/24px 'Montserrat',sans-serif;margin:2px 0 6px}
+.mdp{margin:0 0 6px;font:400 14px/22px 'Lato',sans-serif}
+.mdli{display:flex;gap:8px;font:400 14px/22px 'Lato',sans-serif}
+.mdc{margin:4px 0 8px;padding:8px 10px;background:#f7fbfc;border-radius:4px;font:400 13px/20px 'JetBrains Mono',ui-monospace,monospace;white-space:pre-wrap}
+.sg-b{font-weight:700}.sg-i{font-style:italic}
+.sg-c{font:400 13px/20px 'JetBrains Mono',ui-monospace,monospace;background:#f7fbfc;padding:0 3px;border-radius:2px}
+.pl.ic{display:flex;align-items:center;gap:6px}
+.linkchip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 4px 0 10px;border-radius:13px;background:#ede9ff;color:#303841;font:400 13px/18px 'Lato',sans-serif}
+.linkchip .k{color:#7d8995;font-size:12px}
+.linkchip .x{width:18px;height:18px;padding:0;border:0;border-radius:9px;background:transparent;color:#da0037;display:grid;place-items:center;cursor:pointer}
+.linkchip .x:hover{background:#ffebeb}
+.addlink{height:26px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:#1259d3;cursor:pointer;font:400 13px/18px 'Lato',sans-serif}
+.addlink:hover{background:#dbfaff}
+.picker{position:absolute;top:32px;left:0;z-index:6;width:300px;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;overflow:hidden}
+.picker input{width:100%;box-sizing:border-box;height:36px;padding:0 12px;border:0;border-bottom:1px solid #f2f5f7;outline:none;font:400 14px/20px 'Lato',sans-serif}
+.picker .mi .sub{margin-left:auto}
+.bnav{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.bnav>*{pointer-events:auto}
+.btog{position:relative;z-index:1;width:28px;height:16px;margin-bottom:-8px;padding:0;border:0;border-radius:4px;background:#ffffff;color:#b8c4ce;display:grid;place-items:center;cursor:pointer}
+.btog:hover{color:#303841;background:#f7fbfc}
+.btog.closed{margin-bottom:6px;background:transparent}
+.btog.closed:hover{background:#f7fbfc}
+.brow{align-self:stretch;display:flex;justify-content:center;align-items:center;gap:14px;padding:8px 10px 10px;background:#ffffff;border-top:1px solid #dce3e8}
+.bico{position:relative;display:grid;place-items:center;width:28px;height:26px;color:#7d8995;text-decoration:none}
+.bico:hover{color:#303841}
+.bico.cur{color:#6f5ee4}
+.brow{position:relative}
+.bset{position:absolute;right:80px;top:8px}
+.bfb{position:absolute;right:16px;top:8px}
+.bnotif{position:absolute;right:48px;top:8px}
+.bnotif.on{color:#303841}
+.nbadge{position:absolute;top:1px;right:3px;min-width:14px;height:14px;padding:0 3px;box-sizing:border-box;border-radius:7px;background:#da0037;color:#ffffff;font:700 9px/14px 'Lato',sans-serif;text-align:center}
+.nbadge.blink{animation:nblink 1s ease-in-out infinite}
+@keyframes nblink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.85)}}
+.npop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;box-sizing:border-box;display:flex;flex-direction:column;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.npop .fbhead{padding:10px 12px 8px}
+.nrow{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px 0 12px;border-top:1px solid #f2f5f7}
+.nrow .nt{flex:1;min-width:0;display:flex;flex-direction:column}
+.nrow .nt b{font-weight:400;font-size:14px;line-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nrow .nt span{font-size:12px;line-height:16px;color:#7d8995}
+.nrow .nt span.late{color:#a84f2c}
+.nact{height:24px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:#1259d3;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.nact:hover{background:#dbfaff}
+.ndone{width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#1e7a55;display:grid;place-items:center;cursor:pointer}
+.ndone:hover{background:#e3f7ee}
+.nempty{padding:14px 12px;border-top:1px solid #f2f5f7;color:#7d8995}
+.bfb.on{color:#303841}
+.fbback{position:absolute;inset:0;z-index:20}
+.fbpop{position:absolute;right:16px;bottom:52px;z-index:21;width:320px;padding:12px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;background:#ffffff;border:1px solid #dce3e8;border-radius:8px;font:400 13px/18px 'Lato',sans-serif;color:#303841}
+.fbhead{display:flex;align-items:center;gap:8px;font:500 14px/20px 'Montserrat',sans-serif}
+.fbx{margin-left:auto;width:24px;height:24px;padding:0;border:0;border-radius:4px;background:transparent;color:#5f6b76;display:grid;place-items:center;cursor:pointer}
+.fbx:hover{background:#f7fbfc;color:#303841}
+.fbkinds{display:flex;gap:4px}
+.fbk{height:24px;padding:0 8px;border:1px solid #dce3e8;border-radius:12px;background:#ffffff;color:#5f6b76;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.fbk:hover{color:#303841;border-color:#b8c4ce}
+.fbk.on{color:#1259d3;border-color:#1259d3;background:#dbfaff}
+.fbta{width:100%;min-height:96px;box-sizing:border-box;padding:8px;border:1px solid #dce3e8;border-radius:6px;outline:none;resize:vertical;font:400 13px/20px 'Lato',sans-serif;color:#303841;background:#ffffff}
+.fbta:focus{border-color:#1259d3}
+.fbta::placeholder{color:#7d8995}
+.fbfoot{display:flex;align-items:center;gap:8px}
+.fbsend{margin-left:auto;height:28px;padding:0 12px;border:0;border-radius:6px;background:#1259d3;color:#ffffff;cursor:pointer;font:700 13px/18px 'Lato',sans-serif}
+.fbsend:hover{background:#113eb0}
+.fbsend:disabled{background:#dce3e8;color:#7d8995;cursor:default}
+.fbok{color:#1e7a55}
+.bico.cur::after{content:'';position:absolute;bottom:-6px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:2px;background:#6f5ee4}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: 800px; box-sizing: border-box; display: flex; background: #ffffff; color: #303841; font-family: 'Lato', sans-serif">
+  <sc-if value="{{anyMenu}}" hint-placeholder-val="{{ false }}"><div class="backdrop" onClick="{{closeMenus}}"></div></sc-if>
+  <sc-if value="{{nOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fbback" onClick="{{closeN}}"></div>
+    <div class="npop" role="dialog" aria-label="Notifications">
+      <div class="fbhead"><span>Notifications</span><button class="fbx" aria-label="Close" title="Close" onClick="{{closeN}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      <sc-for list="{{nList}}" as="nt" hint-placeholder-count="2">
+        <div class="nrow"><span class="nt"><b>{{nt.title}}</b><span class="{{nt.whenCls}}">{{nt.when}}</span></span><button class="nact" onClick="{{nt.snooze}}">+10m</button><button class="ndone" aria-label="Done" title="Done" onClick="{{nt.done}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button></div>
+      </sc-for>
+      <sc-if value="{{nEmpty}}" hint-placeholder-val="{{ false }}"><div class="nempty">Nothing right now. Reminders show up here when they go off.</div></sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{fbOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="fbback" onClick="{{closeFb}}"></div>
+    <div class="fbpop" role="dialog" aria-label="Send feedback">
+      <div class="fbhead"><span>Feedback</span><button class="fbx" aria-label="Close" title="Close" onClick="{{closeFb}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+      <sc-if value="{{fbWriting}}" hint-placeholder-val="{{ true }}">
+        <div class="fbkinds" role="group" aria-label="Kind"><sc-for list="{{fbKinds}}" as="fk" hint-placeholder-count="3"><button class="{{fk.cls}}" aria-pressed="{{fk.on}}" onClick="{{fk.go}}">{{fk.label}}</button></sc-for></div>
+        <textarea class="fbta" aria-label="Feedback" placeholder="A bug, an idea, something you’d like…" value="{{fbDraft}}" onInput="{{onFb}}" onKeyDown="{{fbKey}}"></textarea>
+        <div class="fbfoot"><span class="muted" style="font-size: 12px">Saved in your vault</span><button class="fbsend" disabled="{{fbEmpty}}" onClick="{{sendFb}}">Send</button></div>
+      </sc-if>
+      <sc-if value="{{fbSent}}" hint-placeholder-val="{{ false }}">
+        <span class="fbok">Thanks, saved. You can send another anytime.</span>
+        <div class="fbfoot"><button class="fbk" onClick="{{fbAgain}}">Write another</button></div>
+      </sc-if>
+    </div>
+  </sc-if>
+  <sc-if value="{{navOpen}}" hint-placeholder-val="{{ true }}">
+    <div class="bnav">
+      <button class="btog" aria-label="Hide sections bar" title="Hide" onClick="{{toggleNav}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+      <nav class="brow" aria-label="Sections">
+        <a class="bico" href="../../design/screens/notes.html" aria-label="Notes" title="Notes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h5"></path></svg></a>
+        <a class="bico" href="../../design/screens/tasks.html" aria-label="Tasks" title="Tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></a>
+        <a class="bico cur" aria-current="page" href="reminders.html" aria-label="Reminders" title="Reminders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg></a>
+        <a class="bico" href="calendar.html" aria-label="Calendar" title="Calendar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg></a>
+        <a class="bico" href="../../design/screens/people.html" aria-label="People" title="People"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+        <a class="bico bset" href="../../design/screens/settings.html" aria-label="Settings" title="Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
+        <a class="{{bellCls}}" href="#" aria-label="Notifications" title="Notifications" aria-haspopup="dialog" aria-expanded="{{nOpen}}" onClick="{{toggleN}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 21h4"></path></svg><sc-if value="{{nHasBadge}}" hint-placeholder-val="{{ true }}"><span class="{{nBadgeCls}}">{{nCount}}</span></sc-if></a>
+        <a class="{{fbBtnCls}}" href="#" aria-label="Feedback" title="Feedback" aria-haspopup="dialog" aria-expanded="{{fbOpen}}" onClick="{{toggleFb}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M8.5 11h7M8.5 14.5h4"></path></svg></a>
+      </nav>
+    </div>
+  </sc-if>
+  <sc-if value="{{navClosed}}" hint-placeholder-val="{{ false }}">
+    <div class="bnav"><button class="btog closed" aria-label="Show sections bar" title="Show" onClick="{{toggleNav}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"></path></svg></button></div>
+  </sc-if>
+
+  <main style="flex: 1 1 auto; min-width: 0; padding: 40px 24px 72px; overflow: auto">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div class="caption" style="min-height: 28px; display: flex; align-items: center; gap: 6px; color: #7d8995">
+        <a class="back" href="reminders.html" aria-label="Back to reminders" title="Back"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg></a>
+        <a class="crumb" href="reminders.html">Reminders</a><span>/</span><span style="color: #303841">{{titleShort}}</span>
+        <span style="flex: 1"></span>
+        <button class="{{doneCls}}" onClick="{{toggleDone}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg>{{doneLabel}}</button>
+        <button class="ib del" aria-label="Delete reminder" title="Delete"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V4h6v3"></path><path d="M6 7l1 13h10l1-13"></path></svg></button>
+      </div>
+
+      <div style="width: 100%; max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px">
+        <input class="ttl" aria-label="Title" value="{{title}}" onInput="{{onTitle}}">
+
+        <div class="props">
+          <span class="pl">When</span>
+          <div class="pv">
+            <input class="{{dateCls}}" style="width: 112px" aria-label="Date, yyyy-mm-dd" value="{{date}}" onInput="{{onDate}}">
+            <input class="{{timeCls}}" style="width: 92px" aria-label="Time" value="{{time}}" onInput="{{onTime}}">
+            <span class="{{whenHintCls}}">{{whenHint}}</span>
+          </div>
+
+          <span class="pl ic">Repeat<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l3 3-3 3"></path><path d="M4 11V9a4 4 0 0 1 4-4h12"></path><path d="M7 22l-3-3 3-3"></path><path d="M20 13v2a4 4 0 0 1-4 4H4"></path></svg></span>
+          <div class="pv">
+            <button class="ghost" aria-haspopup="listbox" aria-expanded="{{menuOpen}}" onClick="{{toggleMenu}}">{{repeatLabel}}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+            <sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+              <div class="menu" role="listbox" aria-label="Repeat">
+                <sc-for list="{{presets}}" as="p" hint-placeholder-count="6">
+                  <sc-if value="{{p.sep}}" hint-placeholder-val="{{ false }}"><div class="msep"></div></sc-if>
+                  <button class="mi" role="option" aria-selected="{{p.on}}" onClick="{{p.go}}"><span>{{p.label}}</span><span class="sub">{{p.sub}}</span><sc-if value="{{p.on}}" hint-placeholder-val="{{ false }}"><span class="ck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></span></sc-if></button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+
+          <span class="pl ic">Link<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#7d8995" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"></path><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"></path></svg></span>
+          <div class="pv"><input class="fld wide" style="max-width: 420px" aria-label="Link" placeholder="https://… (optional)" value="{{link}}" onInput="{{onLink}}"></div>
+
+          <span class="pl">For</span>
+          <div class="pv" style="flex-wrap: wrap">
+            <sc-if value="{{hasPerson}}" hint-placeholder-val="{{ true }}"><span class="linkchip"><span class="k">person</span><a href="../../design/screens/people.html" style="text-decoration: none">{{personName}}</a><button class="x" aria-label="Remove person" title="Remove" onClick="{{removePerson}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></span></sc-if>
+            <sc-if value="{{hasTask}}" hint-placeholder-val="{{ false }}"><span class="linkchip"><span class="k">task</span><a href="../../design/screens/tasks.html" style="text-decoration: none">{{taskName}}</a><button class="x" aria-label="Remove task" title="Remove" onClick="{{removeTask}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></span></sc-if>
+            <sc-if value="{{noPerson}}" hint-placeholder-val="{{ false }}"><button class="addlink" onClick="{{pickPerson}}">+ person</button></sc-if>
+            <sc-if value="{{noTask}}" hint-placeholder-val="{{ true }}"><button class="addlink" onClick="{{pickTask}}">+ task</button></sc-if>
+            <sc-if value="{{pickOpen}}" hint-placeholder-val="{{ false }}">
+              <div class="picker" role="dialog" aria-label="{{pickTitle}}">
+                <input class="pickq" aria-label="Search" placeholder="{{pickPh}}" value="{{pickQ}}" onInput="{{onPickQ}}" onKeyDown="{{pickKey}}">
+                <div style="max-height: 220px; overflow: auto; padding: 4px 0"><sc-for list="{{pickList}}" as="o" hint-placeholder-count="4"><button class="mi" onClick="{{o.go}}"><span>{{o.label}}</span><span class="sub">{{o.sub}}</span></button></sc-for>
+                <sc-if value="{{pickNone}}" hint-placeholder-val="{{ false }}"><span class="hint" style="display: block; padding: 8px 12px">No matches</span></sc-if></div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <sc-if value="{{customOpen}}" hint-placeholder-val="{{ false }}">
+        <div class="custom" role="group" aria-label="Custom repeat">
+          <div class="crow"><span class="clab">Repeat every</span>
+            <input class="fld num" aria-label="Interval" value="{{c.interval}}" onInput="{{c.onInterval}}">
+            <span class="seg" role="group" aria-label="Unit"><sc-for list="{{c.units}}" as="u" hint-placeholder-count="4"><button class="{{u.cls}}" onClick="{{u.go}}">{{u.label}}</button></sc-for></span>
+          </div>
+
+          <sc-if value="{{c.isWeek}}" hint-placeholder-val="{{ false }}">
+            <div class="crow"><span class="clab">On</span><span class="chips"><sc-for list="{{c.weekdays}}" as="w" hint-placeholder-count="7"><button class="{{w.cls}}" aria-pressed="{{w.on}}" aria-label="{{w.name}}" onClick="{{w.go}}">{{w.label}}</button></sc-for></span></div>
+          </sc-if>
+
+          <sc-if value="{{c.isMonth}}" hint-placeholder-val="{{ false }}">
+            <div class="crow" style="align-items: flex-start"><span class="clab" style="padding-top: 6px">On</span>
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <div class="radio"><button class="{{c.rDay.cls}}" aria-label="On a day of the month" onClick="{{c.rDay.go}}"></button><span>day</span>
+                  <span class="{{c.dayWrapCls}}" style="display: inline-flex; align-items: center; gap: 6px"><input class="fld num" aria-label="Day of month" value="{{c.monthDayText}}" onInput="{{c.onMonthDay}}"><button class="{{c.lastDay.cls}}" onClick="{{c.lastDay.go}}">last</button></span></div>
+                <div class="radio"><button class="{{c.rNth.cls}}" aria-label="On the nth weekday" onClick="{{c.rNth.go}}"></button><span>the</span>
+                  <span class="{{c.nthWrapCls}}" style="display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap">
+                    <span class="chips"><sc-for list="{{c.nths}}" as="n" hint-placeholder-count="5"><button class="{{n.cls}}" aria-pressed="{{n.on}}" onClick="{{n.go}}">{{n.label}}</button></sc-for></span>
+                    <span class="chips"><sc-for list="{{c.nthOfs}}" as="n" hint-placeholder-count="9"><button class="{{n.cls}}" aria-pressed="{{n.on}}" onClick="{{n.go}}">{{n.label}}</button></sc-for></span>
+                    <span class="hint" style="flex-basis: 100%">pick one or more of each, e.g. 2nd + Sat + Sun</span>
+                  </span></div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{c.isYear}}" hint-placeholder-val="{{ false }}">
+            <div class="crow"><span class="clab">On</span><span class="chips"><sc-for list="{{c.months}}" as="m" hint-placeholder-count="12"><button class="{{m.cls}}" aria-label="{{m.name}}" onClick="{{m.go}}">{{m.label}}</button></sc-for></span><input class="fld num" aria-label="Day" value="{{c.yearDay}}" onInput="{{c.onYearDay}}"></div>
+          </sc-if>
+
+          <sc-if value="{{c.showMissing}}" hint-placeholder-val="{{ false }}">
+            <div class="crow"><span class="clab">If missing</span><span class="seg"><button class="{{c.mSkip.cls}}" onClick="{{c.mSkip.go}}">skip</button><button class="{{c.mClose.cls}}" onClick="{{c.mClose.go}}">closest day</button></span><span class="hint">{{c.missingHint}}</span></div>
+          </sc-if>
+
+          <div class="crow" style="align-items: flex-start"><span class="clab" style="padding-top: 6px">Ends</span>
+            <div style="display: flex; flex-direction: column; gap: 2px">
+              <div class="radio"><button class="{{c.eNever.cls}}" aria-label="Never ends" onClick="{{c.eNever.go}}"></button><span>never</span></div>
+              <div class="radio"><button class="{{c.eOn.cls}}" aria-label="Ends on a date" onClick="{{c.eOn.go}}"></button><span>on</span><input class="{{c.endsOnCls}}" style="width: 112px" aria-label="End date" value="{{c.endsOn}}" onInput="{{c.onEndsOn}}" onFocus="{{c.eOn.go}}"></div>
+              <div class="radio"><button class="{{c.eAfter.cls}}" aria-label="Ends after a number of times" onClick="{{c.eAfter.go}}"></button><span>after</span><input class="fld num" aria-label="Times" value="{{c.endsAfter}}" onInput="{{c.onEndsAfter}}" onFocus="{{c.eAfter.go}}"><span>times</span></div>
+            </div>
+          </div>
+
+          <div class="summary">{{c.summary}}<span class="muted">Next: {{c.next}}</span></div>
+          <div class="cfoot"><button class="icb no" aria-label="Cancel" title="Cancel" onClick="{{c.cancel}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button><button class="icb ok" aria-label="Apply" title="Apply" onClick="{{c.apply}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button></div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{showUpcoming}}" hint-placeholder-val="{{ true }}"><div class="summary">{{repeatSummary}}<span class="muted">Next: {{repeatNext}}</span></div></sc-if>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <section style="display: flex; flex-direction: column">
+          <div class="shrow">
+            <button class="sh" aria-expanded="{{sec.det}}" onClick="{{toggleSec.det}}"><sc-if value="{{sec.det}}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></sc-if><sc-if value="{{secClosed.det}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if><span>Details</span></button>
+            <span class="shacts">
+              <sc-if value="{{md.det.view}}" hint-placeholder-val="{{ true }}"><button class="icb pen" aria-label="Edit details" title="Edit" onClick="{{md.det.edit}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></sc-if>
+              <sc-if value="{{md.det.editing}}" hint-placeholder-val="{{ false }}"><button class="icb no" aria-label="Cancel" title="Cancel" onClick="{{md.det.cancel}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button><button class="icb ok" aria-label="Save" title="Save" onClick="{{md.det.save}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"></path></svg></button></sc-if>
+            </span>
+          </div>
+          <sc-if value="{{sec.det}}" hint-placeholder-val="{{ true }}">
+            <div class="mde">
+              <sc-if value="{{md.det.editing}}" hint-placeholder-val="{{ false }}"><textarea class="mdta" aria-label="Details" placeholder="Anything to remember… (markdown)" value="{{md.det.draft}}" onInput="{{md.det.onDraft}}" onKeyDown="{{md.det.key}}"></textarea></sc-if>
+              <sc-if value="{{md.det.view}}" hint-placeholder-val="{{ true }}">
+                <div class="mdpv" onDoubleClick="{{md.det.edit}}">
+                  <sc-for list="{{md.det.blocks}}" as="bk" hint-placeholder-count="2">
+                    <sc-if value="{{bk.isH}}" hint-placeholder-val="{{ false }}"><div class="mdh"><sc-for list="{{bk.segs}}" as="sg" hint-placeholder-count="1"><span class="{{sg.cls}}">{{sg.text}}</span></sc-for></div></sc-if>
+                    <sc-if value="{{bk.isP}}" hint-placeholder-val="{{ true }}"><p class="mdp"><sc-for list="{{bk.segs}}" as="sg" hint-placeholder-count="1"><span class="{{sg.cls}}">{{sg.text}}</span></sc-for></p></sc-if>
+                    <sc-if value="{{bk.isLi}}" hint-placeholder-val="{{ false }}"><div class="mdli"><span class="muted">{{bk.bullet}}</span><span><sc-for list="{{bk.segs}}" as="sg" hint-placeholder-count="1"><span class="{{sg.cls}}">{{sg.text}}</span></sc-for></span></div></sc-if>
+                    <sc-if value="{{bk.isCode}}" hint-placeholder-val="{{ false }}"><pre class="mdc">{{bk.text}}</pre></sc-if>
+                  </sc-for>
+                  <sc-if value="{{md.det.empty}}" hint-placeholder-val="{{ false }}"><span class="muted" style="font: 400 14px/22px 'Lato', sans-serif">{{md.det.emptyText}}</span></sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </section>
+      <section style="display: flex; flex-direction: column">
+        <button class="sh" aria-expanded="{{sec.hist}}" onClick="{{toggleSec.hist}}"><sc-if value="{{sec.hist}}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></sc-if><sc-if value="{{secClosed.hist}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></sc-if><span>History</span><span></span></button>
+        <sc-if value="{{sec.hist}}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{history}}" as="h" hint-placeholder-count="3"><div class="hrow"><span class="mono">{{h.when}}</span><span class="{{h.cls}}">{{h.state}}</span><span class="muted" style="font-size: 13px">{{h.note}}</span></div></sc-for>
+        </sc-if>
+      </section>
+      </div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      nav: true, notifs: [{ id: 1, title: 'Call Ravi', when: 'Today, 5:00 PM · now' }, { id: 2, title: 'Take out the trash', when: 'Today, 4:30 PM · 2m late', late: true }], nSeen: false, nOpen: false, fb: false, fbSent: false, fbDraft: '', fbKind: 'idea', 
+      title: 'Pay house rent', date: '2026-10-10', time: '9:00 AM', link: 'https://bank.example.com/pay', details: 'Transfer to Mr. Sharma, ref: Flat 4B. Add the maintenance fee in March.',
+      rule: { freq: 'month', interval: 1, weekdays: ['SA'], mode: 'day', monthDay: 10, nth: [2], nthOf: ['TU'], month: 10, ifMissing: 'closest', ends: 'never', endsOn: '2026-12-31', endsAfter: '12' },
+      preset: 'monthly', menuOpen: false, draft: null, done: false, mdEdit: {}, mdDraft: {},
+      person: { id: 'p1', name: 'Ravi Kumar' }, task: null, pick: null, pickQ: '',
+      sec: { det: true, hist: true }
+    };
+  }
+  renderVals() {
+    const s = this.state;
+    const TODAY = '2026-10-03';
+
+    const inline = (txt) => {
+      const out = []; const re = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*\s][^*]*\*|_[^_\s][^_]*_)/g; let last = 0, mt;
+      while ((mt = re.exec(txt))) {
+        if (mt.index > last) out.push({ text: txt.slice(last, mt.index), cls: '' });
+        const tok = mt[0];
+        if (tok.startsWith('**')) out.push({ text: tok.slice(2, -2), cls: 'sg-b' });
+        else if (tok.startsWith('`')) out.push({ text: tok.slice(1, -1), cls: 'sg-c' });
+        else out.push({ text: tok.slice(1, -1), cls: 'sg-i' });
+        last = mt.index + tok.length;
+      }
+      if (last < txt.length) out.push({ text: txt.slice(last), cls: '' });
+      return out;
+    };
+    const md = (text) => {
+      const lines = String(text || '').split('\n'); const blocks = []; let para = [], code = null;
+      const B = (o) => Object.assign({ isH: false, isP: false, isLi: false, isCode: false, segs: [], text: '', bullet: '' }, o);
+      const flush = () => { if (para.length) { blocks.push(B({ isP: true, segs: inline(para.join(' ')) })); para = []; } };
+      lines.forEach((ln) => {
+        if (code !== null) { if (/^```/.test(ln)) { blocks.push(B({ isCode: true, text: code.join('\n') })); code = null; } else code.push(ln); return; }
+        if (/^```/.test(ln)) { flush(); code = []; return; }
+        let mm;
+        if ((mm = ln.match(/^#{1,3}\s+(.*)/))) { flush(); blocks.push(B({ isH: true, segs: inline(mm[1]) })); return; }
+        if ((mm = ln.match(/^\s*[-*]\s+\[( |x)\]\s+(.*)/i))) { flush(); blocks.push(B({ isLi: true, bullet: mm[1].trim() ? '☑' : '☐', segs: inline(mm[2]) })); return; }
+        if ((mm = ln.match(/^\s*[-*]\s+(.*)/))) { flush(); blocks.push(B({ isLi: true, bullet: '•', segs: inline(mm[1]) })); return; }
+        if ((mm = ln.match(/^\s*(\d+)\.\s+(.*)/))) { flush(); blocks.push(B({ isLi: true, bullet: mm[1] + '.', segs: inline(mm[2]) })); return; }
+        if (!ln.trim()) { flush(); return; }
+        para.push(ln.trim());
+      });
+      if (code !== null) blocks.push(B({ isCode: true, text: code.join('\n') }));
+      flush(); return blocks;
+    };
+    const grow = (el) => { if (!el) return; el.style.height = 'auto'; el.style.height = Math.min(Math.max(el.scrollHeight + 2, 120), 360) + 'px'; };
+    // one markdown field: state.mdEdit[key] (bool), state.mdDraft[key]; text comes from the caller, onSave stores it
+    const mdObj = (key, text, emptyText, onSave, openSec) => {
+      const editing = !!(this.state.mdEdit || {})[key];
+      const setE = (v, draft) => this.setState({ mdEdit: Object.assign({}, this.state.mdEdit, { [key]: v }), mdDraft: Object.assign({}, this.state.mdDraft, { [key]: draft != null ? draft : (this.state.mdDraft || {})[key] }) });
+      const save = () => { onSave((this.state.mdDraft || {})[key] || ''); setE(false); };
+      const blocks = md(text);
+      return {
+        editing: editing, view: !editing, draft: (this.state.mdDraft || {})[key] || '', blocks: blocks, empty: blocks.length === 0, emptyText: emptyText,
+        edit: () => { if (openSec) openSec(); setE(true, text); setTimeout(() => { const el = document.querySelector('.mdta'); if (el) { el.focus(); grow(el); } }, 0); },
+        cancel: () => setE(false), save: save,
+        onDraft: (e) => { grow(e.target); this.setState({ mdDraft: Object.assign({}, this.state.mdDraft, { [key]: e.target.value }) }); },
+        key: (e) => { if (e.key === 'Escape') setE(false); if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); save(); } }
+      };
+    };
+
+    const W2 = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+    const WN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const WS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const MN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const MS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const ord = (n) => n + (n % 10 === 1 && n % 100 !== 11 ? 'st' : n % 10 === 2 && n % 100 !== 12 ? 'nd' : n % 10 === 3 && n % 100 !== 13 ? 'rd' : 'th');
+    const NTH = { 1: 'first', 2: 'second', 3: 'third', 4: 'fourth', '-1': 'last' };
+    const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const dOk = (x) => { const m = (x || '').match(/^(\d{4})-(\d{2})-(\d{2})$/); if (!m) return null; const d = new Date(+m[1], +m[2] - 1, +m[3]); return d.getMonth() === +m[2] - 1 && d.getDate() === +m[3] ? d : null; };
+    const tOk = (x) => {
+      const v = (x || '').trim().toLowerCase().replace(/\s+/g, '');
+      let m = v.match(/^(\d{1,2})(?::(\d{2}))?(am|pm)$/);
+      if (m) { const h = +m[1], mi = +(m[2] || 0); if (h < 1 || h > 12 || mi > 59) return null; return { h: (h % 12) + (m[3] === 'pm' ? 12 : 0), m: mi }; }
+      m = v.match(/^(\d{1,2}):(\d{2})$/); if (m && +m[1] < 24 && +m[2] < 60) return { h: +m[1], m: +m[2] };
+      return null;
+    };
+    const fmtT = (t) => (t.h % 12 || 12) + (t.m ? ':' + String(t.m).padStart(2, '0') : '') + ' ' + (t.h >= 12 ? 'PM' : 'AM');
+    const fmtD = (d) => WS[d.getDay()] + ' ' + d.getDate() + ' ' + MS[d.getMonth()] + (d.getFullYear() !== 2026 ? ' ' + d.getFullYear() : '');
+    const D0 = dOk(s.date) || new Date(2026, 9, 10);
+    const T0 = tOk(s.time) || { h: 9, m: 0 };
+    const dim = (y, m) => new Date(y, m + 1, 0).getDate();
+    // does date d match rule r, given anchor a? (interval counted from the anchor)
+    const nthDate = (y, mo, nth, of) => {
+      const n = dim(y, mo);
+      const fits = (d) => { const wd = new Date(y, mo, d).getDay(); return of === 'DAY' ? true : of === 'WEEKDAY' ? wd > 0 && wd < 6 : W2[wd] === of; };
+      const days = []; for (let d = 1; d <= n; d++) if (fits(d)) days.push(d);
+      return nth === -1 ? days[days.length - 1] : days[nth - 1];
+    };
+    // every selected nth × every selected weekday (e.g. 2nd Sat + 2nd Sun), sorted, unique
+    const nthDays = (y, mo, nths, ofs) => { const out = []; nths.forEach((n) => ofs.forEach((o) => { const d = nthDate(y, mo, n, o); if (d && out.indexOf(d) < 0) out.push(d); })); return out.sort((a, b) => a - b); };
+    const occurrences = (r, a, count) => {
+      const out = []; const iv = Math.max(1, parseInt(r.interval, 10) || 1);
+      const endD = r.ends === 'on' ? dOk(r.endsOn) : null; const maxN = r.ends === 'after' ? Math.max(1, parseInt(r.endsAfter, 10) || 1) : Infinity;
+      const push = (d) => { if (d < a) return true; if (endD && d > endD) return false; if (out.length >= Math.min(count, maxN)) return false; out.push(d); return true; };
+      if (r.freq === 'day') { for (let k = 0; k < 4000; k++) { const d = new Date(a.getFullYear(), a.getMonth(), a.getDate() + k * iv); if (!push(d)) break; } }
+      else if (r.freq === 'week') {
+        const mon = new Date(a.getFullYear(), a.getMonth(), a.getDate() - ((a.getDay() + 6) % 7));
+        const wds = r.weekdays.length ? r.weekdays : [W2[a.getDay()]];
+        outer: for (let k = 0; k < 2000; k++) { for (let i = 0; i < 7; i++) { const d = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + k * 7 * iv + i); if (wds.indexOf(W2[d.getDay()]) < 0) continue; if (!push(d)) break outer; } }
+      } else if (r.freq === 'month') {
+        for (let k = 0; k < 1200; k++) {
+          const y = a.getFullYear() + Math.floor((a.getMonth() + k * iv) / 12), mo = (a.getMonth() + k * iv) % 12;
+          let days;
+          if (r.mode === 'nth') days = nthDays(y, mo, r.nth, r.nthOf);
+          else if (r.monthDay === -1) days = [dim(y, mo)];
+          else if (r.monthDay > dim(y, mo)) { if (r.ifMissing === 'skip') continue; days = [dim(y, mo)]; }
+          else days = [r.monthDay];
+          let stop = false; for (const day of days) { if (!push(new Date(y, mo, day))) { stop = true; break; } }
+          if (stop) break;
+        }
+      } else {
+        for (let k = 0; k < 400; k++) {
+          const y = a.getFullYear() + k * iv; const mo = r.month - 1; let day = r.monthDay;
+          if (day > dim(y, mo)) { if (r.ifMissing === 'skip') continue; day = dim(y, mo); }
+          if (!push(new Date(y, mo, day))) break;
+        }
+      }
+      return out;
+    };
+    const describe = (r) => {
+      const iv = Math.max(1, parseInt(r.interval, 10) || 1);
+      const unit = { day: 'day', week: 'week', month: 'month', year: 'year' }[r.freq];
+      let t = 'Every ' + (iv === 1 ? unit : iv + ' ' + unit + 's');
+      if (r.freq === 'week') t += ' on ' + (r.weekdays.length ? r.weekdays.map((w) => WS[W2.indexOf(w)]).join(', ') : WS[D0.getDay()]);
+      const andList = (a) => a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+      if (r.freq === 'month') t += r.mode === 'nth' ? ' on the ' + andList(r.nth.slice().sort((a, b) => (a === -1 ? 9 : a) - (b === -1 ? 9 : b)).map((n) => NTH[n])) + ' ' + andList(r.nthOf.map((o) => o === 'DAY' ? 'day' : o === 'WEEKDAY' ? 'weekday' : WN[W2.indexOf(o)])) : (r.monthDay === -1 ? ' on the last day' : ' on the ' + ord(r.monthDay));
+      if (r.freq === 'year') t += ' on ' + r.monthDay + ' ' + MS[r.month - 1];
+      t += ' at ' + fmtT(T0);
+      if (r.ends === 'on' && dOk(r.endsOn)) t += ', until ' + fmtD(dOk(r.endsOn));
+      if (r.ends === 'after') t += ', ' + (parseInt(r.endsAfter, 10) || 1) + ' times';
+      return t;
+    };
+    const presetRule = (p) => {
+      const base = { interval: 1, weekdays: [W2[D0.getDay()]], mode: 'day', monthDay: D0.getDate(), nth: [2], nthOf: ['TU'], month: D0.getMonth() + 1, ifMissing: 'closest', ends: 'never', endsOn: '2026-12-31', endsAfter: '12' };
+      return Object.assign(base, { freq: { daily: 'day', weekly: 'week', monthly: 'month', yearly: 'year' }[p] });
+    };
+    const rule = s.preset === 'none' ? null : (s.preset === 'custom' ? s.rule : presetRule(s.preset));
+    const PRE = [
+      ['none', 'Does not repeat', ''], ['daily', 'Daily', 'at ' + fmtT(T0)], ['weekly', 'Weekly', 'on ' + WN[D0.getDay()]],
+      ['monthly', 'Monthly', 'on the ' + ord(D0.getDate())], ['yearly', 'Yearly', 'on ' + D0.getDate() + ' ' + MS[D0.getMonth()]], ['custom', 'Custom…', s.preset === 'custom' ? describe(s.rule).replace(/ at .*/, '') : '']
+    ];
+    const r = s.draft;
+    const setD = (p) => this.setState({ draft: Object.assign({}, this.state.draft, p) });
+    const radio = (on, go) => ({ cls: 'rb' + (on ? ' on' : ''), go: go });
+    const c = r ? {
+      interval: r.interval,
+      onInterval: (e) => setD({ interval: e.target.value.replace(/\D/g, '').slice(0, 3) }),
+      units: [['day', 'days'], ['week', 'weeks'], ['month', 'months'], ['year', 'years']].map((u) => ({ label: u[1], cls: r.freq === u[0] ? 'on' : '', go: () => setD({ freq: u[0] }) })),
+      isWeek: r.freq === 'week', isMonth: r.freq === 'month', isYear: r.freq === 'year',
+      weekdays: ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'].map((w) => { const on = r.weekdays.indexOf(w) >= 0; return { label: w.charAt(0), name: WN[W2.indexOf(w)], on: on, cls: 'chip' + (on ? ' on' : ''), go: () => { const cur = this.state.draft.weekdays; const nx = on ? cur.filter((x) => x !== w) : cur.concat([w]); setD({ weekdays: nx.length ? nx : cur }); } }; }),
+      rDay: radio(r.mode === 'day', () => setD({ mode: 'day' })), rNth: radio(r.mode === 'nth', () => setD({ mode: 'nth' })),
+      dayWrapCls: r.mode === 'day' ? '' : 'dim', nthWrapCls: r.mode === 'nth' ? '' : 'dim',
+      monthDayText: r.monthDay === -1 ? '' : String(r.monthDay),
+      onMonthDay: (e) => { const v = Math.max(1, Math.min(31, parseInt(e.target.value.replace(/\D/g, ''), 10) || 1)); setD({ monthDay: v }); },
+      lastDay: { cls: 'chip' + (r.monthDay === -1 ? ' on' : ''), go: () => setD({ monthDay: this.state.draft.monthDay === -1 ? D0.getDate() : -1 }) },
+      nths: [[1, '1st'], [2, '2nd'], [3, '3rd'], [4, '4th'], [-1, 'last']].map((n) => { const on = r.nth.indexOf(n[0]) >= 0; return { label: n[1], on: on, cls: 'chip' + (on ? ' on' : ''), go: () => { const cur = this.state.draft.nth; const nx = on ? cur.filter((x) => x !== n[0]) : cur.concat([n[0]]); setD({ nth: nx.length ? nx : cur }); } }; }),
+      nthOfs: ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU', 'DAY', 'WEEKDAY'].map((w) => {
+        const on = r.nthOf.indexOf(w) >= 0; const special = w === 'DAY' || w === 'WEEKDAY';
+        return { label: w === 'DAY' ? 'day' : w === 'WEEKDAY' ? 'weekday' : WS[W2.indexOf(w)], on: on, cls: 'chip' + (on ? ' on' : ''), go: () => {
+          const cur = this.state.draft.nthOf.filter((x) => special ? false : x !== 'DAY' && x !== 'WEEKDAY');
+          const nx = special ? [w] : (on ? cur.filter((x) => x !== w) : cur.concat([w]));
+          setD({ nthOf: nx.length ? nx : this.state.draft.nthOf });
+        } };
+      }),
+      months: MS.map((m, i) => ({ label: m, name: MN[i], cls: 'chip' + (r.month === i + 1 ? ' on' : ''), go: () => setD({ month: i + 1 }) })),
+      yearDay: String(r.monthDay === -1 ? D0.getDate() : r.monthDay),
+      onYearDay: (e) => { const v = Math.max(1, Math.min(31, parseInt(e.target.value.replace(/\D/g, ''), 10) || 1)); setD({ monthDay: v }); },
+      showMissing: (r.freq === 'month' && r.mode === 'day' && r.monthDay > 28) || (r.freq === 'year' && r.monthDay > 28),
+      missingHint: r.freq === 'year' ? 'for ' + r.monthDay + ' ' + MS[r.month - 1] + ' in years without it' : 'for months without day ' + r.monthDay,
+      mSkip: { cls: r.ifMissing === 'skip' ? 'on' : '', go: () => setD({ ifMissing: 'skip' }) },
+      mClose: { cls: r.ifMissing === 'closest' ? 'on' : '', go: () => setD({ ifMissing: 'closest' }) },
+      eNever: radio(r.ends === 'never', () => setD({ ends: 'never' })), eOn: radio(r.ends === 'on', () => setD({ ends: 'on' })), eAfter: radio(r.ends === 'after', () => setD({ ends: 'after' })),
+      endsOn: r.endsOn, endsOnCls: 'fld' + (r.ends === 'on' && !dOk(r.endsOn) ? ' bad' : ''), endsAfter: r.endsAfter,
+      onEndsOn: (e) => setD({ endsOn: e.target.value.replace(/[^\d-]/g, '').slice(0, 10) }),
+      onEndsAfter: (e) => setD({ endsAfter: e.target.value.replace(/\D/g, '').slice(0, 3) }),
+      summary: describe(r),
+      next: (() => { const o = occurrences(r, D0, 4); return o.length ? o.map(fmtD).join(' · ') : 'no dates match'; })(),
+      cancel: () => this.setState({ draft: null }),
+      apply: () => this.setState({ rule: this.state.draft, preset: 'custom', draft: null })
+    } : { units: [], weekdays: [], nths: [], nthOfs: [], months: [] };
+    const hist = [
+      { when: 'Thu 10 Sep, 9:00 AM', state: 'done', cls: 'st done', note: 'done at 9:12 AM' },
+      { when: 'Mon 10 Aug, 9:00 AM', state: 'done', cls: 'st done', note: 'snoozed once, done at 9:20 AM' },
+      { when: 'Fri 10 Jul, 9:00 AM', state: 'missed', cls: 'st missed', note: 'fired 3 times, done next day' }
+    ];
+    const sec = s.sec; const secClosed = { det: !sec.det, hist: !sec.hist };
+    const toggleSec = { det: () => this.setState({ sec: Object.assign({}, this.state.sec, { det: !this.state.sec.det }) }), hist: () => this.setState({ sec: Object.assign({}, this.state.sec, { hist: !this.state.sec.hist }) }) };
+    const whenOk = dOk(s.date) && tOk(s.time);
+    const PEOPLE = [['p1', 'Ravi Kumar', '9 Oct'], ['p2', 'Kiran Rao', '3 Oct'], ['p3', 'Priya Nair', '17 Jan'], ['p4', 'Asha Menon', '']];
+    const TASKS = [['ship', 'Ship first build', 'work/tend_v0_1'], ['certs', 'Get code signing certificates', 'work/infra'], ['bank', 'Call the bank', 'home/errands'], ['laundry', 'Pick up laundry', 'home/errands'], ['readme', 'Write README', 'work/tend_v0_1']];
+    const pq = (s.pickQ || '').trim().toLowerCase();
+    const pickList = !s.pick ? [] : (s.pick === 'task' ? TASKS : PEOPLE).filter((x) => !pq || x[1].toLowerCase().indexOf(pq) >= 0).slice(0, 6)
+      .map((x) => ({ label: x[1], sub: x[2], go: () => this.setState({ [s.pick]: { id: x[0], name: x[1] }, pick: null }) }));
+    return {
+      navOpen: s.nav, navClosed: !s.nav,
+      nOpen: !!s.nOpen, nEmpty: (s.notifs || []).length === 0,
+      bellCls: 'bico bnotif' + (s.nOpen ? ' on' : ''),
+      nHasBadge: (s.notifs || []).length > 0, nCount: String((s.notifs || []).length),
+      nBadgeCls: 'nbadge' + (s.nSeen ? '' : ' blink'),
+      toggleN: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ nOpen: !this.state.nOpen, nSeen: true, fb: false }); },
+      closeN: () => this.setState({ nOpen: false }),
+      nList: (s.notifs || []).map((n) => ({ title: n.title, when: n.when, whenCls: n.late ? 'late' : '', done: () => this.setState({ notifs: this.state.notifs.filter((x) => x.id !== n.id) }), snooze: () => this.setState({ notifs: this.state.notifs.filter((x) => x.id !== n.id) }) })),
+      fbOpen: !!s.fb, fbWriting: !s.fbSent, fbSent: !!s.fbSent, fbDraft: s.fbDraft || '', fbEmpty: !(s.fbDraft || '').trim(),
+      fbBtnCls: 'bico bfb' + (s.fb ? ' on' : ''),
+      toggleFb: (e) => { if (e && e.preventDefault) e.preventDefault(); this.setState({ fb: !this.state.fb, fbSent: false, nOpen: false }); setTimeout(() => { const el = document.querySelector('.fbta'); if (el) el.focus(); }, 0); },
+      closeFb: () => this.setState({ fb: false }),
+      fbKinds: [['bug', 'Bug'], ['idea', 'Idea'], ['other', 'Other']].map((x) => ({ label: x[1], on: (s.fbKind || 'idea') === x[0], cls: 'fbk' + ((s.fbKind || 'idea') === x[0] ? ' on' : ''), go: () => this.setState({ fbKind: x[0] }) })),
+      onFb: (e) => this.setState({ fbDraft: e.target.value }),
+      fbKey: (e) => { if (e.key === 'Escape') this.setState({ fb: false }); if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && (this.state.fbDraft || '').trim()) this.setState({ fbSent: true, fbDraft: '' }); },
+      // stored in db/app.sqlite → feedback(id, kind, text, created_at)
+      sendFb: () => { if ((this.state.fbDraft || '').trim()) this.setState({ fbSent: true, fbDraft: '' }); },
+      fbAgain: () => this.setState({ fbSent: false }),
+      toggleNav: () => this.setState({ nav: !this.state.nav }),
+      anyMenu: s.menuOpen || !!s.pick, closeMenus: () => this.setState({ menuOpen: false, pick: null }),
+      md: { det: mdObj('det', s.details, 'No details', (v) => this.setState({ details: v }), () => this.setState({ sec: Object.assign({}, this.state.sec, { det: true }) })) },
+      hasPerson: !!s.person, noPerson: !s.person, personName: s.person ? s.person.name : '',
+      hasTask: !!s.task, noTask: !s.task, taskName: s.task ? s.task.name : '',
+      removePerson: () => this.setState({ person: null }), removeTask: () => this.setState({ task: null }),
+      pickPerson: () => { this.setState({ pick: 'person', pickQ: '' }); setTimeout(() => { const el = document.querySelector('.pickq'); if (el) el.focus(); }, 0); },
+      pickTask: () => { this.setState({ pick: 'task', pickQ: '' }); setTimeout(() => { const el = document.querySelector('.pickq'); if (el) el.focus(); }, 0); },
+      pickOpen: !!s.pick, pickTitle: s.pick === 'task' ? 'Link a task' : 'Link a person', pickPh: s.pick === 'task' ? 'Search tasks' : 'Search people',
+      pickQ: s.pickQ, onPickQ: (e) => this.setState({ pickQ: e.target.value }),
+      pickKey: (e) => { if (e.key === 'Escape') this.setState({ pick: null }); if (e.key === 'Enter' && pickList[0]) pickList[0].go(); },
+      pickList: pickList, pickNone: !!s.pick && pickList.length === 0,
+      title: s.title, titleShort: s.title || 'Untitled', onTitle: (e) => this.setState({ title: e.target.value }),
+      doneCls: 'donebtn' + (s.done ? ' on' : ''), doneLabel: s.done ? 'Done' : 'Mark done', toggleDone: () => this.setState({ done: !this.state.done }),
+      date: s.date, time: s.time,
+      dateCls: 'fld' + (dOk(s.date) ? '' : ' bad'), timeCls: 'fld' + (tOk(s.time) ? '' : ' bad'),
+      onDate: (e) => this.setState({ date: e.target.value.replace(/[^\d-]/g, '').slice(0, 10) }),
+      onTime: (e) => this.setState({ time: e.target.value }),
+      whenHint: !dOk(s.date) ? 'date as yyyy-mm-dd' : !tOk(s.time) ? 'time like 9am, 9:30 PM or 21:30' : (s.date === TODAY ? 'today' : fmtD(D0)) + ', ' + fmtT(T0),
+      whenHintCls: 'hint' + (whenOk ? '' : ' err'),
+      menuOpen: s.menuOpen, toggleMenu: () => this.setState({ menuOpen: !this.state.menuOpen }),
+      repeatLabel: s.preset === 'none' ? 'Does not repeat' : s.preset === 'custom' ? 'Custom' : PRE.find((p) => p[0] === s.preset)[1] + ' ' + PRE.find((p) => p[0] === s.preset)[2],
+      presets: PRE.map((p, i) => ({ label: p[1], sub: p[2], sep: i === 5, on: s.preset === p[0], go: () => {
+        if (p[0] === 'custom') { this.setState({ menuOpen: false, draft: Object.assign({}, s.preset === 'custom' ? s.rule : (rule || presetRule('weekly'))) }); return; }
+        this.setState({ preset: p[0], menuOpen: false, draft: null });
+      } })),
+      customOpen: !!r, c: c,
+      showUpcoming: !!rule && !r,
+      repeatSummary: rule ? describe(rule) : '',
+      repeatNext: rule ? (() => { const o = occurrences(rule, D0, 4); return o.length ? o.map(fmtD).join(' · ') : 'no dates match'; })() : '',
+      link: s.link, onLink: (e) => this.setState({ link: e.target.value }),
+      details: s.details, onDetails: (e) => this.setState({ details: e.target.value }),
+      sec: sec, secClosed: secClosed, toggleSec: toggleSec,
+      history: hist, histCount: String(hist.length)
+    };
+  }
+}
+</script>
+</body>
+</html>

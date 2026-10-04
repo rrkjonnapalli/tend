@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tend mockup · quick create</title>
+<script src="../dc-runtime.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#ffffff}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #1070e3;outline-offset:2px}
+.app{position:absolute;inset:0;display:flex}
+.app aside{flex:0 0 232px;border-right:1px solid #dce3e8}
+.ln{display:block;height:10px;border-radius:5px;background:#f2f5f7;margin:14px 16px}
+.shade{position:absolute;inset:0}
+.qp{position:absolute;left:50%;top:72px;width:520px;margin-left:-260px;background:#ffffff;border:1px solid #dce3e8;border-radius:8px}
+.qh{display:flex;align-items:center;gap:8px;height:30px;padding:0 14px;border-bottom:1px solid #f2f5f7;font:400 12px/16px 'Lato',sans-serif;color:#7d8995}
+.qh .k{margin-left:auto;font:400 11px/16px 'JetBrains Mono',monospace;color:#b8c4ce}
+.qr{display:flex;align-items:center;gap:10px;min-height:42px;padding:0 14px;border-bottom:1px solid #f2f5f7;position:relative}
+.qr:last-of-type{border-bottom:0}
+.ql{flex:0 0 40px;font:400 12px/16px 'Lato',sans-serif;color:#b8c4ce}
+.qi{flex:1;min-width:0;height:28px;border:0;outline:none;background:transparent;font:400 15px/22px 'Lato',sans-serif;color:#303841}
+.qi::placeholder{color:#b8c4ce}
+.qi.mono{font:400 13px/20px 'JetBrains Mono',monospace;color:#5f6b76}
+.qi.time{flex:0 0 72px;font:500 15px/22px 'JetBrains Mono',monospace;color:#303841}
+.qi.bad{color:#da0037}
+.sugg{position:absolute;left:64px;right:14px;top:38px;z-index:3;background:#ffffff;border:1px solid #dce3e8;border-radius:6px;padding:4px 0}
+.sg{display:block;width:100%;height:28px;padding:0 10px;border:0;background:transparent;text-align:left;cursor:pointer;font:400 13px/18px 'JetBrains Mono',monospace;color:#5f6b76}
+.sg.on,.sg:hover{background:#f7fbfc;color:#303841}
+.qf{display:flex;align-items:center;gap:12px;height:30px;padding:0 14px;border-top:1px solid #f2f5f7;font:400 12px/16px 'Lato',sans-serif;color:#b8c4ce}
+.qf .note{color:#7d8995}
+.qf .err{color:#da0037}
+.qf .r{margin-left:auto}
+.seg2{display:flex;gap:2px}
+.seg2 button{height:24px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:#7d8995;cursor:pointer;font:400 12px/16px 'Lato',sans-serif}
+.seg2 button.on{background:#f2f5f7;color:#303841}
+.dstep{display:inline-flex;align-items:center;gap:2px}
+.dstep button{width:22px;height:22px;padding:0;border:0;border-radius:4px;background:transparent;color:#7d8995;cursor:pointer;display:grid;place-items:center}
+.dstep button:hover{background:#f7fbfc;color:#303841}
+.dstep span{min-width:104px;text-align:center;font:400 14px/20px 'Lato',sans-serif;color:#303841}
+.vsep{width:1px;height:18px;background:#f2f5f7}
+.launch{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);display:flex;gap:8px}
+.lb{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 10px;border:1px solid #dce3e8;border-radius:6px;background:#ffffff;color:#5f6b76;cursor:pointer;font:400 13px/18px 'Lato',sans-serif}
+.lb:hover{color:#303841;border-color:#b8c4ce}
+.lb .k{font:400 11px/16px 'JetBrains Mono',monospace;color:#7d8995}
+.toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);padding:6px 12px;border-radius:6px;background:#303841;color:#ffffff;font:400 13px/18px 'Lato',sans-serif;white-space:nowrap}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: 800px; overflow: hidden; background: #ffffff; font-family: 'Lato', sans-serif">
+  <div class="app" aria-hidden="true">
+    <aside><span class="ln" style="width: 60%; margin-top: 52px"></span><span class="ln" style="width: 45%"></span><span class="ln" style="width: 52%"></span><span class="ln" style="width: 38%"></span></aside>
+    <div style="flex: 1; padding: 48px 24px"><span class="ln" style="width: 120px; height: 14px"></span><span class="ln" style="width: 220px; height: 24px"></span><span class="ln" style="width: 70%"></span><span class="ln" style="width: 64%"></span><span class="ln" style="width: 58%"></span></div>
+  </div>
+
+  <sc-if value="{{open}}" hint-placeholder-val="{{ false }}">
+    <div class="shade" onClick="{{close}}"></div>
+    <div class="qp" role="dialog" aria-label="{{title}}">
+      <div class="qh"><span>{{title}}</span>
+        <sc-if value="{{isFolder}}" hint-placeholder-val="{{ false }}"><span class="seg2" role="group" aria-label="Folder for"><button class="{{fNotes.cls}}" onClick="{{fNotes.go}}">Notes</button><button class="{{fTasks.cls}}" onClick="{{fTasks.go}}">Tasks</button></span></sc-if>
+        <span class="k">{{keyText}}</span></div>
+
+      <sc-if value="{{isPath}}" hint-placeholder-val="{{ true }}">
+        <div class="qr"><span class="ql">in</span><input class="qi mono qpath" aria-label="Path" value="{{path}}" onInput="{{onPath}}" onFocus="{{pathFocus}}" onBlur="{{pathBlur}}" onKeyDown="{{pathKey}}">
+          <sc-if value="{{showSugg}}" hint-placeholder-val="{{ false }}"><div class="sugg" role="listbox"><sc-for list="{{sugg}}" as="sg" hint-placeholder-count="3"><button class="{{sg.cls}}" role="option" onMouseDown="{{sg.pick}}">{{sg.label}}</button></sc-for></div></sc-if>
+        </div>
+        <div class="qr"><span class="ql">name</span><input class="qi qname" aria-label="Name" placeholder="{{namePh}}" value="{{name}}" onInput="{{onName}}" onKeyDown="{{nameKey}}"></div>
+        <div class="qf"><sc-if value="{{willCreate}}" hint-placeholder-val="{{ false }}"><span class="note">will create {{path}}</span></sc-if><span class="r">↵ create · esc cancel</span></div>
+      </sc-if>
+
+      <sc-if value="{{isTimer}}" hint-placeholder-val="{{ false }}">
+        <div class="qr"><input class="{{timeCls}}" aria-label="Duration, minutes and seconds" value="{{dur}}" onInput="{{onDur}}" onKeyDown="{{tKey}}"><span class="vsep"></span><input class="qi qtext" aria-label="What for" placeholder="what for (optional)" value="{{text}}" onInput="{{onText}}" onKeyDown="{{tKey}}"></div>
+        <div class="qf"><sc-if value="{{durBad}}" hint-placeholder-val="{{ false }}"><span class="err">{{durErr}}</span></sc-if><sc-if value="{{durOk}}" hint-placeholder-val="{{ true }}"><span class="note">mm:ss · minutes any length</span></sc-if><span class="r">tab · ↵ start · esc cancel</span></div>
+      </sc-if>
+
+      <sc-if value="{{isRem}}" hint-placeholder-val="{{ false }}">
+        <div class="qr">
+          <input class="{{remDateCls}}" style="flex: 0 0 96px" aria-label="Date, yyyy-mm-dd" value="{{rdate}}" onInput="{{onRDate}}" onKeyDown="{{rKey}}">
+          <span class="vsep"></span>
+          <input class="{{remTimeCls}}" style="flex: 0 0 68px" aria-label="Time" value="{{rtime}}" onInput="{{onRTime}}" onKeyDown="{{rKey}}">
+          <span class="vsep"></span>
+          <input class="qi qrtext" aria-label="Remind me to" placeholder="remind me to…" value="{{text}}" onInput="{{onText}}" onKeyDown="{{rKey}}">
+        </div>
+        <div class="qf"><sc-if value="{{rtBad}}" hint-placeholder-val="{{ false }}"><span class="err">{{rErr}}</span></sc-if><sc-if value="{{rtOk}}" hint-placeholder-val="{{ true }}"><span class="note">{{rWhen}}</span></sc-if><span class="r">↵ save · esc cancel</span></div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <div class="launch">
+    <sc-for list="{{launch}}" as="l" hint-placeholder-count="5"><button class="lb" onClick="{{l.go}}">{{l.label}}<span class="k">{{l.k}}</span></button></sc-for>
+  </div>
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}"><div class="toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      kind: null, path: '', name: '', text: '', dur: '01:00', rtime: '', rdate: '2026-10-03', fFor: 'notes', pf: false, shi: 0, toast: '',
+      last: { note: 'work', task: 'work/tend_v0_1', folder: 'work' }
+    };
+  }
+  componentDidMount() {
+    this._k = (e) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const k = e.key.toLowerCase();
+      const map = { n: e.shiftKey ? 'folder' : 'note', t: e.shiftKey ? 'task' : 'timer' };
+      if (map[k]) { e.preventDefault(); this.openKind(map[k]); }
+    };
+    window.addEventListener('keydown', this._k);
+  }
+  componentWillUnmount() { window.removeEventListener('keydown', this._k); }
+  openKind(kind) {
+    const st = this.state;
+    const nowH = 16 + 32 / 60;
+    const nh = Math.ceil(nowH * 2) / 2; const hh = Math.floor(nh), mm = Math.round((nh - hh) * 60);
+    const rt = (hh % 12 || 12) + ':' + String(mm).padStart(2, '0') + ' ' + (hh >= 12 ? 'PM' : 'AM');
+    this.setState({ kind: kind, path: st.last[kind] || '', name: '', text: '', dur: '01:00', rtime: rt, rdate: '2026-10-03', pf: false, shi: 0 });
+    const sel = kind === 'timer' ? '.qi.time' : kind === 'rem' ? '.qrtext' : '.qname';
+    setTimeout(() => { const el = document.querySelector(sel); if (el) { el.focus(); if (kind === 'timer') el.select(); } }, 0);
+  }
+  renderVals() {
+    const s = this.state;
+    const NOTE_DIRS = ['inbox', 'work', 'work/meetings', 'work/tend_v0_1', 'home', 'home/recipes', 'reading'];
+    const TASK_DIRS = ['inbox', 'work', 'work/tend_v0_1', 'work/infra', 'home', 'home/errands'];
+    const isPath = s.kind === 'note' || s.kind === 'task' || s.kind === 'folder';
+    const dirs = s.kind === 'task' || (s.kind === 'folder' && s.fFor === 'tasks') ? TASK_DIRS : NOTE_DIRS;
+    const p = (s.path || '').trim().replace(/\/+$/, '');
+    const sugg = dirs.filter((d) => d !== p && d.toLowerCase().indexOf(p.toLowerCase()) >= 0).slice(0, 5);
+    const shi = Math.min(s.shi, Math.max(0, sugg.length - 1));
+    const toast = (msg) => { this.setState({ kind: null, toast: msg }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 2200); };
+    const create = () => {
+      const st = this.state; const nm = (st.name || '').trim(); if (!nm) return;
+      const pp = (st.path || '').trim().replace(/\/+$/, '');
+      const last = Object.assign({}, st.last, { [st.kind]: pp });
+      this.setState({ last: last });
+      const what = st.kind === 'note' ? 'Note' : st.kind === 'task' ? 'Task' : (st.fFor === 'tasks' ? 'Task folder' : 'Note folder');
+      const where = st.kind === 'folder' ? (pp ? pp + '/' : '') + nm : (pp || 'root');
+      toast(what + ' “' + nm + '” created in ' + (st.kind === 'folder' ? where : where) + ' → opening' + (st.kind === 'note' ? ' in edit mode' : ''));
+    };
+    // timer: mm:ss, minutes >= 0, seconds 0–59; a bare number means minutes
+    const pd = (() => {
+      const v = (s.dur || '').trim();
+      let m = v.match(/^(\d+)$/); if (m) return { ok: +m[1] > 0, m: +m[1], s: 0, err: 'must be longer than 0' };
+      m = v.match(/^(\d*):(\d{1,2})$/);
+      if (!m) return { ok: false, err: 'use mm:ss, e.g. 05:00' };
+      const mi = +(m[1] || 0), se = +m[2];
+      if (se > 59) return { ok: false, err: 'seconds must be 0–59' };
+      if (mi === 0 && se === 0) return { ok: false, err: 'must be longer than 0' };
+      return { ok: true, m: mi, s: se };
+    })();
+    const startTimer = () => { if (!pd.ok) return; const t = (this.state.text || '').trim(); toast('Timer started · ' + pd.m + ':' + String(pd.s).padStart(2, '0') + (t ? ' · ' + t : '')); };
+    // reminder time: 5pm, 5:30 pm, 17:30
+    const pt = (() => {
+      const v = (s.rtime || '').trim().toLowerCase().replace(/\s+/g, '');
+      let m = v.match(/^(\d{1,2})(?::(\d{2}))?(am|pm)$/);
+      if (m) { const h = +m[1], mi = +(m[2] || 0); if (h < 1 || h > 12 || mi > 59) return null; return { h: (h % 12) + (m[3] === 'pm' ? 12 : 0), m: mi }; }
+      m = v.match(/^(\d{1,2}):(\d{2})$/);
+      if (m) { const h = +m[1], mi = +m[2]; if (h > 23 || mi > 59) return null; return { h: h, m: mi }; }
+      return null;
+    })();
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const W = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const parse = (x) => { const q = x.split('-').map(Number); return new Date(q[0], q[1] - 1, q[2]); };
+    const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const addD = (x, n) => { const d = parse(x); d.setDate(d.getDate() + n); return iso(d); };
+    const dOk = (() => { const m = (s.rdate || '').match(/^(\d{4})-(\d{2})-(\d{2})$/); if (!m) return false; const d = new Date(+m[1], +m[2] - 1, +m[3]); return d.getMonth() === +m[2] - 1 && d.getDate() === +m[3]; })();
+    const dd = dOk ? parse(s.rdate) : parse('2026-10-03');
+    const dayLabel = s.rdate === '2026-10-03' ? 'Today, 3 Oct' : s.rdate === '2026-10-04' ? 'Tomorrow, 4 Oct' : W[dd.getDay()] + ', ' + dd.getDate() + ' ' + M[dd.getMonth()] + ' ' + dd.getFullYear();
+    const fmtT = (t) => (t.h % 12 || 12) + ':' + String(t.m).padStart(2, '0') + ' ' + (t.h >= 12 ? 'PM' : 'AM');
+    const saveRem = () => { const st = this.state; const t = (st.text || '').trim(); if (!t || !pt || !dOk) return; toast('Reminder saved · ' + dayLabel + ', ' + fmtT(pt) + ' · ' + t); };
+    const titles = { note: 'New note', task: 'New task', folder: 'New folder', timer: 'New timer', rem: 'New reminder' };
+    const keys = { note: '⌘N', task: '⌘⇧T', folder: '⌘⇧N', timer: '⌘T', rem: '⌘R' };
+    return {
+      open: !!s.kind, title: titles[s.kind] || '', keyText: keys[s.kind] || '',
+      isPath: isPath, isFolder: s.kind === 'folder', isTimer: s.kind === 'timer', isRem: s.kind === 'rem',
+      fNotes: { cls: s.fFor === 'notes' ? 'on' : '', go: () => this.setState({ fFor: 'notes' }) },
+      fTasks: { cls: s.fFor === 'tasks' ? 'on' : '', go: () => this.setState({ fFor: 'tasks' }) },
+      path: s.path, name: s.name, text: s.text, dur: s.dur, rtime: s.rtime,
+      namePh: s.kind === 'note' ? 'Note title' : s.kind === 'task' ? 'Task title' : 'Folder name',
+      willCreate: isPath && !!p && dirs.indexOf(p) < 0,
+      showSugg: isPath && s.pf && sugg.length > 0,
+      sugg: sugg.map((d, i) => ({ label: d, cls: 'sg' + (i === shi ? ' on' : ''), pick: () => { this.setState({ path: d, pf: false }); setTimeout(() => { const el = document.querySelector('.qname'); if (el) el.focus(); }, 0); } })),
+      onPath: (e) => this.setState({ path: e.target.value, pf: true, shi: 0 }),
+      pathFocus: () => this.setState({ pf: true }),
+      pathBlur: () => setTimeout(() => this.setState({ pf: false }), 120),
+      pathKey: (e) => {
+        if (e.key === 'ArrowDown') { e.preventDefault(); this.setState({ shi: Math.min(sugg.length - 1, shi + 1), pf: true }); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); this.setState({ shi: Math.max(0, shi - 1) }); }
+        else if (e.key === 'Tab' && this.state.pf && sugg.length) { e.preventDefault(); this.setState({ path: sugg[shi], pf: false }); setTimeout(() => { const el = document.querySelector('.qname'); if (el) el.focus(); }, 0); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (this.state.pf && sugg.length) this.setState({ path: sugg[shi], pf: false }); const el = document.querySelector('.qname'); if (el) el.focus(); }
+        else if (e.key === 'Escape') this.setState({ kind: null });
+      },
+      onName: (e) => this.setState({ name: e.target.value }),
+      nameKey: (e) => { if (e.key === 'Enter') create(); if (e.key === 'Escape') this.setState({ kind: null }); },
+      timeCls: 'qi time' + (pd.ok ? '' : ' bad'), durBad: !pd.ok, durOk: pd.ok, durErr: pd.err || '',
+      onDur: (e) => this.setState({ dur: e.target.value.replace(/[^\d:]/g, '') }),
+      onText: (e) => this.setState({ text: e.target.value }),
+      tKey: (e) => { if (e.key === 'Enter') startTimer(); if (e.key === 'Escape') this.setState({ kind: null }); },
+      dayLabel: dayLabel,
+      dayPrev: () => this.setState({ rdate: this.state.rdate > '2026-10-03' ? addD(this.state.rdate, -1) : this.state.rdate }),
+      dayNext: () => this.setState({ rdate: addD(this.state.rdate, 1) }),
+      remTimeCls: 'qi mono' + (pt ? '' : ' bad'), remDateCls: 'qi mono' + (dOk ? '' : ' bad'), rtBad: !pt || !dOk, rtOk: !!pt && dOk, rWhen: pt && dOk ? dayLabel + ' at ' + fmtT(pt) : '',
+      rErr: !dOk ? 'date as yyyy-mm-dd, e.g. 2026-10-04' : 'time like 5pm, 5:30 PM or 17:30',
+      onRDate: (e) => this.setState({ rdate: e.target.value.replace(/[^\d-]/g, '').slice(0, 10) }),
+      rdate: s.rdate,
+      onRTime: (e) => this.setState({ rtime: e.target.value }),
+      rKey: (e) => { if (e.key === 'Enter') saveRem(); if (e.key === 'Escape') this.setState({ kind: null }); },
+      close: () => this.setState({ kind: null }),
+      hasToast: !!s.toast, toast: s.toast,
+      launch: [['note', 'New note', '⌘N'], ['task', 'New task', '⌘⇧T'], ['folder', 'New folder', '⌘⇧N'], ['timer', 'New timer', '⌘T']].map((x) => ({ label: x[1], k: x[2], go: () => this.openKind(x[0]) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+@import '../../../docs/design/tokens.css';
+@import '@fontsource/montserrat/500.css';
+@import '@fontsource/montserrat/600.css';
+@import '@fontsource/lato/400.css';
+@import '@fontsource/lato/700.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+body {
+  background: var(--c-page);
+  color: var(--text);
+  font: 400 14px/20px var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+input,
+textarea,
+[contenteditable] {
+  user-select: text;
+}
+
+a {
+  color: var(--text);
+}
+
+a:hover {
+  color: var(--primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.heading {
+  font: var(--text-heading);
+  margin: 0;
+}
+
+.caption {
+  font: var(--text-caption);
+}
+
+.muted {
+  color: var(--c-muted-2);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Icon button used by toolbars, top bars and popover headers. */
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: var(--c-hover);
+  color: var(--text);
+}
+
+.icon-btn.sm {
+  width: 24px;
+  height: 24px;
+}
+
+.icon-btn.danger {
+  color: var(--danger);
+}
+
+.icon-btn.danger:hover {
+  background: var(--danger-soft);
+}
+
+.icon-btn.ok {
+  color: var(--success);
+}
+
+.icon-btn.ok:hover {
+  background: var(--success-soft);
+}
+
+/* Primary filled button (Send, Open vault, Create). */
+.btn-primary {
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--primary);
+  color: var(--on-primary);
+  font: 700 13px/18px var(--font-ui);
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-primary:disabled {
+  background: var(--border);
+  color: var(--c-muted-2);
+  cursor: default;
+}
+
+.btn-danger {
+  height: 28px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--danger-fill);
+  color: var(--on-danger);
+  font: 700 13px/18px var(--font-ui);
+  cursor: pointer;
+}
+
+.btn-danger:disabled {
+  background: var(--border);
+  color: var(--c-muted-2);
+  cursor: default;
+}
+
+/* Quiet text button (Cancel, Change, links that act). */
+.btn-text {
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font: 400 13px/18px var(--font-ui);
+  cursor: pointer;
+}
+
+.btn-text:hover {
+  background: var(--c-hover);
+  color: var(--text);
+}
+
+.link-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--link);
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+kbd,
+.kbd {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 4px;
+  border-radius: var(--radius-xs);
+  background: var(--c-chip);
+  color: var(--text-muted);
+  font: 400 11px/18px var(--font-mono);
+  text-align: center;
+}
+
+/* Thin, quiet scrollbars like an editor. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border: 3px solid var(--c-page);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
