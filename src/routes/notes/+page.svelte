@@ -7,6 +7,7 @@
   import PageBar from '#lib/components/PageBar.svelte';
   import EditButton from '#lib/components/EditButton.svelte';
   import InlineTitle from '#lib/components/InlineTitle.svelte';
+  import { overflowTitle } from '#lib/actions/overflow-title.action.ts';
   import type { NoteRow } from '#lib/types/note.type.ts';
   import SearchLine from '#lib/components/SearchLine.svelte';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
@@ -90,15 +91,15 @@
           <div class="row editing">
             <InlineTitle value={n.name} label="Note name" check={(name) => renameProblem(n, name)} onsave={(name) => rename(n, name)} oncancel={stopEditing} />
             <span></span>
-            <span class="meta">{relativeTo(n.folder, folder)}</span>
             <span class="meta right">{ago(n.modifiedAt)}</span>
+            <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>
           </div>
         {:else}
           <a class="row reveal-on-hover" href={routes.note(n.id)}>
             <span class="name">{n.name}</span>
             <EditButton label="Rename note" onedit={() => (editingId = n.id)} />
-            <span class="meta">{relativeTo(n.folder, folder)}</span>
             <span class="meta right">{ago(n.modifiedAt)}</span>
+            <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>
           </a>
         {/if}
       {/each}
@@ -156,7 +157,8 @@
 
   .row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 24px 160px 64px;
+    /* name | edit · modified · path */
+    grid-template-columns: minmax(0, 1fr) 24px 72px 160px;
     align-items: center;
     gap: 12px;
     min-height: 36px;
@@ -185,7 +187,9 @@
   .meta {
     font: 400 13px/18px var(--font-ui);
     color: var(--c-muted-2);
-    text-align: right;
+  }
+
+  .path {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

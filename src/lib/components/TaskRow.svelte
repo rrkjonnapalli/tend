@@ -1,11 +1,13 @@
 <script lang="ts">
-  // One task in a list: status dot · title (subtasks marked) · edit · subtasks · path · due · My day.
+  // One task in a list. Left: status dot · type badge · title. Right, each a fixed width so they
+  // line up on every row: edit · subtask count · due · My day · path (cut off with a tooltip).
   import type { Task } from '#lib/types/task.type.ts';
   import StatusSelect from './StatusSelect.svelte';
   import Grip from './Grip.svelte';
   import SubtaskMark from './SubtaskMark.svelte';
   import EditButton from './EditButton.svelte';
   import InlineTitle from './InlineTitle.svelte';
+  import { overflowTitle } from '#lib/actions/overflow-title.action.ts';
   import MyDayButton from './MyDayButton.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { dueLabel } from '#lib/util/dates.ts';
@@ -52,20 +54,18 @@
     </button>
   {/if}
   <span class="ed">{#if !editing}<EditButton label="Edit title" onedit={() => (editing = true)} />{/if}</span>
-  <span class="meta">{tasks.subtaskCount(task.id)}</span>
-  <span class="meta path">{relativeTo(task.path, folder)}</span>
+  <span class="meta count">{tasks.subtaskCount(task.id)}</span>
   <span class="due" class:warn={isOverdue(task, now)}>{task.dueDate ? dueLabel(task.dueDate) : ''}</span>
-  <span class="md">
-    <MyDayButton {task} />
-  </span>
+  <span class="md"><MyDayButton {task} /></span>
+  <span class="meta path" use:overflowTitle>{relativeTo(task.path, folder)}</span>
 </div>
 
 <style>
   .row {
     position: relative;
     display: grid;
-    /* Fixed right-hand columns, so the edit pencil lines up on every row. */
-    grid-template-columns: 8px minmax(0, 1fr) 24px 36px 160px 72px 64px;
+    /* dot · title | edit · count · due · My day · path */
+    grid-template-columns: 8px minmax(0, 1fr) 24px 40px 72px 72px 160px;
     align-items: center;
     gap: 12px;
     min-height: 36px;
@@ -121,8 +121,11 @@
     color: var(--c-muted-2);
   }
 
-  .path {
+  .count {
     text-align: right;
+  }
+
+  .path {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

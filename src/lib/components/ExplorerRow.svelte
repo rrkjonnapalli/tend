@@ -67,6 +67,7 @@
   class:drop={drop === 'allowed'}
   class:bad={drop === 'blocked'}
   class:ghosted
+  class:editing
   style:padding-left="{indent}px"
   data-drop={dropPath(row)}
   role="treeitem"
@@ -84,7 +85,7 @@
   {#if editing}
     <input
       use:plainText
-      class="ein"
+      class="inline-field ein"
       class:bad={showsError}
       aria-label="Name"
       bind:value={draft}
@@ -132,6 +133,12 @@
   .row.sel {
     background: var(--c-selected);
     color: var(--text);
+  }
+
+  /* The name field carries the fill while renaming. */
+  .row.editing,
+  .row.editing:hover {
+    background: transparent;
   }
 
   .row.drop,
@@ -214,21 +221,8 @@
 
   .ein {
     flex: 1;
-    min-width: 0;
     height: 24px;
-    padding: 0 6px;
-    margin-left: -6px;
-    border: 1px solid var(--primary);
-    border-radius: var(--radius-sm);
-    outline: none;
-    background: var(--c-page);
-    font: 400 14px/20px var(--font-ui);
-    color: var(--text);
-  }
-
-  .ein.bad {
-    border-color: var(--danger);
-    color: var(--danger);
+    margin-left: -8px;
   }
 
   .name-err {

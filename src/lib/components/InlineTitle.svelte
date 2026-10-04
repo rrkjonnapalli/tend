@@ -57,7 +57,7 @@
 </script>
 
 <span class="wrap">
-  <input use:plainText use:focusAndSelect class="field" class:bad={problem} data-no-drag aria-label={label} bind:value={text} {onkeydown} {onblur} />
+  <input use:plainText use:focusAndSelect class="inline-field field" class:bad={problem} data-no-drag aria-label={label} bind:value={text} {onkeydown} {onblur} />
   {#if problem}<span class="err">{problem}</span>{/if}
 </span>
 
@@ -70,23 +70,8 @@
     flex: 1;
   }
 
-  /* Same as the inline edits on the person page: a soft fill, no border. */
   .field {
     flex: 1;
-    min-width: 0;
-    height: 28px;
-    padding: 0 8px;
-    margin-left: -8px;
-    border: 0;
-    border-radius: var(--radius-sm);
-    outline: none;
-    background: var(--c-hover);
-    font: inherit;
-    color: var(--text);
-  }
-
-  .field.bad {
-    color: var(--danger);
   }
 
   .err {

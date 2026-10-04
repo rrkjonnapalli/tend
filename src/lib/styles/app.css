@@ -320,3 +320,22 @@ body.reordering .sortable:not(.lifted) .grip {
   background: var(--c-hover);
   box-shadow: inset 2px 0 0 var(--border);
 }
+
+/* A title or name being edited in place (list rows, explorer rename): a soft fill, no border,
+   the same look as the inline edits on the person page. */
+.inline-field {
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  margin-left: -8px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--c-hover);
+  font: inherit;
+  color: var(--text);
+}
+
+.inline-field.bad {
+  color: var(--danger);
+}
