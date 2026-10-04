@@ -3,9 +3,10 @@
   import type { Task } from '#lib/api/tasks.ts';
   import StatusDot from './StatusDot.svelte';
   import Grip from './Grip.svelte';
+  import MyDayButton from './MyDayButton.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { dueLabel } from '#lib/util/dates.ts';
-  import { inMyDay, isDone, isOverdue } from '#lib/util/task-views.ts';
+  import { isDone, isOverdue } from '#lib/util/task-views.ts';
   import { relativeTo } from '#lib/util/names.ts';
   import { routes } from '#lib/util/routes.ts';
   import { goto } from '$app/navigation';
@@ -29,7 +30,6 @@
 
   const now = $derived(tasks.day);
   const parent = $derived(showParent && task.parentId ? tasks.byId(task.parentId) : undefined);
-  const mine = $derived(inMyDay(task, now, tasks.myDay));
 </script>
 
 <div class="row reveal-on-hover" class:sortable class:lifted data-key={task.id} role="listitem" {onpointerdown}>
@@ -42,11 +42,7 @@
   <span class="meta">{relativeTo(task.path, folder)}</span>
   <span class="due" class:warn={isOverdue(task, now)}>{task.dueDate ? dueLabel(task.dueDate) : ''}</span>
   <span class="md">
-    {#if mine}
-      <button class="mini rem on-hover" onclick={() => tasks.setMyDay(task.id, false)}>− my day</button>
-    {:else if !isDone(task)}
-      <button class="mini add on-hover" onclick={() => tasks.setMyDay(task.id, true)}>+ my day</button>
-    {/if}
+    <MyDayButton {task} />
   </span>
 </div>
 
@@ -116,30 +112,4 @@
     text-align: right;
   }
 
-  .mini {
-    height: 24px;
-    padding: 0 6px;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    font: 400 12px/16px var(--font-ui);
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .mini.add {
-    color: var(--primary);
-  }
-
-  .mini.add:hover {
-    background: var(--primary-soft);
-  }
-
-  .mini.rem {
-    color: var(--danger);
-  }
-
-  .mini.rem:hover {
-    background: var(--danger-soft);
-  }
 </style>

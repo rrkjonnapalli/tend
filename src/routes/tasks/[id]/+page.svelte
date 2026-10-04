@@ -16,6 +16,7 @@
   import Attachments from '#lib/components/Attachments.svelte';
   import Comments from '#lib/components/Comments.svelte';
   import Grip from '#lib/components/Grip.svelte';
+  import MyDayButton from '#lib/components/MyDayButton.svelte';
   import MoveToDialog from '#lib/components/MoveToDialog.svelte';
   import DeleteDialog from '#lib/components/DeleteDialog.svelte';
   import { tasksApi, type TaskPatch } from '#lib/api/tasks.ts';
@@ -305,7 +306,7 @@
             <div class="subs">
               {#each shownSubs as s (s.id)}
                 <a
-                  class="sub sortable"
+                  class="sub sortable reveal-on-hover"
                   class:lifted={subPreview !== null && liftedSub === s.id}
                   href={routes.task(s.id)}
                   draggable="false"
@@ -313,7 +314,8 @@
                   onpointerdown={(e) => grabSub(e, s.id)}>
                   <Grip />
                   <StatusDot value={s.status} />
-                  <span>{s.title}</span>
+                  <span class="st">{s.title}</span>
+                  <MyDayButton task={s} />
                 </a>
               {/each}
             </div>
@@ -323,9 +325,10 @@
               </button>
               {#if showDone}
                 {#each doneSubs as s (s.id)}
-                  <a class="sub" href={routes.task(s.id)}>
+                  <a class="sub reveal-on-hover" href={routes.task(s.id)}>
                     <StatusDot value={s.status} />
-                    <span class="done">{s.title}</span>
+                    <span class="st done">{s.title}</span>
+                    <MyDayButton task={s} />
                   </a>
                 {/each}
               {/if}
@@ -522,6 +525,14 @@
   .sub:hover {
     background: var(--c-hover);
     color: var(--text);
+  }
+
+  .st {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .done {
