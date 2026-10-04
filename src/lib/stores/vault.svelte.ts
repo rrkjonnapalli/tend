@@ -13,6 +13,11 @@ class VaultStore {
       this.path = await vaultApi.restore();
       if (this.path) await this.#loadAll();
       return this.path !== null;
+    } catch (e) {
+      // A vault that can't be reopened sends the user to the start page to pick one.
+      console.error('Could not reopen the last vault', e);
+      this.path = null;
+      return false;
     } finally {
       this.ready = true;
     }

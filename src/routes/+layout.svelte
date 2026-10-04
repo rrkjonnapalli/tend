@@ -1,7 +1,6 @@
 <script lang="ts">
   import '#lib/styles/app.css';
   import type { Snippet } from 'svelte';
-  import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import BottomNav from '#lib/components/BottomNav.svelte';
   import TopBar from '#lib/components/TopBar.svelte';
@@ -17,20 +16,7 @@
 
   let { children }: { children: Snippet } = $props();
 
-  /** In a plain browser during development, answer commands from fixtures (see lib/dev). */
-  async function devMock() {
-    if (import.meta.env.DEV && !('__TAURI_INTERNALS__' in window)) await import('#lib/dev/mock-ipc.ts');
-  }
-
   const onStart = $derived(page.url.pathname === '/start');
-
-  $effect(() => {
-    if (vault.ready) return;
-    devMock().then(vault.restore).then((ok) => {
-      if (!ok) goto('/start', { replace: true });
-      else if (page.url.pathname === '/' || onStart) goto('/notes', { replace: true });
-    });
-  });
 
   // Timers run as soon as a vault is open, whichever page is showing.
   $effect(() => {
