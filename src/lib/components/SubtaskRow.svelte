@@ -1,5 +1,6 @@
 <script lang="ts">
-  // One subtask on its parent's page: grip (open ones) · status dot · title · edit · My day.
+  // One subtask on its parent's page: grip (open ones) · status dot · title · edit · My day ·
+  // assignee.
   // The row links to the subtask; while its title is edited in place it stops being a link.
   import type { Task } from '#lib/types/task.type.ts';
   import Grip from './Grip.svelte';
@@ -7,6 +8,7 @@
   import MyDayButton from './MyDayButton.svelte';
   import EditButton from './EditButton.svelte';
   import InlineTitle from './InlineTitle.svelte';
+  import AssigneeBadge from './AssigneeBadge.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { isDone } from '#lib/util/task-views.ts';
   import { routes } from '#lib/util/routes.ts';
@@ -36,6 +38,10 @@
   function setStatus(status: string) {
     tasks.update(sub.id, { status });
   }
+
+  function setAssignee(assigneeId: string | null) {
+    tasks.update(sub.id, { assigneeId });
+  }
 </script>
 
 {#if editing}
@@ -44,6 +50,7 @@
     <StatusSelect compact value={sub.status} onchange={setStatus} />
     <InlineTitle value={sub.title} label="Subtask title" check={titleProblem} onsave={saveTitle} oncancel={() => (editing = false)} />
     <span class="md"><MyDayButton task={sub} /></span>
+    <span class="who"><AssigneeBadge value={sub.assigneeId} onchange={setAssignee} /></span>
   </div>
 {:else}
   <a class="sub reveal-on-hover" class:sortable class:lifted href={routes.task(sub.id)} draggable="false" data-key={sub.id} {onpointerdown}>
@@ -52,6 +59,7 @@
     <span class="st" class:done={isDone(sub)}>{sub.title}</span>
     <EditButton label="Edit title" onedit={() => (editing = true)} />
     <span class="md"><MyDayButton task={sub} /></span>
+    <span class="who"><AssigneeBadge value={sub.assigneeId} onchange={setAssignee} /></span>
   </a>
 {/if}
 
@@ -83,6 +91,11 @@
   /* A fixed slot, so the edit pencil sits at the same spot with or without "+ my day". */
   .md {
     flex: 0 0 var(--col-myday);
+    display: flex;
+  }
+
+  .who {
+    flex: 0 0 var(--col-assignee);
     display: flex;
   }
 

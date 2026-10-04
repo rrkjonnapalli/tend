@@ -86,7 +86,7 @@ The user picks one **vault folder**. Tend works only inside it:
 - **List rows** (tasks, notes): a left part (status dot · type badge · title) and a right part of fixed-width, left-aligned columns (`--col-*` in tokens.css, 6px apart): edit 24 · My day 64 · subtask count 36 · due 64 · assignee 32 · path 80 (notes: edit · modified · path). The path is relative to the open folder, cut off with … and shows a tooltip only when cut.
 - **Edit in place:** task rows, note rows and subtask rows show a pencil on hover, first in the right-hand part of the row. It turns the title (a note's name, under the name rule) into a field: Enter or leaving saves, Esc cancels. Every in-place edit, explorer rename included, uses the same soft-fill field (no border).
 - **No autocorrect** (nor spellcheck, auto-capitalise, autofill) in any input or textarea; the markdown editors have it off too.
-- **Assignee in task rows:** the person's initials, or a gray "U" (hover: Unassigned); click opens a people search to assign, with Unassign at the bottom.
+- **Assignee in task rows:** the person's initials, or a gray "U" (hover: Unassigned); click opens a people search to assign, with Unassign at the bottom. Subtask rows on a task page show it too, after My day.
 - **Status dot** in task list rows and subtask rows opens the status list to change it in place (trial; may go).
 - **Width toggle:**
   - On note and task pages, the top section (breadcrumb, tags) is full width.
