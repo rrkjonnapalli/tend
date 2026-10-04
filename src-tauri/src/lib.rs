@@ -7,6 +7,8 @@ mod error;
 mod feedback;
 #[cfg(test)]
 mod ipc_tests;
+#[cfg(target_os = "macos")]
+mod macos;
 mod names;
 mod notes;
 mod order;
@@ -118,6 +120,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            macos::show_notifications_in_foreground();
             app.manage(ConfigDir(app.path().app_config_dir()?));
             Ok(())
         });
