@@ -1,10 +1,14 @@
 // Desktop notification and a short chime, used when a timer ends.
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 
+/** Asks macOS / Windows / Linux for permission once; later calls just report the answer. */
+export async function allowNotifications(): Promise<boolean> {
+  if (await isPermissionGranted()) return true;
+  return (await requestPermission()) === 'granted';
+}
+
 export async function notify(title: string, body: string) {
-  let granted = await isPermissionGranted();
-  if (!granted) granted = (await requestPermission()) === 'granted';
-  if (granted) sendNotification({ title, body });
+  if (await allowNotifications()) sendNotification({ title, body });
 }
 
 /** Two soft beeps made with Web Audio, so no sound file is needed. */

@@ -2,7 +2,7 @@
 // down), so it stays right after sleep or throttling. A timer rings once `now ≥ endsAt`.
 import { timersApi, type Timer } from '#lib/api/timers.ts';
 import { messageOf } from '#lib/api/core.ts';
-import { chime, notify } from '#lib/util/notify.ts';
+import { allowNotifications, chime, notify } from '#lib/util/notify.ts';
 import { settings } from './settings.svelte.ts';
 import { toast } from './toast.svelte.ts';
 
@@ -42,6 +42,8 @@ class TimersStore {
   };
 
   add = async (title: string, ms: number) => {
+    // Ask now, while the user is here, rather than when the timer rings.
+    allowNotifications().catch(() => {});
     try {
       const t = await timersApi.start(title, ms);
       this.list = [...this.list, t].sort((a, b) => a.endsAt - b.endsAt);
