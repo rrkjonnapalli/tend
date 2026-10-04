@@ -77,6 +77,8 @@ const handlers: Record<string, Handler> = {
   },
   note_tags_set: ({ id, tags }) => (noteTags[id as string] = tags as string[]),
   statuses_list: () => statuses,
+  skipped_items: () => ['Bad Name.md', 'My Folder/'],
+  feedback_send: () => null,
   tasks_data: () => ({ folders: taskFolders, tasks, myDay: [] }),
   task_update: ({ id, patch }) => {
     const t = tasks.find((x) => x.id === id)!;

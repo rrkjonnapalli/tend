@@ -206,7 +206,9 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 ---
 
-## M9 · Settings and feedback  ☐
+## M9 · Settings and feedback  ☑
+
+> Done. Rust enforces the status rules (first and last pinned, reserved values in any case, duplicate labels, value format, deletes blocked while in use or for defaults), and the UI shows Rust's message inline. A new status gets the first unused swatch. Feedback stores the app version from `tauri.conf.json`. The Settings → Command palette list is generated from `src/lib/commands.ts`.
 
 **Read:** decisions §6 (Statuses), §13, §4 (Feedback) · `screens/settings.html`, `png/settings.png`, `png/settings-palette.png`
 

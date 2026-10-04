@@ -15,9 +15,10 @@ const START_PX = 4;
 
 export function startReorder(e: PointerEvent, o: ReorderOptions) {
   if (e.button !== 0) return;
-  const row = e.currentTarget as HTMLElement;
-  const first = row.parentElement?.querySelector('[data-key]');
-  if (!first) return;
+  // The handle may sit inside the row; the row is the nearest element with data-key.
+  const row = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-key]');
+  const first = row?.parentElement?.querySelector('[data-key]');
+  if (!row || !first) return;
   const top = first.getBoundingClientRect().top;
   const height = row.getBoundingClientRect().height || 36;
   const y0 = e.clientY;

@@ -11,7 +11,7 @@ use tauri::{AppHandle, Runtime, State};
 use crate::config::ConfigDir;
 use crate::error::AppResult;
 use crate::state::AppState;
-use crate::{attachments, comments, config, notes, people, settings, statuses, tags, tasks, vault};
+use crate::{attachments, comments, config, feedback, notes, people, settings, statuses, tags, tasks, vault};
 
 /// Makes `vault` the open vault and starts what runs alongside it.
 fn activate<R: Runtime>(app: &AppHandle<R>, state: &AppState, vault: crate::state::Vault) -> AppResult<()> {
@@ -162,6 +162,37 @@ pub fn task_tags_set(state: State<AppState>, id: String, tags: Vec<String>) -> A
 #[tauri::command]
 pub fn statuses_list(state: State<AppState>) -> AppResult<Vec<statuses::Status>> {
     state.with(|db, _| statuses::list(db))
+}
+
+#[tauri::command]
+pub fn status_add(state: State<AppState>, label: String, value: String, color: String) -> AppResult<statuses::Status> {
+    state.with(|db, _| statuses::add(db, &label, &value, &color))
+}
+
+#[tauri::command]
+pub fn status_rename(state: State<AppState>, value: String, label: String) -> AppResult<statuses::Status> {
+    state.with(|db, _| statuses::rename(db, &value, &label))
+}
+
+#[tauri::command]
+pub fn status_recolor(state: State<AppState>, value: String, color: String) -> AppResult<statuses::Status> {
+    state.with(|db, _| statuses::recolor(db, &value, &color))
+}
+
+#[tauri::command]
+pub fn status_reorder(state: State<AppState>, values: Vec<String>) -> AppResult<()> {
+    state.with(|db, _| statuses::reorder(db, &values))
+}
+
+#[tauri::command]
+pub fn status_delete(state: State<AppState>, value: String) -> AppResult<()> {
+    state.with(|db, _| statuses::delete(db, &value))
+}
+
+#[tauri::command]
+pub fn feedback_send<R: Runtime>(app: AppHandle<R>, state: State<AppState>, kind: String, body: String) -> AppResult<()> {
+    let version = app.package_info().version.to_string();
+    state.with(|db, _| feedback::add(db, &kind, &body, &version))
 }
 
 // ---- tasks

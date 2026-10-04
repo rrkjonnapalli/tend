@@ -8,9 +8,18 @@
     title,
     extra = '',
     open = $bindable(true),
+    indent = true,
     actions,
     children,
-  }: { title: string; extra?: string; open?: boolean; actions?: Snippet; children: Snippet } = $props();
+  }: {
+    title: string;
+    extra?: string;
+    open?: boolean;
+    /** Indent the body under the title (task and person pages); settings lists sit flush. */
+    indent?: boolean;
+    actions?: Snippet;
+    children: Snippet;
+  } = $props();
 </script>
 
 <section class="sec">
@@ -23,7 +32,7 @@
     {#if actions && open}<span class="acts">{@render actions()}</span>{/if}
   </div>
   {#if open}
-    <div class="body">{@render children()}</div>
+    <div class="body" class:indent>{@render children()}</div>
   {/if}
 </section>
 
@@ -78,6 +87,9 @@
   .body {
     display: flex;
     flex-direction: column;
+  }
+
+  .body.indent {
     padding-left: 16px;
   }
 </style>

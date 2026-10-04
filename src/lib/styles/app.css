@@ -180,16 +180,19 @@ a:hover {
   text-decoration: underline;
 }
 
-kbd,
-.kbd {
-  display: inline-block;
-  min-width: 18px;
-  padding: 0 4px;
-  border-radius: var(--radius-xs);
-  background: var(--c-chip);
+/* One key cap: ⌘, K, ⇧ … */
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--c-page);
+  font: 400 11px/14px var(--font-mono);
   color: var(--text-muted);
-  font: 400 11px/18px var(--font-mono);
-  text-align: center;
 }
 
 /* Thin, quiet scrollbars like an editor. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { label, matches } from './keys.ts';
+import { keyParts, label, matches } from './keys.ts';
 
 const ev = (o: Partial<KeyboardEvent>) =>
   ({ key: '', code: '', metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, ...o }) as KeyboardEvent;
@@ -28,5 +28,12 @@ describe('label', () => {
 
   it('spells out keys elsewhere', () => {
     expect(label('mod+shift+t', false)).toBe('Ctrl+Shift+T');
+  });
+});
+
+describe('keyParts', () => {
+  it('splits a chord into key caps', () => {
+    expect(keyParts('mod+shift+t', true)).toEqual(['⌘', '⇧', 'T']);
+    expect(keyParts('mod+,', false)).toEqual(['Ctrl', ',']);
   });
 });

@@ -2,6 +2,7 @@
   import type { Snippet } from 'svelte';
   import { page } from '$app/state';
   import Icon, { type IconName } from './Icon.svelte';
+  import FeedbackPopover from './FeedbackPopover.svelte';
   import { ui } from '#lib/stores/ui.svelte.ts';
 
   let { right }: { right?: Snippet } = $props();
@@ -11,6 +12,8 @@
     { href: '/tasks', label: 'Tasks', icon: 'task' },
     { href: '/people', label: 'People', icon: 'person' },
   ];
+
+  let feedbackBtn = $state<HTMLButtonElement>();
 
   const isCurrent = (href: string) => page.url.pathname === href || page.url.pathname.startsWith(href + '/');
 </script>
@@ -43,6 +46,7 @@
           <Icon name="settings" size={16} />
         </a>
         <button
+          bind:this={feedbackBtn}
           class="ico"
           class:on={ui.popup === 'feedback'}
           aria-label="Feedback"
@@ -55,6 +59,7 @@
       </div>
     </nav>
   </div>
+  {#if ui.popup === 'feedback'}<FeedbackPopover anchor={feedbackBtn} onclose={() => (ui.popup = null)} />{/if}
 {:else}
   <button class="tog closed" aria-label="Show sections bar" title="Show" onclick={ui.toggleNav}>
     <Icon name="chevronUp" size={12} stroke={2.5} />

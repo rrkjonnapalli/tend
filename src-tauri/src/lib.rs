@@ -4,6 +4,7 @@ mod comments;
 mod config;
 mod db;
 mod error;
+mod feedback;
 #[cfg(test)]
 mod ipc_tests;
 mod names;
@@ -60,6 +61,12 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
         commands::tags_all,
         commands::note_tags_set,
         commands::statuses_list,
+        commands::status_add,
+        commands::status_rename,
+        commands::status_recolor,
+        commands::status_reorder,
+        commands::status_delete,
+        commands::feedback_send,
         commands::tasks_data,
         commands::task_get,
         commands::task_create,

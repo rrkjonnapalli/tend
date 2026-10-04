@@ -1,7 +1,13 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
+  import Icon from '#lib/components/Icon.svelte';
+  import StatusesEditor from '#lib/components/StatusesEditor.svelte';
+  import { notesApi } from '#lib/api/notes.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
+  import { commands, type CommandGroup } from '#lib/commands.ts';
+  import { keyParts } from '#lib/util/keys.ts';
+  import { plural } from '#lib/util/plural.ts';
 
   const sections = [
     { id: 'general', label: 'General', sub: 'App-wide preferences.' },
@@ -12,6 +18,22 @@
   ] as const;
 
   const current = $derived(sections.find((s) => s.id === page.url.searchParams.get('s')) ?? sections[0]);
+
+  let skipped = $state<string[]>([]);
+  let showSkipped = $state(false);
+  $effect(() => {
+    if (current.id === 'general') notesApi.skipped().then((s) => (skipped = s));
+  });
+
+  const groups = $derived.by(() => {
+    const out: { name: CommandGroup; items: typeof commands }[] = [];
+    for (const c of commands) {
+      let g = out.find((x) => x.name === c.group);
+      if (!g) out.push((g = { name: c.group, items: [] }));
+      g.items.push(c);
+    }
+    return out;
+  });
 
   function show(id: string) {
     goto(`/settings?s=${id}`, { replace: true });
@@ -43,6 +65,34 @@
           <span class="vpath">{vault.path}</span>
           <button class="tlink" onclick={() => goto('/start')}>Change vault folder…</button>
         </div>
+        {#if skipped.length}
+          <button class="skipped" aria-expanded={showSkipped} onclick={() => (showSkipped = !showSkipped)}>
+            <Icon name={showSkipped ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />
+            {plural(skipped.length, 'item')} skipped: names must use a–z, 0–9 and _ only
+          </button>
+          {#if showSkipped}
+            <ul class="skiplist">
+              {#each skipped as item (item)}<li>notes/{item}</li>{/each}
+            </ul>
+          {/if}
+        {/if}
+      </section>
+    {:else if current.id === 'tasks'}
+      <StatusesEditor />
+    {:else if current.id === 'palette'}
+      <section class="palette">
+        {#each groups as g (g.name)}
+          <div class="group">
+            <h2 class="h2 gh">{g.name}</h2>
+            {#each g.items as c (c.id)}
+              <div class="crow">
+                <span>{c.label}</span>
+                <span class="cex">{c.example ?? ''}</span>
+                <span class="ckeys">{#if c.keys}{#each keyParts(c.keys) as k, i (i)}<kbd>{k}</kbd>{/each}{/if}</span>
+              </div>
+            {/each}
+          </div>
+        {/each}
       </section>
     {:else}
       <span class="caption muted">Nothing to configure here yet.</span>
@@ -140,6 +190,76 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  .skipped {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font: 400 13px/18px var(--font-ui);
+    color: var(--c-muted-2);
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .skipped:hover {
+    color: var(--text);
+  }
+
+  .skiplist {
+    margin: 0;
+    padding: 0 0 0 16px;
+    list-style: none;
+    font: 400 12px/20px var(--font-mono);
+    color: var(--text-muted);
+  }
+
+  .palette {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .gh {
+    margin-bottom: 6px;
+  }
+
+  .crow {
+    display: grid;
+    grid-template-columns: minmax(0, 220px) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    min-height: 34px;
+    padding: 0 16px;
+    margin: 0 -16px;
+    border-top: 1px solid var(--c-chip);
+    font: 400 14px/20px var(--font-ui);
+  }
+
+  .crow:hover {
+    background: var(--c-hover);
+  }
+
+  .cex {
+    font: 400 12px/16px var(--font-mono);
+    color: var(--c-muted-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ckeys {
+    display: flex;
+    gap: 4px;
+  }
+
 
   .tlink {
     padding: 0;

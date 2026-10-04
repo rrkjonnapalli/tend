@@ -388,17 +388,4 @@
     align-items: center;
   }
 
-  kbd {
-    display: inline-grid;
-    place-items: center;
-    min-width: 20px;
-    height: 20px;
-    padding: 0 5px;
-    border: 1px solid var(--border);
-    border-bottom-width: 2px;
-    border-radius: var(--radius-sm);
-    background: var(--c-page);
-    font: 400 11px/14px var(--font-mono);
-    color: var(--text-muted);
-  }
 </style>

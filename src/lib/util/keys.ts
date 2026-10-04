@@ -42,13 +42,16 @@ const glyphs: Record<string, string> = {
   escape: 'Esc',
 };
 
+/** "mod+shift+t" → ["⌘", "⇧", "T"] on macOS, ["Ctrl", "Shift", "T"] elsewhere: one key cap each. */
+export function keyParts(chord: string, mac = isMac): string[] {
+  return chord.split('+').map((p) => {
+    if (mac) return glyphs[p] ?? p.toUpperCase();
+    if (p === 'mod') return 'Ctrl';
+    return p.length === 1 ? p.toUpperCase() : p[0].toUpperCase() + p.slice(1);
+  });
+}
+
 /** "mod+shift+t" → "⌘⇧T" on macOS, "Ctrl+Shift+T" elsewhere. */
 export function label(chord: string, mac = isMac): string {
-  const parts = chord.split('+');
-  if (!mac) {
-    return parts
-      .map((p) => (p === 'mod' ? 'Ctrl' : p.length === 1 ? p.toUpperCase() : p[0].toUpperCase() + p.slice(1)))
-      .join('+');
-  }
-  return parts.map((p) => glyphs[p] ?? p.toUpperCase()).join('');
+  return keyParts(chord, mac).join(mac ? '' : '+');
 }
