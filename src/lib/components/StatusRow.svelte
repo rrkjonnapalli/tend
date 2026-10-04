@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // One status in Settings → Statuses: drag handle (not first or last), colour swatch, label or
   // inline rename, the fixed value, and edit / delete actions.
   import { focusAndSelect } from '#lib/actions/focus.action.ts';
@@ -65,7 +66,7 @@
     aria-haspopup="listbox"
     onclick={(e) => onswatch(e.currentTarget)}></button>
   {#if editing}
-    <input class="etxt" aria-label="Status label" bind:value={label} onkeydown={editKeys} use:focusAndSelect />
+    <input use:plainText class="etxt" aria-label="Status label" bind:value={label} onkeydown={editKeys} use:focusAndSelect />
   {:else}
     <span class="lab"><span class="nm">{status.label}</span><span class="pin">{PIN_LABELS[position]}</span></span>
   {/if}

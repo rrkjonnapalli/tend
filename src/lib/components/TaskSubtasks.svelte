@@ -5,14 +5,11 @@
   import type { Task } from '#lib/types/task.type.ts';
   import { onDestroy } from 'svelte';
   import Icon from './Icon.svelte';
-  import Grip from './Grip.svelte';
-  import StatusSelect from './StatusSelect.svelte';
-  import MyDayButton from './MyDayButton.svelte';
+  import SubtaskRow from './SubtaskRow.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { isDone } from '#lib/util/task-views.ts';
   import { droppedKey, inPreviewOrder, keyAfterLast } from '#lib/util/task-order.ts';
   import { startReorder } from '#lib/util/reorder.ts';
-  import { routes } from '#lib/util/routes.ts';
 
   let { task }: { task: Task } = $props();
 
@@ -71,18 +68,7 @@
 </label>
 <div class="subs">
   {#each shown as s (s.id)}
-    <a
-      class="sub sortable reveal-on-hover"
-      class:lifted={preview !== null && lifted === s.id}
-      href={routes.task(s.id)}
-      draggable="false"
-      data-key={s.id}
-      onpointerdown={(e) => grab(e, s.id)}>
-      <Grip />
-      <StatusSelect compact value={s.status} onchange={(status) => tasks.update(s.id, { status })} />
-      <span class="st">{s.title}</span>
-      <MyDayButton task={s} />
-    </a>
+    <SubtaskRow sub={s} sortable lifted={preview !== null && lifted === s.id} onpointerdown={(e) => grab(e, s.id)} />
   {/each}
 </div>
 {#if doneSubs.length}
@@ -91,11 +77,7 @@
   </button>
   {#if showDone}
     {#each doneSubs as s (s.id)}
-      <a class="sub reveal-on-hover" href={routes.task(s.id)}>
-        <StatusSelect compact value={s.status} onchange={(status) => tasks.update(s.id, { status })} />
-        <span class="st done">{s.title}</span>
-        <MyDayButton task={s} />
-      </a>
+      <SubtaskRow sub={s} />
     {/each}
   {/if}
 {/if}
@@ -133,37 +115,6 @@
     flex-direction: column;
   }
 
-  .sub {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 32px;
-    padding: 0 16px 0 32px;
-    margin: 0 -16px 0 -32px;
-    font: 400 14px/20px var(--font-ui);
-    color: var(--text);
-    text-decoration: none;
-    user-select: none;
-    touch-action: pan-x;
-  }
-
-  .sub:hover {
-    background: var(--c-hover);
-    color: var(--text);
-  }
-
-  .st {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .done {
-    color: var(--c-muted-2);
-  }
 
   .donehead {
     display: flex;

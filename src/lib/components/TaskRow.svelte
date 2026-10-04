@@ -1,9 +1,11 @@
 <script lang="ts">
-  // One task in a list: status dot · title (subtasks marked) · subtasks · path · due · My day.
+  // One task in a list: status dot · title (subtasks marked) · edit · subtasks · path · due · My day.
   import type { Task } from '#lib/types/task.type.ts';
   import StatusSelect from './StatusSelect.svelte';
   import Grip from './Grip.svelte';
   import SubtaskMark from './SubtaskMark.svelte';
+  import EditButton from './EditButton.svelte';
+  import InlineTitle from './InlineTitle.svelte';
   import MyDayButton from './MyDayButton.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { dueLabel } from '#lib/util/dates.ts';
@@ -28,14 +30,28 @@
   } = $props();
 
   const now = $derived(tasks.day);
+
+  let editing = $state(false);
+
+  const titleProblem = (text: string) => (text ? '' : 'A task needs a title');
+
+  function saveTitle(title: string) {
+    editing = false;
+    tasks.update(task.id, { title });
+  }
 </script>
 
 <div class="row reveal-on-hover" class:sortable class:lifted data-key={task.id} role="listitem" {onpointerdown}>
   {#if sortable}<Grip />{/if}
   <StatusSelect compact value={task.status} onchange={(status) => tasks.update(task.id, { status })} />
-  <button class="title" onclick={() => goto(routes.task(task.id))}>
-    <SubtaskMark {task} /><span class:done={isDone(task)}>{task.title}</span>
-  </button>
+  {#if editing}
+    <InlineTitle value={task.title} label="Task title" check={titleProblem} onsave={saveTitle} oncancel={() => (editing = false)} />
+  {:else}
+    <button class="title" onclick={() => goto(routes.task(task.id))}>
+      <SubtaskMark {task} /><span class:done={isDone(task)}>{task.title}</span>
+    </button>
+  {/if}
+  <span class="ed">{#if !editing}<EditButton label="Edit title" onedit={() => (editing = true)} />{/if}</span>
   <span class="meta">{tasks.subtaskCount(task.id)}</span>
   <span class="meta">{relativeTo(task.path, folder)}</span>
   <span class="due" class:warn={isOverdue(task, now)}>{task.dueDate ? dueLabel(task.dueDate) : ''}</span>
@@ -48,7 +64,7 @@
   .row {
     position: relative;
     display: grid;
-    grid-template-columns: 8px minmax(0, 1fr) auto auto 72px 64px;
+    grid-template-columns: 8px minmax(0, 1fr) 24px auto auto 72px 64px;
     align-items: center;
     gap: 12px;
     min-height: 36px;
@@ -85,6 +101,10 @@
     font: inherit;
     color: inherit;
     cursor: pointer;
+  }
+
+  .ed {
+    display: grid;
   }
 
   .done {

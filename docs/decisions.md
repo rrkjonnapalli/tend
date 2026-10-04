@@ -83,6 +83,8 @@ The user picks one **vault folder**. Tend works only inside it:
 - **Page bar:** every page starts with one 40px row on the same line as the explorer's icon toolbar: back (detail pages) · breadcrumb · a short count ("12 tasks", "5 notes · 3 folders") · actions on the right. List pages have no big title.
 - **List pages** (notes, tasks, people): under the bar, a search line with the field at the right end (filters names, titles and paths as you type); tasks add the views line under it; then the add field, which takes focus when the page opens. Drag order is off while a task search is typed. A person just added opens with First name focused.
 - **Subtasks in lists and on the board** carry a tiny green "s" badge before the title; hovering it reads "Subtask".
+- **Edit in place:** task rows, note rows and subtask rows show a pencil on hover, first in the right-hand part of the row. It turns the title (a note's name, under the name rule) into a field: Enter or leaving saves, Esc cancels.
+- **No autocorrect** (nor spellcheck, auto-capitalise, autofill) in any input or textarea; the markdown editors have it off too.
 - **Status dot** in task list rows and subtask rows opens the status list to change it in place (trial; may go).
 - **Width toggle:**
   - On note and task pages, the top section (breadcrumb, tags) is full width.

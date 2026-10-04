@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // Delete confirmation. For a folder, the folder name must be typed to enable the button.
   import Modal from './Modal.svelte';
 
@@ -41,7 +42,7 @@
     {#if confirmWord !== undefined}
       <span>Type <span class="key">{confirmWord}</span> to confirm.</span>
       <!-- svelte-ignore a11y_autofocus -->
-      <input
+      <input use:plainText
         class="fld"
         class:ok={!blocked}
         aria-label="Folder name"

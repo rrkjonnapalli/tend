@@ -5,6 +5,9 @@
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
+  import EditButton from '#lib/components/EditButton.svelte';
+  import InlineTitle from '#lib/components/InlineTitle.svelte';
+  import type { NoteRow } from '#lib/types/note.type.ts';
   import SearchLine from '#lib/components/SearchLine.svelte';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
@@ -41,6 +44,25 @@
     }
   }
 
+  // ---- rename in place
+
+  let editingId = $state<string | null>(null);
+
+  function stopEditing() {
+    editingId = null;
+  }
+
+  /** The name rule, and no clash with anything else in the note's own folder. */
+  function renameProblem(note: NoteRow, name: string): string {
+    const others = siblingNames({ tree: { folders: notes.folders, leaves: notes.notes }, folder: note.folder }).filter((s) => s !== note.name);
+    return nameError(name, others);
+  }
+
+  function rename(note: NoteRow, name: string) {
+    stopEditing();
+    notes.rename({ kind: 'note', id: note.id }, name);
+  }
+
   function onkeydown(e: KeyboardEvent) {
     if (e.key === 'Enter') create();
   }
@@ -64,11 +86,21 @@
       </label>
       {#if draftError || error}<span class="err">{draftError || error}</span>{/if}
       {#each rows as n (n.id)}
-        <a class="row" href={routes.note(n.id)}>
-          <span class="name">{n.name}</span>
-          <span class="meta">{relativeTo(n.folder, folder)}</span>
-          <span class="meta right">{ago(n.modifiedAt)}</span>
-        </a>
+        {#if editingId === n.id}
+          <div class="row reveal-on-hover">
+            <InlineTitle value={n.name} label="Note name" check={(name) => renameProblem(n, name)} onsave={(name) => rename(n, name)} oncancel={stopEditing} />
+            <span></span>
+            <span class="meta">{relativeTo(n.folder, folder)}</span>
+            <span class="meta right">{ago(n.modifiedAt)}</span>
+          </div>
+        {:else}
+          <a class="row reveal-on-hover" href={routes.note(n.id)}>
+            <span class="name">{n.name}</span>
+            <EditButton label="Rename note" onedit={() => (editingId = n.id)} />
+            <span class="meta">{relativeTo(n.folder, folder)}</span>
+            <span class="meta right">{ago(n.modifiedAt)}</span>
+          </a>
+        {/if}
       {/each}
       {#if rows.length === 0}<span class="caption muted empty">{needle ? 'No notes match' : 'No notes here yet'}</span>{/if}
     </div>
@@ -124,7 +156,7 @@
 
   .row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto 64px;
+    grid-template-columns: minmax(0, 1fr) 24px auto 64px;
     align-items: center;
     gap: 12px;
     min-height: 36px;

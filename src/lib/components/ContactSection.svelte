@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // Phone / Email / Address rows: value + label, edit or delete each, and an add row at the end.
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import Icon from './Icon.svelte';
@@ -89,8 +90,8 @@
     {@const isEditing = editing === c.id}
     <div class="crow reveal-on-hover" class:editing={isEditing}>
       {#if isEditing}
-        <input class="ein" aria-label="{title} value" bind:value={edValue} use:focusOnMount onkeydown={editKeys} />
-        <input class="ein lab" aria-label="Label" placeholder="label" bind:value={edLabel} onkeydown={editKeys} />
+        <input use:plainText class="ein" aria-label="{title} value" bind:value={edValue} use:focusOnMount onkeydown={editKeys} />
+        <input use:plainText class="ein lab" aria-label="Label" placeholder="label" bind:value={edLabel} onkeydown={editKeys} />
       {:else}
         <span class="cv">{c.value}</span>
         <span class="cl">{c.label}</span>
@@ -110,8 +111,8 @@
   {/each}
   <div class="crow add">
     <span class="plus">+</span>
-    <input class="ain" aria-label="New {title}" {placeholder} bind:value={newValue} onkeydown={addKeys} />
-    <input class="ain lab" aria-label="Label" placeholder="label" bind:value={newLabel} onkeydown={addKeys} />
+    <input use:plainText class="ain" aria-label="New {title}" {placeholder} bind:value={newValue} onkeydown={addKeys} />
+    <input use:plainText class="ain lab" aria-label="Label" placeholder="label" bind:value={newLabel} onkeydown={addKeys} />
     <span class="acts">
       {#if newValue.trim()}<button class="icon-btn sm ok" aria-label="Add" title="Add" onclick={add}><Icon name="check" size={13} stroke={2.25} /></button>{/if}
     </span>

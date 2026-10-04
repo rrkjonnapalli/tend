@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // The add row under the statuses: a label, and a value that follows the label as UPPER_SNAKE
   // until it is typed in by hand.
   import Icon from './Icon.svelte';
@@ -55,8 +56,8 @@
 <div class="addrow">
   <span class="plus">+</span>
   <span></span>
-  <input aria-label="New status label" placeholder="add status" bind:value={label} oninput={onLabelInput} onkeydown={addKeys} />
-  <input class="vin" aria-label="New status value" placeholder="VALUE" bind:value oninput={onValueInput} onkeydown={addKeys} />
+  <input use:plainText aria-label="New status label" placeholder="add status" bind:value={label} oninput={onLabelInput} onkeydown={addKeys} />
+  <input use:plainText class="vin" aria-label="New status value" placeholder="VALUE" bind:value oninput={onValueInput} onkeydown={addKeys} />
   <span class="acts">
     {#if label.trim()}<button class="icon-btn sm ok" aria-label="Add status" title="Add" onclick={add}><Icon name="check" size={13} stroke={2.25} /></button>{/if}
   </span>

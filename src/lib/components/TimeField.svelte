@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // h : mm with an AM/PM toggle. Type digits or use ↑↓. Clearing the hour clears the time.
   import Icon from './Icon.svelte';
   import { joinTime, splitTime } from '#lib/util/dates.ts';
@@ -91,7 +92,7 @@
 
 <span class="fld" role="group" aria-label="Due time">
   <span class="ic"><Icon name="clock" size={13} /></span>
-  <input
+  <input use:plainText
     class="seg"
     inputmode="numeric"
     maxlength="2"
@@ -103,7 +104,7 @@
     onblur={emit}
     onfocus={select} />
   <span class="muted">:</span>
-  <input
+  <input use:plainText
     class="seg"
     inputmode="numeric"
     maxlength="2"

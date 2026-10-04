@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // Feedback: Bug / Idea / Other, a text area and Send (⌘↵ also sends). Saved in the vault.
   import Icon from './Icon.svelte';
   import Popover from './Popover.svelte';
@@ -56,7 +57,7 @@
           <button class="kind" class:on={kind === k} aria-pressed={kind === k} onclick={() => (kind = k)}>{label}</button>
         {/each}
       </div>
-      <textarea aria-label="Feedback" placeholder="A bug, an idea, something you’d like…" bind:value={draft} {onkeydown} use:focusOnMount></textarea>
+      <textarea use:plainText aria-label="Feedback" placeholder="A bug, an idea, something you’d like…" bind:value={draft} {onkeydown} use:focusOnMount></textarea>
       {#if error}<span class="err">{error}</span>{/if}
       <div class="foot">
         <span class="muted small">Saved in your vault</span>

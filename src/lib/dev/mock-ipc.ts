@@ -95,6 +95,12 @@ const handlers: Record<string, Handler> = {
   'plugin:window|toggle_maximize': () => null,
   tags_all: () => ['ci', 'docs', 'home', 'reading', 'release', 'tauri', 'ui', 'v0.1'],
   notes_tree: () => ({ folders: ['home', 'work', 'work/tauri'], notes }),
+  item_rename: ({ item, name }) => {
+    const target = item as { kind: string; id?: string; path?: string };
+    const note = notes.find((n) => n.id === target.id);
+    if (note) note.name = name as string;
+    return target.id ?? target.path;
+  },
   notes_rescan: () => ({ folders: ['home', 'work', 'work/tauri'], notes }),
   note_read: ({ id }) => ({ ...notes.find((n) => n.id === id), text: texts[id as string] ?? '', tags: noteTags[id as string] ?? [] }),
   note_write: ({ id, text }) => {

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   // The task title: a borderless box that grows over several lines and saves on blur or Enter.
   let { value, onsave }: { value: string; onsave: (title: string) => void } = $props();
 
@@ -39,7 +40,7 @@
   }
 </script>
 
-<textarea class="title" aria-label="Title" rows="1" bind:value={title} use:autogrow={title} oninput={joinLines} onblur={save} {onkeydown}></textarea>
+<textarea use:plainText class="title" aria-label="Title" rows="1" bind:value={title} use:autogrow={title} oninput={joinLines} onblur={save} {onkeydown}></textarea>
 
 <style>
   .title {
