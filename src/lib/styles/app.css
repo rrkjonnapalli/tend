@@ -1,10 +1,5 @@
 @import '../../../docs/design/tokens.css';
-@import '@fontsource/montserrat/500.css';
-@import '@fontsource/montserrat/600.css';
-@import '@fontsource/lato/400.css';
-@import '@fontsource/lato/700.css';
-@import '@fontsource/jetbrains-mono/400.css';
-@import '@fontsource/jetbrains-mono/500.css';
+@import './fonts.css';
 
 *,
 *::before,
