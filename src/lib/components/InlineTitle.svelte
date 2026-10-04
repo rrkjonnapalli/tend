@@ -70,22 +70,23 @@
     flex: 1;
   }
 
+  /* Same as the inline edits on the person page: a soft fill, no border. */
   .field {
     flex: 1;
     min-width: 0;
-    height: 26px;
-    padding: 0 6px;
-    margin-left: -7px;
-    border: 1px solid var(--primary);
+    height: 28px;
+    padding: 0 8px;
+    margin-left: -8px;
+    border: 0;
     border-radius: var(--radius-sm);
     outline: none;
-    background: var(--c-page);
+    background: var(--c-hover);
     font: inherit;
     color: var(--text);
   }
 
   .field.bad {
-    border-color: var(--danger);
+    color: var(--danger);
   }
 
   .err {

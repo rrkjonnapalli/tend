@@ -41,7 +41,7 @@
   }
 </script>
 
-<div class="row reveal-on-hover" class:sortable class:lifted data-key={task.id} role="listitem" {onpointerdown}>
+<div class="row reveal-on-hover" class:editing class:sortable class:lifted data-key={task.id} role="listitem" {onpointerdown}>
   {#if sortable}<Grip />{/if}
   <StatusSelect compact value={task.status} onchange={(status) => tasks.update(task.id, { status })} />
   {#if editing}
@@ -53,7 +53,7 @@
   {/if}
   <span class="ed">{#if !editing}<EditButton label="Edit title" onedit={() => (editing = true)} />{/if}</span>
   <span class="meta">{tasks.subtaskCount(task.id)}</span>
-  <span class="meta">{relativeTo(task.path, folder)}</span>
+  <span class="meta path">{relativeTo(task.path, folder)}</span>
   <span class="due" class:warn={isOverdue(task, now)}>{task.dueDate ? dueLabel(task.dueDate) : ''}</span>
   <span class="md">
     <MyDayButton {task} />
@@ -64,7 +64,8 @@
   .row {
     position: relative;
     display: grid;
-    grid-template-columns: 8px minmax(0, 1fr) 24px auto auto 72px 64px;
+    /* Fixed right-hand columns, so the edit pencil lines up on every row. */
+    grid-template-columns: 8px minmax(0, 1fr) 24px 36px 160px 72px 64px;
     align-items: center;
     gap: 12px;
     min-height: 36px;
@@ -82,6 +83,10 @@
 
   .row:hover {
     background: var(--c-hover);
+  }
+
+  .row.editing:hover {
+    background: transparent;
   }
 
   :global(body.reordering) .row:not(.lifted):hover {
@@ -114,6 +119,13 @@
   .meta {
     font: 400 13px/18px var(--font-ui);
     color: var(--c-muted-2);
+  }
+
+  .path {
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .due {

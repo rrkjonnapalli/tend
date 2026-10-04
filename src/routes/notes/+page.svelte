@@ -87,7 +87,7 @@
       {#if draftError || error}<span class="err">{draftError || error}</span>{/if}
       {#each rows as n (n.id)}
         {#if editingId === n.id}
-          <div class="row reveal-on-hover">
+          <div class="row editing">
             <InlineTitle value={n.name} label="Note name" check={(name) => renameProblem(n, name)} onsave={(name) => rename(n, name)} oncancel={stopEditing} />
             <span></span>
             <span class="meta">{relativeTo(n.folder, folder)}</span>
@@ -156,7 +156,7 @@
 
   .row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 24px auto 64px;
+    grid-template-columns: minmax(0, 1fr) 24px 160px 64px;
     align-items: center;
     gap: 12px;
     min-height: 36px;
@@ -165,6 +165,10 @@
     font: 400 14px/20px var(--font-ui);
     color: var(--text);
     text-decoration: none;
+  }
+
+  .row.editing:hover {
+    background: transparent;
   }
 
   .row:hover {
@@ -181,6 +185,10 @@
   .meta {
     font: 400 13px/18px var(--font-ui);
     color: var(--c-muted-2);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .right {

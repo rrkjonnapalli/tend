@@ -39,11 +39,11 @@
 </script>
 
 {#if editing}
-  <div class="sub" data-key={sub.id}>
+  <div class="sub editing" data-key={sub.id}>
     {#if sortable}<Grip />{/if}
     <StatusSelect compact value={sub.status} onchange={setStatus} />
     <InlineTitle value={sub.title} label="Subtask title" check={titleProblem} onsave={saveTitle} oncancel={() => (editing = false)} />
-    <MyDayButton task={sub} />
+    <span class="md"><MyDayButton task={sub} /></span>
   </div>
 {:else}
   <a class="sub reveal-on-hover" class:sortable class:lifted href={routes.task(sub.id)} draggable="false" data-key={sub.id} {onpointerdown}>
@@ -51,7 +51,7 @@
     <StatusSelect compact value={sub.status} onchange={setStatus} />
     <span class="st" class:done={isDone(sub)}>{sub.title}</span>
     <EditButton label="Edit title" onedit={() => (editing = true)} />
-    <MyDayButton task={sub} />
+    <span class="md"><MyDayButton task={sub} /></span>
   </a>
 {/if}
 
@@ -74,6 +74,17 @@
   .sub:hover {
     background: var(--c-hover);
     color: var(--text);
+  }
+
+  .sub.editing:hover {
+    background: transparent;
+  }
+
+  /* A fixed slot, so the edit pencil sits at the same spot with or without "+ my day". */
+  .md {
+    flex: 0 0 64px;
+    display: flex;
+    justify-content: flex-end;
   }
 
   .st {
