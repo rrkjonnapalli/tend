@@ -1,0 +1,125 @@
+use super::*;
+use rusqlite::Connection;
+
+fn statuses(c: &Check) -> Vec<StepStatus> {
+    c.steps.iter().map(|s| s.status).collect()
+}
+
+#[test]
+fn empty_folder_creates_everything() {
+    let dir = tempfile::tempdir().unwrap();
+    let (check, vault) = open(dir.path());
+    assert!(check.ok);
+    assert!(vault.is_some());
+    assert_eq!(statuses(&check), vec![StepStatus::Created; 3]);
+    assert!(dir.path().join("notes").is_dir());
+    assert!(dir.path().join(".attachments").is_dir());
+    assert!(dir.path().join("db/app.sqlite").is_file());
+}
+
+#[test]
+fn existing_vault_opens_and_counts() {
+    let dir = tempfile::tempdir().unwrap();
+    drop(open(dir.path()));
+    fs::create_dir_all(dir.path().join("notes/work")).unwrap();
+    fs::write(dir.path().join("notes/a.md"), "# A").unwrap();
+    fs::write(dir.path().join("notes/work/b.md"), "# B").unwrap();
+    fs::write(dir.path().join("notes/skip.txt"), "x").unwrap();
+    let (check, vault) = open(dir.path());
+    assert!(check.ok && vault.is_some());
+    assert_eq!(statuses(&check), vec![StepStatus::Found; 3]);
+    assert_eq!(check.steps[0].detail, "found · 2 notes");
+    assert_eq!(check.steps[2].detail, "schema matches");
+}
+
+fn incompatible(setup: &str) {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir_all(dir.path().join("db")).unwrap();
+    let path = dir.path().join("db/app.sqlite");
+    let conn = Connection::open(&path).unwrap();
+    conn.execute_batch(setup).unwrap();
+    drop(conn);
+    let before = fs::read(&path).unwrap();
+
+    let (check, vault) = open(dir.path());
+    assert!(!check.ok);
+    assert!(vault.is_none());
+    assert_eq!(check.steps[2].status, StepStatus::Error);
+    assert_eq!(check.steps[2].detail, "incompatible schema");
+    assert_eq!(
+        fs::read(&path).unwrap(),
+        before,
+        "incompatible db must not change"
+    );
+}
+
+#[test]
+fn wrong_app_id_is_incompatible() {
+    incompatible(
+        "CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+         INSERT INTO meta VALUES ('app_id','other'),('schema_version','1');",
+    );
+}
+
+#[test]
+fn higher_version_is_incompatible() {
+    incompatible(
+        "CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+         INSERT INTO meta VALUES ('app_id','tend'),('schema_version','99');",
+    );
+}
+
+#[test]
+fn missing_meta_is_incompatible() {
+    incompatible("CREATE TABLE things (id INTEGER PRIMARY KEY);");
+}
+
+fn reopen_err(root: &Path) -> String {
+    match reopen(root) {
+        Err(e) => e,
+        Ok(_) => panic!("expected {} to fail", root.display()),
+    }
+}
+
+#[test]
+fn reopen_explains_what_went_wrong() {
+    let dir = tempfile::tempdir().unwrap();
+    let gone = dir.path().join("gone");
+    assert!(reopen_err(&gone).contains("isn’t there"));
+    assert!(!gone.exists(), "a missing vault is never recreated");
+
+    assert!(reopen(dir.path()).is_ok());
+    let bad = tempfile::tempdir().unwrap();
+    fs::create_dir_all(bad.path().join("db")).unwrap();
+    fs::write(bad.path().join("db/app.sqlite"), "junk").unwrap();
+    assert_eq!(
+        reopen_err(bad.path()),
+        "An incompatible database exists in db/app.sqlite."
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn reopen_reports_missing_permission() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let locked = dir.path().join("locked");
+    fs::create_dir_all(&locked).unwrap();
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).unwrap();
+    let err = reopen_err(&locked);
+    fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).unwrap();
+    assert!(err.contains("permission"), "{err}");
+}
+
+#[test]
+fn non_sqlite_file_is_incompatible() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir_all(dir.path().join("db")).unwrap();
+    fs::write(dir.path().join("db/app.sqlite"), "not a database").unwrap();
+    let (check, vault) = open(dir.path());
+    assert!(!check.ok && vault.is_none());
+    assert_eq!(
+        fs::read_to_string(dir.path().join("db/app.sqlite")).unwrap(),
+        "not a database"
+    );
+}

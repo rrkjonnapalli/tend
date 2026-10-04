@@ -1,0 +1,88 @@
+//! The rules for status values, labels, colours and order.
+
+use rusqlite::{params, Connection, OptionalExtension};
+
+use super::{Status, DONE, FIRST, RESERVED};
+use crate::error::{AppError, AppResult};
+
+/// A new value: UPPER_SNAKE, not a default status's value, not used yet. Returns it trimmed.
+pub fn new_value<'a>(conn: &Connection, value: &'a str) -> AppResult<&'a str> {
+    let value = value.trim();
+    let starts_with_letter = value.chars().next().is_some_and(|c| c.is_ascii_uppercase());
+    let upper_snake = value
+        .chars()
+        .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_');
+    if !(starts_with_letter && upper_snake) {
+        return Err(AppError::rule(
+            "bad_value",
+            "Give the status a value (A–Z, 0–9 and _).",
+        ));
+    }
+    if RESERVED.iter().any(|r| r.eq_ignore_ascii_case(value)) {
+        return Err(AppError::rule(
+            "reserved",
+            format!("{value} is reserved for a default status."),
+        ));
+    }
+    let taken = conn
+        .query_row("SELECT 1 FROM statuses WHERE value = ?1", [value], |_| {
+            Ok(())
+        })
+        .optional()?;
+    if taken.is_some() {
+        return Err(AppError::rule(
+            "value_taken",
+            format!("{value} is already used by another status."),
+        ));
+    }
+    Ok(value)
+}
+
+/// A non-empty label no other status uses (`except` is the status being renamed).
+pub fn label(conn: &Connection, label: &str, except: Option<&str>) -> AppResult<String> {
+    let label = label.trim();
+    if label.is_empty() {
+        return Err(AppError::rule("empty_label", "Label can’t be empty."));
+    }
+    let taken = conn
+        .query_row(
+            "SELECT 1 FROM statuses WHERE label = ?1 COLLATE NOCASE AND value IS NOT ?2",
+            params![label, except],
+            |_| Ok(()),
+        )
+        .optional()?;
+    if taken.is_some() {
+        return Err(AppError::rule(
+            "label_taken",
+            "Another status already uses this label.",
+        ));
+    }
+    Ok(label.to_string())
+}
+
+/// `#rrggbb`.
+pub fn color(color: &str) -> AppResult<()> {
+    let shaped = color.len() == 7 && color.starts_with('#');
+    if !shaped || !color[1..].chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err(AppError::rule("bad_color", "Colors are #rrggbb."));
+    }
+    Ok(())
+}
+
+/// The same statuses as now, with Not started first and Done last.
+pub fn order(current: &[Status], values: &[String]) -> AppResult<()> {
+    let mut proposed: Vec<&str> = values.iter().map(String::as_str).collect();
+    proposed.sort_unstable();
+    let mut existing: Vec<&str> = current.iter().map(|s| s.value.as_str()).collect();
+    existing.sort_unstable();
+    let same_set = proposed == existing;
+    let first_ok = values.first().map(String::as_str) == Some(FIRST);
+    let last_ok = values.last().map(String::as_str) == Some(DONE);
+    if !(same_set && first_ok && last_ok) {
+        return Err(AppError::rule(
+            "bad_order",
+            "Not started stays first and Done stays last.",
+        ));
+    }
+    Ok(())
+}

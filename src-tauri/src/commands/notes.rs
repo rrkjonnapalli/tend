@@ -1,0 +1,83 @@
+//! Notes and note folders.
+
+use tauri::{AppHandle, Runtime, State};
+
+use crate::error::AppResult;
+use crate::notes;
+use crate::state::AppState;
+
+#[tauri::command(async)]
+pub fn skipped_items(state: State<AppState>) -> AppResult<Vec<String>> {
+    Ok(state.vault()?.skipped())
+}
+
+#[tauri::command(async)]
+pub fn notes_tree(state: State<AppState>) -> AppResult<notes::Tree> {
+    state.with(|db, _| notes::tree(db))
+}
+
+#[tauri::command(async)]
+pub fn notes_rescan<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<AppState>,
+) -> AppResult<notes::Tree> {
+    crate::notes::watcher::rescan_and_emit(&app, &*state.vault()?)?;
+    state.with(|db, _| notes::tree(db))
+}
+
+#[tauri::command(async)]
+pub fn note_read(state: State<AppState>, id: String) -> AppResult<notes::NoteDoc> {
+    state.with(|db, v| notes::read(db, &v.notes_dir(), &id))
+}
+
+#[tauri::command(async)]
+pub fn note_write(state: State<AppState>, id: String, text: String) -> AppResult<notes::NoteRow> {
+    state.with(|db, v| notes::write(db, &v.notes_dir(), &id, &text))
+}
+
+#[tauri::command(async)]
+pub fn note_create(
+    state: State<AppState>,
+    folder: String,
+    name: String,
+) -> AppResult<notes::NoteRow> {
+    state.with(|db, v| notes::create(db, &v.notes_dir(), &folder, &name))
+}
+
+#[tauri::command(async)]
+pub fn folder_create(state: State<AppState>, path: String) -> AppResult<()> {
+    state.with(|db, v| notes::folder_create(db, &v.notes_dir(), &path))
+}
+
+/// An explorer item: a note by id or a folder by path.
+#[derive(serde::Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+pub enum Item {
+    Note { id: String },
+    Folder { path: String },
+}
+
+/// Returns the item's new id (notes) or path (folders).
+#[tauri::command(async)]
+pub fn item_rename(state: State<AppState>, item: Item, name: String) -> AppResult<String> {
+    state.with(|db, v| match item {
+        Item::Note { id } => notes::rename_note(db, &v.notes_dir(), &id, &name).map(|n| n.id),
+        Item::Folder { path } => notes::rename_folder(db, &v.notes_dir(), &path, &name),
+    })
+}
+
+#[tauri::command(async)]
+pub fn item_move(state: State<AppState>, item: Item, target: String) -> AppResult<String> {
+    state.with(|db, v| match item {
+        Item::Note { id } => notes::move_note(db, &v.notes_dir(), &id, &target).map(|n| n.id),
+        Item::Folder { path } => notes::move_folder(db, &v.notes_dir(), &path, &target),
+    })
+}
+
+#[tauri::command(async)]
+pub fn item_delete(state: State<AppState>, item: Item) -> AppResult<()> {
+    state.with(|db, v| match item {
+        Item::Note { id } => notes::delete_note(db, &v.notes_dir(), &id),
+        Item::Folder { path } => notes::delete_folder(db, &v.notes_dir(), &path),
+    })
+}
