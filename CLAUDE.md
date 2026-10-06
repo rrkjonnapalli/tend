@@ -6,7 +6,7 @@ Tend is a desktop app for **notes, tasks and people** (plus simple timers), buil
 
 1. `docs/build-plan.md`: the milestone you were asked to do, and its *Done when* checks.
 2. `docs/decisions.md`: the rules. This is the spec. If code and spec disagree, the spec wins.
-3. `docs/schema.sql`: the database (`db/app.sqlite`, schema v1). Use it as the v1 migration, unchanged.
+3. `docs/schema.sql`: the database (`db/app.sqlite`, schema v1). Nothing has shipped, so it is edited in place until the first release; migrations start after that.
 4. `docs/design/`: what it should look like.
    - `screens/*.html`: interactive mockups. Open them in a browser; they run on their own. Their `<script type="text/x-dc">` blocks hold working reference logic.
    - `screens/png/*.png`: screenshots of the mockups and key states. Match these.

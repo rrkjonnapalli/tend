@@ -1,6 +1,8 @@
 # Git sync — plan
 
-Status: **design, not built.** This file collects what Tend has today, what we want, every
+Status: **superseded by `docs/v1-sync-spec.md`** — kept as the record of the discussion.
+
+Original status: design, not built. This file collects what Tend has today, what we want, every
 question raised so far, what is decided, what is still open, and the problems we expect.
 Decisions are numbered (Q1…) in the order they came up, so the discussion can refer to them.
 
