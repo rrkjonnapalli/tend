@@ -24,8 +24,8 @@ pub fn all(conn: &Connection) -> AppResult<HashMap<String, Value>> {
 
 pub fn set(conn: &Connection, key: &str, value: &Value) -> AppResult<()> {
     conn.execute(
-        "INSERT INTO settings (key, value, updated_at) VALUES (?1, ?2, ?3)
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+        "INSERT INTO settings (id, key, value, updated_at) VALUES (?1, ?1, ?2, ?3)
+         ON CONFLICT(id) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
         params![key, value.to_string(), now_ms()],
     )?;
     Ok(())

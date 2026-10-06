@@ -261,9 +261,10 @@ pub fn delete(conn: &Connection, id: &str) -> AppResult<()> {
 pub fn set_my_day(conn: &Connection, id: &str, day: &str, included: Option<bool>) -> AppResult<()> {
     match included {
         Some(include) => conn.execute(
-            "INSERT INTO my_day (task_id, day, included) VALUES (?1, ?2, ?3)
-             ON CONFLICT(task_id, day) DO UPDATE SET included = excluded.included",
-            params![id, day, include],
+            "INSERT INTO my_day (id, task_id, day, included, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(task_id, day) DO UPDATE SET included = excluded.included,
+               updated_at = excluded.updated_at",
+            params![new_id(), id, day, include, now_ms()],
         )?,
         None => conn.execute(
             "DELETE FROM my_day WHERE task_id = ?1 AND day = ?2",

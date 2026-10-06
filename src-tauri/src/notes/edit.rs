@@ -6,11 +6,15 @@ use std::path::Path;
 
 use rusqlite::{params, Connection, OptionalExtension, Transaction};
 
-use super::{file_path, mtime, note_path, row, title_of, NoteRow, EXT};
+use super::{attachment_of, file_path, note_path, row, vault_path, NoteRow, EXT, MIME, PREFIX};
 use crate::db::{commit_or_undo, in_transaction};
 use crate::error::{errors, AppResult};
+use crate::files;
 use crate::names;
 use crate::util::{new_id, now_ms};
+
+/// How many `_2`, `_3`, … suffixes to try before giving up on a free file name.
+const MAX_SUFFIX: u32 = 999;
 
 fn folder_exists(conn: &Connection, path: &str) -> AppResult<bool> {
     if path.is_empty() {
@@ -26,11 +30,11 @@ fn folder_exists(conn: &Connection, path: &str) -> AppResult<bool> {
     Ok(found.is_some())
 }
 
-fn note_exists(conn: &Connection, folder: &str, file: &str) -> AppResult<bool> {
+fn note_exists(conn: &Connection, folder: &str, name: &str) -> AppResult<bool> {
     let found = conn
         .query_row(
-            "SELECT 1 FROM notes WHERE folder = ?1 AND file_name = ?2 AND missing_at IS NULL",
-            params![folder, file],
+            "SELECT 1 FROM attachments WHERE path = ?1 AND missing_at IS NULL",
+            [vault_path(folder, name)],
             |_| Ok(()),
         )
         .optional()?;
@@ -40,11 +44,10 @@ fn note_exists(conn: &Connection, folder: &str, file: &str) -> AppResult<bool> {
 /// A folder or note called `name` already sits in `folder` (on disk or in the index).
 fn clash(conn: &Connection, dir: &Path, folder: &str, name: &str) -> AppResult<bool> {
     let path = names::join(folder, name);
-    let file = format!("{name}{EXT}");
-    if folder_exists(conn, &path)? || note_exists(conn, folder, &file)? {
+    if folder_exists(conn, &path)? || note_exists(conn, folder, name)? {
         return Ok(true);
     }
-    let on_disk = dir.join(&path).exists() || file_path(dir, folder, &file).exists();
+    let on_disk = dir.join(&path).exists() || file_path(dir, folder, name).exists();
     Ok(on_disk)
 }
 
@@ -54,6 +57,42 @@ fn check_new(conn: &Connection, dir: &Path, folder: &str, name: &str) -> AppResu
         return Err(errors::NAME_TAKEN.err());
     }
     Ok(())
+}
+
+/// The file name for `title` in `folder`: its slug, or `slug_2`, `slug_3`, … when taken.
+/// `keep` is a name the note already has, which counts as free.
+fn free_name(
+    conn: &Connection,
+    dir: &Path,
+    folder: &str,
+    title: &str,
+    keep: Option<&str>,
+) -> AppResult<String> {
+    let base = names::slug(title).unwrap_or_else(|| "note".to_string());
+    let is_free = |name: &str| -> AppResult<bool> {
+        if keep == Some(name) {
+            return Ok(true);
+        }
+        Ok(!clash(conn, dir, folder, name)?)
+    };
+    if is_free(&base)? {
+        return Ok(base);
+    }
+    for n in 2..=MAX_SUFFIX {
+        let candidate = format!("{base}_{n}");
+        if is_free(&candidate)? {
+            return Ok(candidate);
+        }
+    }
+    Err(errors::NAME_NO_ROOM.err())
+}
+
+fn check_title(title: &str) -> AppResult<&str> {
+    let trimmed = title.trim();
+    if trimmed.is_empty() {
+        return Err(errors::NOTE_TITLE_EMPTY.err());
+    }
+    Ok(trimmed)
 }
 
 /// Creates `folder` first when it isn't there yet (moves and new notes can target new folders).
@@ -66,10 +105,11 @@ fn ensure_folder(conn: &mut Connection, dir: &Path, folder: &str) -> AppResult<(
 
 /// Drops index rows left behind by missing items at `path`, so a new item can take the name.
 fn clear_missing(tx: &Transaction, path: &str) -> AppResult<()> {
+    let prefix = format!("{PREFIX}{path}");
     tx.execute(
-        "DELETE FROM notes WHERE missing_at IS NOT NULL
-         AND (folder = ?1 OR substr(folder, 1, length(?1) + 1) = ?1 || '/')",
-        [path],
+        "DELETE FROM attachments WHERE missing_at IS NOT NULL
+         AND (path = ?1 || ?2 OR substr(path, 1, length(?1) + 1) = ?1 || '/')",
+        params![prefix, EXT],
     )?;
     tx.execute(
         "DELETE FROM note_folders WHERE missing_at IS NOT NULL
@@ -93,8 +133,8 @@ pub fn folder_create(conn: &mut Connection, dir: &Path, path: &str) -> AppResult
         for p in &missing {
             clear_missing(tx, p)?;
             tx.execute(
-                "INSERT INTO note_folders (path, created_at) VALUES (?1, ?2)",
-                params![p, now],
+                "INSERT INTO note_folders (id, path, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)",
+                params![new_id(), p, now],
             )?;
         }
         Ok(())
@@ -114,27 +154,17 @@ fn missing_folders(conn: &Connection, path: &str) -> AppResult<Vec<String>> {
     Ok(missing)
 }
 
-/// The heading a new note starts with: `release_checklist` → `# Release checklist`.
-fn heading_for(name: &str) -> String {
-    let words = name.replace('_', " ");
-    let mut chars = words.chars();
-    let Some(first) = chars.next() else {
-        return "# \n\n".to_string();
-    };
-    let title: String = first.to_uppercase().chain(chars).collect();
-    format!("# {title}\n\n")
-}
-
-pub fn create(conn: &mut Connection, dir: &Path, folder: &str, name: &str) -> AppResult<NoteRow> {
+/// A new note titled `title` in `folder`, with an empty body. The file name comes from the title.
+pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> AppResult<NoteRow> {
+    let title = check_title(title)?.to_string();
     ensure_folder(conn, dir, folder)?;
-    check_new(conn, dir, folder, name)?;
-    let file = format!("{name}{EXT}");
-    let path = file_path(dir, folder, &file);
-    let text = heading_for(name);
-    fs::write(&path, &text)?;
-    let id = new_id();
+    let name = free_name(conn, dir, folder, &title, None)?;
+    let path = file_path(dir, folder, &name);
+    fs::write(&path, "")?;
+    let facts = files::facts(&path)?;
+    let note_id = new_id();
+    let attachment_id = new_id();
     let now = now_ms();
-    let modified = mtime(&path);
     commit_or_undo(
         conn,
         || {
@@ -142,23 +172,48 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, name: &str) -> Ap
         },
         |tx| {
             tx.execute(
-                "INSERT INTO notes (id, folder, file_name, title, created_at, modified_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                params![id, folder, file, title_of(&text, name), now, modified],
+                "INSERT INTO attachments
+                   (id, path, name, mime_type, size_bytes, sha256, created_at, updated_at, mtime)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7, ?8)",
+                params![
+                    attachment_id,
+                    vault_path(folder, &name),
+                    format!("{name}{EXT}"),
+                    MIME,
+                    facts.size,
+                    facts.sha256,
+                    now,
+                    facts.mtime
+                ],
+            )?;
+            tx.execute(
+                "INSERT INTO notes (id, attachment_id, title, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?4)",
+                params![note_id, attachment_id, title, now],
             )?;
             Ok(())
         },
     )?;
-    row(conn, &id)
+    row(conn, &note_id)
 }
 
-pub fn rename_note(conn: &mut Connection, dir: &Path, id: &str, name: &str) -> AppResult<NoteRow> {
+/// Sets the title; the file is renamed to follow it (links point at the note's id, so nothing
+/// breaks).
+pub fn rename_note(conn: &mut Connection, dir: &Path, id: &str, title: &str) -> AppResult<NoteRow> {
+    let title = check_title(title)?.to_string();
     let note = row(conn, id)?;
-    if note.name == name {
+    if note.title == title {
         return Ok(note);
     }
-    check_new(conn, dir, &note.folder, name)?;
-    relocate_note(conn, dir, &note, &note.folder, name)
+    let name = free_name(conn, dir, &note.folder, &title, Some(&note.name))?;
+    conn.execute(
+        "UPDATE notes SET title = ?1, updated_at = ?2 WHERE id = ?3",
+        params![title, now_ms(), id],
+    )?;
+    if name == note.name {
+        return row(conn, id);
+    }
+    relocate_note(conn, dir, &note, &note.folder, &name)
 }
 
 pub fn move_note(conn: &mut Connection, dir: &Path, id: &str, target: &str) -> AppResult<NoteRow> {
@@ -167,8 +222,8 @@ pub fn move_note(conn: &mut Connection, dir: &Path, id: &str, target: &str) -> A
         return Err(errors::SAME_FOLDER.err());
     }
     ensure_folder(conn, dir, target)?;
-    check_new(conn, dir, target, &note.name)?;
-    relocate_note(conn, dir, &note, target, &note.name)
+    let name = free_name(conn, dir, target, &note.title, None)?;
+    relocate_note(conn, dir, &note, target, &name)
 }
 
 fn relocate_note(
@@ -179,9 +234,9 @@ fn relocate_note(
     name: &str,
 ) -> AppResult<NoteRow> {
     let from = note_path(dir, note);
-    let file = format!("{name}{EXT}");
-    let to = file_path(dir, folder, &file);
+    let to = file_path(dir, folder, name);
     fs::rename(&from, &to)?;
+    let attachment_id = attachment_of(conn, &note.id)?;
     commit_or_undo(
         conn,
         || {
@@ -189,8 +244,13 @@ fn relocate_note(
         },
         |tx| {
             tx.execute(
-                "UPDATE notes SET folder = ?1, file_name = ?2 WHERE id = ?3",
-                params![folder, file, note.id],
+                "UPDATE attachments SET path = ?1, name = ?2, updated_at = ?3 WHERE id = ?4",
+                params![
+                    vault_path(folder, name),
+                    format!("{name}{EXT}"),
+                    now_ms(),
+                    attachment_id
+                ],
             )?;
             Ok(())
         },
@@ -237,6 +297,7 @@ fn relocate_folder(conn: &mut Connection, dir: &Path, old: &str, new: &str) -> A
     let from = dir.join(old);
     let to = dir.join(new);
     fs::rename(&from, &to)?;
+    let now = now_ms();
     commit_or_undo(
         conn,
         || {
@@ -244,11 +305,16 @@ fn relocate_folder(conn: &mut Connection, dir: &Path, old: &str, new: &str) -> A
         },
         |tx| {
             clear_missing(tx, new)?;
-            // Notes follow through ON UPDATE CASCADE.
             tx.execute(
-                "UPDATE note_folders SET path = ?2 || substr(path, length(?1) + 1)
+                "UPDATE note_folders SET path = ?2 || substr(path, length(?1) + 1), updated_at = ?3
                  WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
-                params![old, new],
+                params![old, new, now],
+            )?;
+            // Note bodies under the folder move with it.
+            tx.execute(
+                "UPDATE attachments SET path = ?2 || substr(path, length(?1) + 1), updated_at = ?3
+                 WHERE substr(path, 1, length(?1)) = ?1",
+                params![format!("{PREFIX}{old}/"), format!("{PREFIX}{new}/"), now],
             )?;
             Ok(())
         },
@@ -256,11 +322,13 @@ fn relocate_folder(conn: &mut Connection, dir: &Path, old: &str, new: &str) -> A
     Ok(new.to_string())
 }
 
+/// Removes the body and the note (its attachment row goes, and the note with it).
 pub fn delete_note(conn: &mut Connection, dir: &Path, id: &str) -> AppResult<()> {
     let note = row(conn, id)?;
+    let attachment_id = attachment_of(conn, id)?;
     fs::remove_file(note_path(dir, &note))?;
     in_transaction(conn, |tx| {
-        tx.execute("DELETE FROM notes WHERE id = ?1", [id])?;
+        tx.execute("DELETE FROM attachments WHERE id = ?1", [&attachment_id])?;
         Ok(())
     })
 }
@@ -276,13 +344,13 @@ pub fn delete_folder(conn: &mut Connection, dir: &Path, path: &str) -> AppResult
     fs::remove_dir_all(dir.join(path))?;
     in_transaction(conn, |tx| {
         tx.execute(
-            "DELETE FROM notes WHERE folder = ?1 OR substr(folder, 1, length(?1) + 1) = ?1 || '/'",
-            [path],
+            "DELETE FROM attachments WHERE substr(path, 1, length(?1)) = ?1",
+            [format!("{PREFIX}{path}/")],
         )?;
         tx.execute(
-                "DELETE FROM note_folders WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
-                [path],
-            )?;
+            "DELETE FROM note_folders WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
+            [path],
+        )?;
         Ok(())
     })
 }

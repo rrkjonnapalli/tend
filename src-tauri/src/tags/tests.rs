@@ -4,8 +4,7 @@ use crate::db::open_memory;
 #[test]
 fn set_reuses_tags_case_insensitively() {
     let mut conn = open_memory();
-    conn.execute("INSERT INTO notes (id, folder, file_name, title, created_at, modified_at) VALUES ('n', '', 'n.md', 'n', 0, 0)", [])
-        .unwrap();
+    crate::notes::seed(&conn, "n", "notes/n.md", "n");
     let tags = set(
         &mut conn,
         Owner::Note,

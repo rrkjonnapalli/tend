@@ -84,7 +84,7 @@ The user picks one **vault folder**. Tend works only inside it:
 - **List pages** (notes, tasks, people): under the bar, a search line with the field at the right end (filters names, titles and paths as you type); tasks add the views line under it; then the add field, which takes focus when the page opens, then a column header (Title · My day · Subs · Due · Who · Folder; Name · Modified · Folder; Name · Birthday · Phone · Email). Everything down to the header stays put; only the rows scroll. The board has no column header. Drag order is off while a task search is typed. A person just added opens with First name focused.
 - **Subtasks in lists and on the board** carry a tiny green "s" badge before the title; hovering it reads "Subtask".
 - **List rows** (tasks, notes): a left part (status dot · type badge · title) and a right part of fixed-width, left-aligned columns (`--col-*` in tokens.css, 6px apart): edit 24 · My day 64 · subtask count 36 · due 64 · assignee 32 · path 80 (notes: edit · modified · path). The path is relative to the open folder, cut off with … and shows a tooltip only when cut.
-- **Edit in place:** task rows, note rows and subtask rows show a pencil on hover, first in the right-hand part of the row. It turns the title (a note's name, under the name rule) into a field: Enter or leaving saves, Esc cancels. Every in-place edit, explorer rename included, uses the same soft-fill field (no border).
+- **Edit in place:** task rows, note rows and subtask rows show a pencil on hover, first in the right-hand part of the row. It turns the title into a field: Enter or leaving saves, Esc cancels. Every in-place edit, explorer rename included, uses the same soft-fill field (no border).
 - **No autocorrect** (nor spellcheck, auto-capitalise, autofill) in any input or textarea; the markdown editors have it off too.
 - **Assignee in task rows:** the person's initials, or a gray "U" (hover: Unassigned); click opens a people search to assign, with Unassign at the bottom. Subtask rows on a task page show it too, after My day.
 - **Labels** (schema v2, `src-tauri/src/db/migrations/002_task_labels.sql`): a fixed list in Settings → Tasks → Labels (name + color, drag to order, rename, recolor; deleting one in use asks, then takes it off those tasks). A task (or subtask) carries any number, picked on the task page from that list only. Board cards show them as colored dots (up to 4, then +N; hover names them); list rows don't. Tags stay free-typed and shared with notes.
@@ -99,7 +99,8 @@ The user picks one **vault folder**. Tend works only inside it:
 
 ## 5. Notes
 
-- **The files in `notes/` are the truth.** `note_folders` and `notes` are an index of them, with the same folder model as tasks: folders keyed by path, and each note has `folder` + `file_name`.
+- **The files in `notes/` are the truth** for bodies and folders. A note is its own record (`notes`: id, title); its body is a file held by an attachment (`attachments.path` = `notes/<folder>/<name>.md`). `note_folders` indexes the folders by path.
+- **Titles belong to the note.** A note is created from a free-text title; the file name is the title's slug (lowercase, other characters → `_`, `note` when nothing is left, `_2`, `_3`… when taken). Changing the title renames the file. A file found on disk becomes a note titled by its file name. The body never sets the title.
 - **Sync:**
   1. **Vault open:** walk `notes/` once. Insert or update every folder in `note_folders` and every `.md` file in `notes`. Anything gone from disk gets `missing_at` and is cleaned up after a grace period.
   2. **While running:** a file watcher applies changes made outside Tend (Finder, other editors) the same way.
@@ -123,10 +124,10 @@ The user picks one **vault folder**. Tend works only inside it:
 ## 5a. Folders (notes and tasks)
 
 - **Separate trees:** notes folders and tasks folders are unrelated, even when they share a name.
-- **Names:** `^[a-z0-9_]+$` for every folder (notes and tasks) and every note file name (before `.md`).
-  - Lowercase letters, digits and `_` only. No spaces, capitals, `-` or `.`.
+- **Names:** `^[a-z0-9]+(_[a-z0-9]+)*$` for every folder (notes and tasks) and every note file name (before `.md`).
+  - Lowercase letters and digits, with single `_` between them. No spaces, capitals, `-`, `.`, leading or trailing `_`, or `__`.
   - Must be unique within its folder.
-  - Task titles are free text.
+  - Task and note titles are free text; a note's file name comes from its title.
   - During the vault scan, folders and files that don't match are **skipped**, not renamed. They're listed in Settings → General.
 - **Explorer actions:** hover a row → `⋯`, or right-click, opens a menu: **Rename** (F2) · **Move to…** (⌘⇧M) · **Delete…** (⌫). The root has no menu.
   - **Rename:** edited in place in the row. Invalid or duplicate names turn red with a hint underneath. Enter saves, Esc cancels.

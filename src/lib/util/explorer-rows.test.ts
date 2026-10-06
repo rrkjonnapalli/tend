@@ -25,9 +25,9 @@ describe('buildRows', () => {
 });
 
 describe('siblingNames', () => {
-  it('lists folders and leaves in a folder, minus the excepted row', () => {
-    expect(siblingNames({ tree, folder: 'work' })).toEqual(['tauri', 'plan', 'ideas']);
-    expect(siblingNames({ tree, folder: 'work', exceptKey: 'l:a' })).toEqual(['tauri', 'plan']);
+  it('lists the subfolders of a folder, minus the excepted row', () => {
+    expect(siblingNames({ tree, folder: 'work' })).toEqual(['tauri']);
+    expect(siblingNames({ tree, folder: 'work', exceptKey: 'f:work/tauri' })).toEqual([]);
   });
 });
 

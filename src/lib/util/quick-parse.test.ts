@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nameFromTitle, parsePhrase, parseSpan } from './quick-parse.ts';
+import { parsePhrase, parseSpan } from './quick-parse.ts';
 
 describe('parsePhrase', () => {
   it('reads task, note and person phrases', () => {
@@ -25,9 +25,5 @@ describe('helpers', () => {
     expect(parseSpan('90s')).toBe(90_000);
     expect(parseSpan('5m30s')).toBe(330_000);
     expect(parseSpan('0m')).toBeNull();
-  });
-
-  it('turns titles into file names', () => {
-    expect(nameFromTitle('Meeting notes – 2 Oct!')).toBe('meeting_notes_2_oct');
   });
 });

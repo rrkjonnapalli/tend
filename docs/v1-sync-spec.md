@@ -70,6 +70,12 @@ Every table gets:
 
 Renaming a folder or a status is therefore an update of one row, not a new row.
 
+Link rows get a fresh ULID each time a link is made, never one derived from the pair: deletions are
+kept forever, so a derived id would stop a removed link from ever being added again. Two devices can
+therefore make the same pair under different ids; reconciling keeps the newer row for each pair
+(§9) and records the other as deleted. Ids are fixed only for rows that are never deleted: settings
+(`id` = key), the default statuses (`id` = value) and the root folders (`id` = `'root'`).
+
 ### 4.2 Notes and attachments
 
 A note is its own record; its body is a file, held by an attachment.
@@ -183,6 +189,7 @@ deletion set, identical on every device given the same inputs.
 | Row deleted on either side (any time) | **deleted** — a deletion is never undone by an edit |
 | Row absent from one side, no deletion record | kept (absence is not deletion) |
 | Deletion on both sides | one record (earliest `deleted_at`) |
+| Two link rows with the same pair (or two rows with the same unique key) | the newer `updated_at` wins; the other id is recorded as deleted |
 
 Files follow their rows: a note's or attachment's file comes from the side whose attachment row won;
 a deleted attachment's file is removed.

@@ -43,8 +43,8 @@ pub fn add(conn: &Connection, person: &str, kind: &str, value: &str, label: &str
         |r| r.get(0),
     )?;
     conn.execute(
-        "INSERT INTO person_contacts (id, person_id, kind, value, label, position, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+        "INSERT INTO person_contacts (id, person_id, kind, value, label, position, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)",
         params![
             new_id(),
             person,
@@ -66,8 +66,8 @@ pub fn update(conn: &Connection, id: &str, value: &str, label: &str) -> AppResul
     )?;
     let value = checks::contact(&kind, value)?;
     conn.execute(
-        "UPDATE person_contacts SET value = ?1, label = ?2 WHERE id = ?3",
-        params![value, label.trim(), id],
+        "UPDATE person_contacts SET value = ?1, label = ?2, updated_at = ?3 WHERE id = ?4",
+        params![value, label.trim(), now_ms(), id],
     )?;
     Ok(())
 }

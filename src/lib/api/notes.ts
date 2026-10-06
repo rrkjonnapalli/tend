@@ -9,9 +9,9 @@ export const notesAPI = {
   rescan: () => call<NoteTree>('notes_rescan', { timeoutMs: config.slowCallTimeoutMs }),
   read: (id: string) => call<NoteDoc>('note_read', { args: { id } }),
   write: (input: { id: string; text: string }) => call<NoteRow>('note_write', { args: input }),
-  create: (input: { folder: string; name: string }) => call<NoteRow>('note_create', { args: input }),
+  create: (input: { folder: string; title: string }) => call<NoteRow>('note_create', { args: input }),
   createFolder: (path: string) => call<void>('folder_create', { args: { path } }),
-  /** Returns the new id (notes) or path (folders). */
+  /** `name` is a note's new title or a folder's new name. Returns the id (notes) or new path (folders). */
   rename: (input: { item: Item; name: string }) => call<string>('item_rename', { args: input }),
   move: (input: { item: Item; target: string }) => call<string>('item_move', { args: input }),
   remove: (item: Item) => call<void>('item_delete', { args: { item } }),

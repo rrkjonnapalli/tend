@@ -24,9 +24,8 @@ pub fn attachments_add(
     paths: Vec<String>,
 ) -> AppResult<()> {
     state.with(|db, v| {
-        let store = v.attachments_dir();
         paths.iter().try_for_each(|p| {
-            attachments::add_file(db, &store, &owner, &id, std::path::Path::new(p))
+            attachments::add_file(db, &v.root, &owner, &id, std::path::Path::new(p))
         })
     })
 }
@@ -53,12 +52,12 @@ fn opener_error(e: tauri_plugin_opener::Error) -> crate::error::AppError {
 /// Opens the file with the OS default app.
 #[tauri::command]
 pub fn attachment_open(state: State<AppState>, attachment: String) -> AppResult<()> {
-    let path = state.with(|db, v| attachments::file_path(db, &v.attachments_dir(), &attachment))?;
+    let path = state.with(|db, v| attachments::file_path(db, &v.root, &attachment))?;
     tauri_plugin_opener::open_path(path, None::<&str>).map_err(opener_error)
 }
 
 #[tauri::command]
 pub fn attachment_reveal(state: State<AppState>, attachment: String) -> AppResult<()> {
-    let path = state.with(|db, v| attachments::file_path(db, &v.attachments_dir(), &attachment))?;
+    let path = state.with(|db, v| attachments::file_path(db, &v.root, &attachment))?;
     tauri_plugin_opener::reveal_item_in_dir(path).map_err(opener_error)
 }

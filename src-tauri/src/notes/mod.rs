@@ -1,6 +1,7 @@
-//! The notes index. Files in `notes/` are the truth; `note_folders` and `notes` mirror them.
-//! Every change made inside Tend writes to disk first, then to the database in one transaction,
-//! and puts the disk back if the database step fails.
+//! Notes. A note is a record (`notes`: id, title) whose body is a markdown file under `notes/`,
+//! held by an attachment (`attachments.path`). The files are the truth for bodies and folders;
+//! titles belong to the notes. Every change made inside Tend writes to disk first, then to the
+//! database in one transaction, and puts the disk back if the database step fails.
 
 mod edit;
 mod scan;
@@ -13,13 +14,14 @@ mod watcher_tests;
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::UNIX_EPOCH;
 
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 
 use crate::error::{errors, AppResult};
+use crate::files;
 use crate::names;
+use crate::util::now_ms;
 
 pub use edit::{
     create, delete_folder, delete_note, folder_create, move_folder, move_note, rename_folder,
@@ -30,6 +32,9 @@ pub use scan::scan;
 /// Items missing from disk stay in the index this long, then they are purged.
 pub const GRACE_MS: i64 = 7 * 24 * 60 * 60 * 1000;
 const EXT: &str = ".md";
+/// Note bodies live under this folder of the vault; attachment paths start with it.
+const PREFIX: &str = "notes/";
+const MIME: &str = "text/markdown";
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -56,47 +61,45 @@ pub struct NoteDoc {
     pub tags: Vec<String>,
 }
 
-/// Last-modified time in ms, or 0 when the file can't be read.
-fn mtime(path: &Path) -> i64 {
-    fs::metadata(path)
-        .and_then(|m| m.modified())
-        .ok()
-        .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
-        .map_or(0, |d| d.as_millis() as i64)
+/// `folder` + `name` → the path relative to `notes/` ("work/plan.md").
+fn rel_path(folder: &str, name: &str) -> String {
+    names::join(folder, &format!("{name}{EXT}"))
 }
 
-/// The first `# ` heading, or the file name without `.md`.
-pub fn title_of(text: &str, name: &str) -> String {
-    let heading = text
-        .lines()
-        .find_map(|l| l.strip_prefix("# "))
-        .map(str::trim)
-        .filter(|t| !t.is_empty());
-    match heading {
-        Some(title) => title.to_string(),
-        None => name.to_string(),
-    }
+/// The attachment path of a note body: "notes/work/plan.md".
+fn vault_path(folder: &str, name: &str) -> String {
+    format!("{PREFIX}{}", rel_path(folder, name))
 }
 
-fn file_path(dir: &Path, folder: &str, file_name: &str) -> PathBuf {
-    dir.join(names::join(folder, file_name))
+/// "notes/work/plan.md" → ("work", "plan").
+fn split_vault_path(path: &str) -> (String, String) {
+    let rel = path.strip_prefix(PREFIX).unwrap_or(path);
+    let file = names::base(rel);
+    let name = file.strip_suffix(EXT).unwrap_or(file).to_string();
+    (names::parent(rel).to_string(), name)
 }
 
-/// Where an indexed note lives on disk.
+fn file_path(dir: &Path, folder: &str, name: &str) -> PathBuf {
+    dir.join(rel_path(folder, name))
+}
+
+/// Where an indexed note's body is on disk.
 fn note_path(dir: &Path, note: &NoteRow) -> PathBuf {
-    file_path(dir, &note.folder, &format!("{}{EXT}", note.name))
+    file_path(dir, &note.folder, &note.name)
 }
 
-const ROW_SQL: &str = "SELECT id, folder, file_name, title, modified_at FROM notes";
+const ROW_SQL: &str = "SELECT n.id, a.path, n.title, max(n.updated_at, a.updated_at)
+    FROM notes n JOIN attachments a ON a.id = n.attachment_id";
 
 fn to_row(r: &rusqlite::Row) -> rusqlite::Result<NoteRow> {
-    let file: String = r.get(2)?;
+    let path: String = r.get(1)?;
+    let (folder, name) = split_vault_path(&path);
     Ok(NoteRow {
         id: r.get(0)?,
-        folder: r.get(1)?,
-        name: file.trim_end_matches(EXT).to_string(),
-        title: r.get(3)?,
-        modified_at: r.get(4)?,
+        folder,
+        name,
+        title: r.get(2)?,
+        modified_at: r.get(3)?,
     })
 }
 
@@ -109,7 +112,7 @@ pub fn tree(conn: &Connection) -> AppResult<Tree> {
         .collect::<Result<_, _>>()?;
     let notes = conn
         .prepare(&format!(
-            "{ROW_SQL} WHERE missing_at IS NULL ORDER BY folder, file_name"
+            "{ROW_SQL} WHERE a.missing_at IS NULL ORDER BY a.path"
         ))?
         .query_map([], to_row)?
         .collect::<Result<_, _>>()?;
@@ -118,12 +121,21 @@ pub fn tree(conn: &Connection) -> AppResult<Tree> {
 
 pub fn row(conn: &Connection, id: &str) -> AppResult<NoteRow> {
     conn.query_row(
-        &format!("{ROW_SQL} WHERE id = ?1 AND missing_at IS NULL"),
+        &format!("{ROW_SQL} WHERE n.id = ?1 AND a.missing_at IS NULL"),
         [id],
         to_row,
     )
     .optional()?
     .ok_or_else(|| errors::NOT_FOUND.with("Note was not found"))
+}
+
+fn attachment_of(conn: &Connection, note_id: &str) -> AppResult<String> {
+    let id = conn.query_row(
+        "SELECT attachment_id FROM notes WHERE id = ?1",
+        [note_id],
+        |r| r.get(0),
+    )?;
+    Ok(id)
 }
 
 pub fn read(conn: &Connection, dir: &Path, id: &str) -> AppResult<NoteDoc> {
@@ -133,13 +145,40 @@ pub fn read(conn: &Connection, dir: &Path, id: &str) -> AppResult<NoteDoc> {
     Ok(NoteDoc { row, text, tags })
 }
 
+/// Writes the body and records the file's new facts. The title is the note's own, so the body
+/// never changes it.
 pub fn write(conn: &Connection, dir: &Path, id: &str, text: &str) -> AppResult<NoteRow> {
     let note = row(conn, id)?;
     let path = note_path(dir, &note);
     fs::write(&path, text)?;
+    let facts = files::facts(&path)?;
+    let now = now_ms();
     conn.execute(
-        "UPDATE notes SET title = ?1, modified_at = ?2 WHERE id = ?3",
-        params![title_of(text, &note.name), mtime(&path), id],
+        "UPDATE attachments SET size_bytes = ?1, sha256 = ?2, mtime = ?3, updated_at = ?4
+         WHERE id = ?5",
+        params![
+            facts.size,
+            facts.sha256,
+            facts.mtime,
+            now,
+            attachment_of(conn, id)?
+        ],
     )?;
     row(conn, id)
+}
+
+/// A note row with a body path and no file, for tests in other modules.
+#[cfg(test)]
+pub fn seed(conn: &Connection, id: &str, path: &str, title: &str) {
+    conn.execute(
+        "INSERT INTO attachments (id, path, name, mime_type, size_bytes, sha256, created_at, updated_at)
+         VALUES (?1, ?2, ?2, 'text/markdown', 0, '', 0, 0)",
+        params![format!("a_{id}"), path],
+    )
+    .unwrap();
+    conn.execute(
+        "INSERT INTO notes (id, attachment_id, title, created_at, updated_at) VALUES (?1, ?2, ?3, 0, 0)",
+        params![id, format!("a_{id}"), title],
+    )
+    .unwrap();
 }

@@ -15,8 +15,7 @@
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
-  import { nameError, relativeTo } from '#lib/util/names.ts';
-  import { siblingNames } from '#lib/util/explorer-rows.ts';
+  import { nameErrors, relativeTo } from '#lib/util/names.ts';
   import { folderCrumbs, folderSummary } from '#lib/util/note-paths.ts';
   import { ago } from '#lib/util/dates.ts';
   import { routes } from '#lib/util/routes.ts';
@@ -25,20 +24,18 @@
   let query = $state('');
   const needle = $derived(searchNeedle(query));
   const inFolder = $derived(notes.under(folder));
-  const rows = $derived(inFolder.filter((n) => textMatches([n.name, n.title, n.folder], needle)));
+  const rows = $derived(inFolder.filter((n) => textMatches([n.title, n.name, n.folder], needle)));
   const summary = $derived(folderSummary({ notes: inFolder.length, folders: notes.foldersUnder(folder).length }));
   const crumbs = $derived(folderCrumbs(folder));
 
   let draft = $state('');
   let error = $state('');
-  const siblings = $derived(siblingNames({ tree: { folders: notes.folders, leaves: notes.notes }, folder }));
-  const draftError = $derived(draft.trim() ? nameError(draft.trim(), siblings) : '');
 
   async function create() {
-    const name = draft.trim();
-    if (!name || draftError) return;
+    const title = draft.trim();
+    if (!title) return;
     try {
-      const row = await notes.create({ folder, name });
+      const row = await notes.create({ folder, title });
       draft = '';
       goto(routes.note(row.id, { edit: true }));
     } catch (e) {
@@ -48,8 +45,8 @@
 
   // ---- rename in place
 
-  /** Titles over the list columns: name | edit · modified · folder. */
-  const COLUMNS = ['Name', '', 'Modified', 'Folder'];
+  /** Titles over the list columns: title | edit · modified · folder. */
+  const COLUMNS = ['Title', '', 'Modified', 'Folder'];
 
   let editingId = $state<string | null>(null);
 
@@ -57,15 +54,11 @@
     editingId = null;
   }
 
-  /** The name rule, and no clash with anything else in the note's own folder. */
-  function renameProblem(note: NoteRow, name: string): string {
-    const others = siblingNames({ tree: { folders: notes.folders, leaves: notes.notes }, folder: note.folder }).filter((s) => s !== note.name);
-    return nameError(name, others);
-  }
+  const titleProblem = (title: string) => (title ? '' : nameErrors.title);
 
-  function rename(note: NoteRow, name: string) {
+  function rename(note: NoteRow, title: string) {
     stopEditing();
-    notes.rename({ kind: 'note', id: note.id }, name);
+    notes.rename({ kind: 'note', id: note.id }, title);
   }
 
   function onkeydown(e: KeyboardEvent) {
@@ -87,21 +80,21 @@
       oninput={() => (error = '')}
       {onkeydown} />
   </label>
-  {#if draftError || error}<span class="err">{draftError || error}</span>{/if}
+  {#if error}<span class="err">{error}</span>{/if}
   <ColumnHeader template="var(--grid-note)" columns={COLUMNS} />
   <div class="list-scroll">
     <div class="rows">
       {#each rows as n (n.id)}
         {#if editingId === n.id}
           <div class="row editing">
-            <InlineTitle value={n.name} label="Note name" check={(name) => renameProblem(n, name)} onsave={(name) => rename(n, name)} oncancel={stopEditing} />
+            <InlineTitle value={n.title} label="Note title" check={titleProblem} onsave={(title) => rename(n, title)} oncancel={stopEditing} />
             <span></span>
             <span class="meta">{ago(n.modifiedAt)}</span>
             <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>
           </div>
         {:else}
           <a class="row reveal-on-hover" href={routes.note(n.id)}>
-            <span class="name">{n.name}</span>
+            <span class="name">{n.title}</span>
             <EditButton label="Rename note" onedit={() => (editingId = n.id)} />
             <span class="meta">{ago(n.modifiedAt)}</span>
             <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>

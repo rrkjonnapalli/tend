@@ -4,7 +4,7 @@ use crate::db::open_memory;
 #[test]
 fn files_are_copied_hashed_and_linked() {
     let tmp = tempfile::tempdir().unwrap();
-    let store = tmp.path().join(".attachments");
+    let root = tmp.path().join("vault");
     let src = tmp.path().join("Invoice March.PDF");
     fs::write(&src, b"hello").unwrap();
     let mut conn = open_memory();
@@ -17,7 +17,7 @@ fn files_are_copied_hashed_and_linked() {
     )
     .unwrap();
 
-    add_file(&mut conn, &store, "task", &t.id, &src).unwrap();
+    add_file(&mut conn, &root, "task", &t.id, &src).unwrap();
     let links = list(&conn, "task", &t.id).unwrap();
     assert_eq!(links.len(), 1);
     let l = &links[0];
@@ -26,7 +26,7 @@ fn files_are_copied_hashed_and_linked() {
         ("file", "Invoice March.PDF", Some(5))
     );
     assert_eq!(l.mime_type.as_deref(), Some("application/pdf"));
-    let path = file_path(&conn, &store, l.attachment_id.as_deref().unwrap()).unwrap();
+    let path = file_path(&conn, &root, l.attachment_id.as_deref().unwrap()).unwrap();
     assert_eq!(fs::read(&path).unwrap(), b"hello");
     assert!(path
         .file_name()
@@ -44,7 +44,7 @@ fn files_are_copied_hashed_and_linked() {
     unlink(&conn, &l.id).unwrap();
     assert!(list(&conn, "task", &t.id).unwrap().is_empty());
     assert!(path.exists(), "unlinking keeps the file");
-    assert!(add_file(&mut conn, &store, "nope", &t.id, &src).is_err());
+    assert!(add_file(&mut conn, &root, "nope", &t.id, &src).is_err());
 }
 
 #[test]
@@ -58,19 +58,13 @@ fn notes_link_once() {
         },
     )
     .unwrap();
-    conn.execute(
-        "INSERT INTO note_folders (path, created_at) VALUES ('work', 0)",
-        [],
-    )
-    .unwrap();
-    conn.execute("INSERT INTO notes (id, folder, file_name, title, created_at, modified_at) VALUES ('n', 'work', 'plan.md', 'Plan', 0, 0)", [])
-        .unwrap();
+    crate::notes::seed(&conn, "n", "notes/work/plan.md", "Q4 plan");
     link_note(&conn, "task", &t.id, "n").unwrap();
     link_note(&conn, "task", &t.id, "n").unwrap();
     let links = list(&conn, "task", &t.id).unwrap();
     assert_eq!(links.len(), 1);
     assert_eq!(
         (links[0].name.as_str(), links[0].folder.as_deref()),
-        ("plan", Some("work"))
+        ("Q4 plan", Some("work"))
     );
 }

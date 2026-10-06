@@ -5,7 +5,7 @@ use rusqlite::{params, Connection, OptionalExtension, Transaction};
 
 use crate::error::{errors, AppResult};
 use crate::names;
-use crate::util::now_ms;
+use crate::util::{new_id, now_ms};
 
 fn exists(conn: &Connection, path: &str) -> AppResult<bool> {
     let found = conn
@@ -44,8 +44,8 @@ pub(super) fn ensure(tx: &Transaction, path: &str) -> AppResult<()> {
     for segment in path.split('/').filter(|s| !s.is_empty()) {
         current = names::join(&current, segment);
         tx.execute(
-            "INSERT OR IGNORE INTO task_folders (path, created_at) VALUES (?1, ?2)",
-            params![current, now],
+            "INSERT OR IGNORE INTO task_folders (id, path, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)",
+            params![new_id(), current, now],
         )?;
     }
     Ok(())
@@ -85,10 +85,17 @@ fn relocate(tx: &Transaction, old: &str, new: &str) -> AppResult<()> {
     if old.is_empty() || !exists(tx, old)? {
         return Err(errors::NOT_FOUND.with("Folder was not found"));
     }
+    let now = now_ms();
     tx.execute(
-        "UPDATE task_folders SET path = ?2 || substr(path, length(?1) + 1)
+        "UPDATE task_folders SET path = ?2 || substr(path, length(?1) + 1), updated_at = ?3
          WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
-        params![old, new],
+        params![old, new, now],
+    )?;
+    // Tasks followed through ON UPDATE CASCADE; mark them changed so sync carries the new paths.
+    tx.execute(
+        "UPDATE tasks SET updated_at = ?2
+         WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
+        params![new, now],
     )?;
     Ok(())
 }

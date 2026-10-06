@@ -61,13 +61,10 @@ fn initial_scan_indexes_folders_and_notes() {
         ]
     );
     let wc = t.notes.iter().find(|n| n.name == "window_config").unwrap();
-    assert_eq!(wc.title, "Window config");
-    let rc = t
-        .notes
-        .iter()
-        .find(|n| n.name == "release_checklist")
-        .unwrap();
-    assert_eq!(rc.title, "release_checklist");
+    assert_eq!(
+        wc.title, "window_config",
+        "a found file is titled by its name"
+    );
 }
 
 #[test]
@@ -100,12 +97,25 @@ fn external_rename_keeps_the_id() {
 }
 
 #[test]
-fn external_edit_updates_title() {
+fn external_edit_bumps_updated_at_but_keeps_the_title() {
     let mut f = fixture(&[("a.md", "# Old")]);
+    let before = tree(&f.conn).unwrap().notes[0].clone();
     std::thread::sleep(std::time::Duration::from_millis(20));
     fs::write(f.dir.join("a.md"), "# New title").unwrap();
     scan(&mut f.conn, &f.dir).unwrap();
-    assert_eq!(tree(&f.conn).unwrap().notes[0].title, "New title");
+    let after = tree(&f.conn).unwrap().notes[0].clone();
+    assert_eq!(after.title, "a");
+    assert!(after.modified_at > before.modified_at);
+}
+
+#[test]
+fn touch_without_change_keeps_updated_at() {
+    let mut f = fixture(&[("a.md", "same")]);
+    let before = tree(&f.conn).unwrap().notes[0].modified_at;
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    fs::write(f.dir.join("a.md"), "same").unwrap();
+    scan(&mut f.conn, &f.dir).unwrap();
+    assert_eq!(tree(&f.conn).unwrap().notes[0].modified_at, before);
 }
 
 #[test]
@@ -124,7 +134,7 @@ fn external_delete_marks_missing_then_purges() {
     let old = now_ms() - GRACE_MS - 1;
     f.conn
         .execute(
-            "UPDATE notes SET missing_at = ?1 WHERE missing_at IS NOT NULL",
+            "UPDATE attachments SET missing_at = ?1 WHERE missing_at IS NOT NULL",
             [old],
         )
         .unwrap();
@@ -149,11 +159,17 @@ fn external_delete_marks_missing_then_purges() {
 #[test]
 fn create_write_and_read() {
     let mut f = fixture(&[]);
-    let n = create(&mut f.conn, &f.dir, "work/ideas", "release_checklist").unwrap();
-    assert_eq!(n.title, "Release checklist");
+    let n = create(&mut f.conn, &f.dir, "work/ideas", " Release checklist! ").unwrap();
+    assert_eq!(
+        (n.title.as_str(), n.name.as_str()),
+        ("Release checklist!", "release_checklist")
+    );
     assert!(f.dir.join("work/ideas/release_checklist.md").is_file());
     let n = write(&f.conn, &f.dir, &n.id, "# Ship it\n\nnow").unwrap();
-    assert_eq!(n.title, "Ship it");
+    assert_eq!(
+        n.title, "Release checklist!",
+        "the body never sets the title"
+    );
     assert_eq!(
         read(&f.conn, &f.dir, &n.id).unwrap().text,
         "# Ship it\n\nnow"
@@ -163,27 +179,24 @@ fn create_write_and_read() {
 }
 
 #[test]
-fn name_validation_and_clashes() {
+fn titles_pick_free_file_names() {
     let mut f = fixture(&[("work/a.md", "")]);
-    let fails = |r: AppResult<NoteRow>, def| r.unwrap_err().is(def);
-    assert!(fails(
-        create(&mut f.conn, &f.dir, "", "Bad Name"),
-        errors::NAME_CHARS
-    ));
-    assert!(fails(
-        create(&mut f.conn, &f.dir, "", ""),
-        errors::NAME_EMPTY
-    ));
-    assert!(fails(
-        create(&mut f.conn, &f.dir, "", "work"),
-        errors::NAME_TAKEN
-    ));
-    assert!(fails(
-        create(&mut f.conn, &f.dir, "work", "a"),
-        errors::NAME_TAKEN
-    ));
+    let empty = create(&mut f.conn, &f.dir, "", "  ").unwrap_err();
+    assert!(empty.is(errors::NOTE_TITLE_EMPTY));
+    let name = |f: &mut Fixture, folder: &str, title: &str| {
+        create(&mut f.conn, &f.dir, folder, title).unwrap().name
+    };
+    assert_eq!(
+        name(&mut f, "", "Work"),
+        "work_2",
+        "a folder holds the name"
+    );
+    assert_eq!(name(&mut f, "work", "A"), "a_2");
+    assert_eq!(name(&mut f, "work", "a"), "a_3");
+    assert_eq!(name(&mut f, "", "!!!"), "note");
     assert!(folder_create(&mut f.conn, &f.dir, "work").is_err());
     assert!(folder_create(&mut f.conn, &f.dir, "Work2").is_err());
+    assert!(folder_create(&mut f.conn, &f.dir, "a__b").is_err());
 }
 
 #[test]
@@ -242,12 +255,18 @@ fn rename_and_move_a_note() {
         .unwrap()
         .id
         .clone();
-    rename_note(&mut f.conn, &f.dir, &id, "b").unwrap();
-    assert!(f.dir.join("b.md").is_file() && !f.dir.join("a.md").exists());
+    let renamed = rename_note(&mut f.conn, &f.dir, &id, "B side").unwrap();
+    assert_eq!(
+        (renamed.title.as_str(), renamed.name.as_str()),
+        ("B side", "b_side")
+    );
+    assert!(f.dir.join("b_side.md").is_file() && !f.dir.join("a.md").exists());
+    let same = rename_note(&mut f.conn, &f.dir, &id, "B SIDE").unwrap();
+    assert_eq!(same.name, "b_side", "same slug keeps the file");
     let moved = move_note(&mut f.conn, &f.dir, &id, "work/new").unwrap();
     assert_eq!(moved.folder, "work/new");
-    assert!(f.dir.join("work/new/b.md").is_file());
-    assert!(rename_note(&mut f.conn, &f.dir, &id, "Bad").is_err());
+    assert!(f.dir.join("work/new/b_side.md").is_file());
+    assert!(rename_note(&mut f.conn, &f.dir, &id, " ").is_err());
     assert_matches_disk(&mut f);
 }
 
@@ -275,10 +294,10 @@ fn delete_note_and_folder() {
 #[test]
 fn rescan_repairs_drift() {
     let mut f = fixture(&[("a.md", "# A")]);
-    f.conn.execute("DELETE FROM notes", []).unwrap();
+    f.conn.execute("DELETE FROM attachments", []).unwrap();
     f.conn
         .execute(
-            "INSERT INTO note_folders (path, created_at) VALUES ('ghost', 0)",
+            "INSERT INTO note_folders (id, path, created_at, updated_at) VALUES ('g', 'ghost', 0, 0)",
             [],
         )
         .unwrap();

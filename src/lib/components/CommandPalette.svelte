@@ -22,7 +22,7 @@
   import { keyParts } from '#lib/util/keys.ts';
   import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
   import { groupItems, hasAllWords } from '#lib/util/palette-items.ts';
-  import { nameFromTitle, parsePhrase } from '#lib/util/quick-parse.ts';
+  import { parsePhrase } from '#lib/util/quick-parse.ts';
   import { routes } from '#lib/util/routes.ts';
 
   let { onclose }: { onclose: () => void } = $props();
@@ -68,14 +68,13 @@
 
   function notePhrase(title: string): PaletteItem {
     const path = lastPath('note');
-    const name = nameFromTitle(title);
     const folder = path ? `${path}/` : '';
     return createItem({
       key: 'p:note',
       label: `Note: ${title}`,
-      sub: `notes/${folder}${name}.md`,
+      sub: `notes/${folder}`,
       run: async () => {
-        const row = await notes.create({ folder: path, name });
+        const row = await notes.create({ folder: path, title });
         goto(routes.note(row.id, { edit: true }));
       },
     });

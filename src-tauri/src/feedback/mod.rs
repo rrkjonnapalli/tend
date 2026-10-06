@@ -17,7 +17,7 @@ pub fn add(conn: &Connection, kind: &str, body: &str, app_version: &str) -> AppR
         return Err(errors::FEEDBACK_EMPTY.err());
     }
     conn.execute(
-        "INSERT INTO feedback (id, kind, body, app_version, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO feedback (id, kind, body, app_version, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?5)",
         params![new_id(), kind, body, app_version, now_ms()],
     )?;
     Ok(())

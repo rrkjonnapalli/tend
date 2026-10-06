@@ -63,7 +63,7 @@ impl Harness {
 fn notes_round_trip_through_ipc() {
     let h = Harness::new();
     h.ok("folder_create", json!({ "path": "work" }));
-    let note = h.ok("note_create", json!({ "folder": "work", "name": "plan" }));
+    let note = h.ok("note_create", json!({ "folder": "work", "title": "Plan" }));
     let id = note["id"].as_str().unwrap().to_string();
     assert_eq!(note["title"], "Plan");
 
@@ -80,7 +80,7 @@ fn notes_round_trip_through_ipc() {
 
     h.ok(
         "item_rename",
-        json!({ "item": { "kind": "note", "id": id }, "name": "q4_plan" }),
+        json!({ "item": { "kind": "note", "id": id }, "name": "Q4 plan" }),
     );
     h.ok(
         "item_move",
@@ -95,11 +95,12 @@ fn notes_round_trip_through_ipc() {
     let tree = h.ok("notes_tree", json!({}));
     assert_eq!(tree["folders"], json!(["archive", "archive/work"]));
     assert_eq!(tree["notes"][0]["folder"], "archive/work");
+    assert_eq!(tree["notes"][0]["title"], "Q4 plan");
 
     let err = h
-        .call("note_create", json!({ "folder": "", "name": "Bad Name" }))
+        .call("note_create", json!({ "folder": "", "title": " " }))
         .unwrap_err();
-    assert_eq!(err["key"], "NAME_CHARS");
+    assert_eq!(err["key"], "NOTE_TITLE_EMPTY");
 
     h.ok(
         "item_delete",

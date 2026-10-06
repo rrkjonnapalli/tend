@@ -36,29 +36,27 @@ fn reopens_existing_without_migrating() {
 }
 
 #[test]
-fn a_v1_database_migrates_to_the_latest_schema() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("app.sqlite");
-    let v1 = Connection::open(&path).unwrap();
-    v1.execute_batch(MIGRATIONS[0]).unwrap();
-    v1.execute(
-        "INSERT INTO meta (key, value) VALUES ('schema_version', '1')
-         ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+fn deletes_leave_tombstones_and_activity() {
+    let conn = super::open_memory();
+    conn.execute(
+        "INSERT INTO tags (id, name, created_at, updated_at) VALUES ('t1', 'ops', 5, 5)",
         [],
     )
     .unwrap();
-    drop(v1);
-
-    let (conn, opened) = open(&path).unwrap();
-    assert_eq!(
-        opened,
-        Opened::Migrated {
-            from: 1,
-            to: schema_version()
-        }
-    );
-    let labels: i64 = conn
-        .query_row("SELECT count(*) FROM task_labels", [], |r| r.get(0))
+    conn.execute("DELETE FROM tags WHERE id = 't1'", [])
         .unwrap();
-    assert_eq!(labels, 0);
+    let tomb: (String, String) = conn
+        .query_row("SELECT table_name, row_id FROM deletions", [], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })
+        .unwrap();
+    assert_eq!(tomb, ("tags".into(), "t1".into()));
+    let actions: Vec<String> = conn
+        .prepare("SELECT action FROM activity WHERE entity_id = 't1' ORDER BY id")
+        .unwrap()
+        .query_map([], |r| r.get(0))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    assert_eq!(actions, vec!["insert", "delete"]);
 }

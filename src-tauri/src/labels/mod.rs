@@ -76,7 +76,8 @@ pub fn add(conn: &Connection, name: &str, color: &str) -> AppResult<Label> {
     )?;
     let id = new_id();
     conn.execute(
-        "INSERT INTO task_labels (id, name, color, position, created_at) VALUES (?1, ?2, ?3, ?4, ?5)",
+        "INSERT INTO task_labels (id, name, color, position, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?5)",
         params![id, name, color, position, now_ms()],
     )?;
     get(conn, &id)
@@ -85,8 +86,8 @@ pub fn add(conn: &Connection, name: &str, color: &str) -> AppResult<Label> {
 pub fn rename(conn: &Connection, id: &str, name: &str) -> AppResult<Label> {
     let name = check_name(conn, name, Some(id))?;
     conn.execute(
-        "UPDATE task_labels SET name = ?1 WHERE id = ?2",
-        params![name, id],
+        "UPDATE task_labels SET name = ?1, updated_at = ?2 WHERE id = ?3",
+        params![name, now_ms(), id],
     )?;
     get(conn, id)
 }
@@ -94,8 +95,8 @@ pub fn rename(conn: &Connection, id: &str, name: &str) -> AppResult<Label> {
 pub fn recolor(conn: &Connection, id: &str, color: &str) -> AppResult<Label> {
     colors::check(color)?;
     conn.execute(
-        "UPDATE task_labels SET color = ?1 WHERE id = ?2",
-        params![color, id],
+        "UPDATE task_labels SET color = ?1, updated_at = ?2 WHERE id = ?3",
+        params![color, now_ms(), id],
     )?;
     get(conn, id)
 }
@@ -110,11 +111,12 @@ pub fn reorder(conn: &mut Connection, ids: &[String]) -> AppResult<()> {
     if proposed != existing {
         return Err(errors::LABEL_ORDER.err());
     }
+    let now = now_ms();
     in_transaction(conn, |tx| {
         for (position, id) in ids.iter().enumerate() {
             tx.execute(
-                "UPDATE task_labels SET position = ?1 WHERE id = ?2",
-                params![position as i64, id],
+                "UPDATE task_labels SET position = ?1, updated_at = ?2 WHERE id = ?3 AND position <> ?1",
+                params![position as i64, now, id],
             )?;
         }
         Ok(())
@@ -167,12 +169,21 @@ pub fn set_for_task(
     for id in ids {
         get(conn, id)?;
     }
+    let current = of_task(conn, task_id)?;
+    let now = now_ms();
+    // Only links that change are written, so unchanged ones keep their ids.
     in_transaction(conn, |tx| {
-        tx.execute("DELETE FROM task_label_links WHERE task_id = ?1", [task_id])?;
-        for id in ids {
+        for id in current.iter().filter(|id| !ids.contains(id)) {
             tx.execute(
-                "INSERT OR IGNORE INTO task_label_links (task_id, label_id) VALUES (?1, ?2)",
+                "DELETE FROM task_label_links WHERE task_id = ?1 AND label_id = ?2",
                 params![task_id, id],
+            )?;
+        }
+        for id in ids.iter().filter(|id| !current.contains(id)) {
+            tx.execute(
+                "INSERT OR IGNORE INTO task_label_links (id, task_id, label_id, updated_at)
+                 VALUES (?1, ?2, ?3, ?4)",
+                params![new_id(), task_id, id, now],
             )?;
         }
         Ok(())

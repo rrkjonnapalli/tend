@@ -6,6 +6,7 @@ mod config;
 mod db;
 mod error;
 mod feedback;
+mod files;
 #[cfg(test)]
 mod ipc_tests;
 mod labels;

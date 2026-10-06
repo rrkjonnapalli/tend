@@ -99,11 +99,13 @@
   const hasMenu = (row: ExplorerRow) => !row.isNew && (!isRoot(row) || !!actions.renameRoot);
   const allowsDrop = (row: ExplorerRow, target: string) => canDrop({ tree, row, target });
 
-  // The root's display name is free text; everything else follows the name rule.
+  // The root's name and leaf titles are free text; folders follow the name rule.
   const draftError = $derived.by(() => {
     if (!editing) return '';
     const name = draft.trim();
     if (editing.key === ROOT_KEY) return name ? '' : nameErrors.empty;
+    const isLeaf = editing.isNew === 'leaf' || editing.item?.kind === 'leaf';
+    if (isLeaf) return name ? '' : nameErrors.title;
     return nameError(name, siblingNames({ tree, folder: editing.folder, exceptKey: editing.key }));
   });
 

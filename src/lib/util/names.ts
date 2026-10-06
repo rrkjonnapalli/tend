@@ -1,11 +1,12 @@
 // The name rule for folders and note files (same as src-tauri/src/names.rs).
 
-const RULE = /^[a-z0-9_]+$/;
+const RULE = /^[a-z0-9]+(_[a-z0-9]+)*$/;
 
 export const nameErrors = {
   empty: 'Name can’t be empty',
-  chars: 'Only a–z, 0–9 and _ (no spaces or capitals)',
+  chars: 'Only a–z and 0–9, with single _ between them',
   clash: 'Something with this name already exists here',
+  title: 'A note needs a title',
 } as const;
 
 export const isValidName = (name: string) => RULE.test(name);

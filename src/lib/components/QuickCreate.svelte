@@ -15,7 +15,6 @@
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { cleanPath, isValidPath, join, nameError } from '#lib/util/names.ts';
-  import { nameFromTitle } from '#lib/util/quick-parse.ts';
   import { parseDuration } from '#lib/util/timer-parse.ts';
   import { timerStartedText } from '#lib/util/timer-text.ts';
   import { label as keyLabel } from '#lib/util/keys.ts';
@@ -57,10 +56,9 @@
 
   const problem = $derived.by(() => {
     if (kind === 'timer') return dur.ok ? '' : dur.error;
-    if (target && !isValidPath(target)) return 'Folder names: a–z, 0–9 and _ only';
+    if (target && !isValidPath(target)) return 'Folder names: a–z and 0–9, with single _ between them';
     if (!title) return '';
     if (kind === 'folder') return folderProblem();
-    if (kind === 'note' && !nameFromTitle(name)) return 'The name needs a letter or digit';
     return '';
   });
   const message = $derived(error || problem);
@@ -95,7 +93,7 @@
   }
 
   async function createNote() {
-    const row = await notes.create({ folder: target, name: nameFromTitle(name) });
+    const row = await notes.create({ folder: target, title });
     onclose();
     goto(routes.note(row.id, { edit: true }));
   }

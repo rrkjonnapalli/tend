@@ -92,9 +92,7 @@ export function buildRows({ tree, rootName, expanded, adding }: RowsOptions): Ex
 
 /** Names already used in `folder`, leaving out the row with `exceptKey` (the one being renamed). */
 export function siblingNames({ tree, folder, exceptKey }: { tree: ExplorerTree; folder: string; exceptKey?: string }): string[] {
-  const subfolders = tree.folders.filter((f) => parentOf(f) === folder && `f:${f}` !== exceptKey).map(baseOf);
-  const leaves = tree.leaves.filter((l) => l.folder === folder && `l:${l.id}` !== exceptKey).map((l) => l.name);
-  return [...subfolders, ...leaves];
+  return tree.folders.filter((f) => parentOf(f) === folder && `f:${f}` !== exceptKey).map(baseOf);
 }
 
 /** A row can move into `target` unless it is already there, would land inside itself, or its name is taken. */
@@ -104,5 +102,5 @@ export function canDrop({ tree, row, target }: { tree: ExplorerTree; row: Explor
     const path = row.item.path;
     return !isUnder(target, path) && parentOf(path) !== target && !taken(baseOf(path));
   }
-  return row.folder !== target && !taken(row.name);
+  return row.folder !== target;
 }

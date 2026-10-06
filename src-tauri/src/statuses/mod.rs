@@ -9,6 +9,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 
 use crate::error::{errors, AppResult};
+use crate::util::{new_id, now_ms};
 
 /// Always the first status; new tasks start here.
 pub const FIRST: &str = "NOT_STARTED";
@@ -57,9 +58,9 @@ pub fn add(conn: &Connection, label: &str, value: &str, color: &str) -> AppResul
         |r| r.get(0),
     )?;
     conn.execute(
-        "INSERT INTO statuses (value, label, color, position, is_default)
-         VALUES (?1, ?2, ?3, ?4, 0)",
-        params![value, label, color, position],
+        "INSERT INTO statuses (id, value, label, color, position, is_default, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6)",
+        params![new_id(), value, label, color, position, now_ms()],
     )?;
     get(conn, value)
 }
@@ -73,8 +74,8 @@ fn get(conn: &Connection, value: &str) -> AppResult<Status> {
 pub fn rename(conn: &Connection, value: &str, label: &str) -> AppResult<Status> {
     let label = checks::label(conn, label, Some(value))?;
     conn.execute(
-        "UPDATE statuses SET label = ?1 WHERE value = ?2",
-        params![label, value],
+        "UPDATE statuses SET label = ?1, updated_at = ?2 WHERE value = ?3",
+        params![label, now_ms(), value],
     )?;
     get(conn, value)
 }
@@ -82,8 +83,8 @@ pub fn rename(conn: &Connection, value: &str, label: &str) -> AppResult<Status> 
 pub fn recolor(conn: &Connection, value: &str, color: &str) -> AppResult<Status> {
     crate::colors::check(color)?;
     conn.execute(
-        "UPDATE statuses SET color = ?1 WHERE value = ?2",
-        params![color, value],
+        "UPDATE statuses SET color = ?1, updated_at = ?2 WHERE value = ?3",
+        params![color, now_ms(), value],
     )?;
     get(conn, value)
 }
@@ -92,11 +93,12 @@ pub fn recolor(conn: &Connection, value: &str, color: &str) -> AppResult<Status>
 pub fn reorder(conn: &mut Connection, values: &[String]) -> AppResult<()> {
     checks::order(&list(conn)?, values)?;
     // Done keeps its position, so only the others are renumbered.
+    let now = now_ms();
     let tx = conn.transaction()?;
     for (i, v) in values.iter().enumerate().take(values.len() - 1) {
         tx.execute(
-            "UPDATE statuses SET position = ?1 WHERE value = ?2",
-            params![i as i64, v],
+            "UPDATE statuses SET position = ?1, updated_at = ?2 WHERE value = ?3 AND position <> ?1",
+            params![i as i64, now, v],
         )?;
     }
     tx.commit()?;

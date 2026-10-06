@@ -6,9 +6,9 @@ describe('nameError', () => {
     expect(nameError('weekly_plan_2')).toBe('');
   });
 
-  it('rejects empty names, spaces, capitals, dashes and dots', () => {
+  it('rejects empty names, spaces, capitals, dashes, dots and stray underscores', () => {
     expect(nameError('')).toBe(nameErrors.empty);
-    for (const bad of ['Weekly Plan', 'notes-2026', 'a.b', 'Work']) expect(nameError(bad)).toBe(nameErrors.chars);
+    for (const bad of ['Weekly Plan', 'notes-2026', 'a.b', 'Work', '_a', 'a_', 'a__b']) expect(nameError(bad)).toBe(nameErrors.chars);
   });
 
   it('rejects a name already used in the folder', () => {

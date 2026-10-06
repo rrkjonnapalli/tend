@@ -51,10 +51,3 @@ export function parsePhrase(input: string): Phrase | null {
   const q = input.trim();
   return parseTask(q) ?? parseNote(q) ?? parsePerson(q) ?? parseTimer(q);
 }
-
-/** A free-text title as a note file name: "Meeting notes" → "meeting_notes". */
-export const nameFromTitle = (title: string) =>
-  title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');

@@ -1,4 +1,4 @@
-//! Makes the index match the disk: new files are added, changed ones re-read, missing ones
+//! Makes the index match the disk: new files are added, changed ones re-hashed, missing ones
 //! marked, and items missing longer than `GRACE_MS` purged.
 
 use std::collections::{HashMap, HashSet};
@@ -7,14 +7,16 @@ use std::path::Path;
 
 use rusqlite::{params, Connection, Transaction};
 
-use super::{file_path, mtime, title_of, EXT, GRACE_MS};
+use super::{file_path, vault_path, EXT, GRACE_MS, MIME, PREFIX};
 use crate::error::AppResult;
+use crate::files;
 use crate::names;
 use crate::util::{new_id, now_ms};
 
 struct DiskNote {
     folder: String,
-    file_name: String,
+    /// File name without `.md`.
+    name: String,
     mtime: i64,
 }
 
@@ -25,21 +27,18 @@ struct Disk {
     skipped: Vec<String>,
 }
 
-/// How a note is found on disk and in the index: (folder, file name).
-type NoteKey = (String, String);
-
+/// A note body the index knows, keyed by its attachment path.
 struct Indexed {
-    id: String,
-    modified_at: i64,
+    attachment_id: String,
+    sha256: String,
+    mtime: Option<i64>,
     missing: bool,
-    title: String,
 }
 
-/// An indexed note that is no longer where the index says.
+/// An indexed body that is no longer at its path.
 struct Vanished {
-    id: String,
-    modified_at: i64,
-    title: String,
+    attachment_id: String,
+    sha256: String,
 }
 
 /// Returns the skipped items (names that break the rule).
@@ -69,7 +68,7 @@ fn walk(dir: &Path, rel: &str, out: &mut Disk) {
         if path.is_dir() {
             add_folder(&path, rel, &file, out);
         } else {
-            add_file(&path, rel, file, out);
+            add_file(&path, rel, &file, out);
         }
     }
 }
@@ -84,16 +83,16 @@ fn add_folder(path: &Path, rel: &str, name: &str, out: &mut Disk) {
     walk(path, &shown, out);
 }
 
-fn add_file(path: &Path, rel: &str, file: String, out: &mut Disk) {
-    let is_note = file.strip_suffix(EXT).is_some_and(names::is_valid);
-    if !is_note {
-        out.skipped.push(names::join(rel, &file));
+fn add_file(path: &Path, rel: &str, file: &str, out: &mut Disk) {
+    let name = file.strip_suffix(EXT).filter(|n| names::is_valid(n));
+    let Some(name) = name else {
+        out.skipped.push(names::join(rel, file));
         return;
-    }
+    };
     out.notes.push(DiskNote {
         folder: rel.to_string(),
-        file_name: file,
-        mtime: mtime(path),
+        name: name.to_string(),
+        mtime: files::mtime(path),
     });
 }
 
@@ -101,9 +100,9 @@ fn add_file(path: &Path, rel: &str, file: String, out: &mut Disk) {
 fn sync_folders(tx: &Transaction, folders: &[String], now: i64) -> AppResult<()> {
     for f in folders {
         tx.execute(
-            "INSERT INTO note_folders (path, created_at) VALUES (?1, ?2)
+            "INSERT INTO note_folders (id, path, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)
              ON CONFLICT(path) DO UPDATE SET missing_at = NULL",
-            params![f, now],
+            params![new_id(), f, now],
         )?;
     }
     let on_disk: HashSet<&str> = folders.iter().map(String::as_str).collect();
@@ -124,68 +123,85 @@ fn sync_notes(tx: &Transaction, dir: &Path, notes: &[DiskNote], now: i64) -> App
     let indexed = load_indexed(tx)?;
     let mut vanished = find_vanished(&indexed, notes);
     for n in notes {
-        let key = (n.folder.clone(), n.file_name.clone());
-        match indexed.get(&key) {
-            Some(ix) if ix.modified_at == n.mtime && !ix.missing => {}
-            Some(ix) => refresh_note(tx, dir, n, &ix.id)?,
+        let path = vault_path(&n.folder, &n.name);
+        match indexed.get(&path) {
+            Some(ix) if ix.mtime == Some(n.mtime) && !ix.missing => {}
+            Some(ix) => refresh_note(tx, dir, n, ix, now)?,
             None => add_note(tx, dir, n, &mut vanished, now)?,
         }
     }
     for v in &vanished {
         tx.execute(
-            "UPDATE notes SET missing_at = ?1 WHERE id = ?2",
-            params![now, v.id],
+            "UPDATE attachments SET missing_at = ?1 WHERE id = ?2",
+            params![now, v.attachment_id],
         )?;
     }
     Ok(())
 }
 
-fn load_indexed(tx: &Transaction) -> AppResult<HashMap<NoteKey, Indexed>> {
-    let mut stmt =
-        tx.prepare("SELECT folder, file_name, id, modified_at, missing_at, title FROM notes")?;
+fn load_indexed(tx: &Transaction) -> AppResult<HashMap<String, Indexed>> {
+    let mut stmt = tx.prepare(
+        "SELECT a.path, a.id, a.sha256, a.mtime, a.missing_at
+         FROM attachments a JOIN notes n ON n.attachment_id = a.id",
+    )?;
     let rows = stmt.query_map([], |r| {
-        let key = (r.get(0)?, r.get(1)?);
         let indexed = Indexed {
-            id: r.get(2)?,
-            modified_at: r.get(3)?,
+            attachment_id: r.get(1)?,
+            sha256: r.get(2)?,
+            mtime: r.get(3)?,
             missing: r.get::<_, Option<i64>>(4)?.is_some(),
-            title: r.get(5)?,
         };
-        Ok((key, indexed))
+        Ok((r.get(0)?, indexed))
     })?;
     let indexed = rows.collect::<Result<_, _>>()?;
     Ok(indexed)
 }
 
-/// Present notes the disk no longer has at their indexed place.
-fn find_vanished(indexed: &HashMap<NoteKey, Indexed>, notes: &[DiskNote]) -> Vec<Vanished> {
-    let present: HashSet<NoteKey> = notes
+/// Present bodies the disk no longer has at their indexed path.
+fn find_vanished(indexed: &HashMap<String, Indexed>, notes: &[DiskNote]) -> Vec<Vanished> {
+    let present: HashSet<String> = notes
         .iter()
-        .map(|n| (n.folder.clone(), n.file_name.clone()))
+        .map(|n| vault_path(&n.folder, &n.name))
         .collect();
     indexed
         .iter()
-        .filter(|(key, ix)| !ix.missing && !present.contains(*key))
+        .filter(|(path, ix)| !ix.missing && !present.contains(*path))
         .map(|(_, ix)| Vanished {
-            id: ix.id.clone(),
-            modified_at: ix.modified_at,
-            title: ix.title.clone(),
+            attachment_id: ix.attachment_id.clone(),
+            sha256: ix.sha256.clone(),
         })
         .collect()
 }
 
-/// The file changed (or came back): re-read its title.
-fn refresh_note(tx: &Transaction, dir: &Path, n: &DiskNote, id: &str) -> AppResult<()> {
-    let title = read_title(dir, n);
+/// The file's mtime moved (or it came back): re-hash it, and bump `updated_at` only when the
+/// content really changed.
+fn refresh_note(
+    tx: &Transaction,
+    dir: &Path,
+    n: &DiskNote,
+    ix: &Indexed,
+    now: i64,
+) -> AppResult<()> {
+    let facts = files::facts(&file_path(dir, &n.folder, &n.name))?;
+    let changed = facts.sha256 != ix.sha256;
     tx.execute(
-        "UPDATE notes SET title = ?1, modified_at = ?2, missing_at = NULL WHERE id = ?3",
-        params![title, n.mtime, id],
+        "UPDATE attachments SET size_bytes = ?1, sha256 = ?2, mtime = ?3, missing_at = NULL,
+           updated_at = CASE WHEN ?4 THEN ?5 ELSE updated_at END
+         WHERE id = ?6",
+        params![
+            facts.size,
+            facts.sha256,
+            facts.mtime,
+            changed,
+            now,
+            ix.attachment_id
+        ],
     )?;
     Ok(())
 }
 
-/// A file the index doesn't know. If a vanished note has the same mtime and title, the file is
-/// that note renamed or moved outside Tend, so it keeps its id (and its tags and links).
+/// A file the index doesn't know. If a vanished body has the same hash, the file is that note
+/// renamed or moved outside Tend, so the note keeps its id (and its title, tags and links).
 fn add_note(
     tx: &Transaction,
     dir: &Path,
@@ -193,39 +209,56 @@ fn add_note(
     vanished: &mut Vec<Vanished>,
     now: i64,
 ) -> AppResult<()> {
-    let title = read_title(dir, n);
-    let moved = vanished
-        .iter()
-        .position(|v| v.modified_at == n.mtime && v.title == title);
+    let facts = files::facts(&file_path(dir, &n.folder, &n.name))?;
+    let path = vault_path(&n.folder, &n.name);
+    let file = format!("{}{EXT}", n.name);
+    let moved = vanished.iter().position(|v| v.sha256 == facts.sha256);
     if let Some(i) = moved {
-        let note = vanished.swap_remove(i);
+        let body = vanished.swap_remove(i);
         tx.execute(
-            "UPDATE notes SET folder = ?1, file_name = ?2, missing_at = NULL WHERE id = ?3",
-            params![n.folder, n.file_name, note.id],
+            "UPDATE attachments SET path = ?1, name = ?2, mtime = ?3, missing_at = NULL,
+               updated_at = ?4
+             WHERE id = ?5",
+            params![path, file, facts.mtime, now, body.attachment_id],
         )?;
         return Ok(());
     }
+    let attachment_id = new_id();
     tx.execute(
-        "INSERT INTO notes (id, folder, file_name, title, created_at, modified_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        params![new_id(), n.folder, n.file_name, title, now, n.mtime],
+        "INSERT INTO attachments
+           (id, path, name, mime_type, size_bytes, sha256, created_at, updated_at, mtime)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7, ?8)",
+        params![
+            attachment_id,
+            path,
+            file,
+            MIME,
+            facts.size,
+            facts.sha256,
+            now,
+            facts.mtime
+        ],
+    )?;
+    tx.execute(
+        "INSERT INTO notes (id, attachment_id, title, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?4)",
+        params![new_id(), attachment_id, n.name, now],
     )?;
     Ok(())
 }
 
-fn read_title(dir: &Path, n: &DiskNote) -> String {
-    let path = file_path(dir, &n.folder, &n.file_name);
-    let text = fs::read_to_string(path).unwrap_or_default();
-    title_of(&text, n.file_name.trim_end_matches(EXT))
-}
-
 fn purge(tx: &Transaction, now: i64) -> AppResult<()> {
     let cutoff = now - GRACE_MS;
-    tx.execute("DELETE FROM notes WHERE missing_at < ?1", [cutoff])?;
+    tx.execute(
+        "DELETE FROM attachments WHERE missing_at < ?1 AND substr(path, 1, length(?2)) = ?2",
+        params![cutoff, PREFIX],
+    )?;
     tx.execute(
         "DELETE FROM note_folders WHERE missing_at < ?1
-         AND NOT EXISTS (SELECT 1 FROM notes WHERE notes.folder = note_folders.path)",
-        [cutoff],
+         AND NOT EXISTS (SELECT 1 FROM attachments a
+                         WHERE substr(a.path, 1, length(?2 || note_folders.path || '/'))
+                               = ?2 || note_folders.path || '/')",
+        params![cutoff, PREFIX],
     )?;
     Ok(())
 }
