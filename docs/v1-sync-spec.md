@@ -335,8 +335,9 @@ unchanged snapshots produce no diff.
 
 ## 20. Open items
 
-- **Existing test vault:** its database is at v2 and will be refused by the reworked v1 app —
-  start fresh (delete `db/app.sqlite`; notes are files and are rescanned) or a one-off copy script.
+- **Existing test vault:** exported on 2026-10-07 to `~/Documents/tend-v2-export/` (one JSONL per
+  table, a `manifest.json` with row counts, and `app.sqlite.bak`). After the schema rework, a
+  one-off import loads it into the new v1 layout; then that folder is deleted.
 - **When:** make the schema changes now, or as part of the sync build.
 - **Activity log size:** newest 10,000 rows (~1 MB) proposed.
 
