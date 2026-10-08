@@ -101,7 +101,7 @@ fn sync_folders(tx: &Transaction, folders: &[String], now: i64) -> AppResult<()>
     for f in folders {
         tx.execute(
             "INSERT INTO note_folders (id, path, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)
-             ON CONFLICT(path) DO UPDATE SET missing_at = NULL",
+             ON CONFLICT(path) DO UPDATE SET missing_at = NULL WHERE missing_at IS NOT NULL",
             params![new_id(), f, now],
         )?;
     }

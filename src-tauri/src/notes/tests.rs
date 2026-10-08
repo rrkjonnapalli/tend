@@ -266,6 +266,16 @@ fn rename_and_move_a_note() {
     let moved = move_note(&mut f.conn, &f.dir, &id, "work/new").unwrap();
     assert_eq!(moved.folder, "work/new");
     assert!(f.dir.join("work/new/b_side.md").is_file());
+    let x = tree(&f.conn)
+        .unwrap()
+        .notes
+        .into_iter()
+        .find(|n| n.name == "x")
+        .unwrap();
+    rename_note(&mut f.conn, &f.dir, &x.id, "Some title").unwrap();
+    let x = row(&f.conn, &x.id).unwrap();
+    let kept = move_note(&mut f.conn, &f.dir, &x.id, "").unwrap();
+    assert_eq!(kept.name, x.name, "a move keeps the file name");
     assert!(rename_note(&mut f.conn, &f.dir, &id, " ").is_err());
     assert_matches_disk(&mut f);
 }
@@ -314,4 +324,19 @@ fn underscore_is_not_a_like_wildcard() {
     let t = tree(&f.conn).unwrap();
     assert_eq!(t.folders, vec!["acb", "z"]);
     assert_eq!(names_in(&t), vec!["acb/y", "z/x"]);
+}
+
+#[test]
+fn rescan_without_changes_writes_nothing() {
+    let mut f = fixture(&[("work/a.md", "# A")]);
+    let before: i64 = f
+        .conn
+        .query_row("SELECT count(*) FROM activity", [], |r| r.get(0))
+        .unwrap();
+    scan(&mut f.conn, &f.dir).unwrap();
+    let after: i64 = f
+        .conn
+        .query_row("SELECT count(*) FROM activity", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(before, after);
 }

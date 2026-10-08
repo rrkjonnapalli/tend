@@ -59,24 +59,28 @@ fn check_new(conn: &Connection, dir: &Path, folder: &str, name: &str) -> AppResu
     Ok(())
 }
 
-/// The file name for `title` in `folder`: its slug, or `slug_2`, `slug_3`, … when taken.
-/// `keep` is a name the note already has, which counts as free.
+/// The file name a title asks for.
+fn slug_of(title: &str) -> String {
+    names::slug(title).unwrap_or_else(|| "note".to_string())
+}
+
+/// `base` in `folder`, or `base_2`, `base_3`, … when taken. `keep` is a name the note already
+/// has, which counts as free.
 fn free_name(
     conn: &Connection,
     dir: &Path,
     folder: &str,
-    title: &str,
+    base: &str,
     keep: Option<&str>,
 ) -> AppResult<String> {
-    let base = names::slug(title).unwrap_or_else(|| "note".to_string());
     let is_free = |name: &str| -> AppResult<bool> {
         if keep == Some(name) {
             return Ok(true);
         }
         Ok(!clash(conn, dir, folder, name)?)
     };
-    if is_free(&base)? {
-        return Ok(base);
+    if is_free(base)? {
+        return Ok(base.to_string());
     }
     for n in 2..=MAX_SUFFIX {
         let candidate = format!("{base}_{n}");
@@ -158,7 +162,7 @@ fn missing_folders(conn: &Connection, path: &str) -> AppResult<Vec<String>> {
 pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> AppResult<NoteRow> {
     let title = check_title(title)?.to_string();
     ensure_folder(conn, dir, folder)?;
-    let name = free_name(conn, dir, folder, &title, None)?;
+    let name = free_name(conn, dir, folder, &slug_of(&title), None)?;
     let path = file_path(dir, folder, &name);
     fs::write(&path, "")?;
     let facts = files::facts(&path)?;
@@ -205,7 +209,7 @@ pub fn rename_note(conn: &mut Connection, dir: &Path, id: &str, title: &str) -> 
     if note.title == title {
         return Ok(note);
     }
-    let name = free_name(conn, dir, &note.folder, &title, Some(&note.name))?;
+    let name = free_name(conn, dir, &note.folder, &slug_of(&title), Some(&note.name))?;
     conn.execute(
         "UPDATE notes SET title = ?1, updated_at = ?2 WHERE id = ?3",
         params![title, now_ms(), id],
@@ -222,7 +226,8 @@ pub fn move_note(conn: &mut Connection, dir: &Path, id: &str, target: &str) -> A
         return Err(errors::SAME_FOLDER.err());
     }
     ensure_folder(conn, dir, target)?;
-    let name = free_name(conn, dir, target, &note.title, None)?;
+    // A move keeps the file name; only a clash in the target adds a suffix.
+    let name = free_name(conn, dir, target, &note.name, None)?;
     relocate_note(conn, dir, &note, target, &name)
 }
 
