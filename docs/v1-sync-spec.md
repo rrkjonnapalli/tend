@@ -105,7 +105,7 @@ attachments  id · path · name · mime_type · size_bytes · sha256 · updated_
 | Table | Purpose |
 |---|---|
 | `deletions (id, table_name, row_id, deleted_at)` | Every delete, including `ON DELETE CASCADE` rows, by trigger. Mirrored into `db/sync/deleted/` (§8). Kept **forever**. |
-| `changes (seq INTEGER PRIMARY KEY AUTOINCREMENT, table_name, row_id, UNIQUE(table_name, row_id))` | Which rows changed locally, by trigger on insert, update and delete of every synced table: `INSERT OR REPLACE`, so each row has one entry carrying its latest `seq`. `seq` only grows and never depends on the clock. Used to find dirty shards (§8.2). |
+| `changes (seq INTEGER PRIMARY KEY AUTOINCREMENT, table_name, row_id, UNIQUE(table_name, row_id))` | Which rows changed locally, by trigger on insert, update and delete of every synced table: `INSERT OR REPLACE`, so each row has one entry carrying its latest `seq`. `seq` only grows and never depends on the clock. Used to find dirty years (§8.2). |
 | `sync_state (id = 1, last_synced_seq, last_synced_commit)` | The markers of the last successful sync (§13). |
 | `access (entity_type, entity_id, used_at, UNIQUE(entity_type, entity_id))` | Last read, edit or create of each entity. Drives "recent" lists, ⌘K ranking and what the UI loads first. Never in snapshots, never in `changes`. |
 | `activity (id, action, status, entity_type, entity_id, at)` | Every write plus open, close, pull and push; capped to the newest 10,000 rows by a trigger. |
