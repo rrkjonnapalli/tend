@@ -13,7 +13,7 @@
 
   let skipped = $state<Skipped[]>([]);
   let showSkipped = $state(false);
-  const fixable = $derived(skipped.filter((s) => s.fix).length);
+  const fixable = $derived(skipped.length);
 
   onMount(loadSkipped);
 
@@ -41,12 +41,12 @@
   {#if skipped.length}
     <button class="skipped" aria-expanded={showSkipped} onclick={toggleSkipped}>
       <Icon name={showSkipped ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />
-      {plural(skipped.length, 'item')} skipped: names may use only letters, digits, spaces and . , _ -, and can’t start or end with a space or dot
+      {plural(skipped.length, 'item')} skipped: names must be lowercase letters, digits and _
     </button>
     {#if showSkipped}
       <ul class="skiplist">
         {#each skipped as item (item.path)}
-          <li>notes/{item.path} <span class="to">{item.fix ? `→ ${item.fix}` : '· no valid name'}</span></li>
+          <li>{item.path} <span class="to">→ {item.fix}</span></li>
         {/each}
       </ul>
       {#if fixable}

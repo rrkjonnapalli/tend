@@ -56,9 +56,9 @@ pub fn note_write(state: State<AppState>, id: String, text: String) -> AppResult
 pub fn note_create(
     state: State<AppState>,
     folder: String,
-    name: String,
+    title: String,
 ) -> AppResult<notes::NoteRow> {
-    state.with(|db, v| notes::create(db, &v.notes_dir(), &folder, &name))
+    state.with(|db, v| notes::create(db, &v.notes_dir(), &folder, &title))
 }
 
 #[tauri::command(async)]
@@ -75,7 +75,8 @@ pub enum Item {
     Folder { path: String },
 }
 
-/// Returns the item's id (notes) or new path (folders).
+/// `name` is the new title for a note, the new folder name for a folder. Returns the item's id
+/// (notes) or new path (folders).
 #[tauri::command(async)]
 pub fn item_rename(state: State<AppState>, item: Item, name: String) -> AppResult<String> {
     state.with(|db, v| match item {

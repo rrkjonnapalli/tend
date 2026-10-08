@@ -16,23 +16,10 @@ fn exists(conn: &Connection, path: &str) -> AppResult<bool> {
     Ok(found.is_some())
 }
 
-/// The cleaned folder path typed by the user, spelled as existing folders are spelled.
-pub(super) fn target_path(conn: &Connection, path: &str) -> AppResult<String> {
-    let path = names::accept_path(path)?;
-    names::canonical(&path, |p| {
-        let found = conn
-            .query_row("SELECT path FROM task_folders WHERE path = ?1", [p], |r| {
-                r.get(0)
-            })
-            .optional()?;
-        Ok(found)
-    })
-}
-
-/// Another folder in `parent` already uses `name` (ignoring case). `current` is the folder's own
-/// name when renaming it, which counts as free.
+/// Another folder in `parent` already uses `name`. `current` is the folder's own name when
+/// renaming it, which counts as free.
 fn taken(conn: &Connection, parent: &str, name: &str, current: Option<&str>) -> AppResult<bool> {
-    if current.is_some_and(|c| names::same(c, name)) {
+    if current == Some(name) {
         return Ok(false);
     }
     exists(conn, &names::join(parent, name))
@@ -41,7 +28,7 @@ fn taken(conn: &Connection, parent: &str, name: &str, current: Option<&str>) -> 
 /// Creates the folder `path` typed by the user, and any missing parents. When the last segment is
 /// taken it gets a suffix. Returns the path that was created.
 pub fn create(conn: &mut Connection, path: &str) -> AppResult<String> {
-    let path = target_path(conn, path)?;
+    let path = names::accept_path(path)?;
     if path.is_empty() {
         return Err(errors::NAME_EMPTY.err());
     }
@@ -85,7 +72,7 @@ pub fn rename(conn: &mut Connection, path: &str, name: &str) -> AppResult<String
 
 /// Moves the folder into `target`; a name taken there gets a suffix.
 pub fn move_to(conn: &mut Connection, path: &str, target: &str) -> AppResult<String> {
-    let target = target_path(conn, target)?;
+    let target = names::accept_path(target)?;
     if names::is_under(&target, path) {
         return Err(errors::INTO_SELF.err());
     }

@@ -13,7 +13,7 @@
   import ExplorerMenu from './ExplorerMenu.svelte';
   import MoveToDialog from './MoveToDialog.svelte';
   import DeleteDialog from './DeleteDialog.svelte';
-  import { baseOf, join, nameError, nameErrors, parentOf } from '#lib/util/names.ts';
+  import { baseOf, join, nameError, nameErrors, parentOf, titleError } from '#lib/util/names.ts';
   import { isTypingTarget, matches } from '#lib/util/keys.ts';
   import { hasLayers } from '#lib/util/layers.ts';
   import {
@@ -98,11 +98,12 @@
   const hasMenu = (row: ExplorerRow) => !row.isNew && (!isRoot(row) || !!actions.renameRoot);
   const allowsDrop = (row: ExplorerRow, target: string) => canDrop({ row, target });
 
-  // The root's display name is free text; folders and leaves follow the name rule.
+  // The root's display name and leaf titles are free text; folder names become slugs.
   const draftError = $derived.by(() => {
     if (!editing) return '';
     if (editing.key === ROOT_KEY) return draft.trim() ? '' : nameErrors.empty;
-    return nameError(draft);
+    const isLeaf = editing.isNew === 'leaf' || editing.item?.kind === 'leaf';
+    return isLeaf ? titleError(draft) : nameError(draft);
   });
 
   // ---- naming

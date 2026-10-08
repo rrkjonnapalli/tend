@@ -1,20 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { baseOf, cleanName, cleanPath, isUnder, join, nameError, nameErrors, parentOf, pathError, relativeTo } from './names.ts';
+import { baseOf, cleanPath, isUnder, isValidName, join, nameError, nameErrors, parentOf, pathError, relativeTo, slug, titleError } from './names.ts';
 
-describe('nameError', () => {
-  it('accepts letters, digits, spaces and . , _ -', () => {
-    for (const ok of ['weekly_plan_2', 'Q4 Plan - draft', 'notes, v1.2', ' .trimmed. ']) expect(nameError(ok)).toBe('');
+describe('names', () => {
+  it('slugs text the way Rust does', () => {
+    expect(slug('Meeting')).toBe('meeting');
+    expect(slug('Café notes (Q4)!')).toBe('cafe_notes_q4');
+    expect(slug('  Résumé -- 2024 ')).toBe('resume_2024');
+    expect(slug('日本')).toBe('');
+    expect(isValidName(slug('a — b • c'))).toBe(true);
   });
 
-  it('rejects empty names, other characters and long names', () => {
-    for (const empty of ['', ' . ']) expect(nameError(empty)).toBe(nameErrors.empty);
-    for (const bad of ['a/b', 'a:b', 'Café', 'ideas (old)']) expect(nameError(bad)).toBe(nameErrors.chars);
-    expect(nameError('x'.repeat(201))).toBe(nameErrors.long);
+  it('checks typed folder names and note titles', () => {
+    expect(nameError('Client Work')).toBe('');
+    expect(nameError('  ')).toBe(nameErrors.empty);
+    expect(nameError('!!')).toBe(nameErrors.chars);
+    expect(titleError('日本')).toBe('');
+    expect(titleError(' ')).toBe(nameErrors.title);
   });
 
-  it('cleans what it will save', () => {
-    expect(cleanName('  .Plan. ')).toBe('Plan');
-    expect(cleanPath(' /Work / .Ideas/ ')).toBe('Work/Ideas');
+  it('cleans typed paths', () => {
+    expect(cleanPath(' /Work / Q4 Plans/ ')).toBe('work/q4_plans');
   });
 });
 
@@ -39,7 +44,7 @@ describe('paths', () => {
   it('validates every segment', () => {
     expect(pathError('')).toBe('');
     expect(pathError('Work/Tend v0.1')).toBe('');
-    expect(pathError('work/a:b')).toBe(nameErrors.chars);
+    expect(pathError('work/!!')).toBe(nameErrors.chars);
     expect(pathError('work//x')).toBe(nameErrors.empty);
   });
 });

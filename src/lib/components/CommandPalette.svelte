@@ -74,7 +74,7 @@
       label: `Note: ${title}`,
       sub: `notes/${folder}`,
       run: async () => {
-        const row = await notes.create({ folder: path, name: title });
+        const row = await notes.create({ folder: path, title });
         goto(routes.note(row.id, { edit: true }));
       },
     });
@@ -138,12 +138,12 @@
   }
 
   function noteHits(q: string): PaletteItem[] {
-    const found = notes.notes.filter((n) => hasAllWords(`${n.name} ${n.folder}`, q)).slice(0, MAX_HITS);
+    const found = notes.notes.filter((n) => hasAllWords(`${n.title} ${n.name} ${n.folder}`, q)).slice(0, MAX_HITS);
     return found.map((n) => ({
       key: `n:${n.id}`,
       group: 'Notes',
       icon: ICONS.Notes,
-      label: n.name,
+      label: n.title,
       sub: n.folder || undefined,
       run: () => goto(routes.note(n.id)),
     }));

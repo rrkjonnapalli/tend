@@ -276,33 +276,25 @@ fn subtasks_are_one_level_deep() {
 }
 
 #[test]
-fn folder_names_are_cleaned_and_clashes_get_a_suffix() {
+fn folder_names_are_slugged_and_clashes_get_a_suffix() {
     let mut conn = open_memory();
     assert_eq!(
         folder_create(&mut conn, " Client Work.").unwrap(),
-        "Client Work"
+        "client_work"
     );
     assert_eq!(
         folder_create(&mut conn, "client work").unwrap(),
-        "Client Work_1"
+        "client_work_1"
     );
-    assert_eq!(
-        folder_rename(&mut conn, "Client Work", "client work").unwrap(),
-        "client work",
-        "a case-only rename is allowed"
-    );
-    assert!(folder_create(&mut conn, "a:b").is_err());
+    assert!(folder_create(&mut conn, "!!").is_err());
     let t = create(
         &mut conn,
         &NewTask {
-            path: "CLIENT WORK/x".into(),
+            path: "Client Work/X".into(),
             title: "T".into(),
             ..Default::default()
         },
     )
     .unwrap();
-    assert_eq!(
-        t.path, "client work/x",
-        "a typed path takes the existing spelling"
-    );
+    assert_eq!(t.path, "client_work/x");
 }

@@ -35,7 +35,7 @@ src-tauri/src/
   db.rs           connection, migrations (embed docs/schema.sql as v1)
   notes.rs        scan, watcher, note + folder commands
   tasks.rs, people.rs, statuses.rs, attachments.rs, timers.rs, feedback.rs, settings.rs
-  names.rs        the name rule, clash suffixes and path helpers
+  names.rs        the name rule ^[a-z0-9]+(_[a-z0-9]+)*$, slugs, clash suffixes, path helpers
 src/lib/
   api/            typed wrappers around invoke() (one file per area)
   stores/         Svelte 5 state (vault, notes, tasks, people, timers, ui)
@@ -48,8 +48,8 @@ src/routes/       start, notes, tasks, people, settings
 
 - **Build only what the spec says.** If something is unclear or missing, pick the simplest option that matches the mockups. Note it in `docs/open-questions.md` (create it if needed) and keep going; don't stop to ask.
 - **Match the mockups:** spacing, sizes, colors, hover and selected states, icons (inline SVG paths are in the mockup HTML; reuse them). No shadows on panels. Popovers may have a border only.
-- **The name rule** (letters, digits, spaces and `. , _ -`; leading and trailing spaces and dots trimmed; at most 200 characters; unique in its folder ignoring case, a clash gets `_1`, `_2`) applies to note folders, task folders and note names. A note's name is its file name and its title. Check it in Rust; the UI shows the same message live.
-- **Notes on disk are the source of truth.** The DB is an index. A scan renames a folder or `.md` file only to fix a name that breaks the rule, and only once the vault allows it (new empty vaults do; otherwise the user agrees once). It never moves files, never touches hidden or non-`.md` files, and skips names nothing valid can be made from.
+- **The name rule** (`^[a-z0-9]+(_[a-z0-9]+)*$`, unique in its folder; a clash gets `_1`, `_2`) applies to note folders, task folders and note file names. Typed folder names and note titles become slugs; note titles stay free text on the note. Check it in Rust; the UI shows the same rule live.
+- **Notes on disk are the source of truth.** The vault folder is the notes root; Tend's files live in `.tend/`. The DB is an index. A scan renames a folder or `.md` file only to give a bad name its slug, only with the vault's consent, and logs it in `path_log`. It never moves files and never touches hidden or non-`.md` files.
 - **Keyboard:** every popover closes on Esc. Enter confirms. ↑↓ move through lists. Shortcuts are in `decisions.md` §12; override ⌘R/⌘N/⌘T so the webview doesn't reload or open windows.
 - **Accessibility basics:** real `<button>`s, `aria-label` on icon buttons, a visible focus ring (`:focus-visible`, 2px `--focus-ring`).
 - Keep functions small. No dead code, no TODO stubs in finished milestones.

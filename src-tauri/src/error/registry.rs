@@ -27,8 +27,8 @@ pub const OPEN_FAILED: ErrorDef = def("OPEN_FAILED", "The file couldn’t be ope
 
 // ---- names and folders
 pub const NAME_EMPTY: ErrorDef = def("NAME_EMPTY", "Name can’t be empty");
-pub const NAME_CHARS: ErrorDef = def("NAME_CHARS", "Use letters, digits, spaces and . , _ - only");
-pub const NAME_LONG: ErrorDef = def("NAME_LONG", "Keep names under 200 characters");
+pub const NAME_CHARS: ErrorDef = def("NAME_CHARS", "Use at least one letter or digit");
+pub const NOTE_TITLE_EMPTY: ErrorDef = def("NOTE_TITLE_EMPTY", "A note needs a title");
 pub const NAME_TAKEN: ErrorDef = def("NAME_TAKEN", "Too many items with this name here");
 pub const SAME_FOLDER: ErrorDef = def("SAME_FOLDER", "It’s already in that folder");
 pub const INTO_SELF: ErrorDef = def("INTO_SELF", "A folder can’t move into itself");

@@ -1,7 +1,7 @@
 export type StepStatus = 'found' | 'created' | 'error';
 export type Step = { item: string; status: StepStatus; detail: string };
 /** A question asked before Tend writes into the folder. */
-export type Confirm = { kind: 'notAVault'; items: number } | { kind: 'notesMissing'; notes: number };
+export type Confirm = { kind: 'notAVault'; items: number; notes: number };
 /** With `confirm`, nothing was done yet: open again with `confirmed` once the user agrees. */
 export type Check = { path: string; steps: Step[]; ok: boolean; confirm: Confirm | null };
 

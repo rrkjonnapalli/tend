@@ -1,4 +1,5 @@
-//! Opening a vault: check or create `notes/`, `.attachments/` and `.tend/tend.db`, in that order.
+//! Opening a vault. The chosen folder is the notes root; Tend's own files live in `.tend/`
+//! (`.tend/attachments/`, `.tend/tend.db`), which are checked or created in that order.
 //! Before writing anything, folders that look like a mistake ask first (`Confirm`).
 
 #[cfg(test)]
@@ -8,7 +9,7 @@ use std::fs;
 use std::io::ErrorKind;
 use std::path::Path;
 
-use rusqlite::{Connection, OpenFlags};
+use rusqlite::Connection;
 use serde::Serialize;
 
 use crate::db::{self, Opened};
@@ -34,11 +35,9 @@ pub struct Step {
 #[derive(Debug, Serialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Confirm {
-    /// Not a vault and not empty: Tend would add its folders next to `items` other entries.
-    NotAVault { items: usize },
-    /// A vault whose `notes/` is gone while `notes` notes are indexed (moved or deleted?).
-    #[serde(rename_all = "camelCase")]
-    NotesMissing { notes: i64 },
+    /// Not a vault and not empty: Tend would use it as the notes root, holding `notes` notes among
+    /// `items` visible entries, and rename folders and notes to fit the name rule.
+    NotAVault { items: usize, notes: usize },
 }
 
 /// The step-by-step result the start page shows as a checklist. With `confirm`, nothing was done
@@ -51,10 +50,11 @@ pub struct Check {
     pub confirm: Option<Confirm>,
 }
 
-/// Tend's own folder in the vault: the database now, sync files later.
-const TEND_DIR: &str = ".tend";
+/// Tend's own folder in the vault: attachments and the database now, sync files later.
+pub const TEND_DIR: &str = ".tend";
 const DB_FILE: &str = "tend.db";
 const DB_ITEM: &str = ".tend/tend.db";
+const ATTACHMENTS_ITEM: &str = ".tend/attachments/";
 const NO_PERMISSION: &str = "no permission to access this folder";
 const INCOMPATIBLE: &str = "incompatible schema";
 
@@ -70,13 +70,17 @@ fn plural(n: usize, word: &str) -> String {
     format!("{n} {word}s")
 }
 
-/// Files under `dir`, in subfolders too. With `ext`, only files with that extension.
+/// Files under `dir`, in subfolders too, leaving out hidden ones (`.tend/`, `.git/`). With `ext`,
+/// only files with that extension.
 fn count_files(dir: &Path, ext: Option<&str>) -> usize {
     let Ok(entries) = fs::read_dir(dir) else {
         return 0;
     };
     let mut count = 0;
     for entry in entries.flatten() {
+        if entry.file_name().to_string_lossy().starts_with('.') {
+            continue;
+        }
         let path = entry.path();
         if path.is_dir() {
             count += count_files(&path, ext);
@@ -136,50 +140,31 @@ pub fn reopen(root: &Path) -> Result<Vault, String> {
 
 /// What to ask before opening `root`, if anything. Reads only; never writes.
 pub fn inspect(root: &Path) -> Option<Confirm> {
-    let db = root.join(TEND_DIR).join(DB_FILE);
-    let notes = root.join("notes");
-    if db.is_file() {
-        let indexed = indexed_notes(&db)?;
-        return (!notes.is_dir() && indexed > 0)
-            .then_some(Confirm::NotesMissing { notes: indexed });
-    }
-    if notes.is_dir() {
+    if root.join(TEND_DIR).join(DB_FILE).is_file() {
         return None;
     }
-    let items = other_entries(root);
-    (items > 0).then_some(Confirm::NotAVault { items })
+    let items = visible_entries(root);
+    (items > 0).then(|| Confirm::NotAVault {
+        items,
+        notes: count_files(root, Some("md")),
+    })
 }
 
-/// Notes indexed in the database, or `None` when it can't be read (`open` reports why).
-fn indexed_notes(db: &Path) -> Option<i64> {
-    let conn = Connection::open_with_flags(db, OpenFlags::SQLITE_OPEN_READ_ONLY).ok()?;
-    conn.query_row("SELECT count(*) FROM notes", [], |r| r.get(0))
-        .ok()
-}
-
-/// Visible entries in `root` other than Tend's own.
-fn other_entries(root: &Path) -> usize {
+/// Entries in `root` that aren't hidden.
+fn visible_entries(root: &Path) -> usize {
     let Ok(entries) = fs::read_dir(root) else {
         return 0;
     };
     entries
         .flatten()
-        .map(|e| e.file_name().to_string_lossy().into_owned())
-        .filter(|n| !n.starts_with('.') && n != "notes")
+        .filter(|e| !e.file_name().to_string_lossy().starts_with('.'))
         .count()
 }
 
 /// Why `open` failed: what it would have asked, or its first failed step.
 fn failure_message(check: &Check) -> String {
-    match check.confirm {
-        Some(Confirm::NotesMissing { notes }) => {
-            return format!(
-                "notes/ is missing ({}). Was it moved?",
-                plural(notes as usize, "note")
-            );
-        }
-        Some(Confirm::NotAVault { .. }) => return "This folder isn’t a Tend vault.".into(),
-        None => {}
+    if check.confirm.is_some() {
+        return "This folder isn’t a Tend vault.".into();
     }
     let Some(failed) = check.steps.iter().find(|s| s.status == StepStatus::Error) else {
         return "The vault couldn’t be opened.".into();
@@ -206,10 +191,11 @@ pub fn open(root: &Path, confirmed: bool) -> (Check, Option<Vault>) {
         return (finish(root, steps, false), None);
     }
     let (db_step, conn) = open_db(root);
-    let fresh = db_step.status == StepStatus::Created && is_empty(&root.join("notes"));
+    let new_db = db_step.status == StepStatus::Created;
     steps.push(db_step);
-    if let (true, Some(conn)) = (fresh, &conn) {
-        // A new, empty vault has no names of its own to protect: files added later get fixed.
+    if let (true, Some(conn)) = (new_db && (confirmed || is_empty(root)), &conn) {
+        // A new, empty vault has no names of its own to protect, and the user who confirmed a
+        // folder agreed to its names being fixed: from now on scans fix names.
         let allowed = crate::settings::set(
             conn,
             crate::notes::FIX_NAMES,
@@ -229,19 +215,12 @@ pub fn open(root: &Path, confirmed: bool) -> (Check, Option<Vault>) {
     }
 }
 
-/// Checks or creates `notes/` then `.attachments/`, stopping at the first that fails.
+/// Counts the notes in `root`, then checks or creates `.tend/attachments/`.
 fn check_dirs(root: &Path, steps: &mut Vec<Step>) -> bool {
-    let notes = root.join("notes");
-    let notes_step = ensure_dir(&notes, "notes/", || {
-        plural(count_files(&notes, Some("md")), "note")
-    });
-    let notes_ok = notes_step.status != StepStatus::Error;
-    steps.push(notes_step);
-    if !notes_ok {
-        return false;
-    }
-    let attachments = root.join(".attachments");
-    let attachments_step = ensure_dir(&attachments, ".attachments/", || {
+    let notes = count_files(root, Some("md"));
+    steps.push(step("notes", StepStatus::Found, plural(notes, "note")));
+    let attachments = root.join(TEND_DIR).join("attachments");
+    let attachments_step = ensure_dir(&attachments, ATTACHMENTS_ITEM, || {
         plural(count_files(&attachments, None), "file")
     });
     let attachments_ok = attachments_step.status != StepStatus::Error;

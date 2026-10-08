@@ -47,7 +47,7 @@
   const suggestions = $derived(allowed.filter((f) => !target || f.includes(target)).slice(0, MAX_SUGGESTIONS));
 
   const error = $derived.by(() => {
-    if (pathError(target)) return pathError(target);
+    if (pathError(query)) return pathError(query);
     if (insideSelf(target)) return 'Can’t move a folder into itself';
     if (target === current) return 'Already there';
     return '';

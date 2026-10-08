@@ -63,21 +63,14 @@ fn initial_scan_indexes_folders_and_notes() {
 }
 
 #[test]
-fn readable_names_are_indexed() {
-    let f = fixture(&[
-        ("Work Stuff/Q4 plan - draft.md", ""),
-        ("notes, v1.2.md", ""),
-    ]);
+fn found_notes_are_titled_by_their_file_name() {
+    let f = fixture(&[("work/plan.md", "# Something else")]);
     let t = tree(&f.conn).unwrap();
-    assert_eq!(t.folders, vec!["Work Stuff"]);
-    assert_eq!(
-        names_in(&t),
-        vec!["notes, v1.2", "Work Stuff/Q4 plan - draft"]
-    );
+    assert_eq!(t.notes[0].title, "plan", "the body never sets the title");
 }
 
 #[test]
-fn skips_invalid_names_without_touching_them() {
+fn without_consent_bad_names_are_reported_not_touched() {
     let tmp = tempfile::tempdir().unwrap();
     let dir = tmp.path().to_path_buf();
     fs::create_dir_all(dir.join("Bad: Folder")).unwrap();
@@ -88,12 +81,26 @@ fn skips_invalid_names_without_touching_them() {
     fs::write(dir.join("ok.md"), "x").unwrap();
     let mut conn = open_memory();
     let skipped = scan(&mut conn, &dir, false).unwrap();
-    let paths: Vec<_> = skipped.iter().map(|s| s.path.as_str()).collect();
-    assert_eq!(paths, vec![" padded.md", "Bad: Folder/", "image.png"]);
-    let fixes: Vec<_> = skipped.iter().map(|s| s.fix.as_deref()).collect();
-    assert_eq!(fixes, vec![Some("padded.md"), Some("Bad Folder/"), None]);
+    let pairs: Vec<_> = skipped
+        .iter()
+        .map(|s| (s.path.as_str(), s.fix.as_str()))
+        .collect();
+    assert_eq!(
+        pairs,
+        vec![(" padded.md", "padded.md"), ("Bad: Folder/", "bad_folder/")],
+        "other files are ignored, not reported"
+    );
     assert_eq!(names_in(&tree(&conn).unwrap()), vec!["ok"]);
     assert!(dir.join(" padded.md").exists() && dir.join("Bad: Folder/a.md").exists());
+}
+
+#[test]
+fn folders_without_notes_are_ignored_unless_tend_made_them() {
+    let mut f = fixture(&[("photos/a.png", "x"), ("app/node_modules/x/index.js", "x")]);
+    assert!(tree(&f.conn).unwrap().folders.is_empty());
+    folder_create(&mut f.conn, &f.dir, "Empty").unwrap();
+    scan(&mut f.conn, &f.dir, false).unwrap();
+    assert_eq!(tree(&f.conn).unwrap().folders, vec!["empty"]);
 }
 
 #[test]
@@ -171,56 +178,54 @@ fn external_delete_marks_missing_then_purges() {
 #[test]
 fn create_write_and_read() {
     let mut f = fixture(&[]);
-    let n = create(&mut f.conn, &f.dir, "Work/Ideas", "Release checklist").unwrap();
-    assert_eq!(n.name, "Release checklist");
-    assert!(f.dir.join("Work/Ideas/Release checklist.md").is_file());
+    let n = create(&mut f.conn, &f.dir, "Work/Ideas", " Release checklist! ").unwrap();
+    assert_eq!(
+        (n.folder.as_str(), n.name.as_str(), n.title.as_str()),
+        ("work/ideas", "release_checklist", "Release checklist!")
+    );
+    let file = f.dir.join("work/ideas/release_checklist.md");
+    assert_eq!(fs::read_to_string(&file).unwrap(), "# Release checklist!\n");
     let n = write(&f.conn, &f.dir, &n.id, "# Ship it\n\nnow").unwrap();
     assert_eq!(
-        n.name, "Release checklist",
-        "the body never renames the note"
+        n.title, "Release checklist!",
+        "the body never sets the title"
     );
     assert_eq!(
         read(&f.conn, &f.dir, &n.id).unwrap().text,
         "# Ship it\n\nnow"
     );
-    assert_eq!(tree(&f.conn).unwrap().folders, vec!["Work", "Work/Ideas"]);
+    assert_eq!(tree(&f.conn).unwrap().folders, vec!["work", "work/ideas"]);
     assert_matches_disk(&mut f);
 }
 
 #[test]
-fn typed_names_are_cleaned_and_clashes_get_a_suffix() {
+fn titles_become_slugs_and_clashes_get_a_suffix() {
     let mut f = fixture(&[("work/a.md", "")]);
-    let fails = |r: AppResult<NoteRow>, def| r.unwrap_err().is(def);
-    assert!(fails(
-        create(&mut f.conn, &f.dir, "", " . "),
-        errors::NAME_EMPTY
-    ));
-    assert!(fails(
-        create(&mut f.conn, &f.dir, "", "a:b"),
-        errors::NAME_CHARS
-    ));
-    let name = |f: &mut Fixture, folder: &str, typed: &str| {
-        create(&mut f.conn, &f.dir, folder, typed).unwrap().name
+    let empty = create(&mut f.conn, &f.dir, "", "  ").unwrap_err();
+    assert!(empty.is(errors::NOTE_TITLE_EMPTY));
+    let name = |f: &mut Fixture, folder: &str, title: &str| {
+        create(&mut f.conn, &f.dir, folder, title).unwrap().name
     };
-    assert_eq!(name(&mut f, "", " .Plan. "), "Plan");
-    assert_eq!(name(&mut f, "", "plan"), "plan_1", "clashes ignore case");
-    assert_eq!(name(&mut f, "", "Plan"), "Plan_2");
-    assert_eq!(name(&mut f, "work", "A"), "A_1");
+    assert_eq!(name(&mut f, "", "Meeting"), "meeting");
+    assert_eq!(name(&mut f, "", "meeting!"), "meeting_1");
+    assert_eq!(
+        name(&mut f, "Work", "A"),
+        "a_1",
+        "a typed folder is slugged too"
+    );
+    assert_eq!(name(&mut f, "", "日本"), "note");
     assert_eq!(
         name(&mut f, "", "work"),
         "work",
         "a note and a folder may share a name"
     );
-    let made = create(&mut f.conn, &f.dir, "WORK", "b").unwrap();
-    assert_eq!(
-        made.folder, "work",
-        "a typed path takes the existing spelling"
-    );
     assert_eq!(
         folder_create(&mut f.conn, &f.dir, "Work").unwrap(),
         "work_1"
     );
-    assert_eq!(folder_create(&mut f.conn, &f.dir, "x/.y").unwrap(), "x/y");
+    assert!(folder_create(&mut f.conn, &f.dir, "!!")
+        .unwrap_err()
+        .is(errors::NAME_CHARS));
 }
 
 #[test]
@@ -280,13 +285,19 @@ fn rename_and_move_a_note() {
         .id
         .clone();
     let renamed = rename_note(&mut f.conn, &f.dir, &id, "B side").unwrap();
-    assert_eq!(renamed.name, "B side");
-    assert!(f.dir.join("B side.md").is_file() && !f.dir.join("a.md").exists());
-    let recased = rename_note(&mut f.conn, &f.dir, &id, "B Side").unwrap();
-    assert_eq!(recased.name, "B Side", "a case-only rename is allowed");
+    assert_eq!(
+        (renamed.name.as_str(), renamed.title.as_str()),
+        ("b_side", "B side")
+    );
+    assert!(f.dir.join("b_side.md").is_file() && !f.dir.join("a.md").exists());
+    let same = rename_note(&mut f.conn, &f.dir, &id, "B SIDE").unwrap();
+    assert_eq!(
+        (same.name.as_str(), same.title.as_str()),
+        ("b_side", "B SIDE")
+    );
     let moved = move_note(&mut f.conn, &f.dir, &id, "work/new").unwrap();
     assert_eq!(moved.folder, "work/new");
-    assert!(f.dir.join("work/new/B Side.md").is_file());
+    assert!(f.dir.join("work/new/b_side.md").is_file());
     fs::write(f.dir.join("x.md"), "").unwrap();
     scan(&mut f.conn, &f.dir, false).unwrap();
     let x = tree(&f.conn)
@@ -298,6 +309,24 @@ fn rename_and_move_a_note() {
     let moved = move_note(&mut f.conn, &f.dir, &x.id, "").unwrap();
     assert_eq!(moved.name, "x_1", "the target already has x");
     assert!(rename_note(&mut f.conn, &f.dir, &id, " ").is_err());
+    let log: Vec<(String, String, String)> = f
+        .conn
+        .prepare("SELECT reason, old_path, new_path FROM path_log ORDER BY id")
+        .unwrap()
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap();
+    let expected = [
+        ("rename", "a.md", "b_side.md"),
+        ("move", "b_side.md", "work/new/b_side.md"),
+        ("move", "work/x.md", "x_1.md"),
+    ];
+    let expected: Vec<_> = expected
+        .iter()
+        .map(|(a, b, c)| (a.to_string(), b.to_string(), c.to_string()))
+        .collect();
+    assert_eq!(log, expected);
     assert_matches_disk(&mut f);
 }
 
@@ -363,7 +392,7 @@ fn rescan_without_changes_writes_nothing() {
 }
 
 #[test]
-fn fixing_renames_bad_names_and_indexes_them() {
+fn fixing_slugs_bad_names_keeps_titles_and_logs_old_paths() {
     let tmp = tempfile::tempdir().unwrap();
     let dir = tmp.path().to_path_buf();
     fs::create_dir_all(dir.join("Café (old)")).unwrap();
@@ -372,31 +401,45 @@ fn fixing_renames_bad_names_and_indexes_them() {
     fs::write(dir.join("Plan?.md"), "y").unwrap();
     fs::write(dir.join("日本.md"), "z").unwrap();
     fs::write(dir.join(".hidden.md"), "h").unwrap();
+    fs::create_dir_all(dir.join("Photos (2024)")).unwrap();
+    fs::write(dir.join("Photos (2024)/a.png"), "p").unwrap();
     let mut conn = open_memory();
     let skipped = scan(&mut conn, &dir, true).unwrap();
+    assert!(skipped.is_empty());
     let t = tree(&conn).unwrap();
-    assert_eq!(t.folders, vec!["Cafe old"]);
-    assert_eq!(names_in(&t), vec!["Cafe old/Resume", "plan", "Plan_1"]);
-    assert!(dir.join("Cafe old/Resume.md").is_file() && dir.join("Plan_1.md").is_file());
-    let left: Vec<_> = skipped
+    assert_eq!(t.folders, vec!["cafe_old"]);
+    let found: Vec<_> = t
+        .notes
         .iter()
-        .map(|s| (s.path.as_str(), s.fix.is_none()))
+        .map(|n| (names::join(&n.folder, &n.name), n.title.clone()))
         .collect();
-    assert_eq!(
-        left,
-        vec![("日本.md", true)],
-        "nothing valid can be made from it"
-    );
+    let expected = [
+        ("cafe_old/resume", "Résumé!"),
+        ("note", "日本"),
+        ("plan", "plan"),
+        ("plan_1", "Plan?"),
+    ];
+    let expected: Vec<_> = expected
+        .iter()
+        .map(|(a, b)| (a.to_string(), b.to_string()))
+        .collect();
+    assert_eq!(found, expected);
     assert!(
         dir.join(".hidden.md").exists(),
         "hidden files are never touched"
     );
-    let logged: i64 = conn
-        .query_row(
-            "SELECT count(*) FROM activity WHERE action = 'rename'",
-            [],
-            |r| r.get(0),
-        )
+    assert!(
+        dir.join("Photos (2024)/a.png").exists(),
+        "folders without notes are left alone"
+    );
+    let logged: Vec<(String, String)> = conn
+        .prepare("SELECT old_path, new_path FROM path_log WHERE reason = 'fix' ORDER BY id")
+        .unwrap()
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+        .unwrap()
+        .collect::<Result<_, _>>()
         .unwrap();
-    assert_eq!(logged, 3);
+    assert!(logged.contains(&("Café (old)".into(), "cafe_old".into())));
+    assert!(logged.contains(&("Plan?.md".into(), "plan_1.md".into())));
+    assert_eq!(logged.len(), 4);
 }

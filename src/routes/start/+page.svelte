@@ -99,8 +99,8 @@
         {#if !check}
           <button class="act" onclick={choose}><Icon name="folder" size={15} />Choose vault folder…</button>
           <div class="vlist">
-            <div><span class="mono">notes/</span><span class="cap">your notes, used if it exists</span></div>
-            <div><span class="mono">.attachments/</span><span class="cap">attached files, created if missing</span></div>
+            <div><span class="mono">the folder</span><span class="cap">your notes: .md files and folders, lowercase names</span></div>
+            <div><span class="mono">.tend/attachments/</span><span class="cap">attached files, created if missing</span></div>
             <div><span class="mono">.tend/tend.db</span><span class="cap">everything else, created if missing</span></div>
           </div>
           {#if failure}<div class="err" role="alert">{failure}</div>{/if}
@@ -111,25 +111,17 @@
             <button class="gbtn sm" onclick={reset}>Change</button>
           </div>
           <StartChecklist steps={check.steps} {shown} />
-          {#if check.confirm?.kind === 'notAVault'}
+          {#if check.confirm}
             <div class="note">
-              This folder isn’t a Tend vault and already has {plural(check.confirm.items, 'item')}. Tend will add
-              <span class="mono">notes/</span>, <span class="mono">.attachments/</span> and
-              <span class="mono">.tend/</span> here and leave the rest alone.
+              This folder isn’t a Tend vault yet. It has {plural(check.confirm.items, 'item')}, with
+              {plural(check.confirm.notes, 'note')} inside. Tend will use it as your notes folder, add a hidden
+              <span class="mono">.tend/</span>, and rename notes and folders that hold notes to lowercase names (like
+              <span class="mono">Meeting Notes.md</span> → <span class="mono">meeting_notes.md</span>; titles keep the
+              old names, and every rename is logged). Other files are left alone.
             </div>
             <div class="row">
               <button class="pbtn" onclick={() => check && checkFolder(check.path, true)}>Use this folder</button>
               <button class="gbtn" onclick={choose}>Choose another folder</button>
-            </div>
-          {:else if check.confirm?.kind === 'notesMissing'}
-            <div class="note">
-              <span class="mono">notes/</span> is missing, but this vault lists {plural(check.confirm.notes, 'note')}.
-              Was it moved? Starting without it creates an empty <span class="mono">notes/</span>; those notes, with
-              their tags and links, leave the index after 7 days unless the folder comes back.
-            </div>
-            <div class="row">
-              <button class="pbtn" onclick={choose}>Choose another folder</button>
-              <button class="gbtn" onclick={() => check && checkFolder(check.path, true)}>Start without them</button>
             </div>
           {:else if done && !check.ok}
             <div class="err" role="alert">
@@ -140,7 +132,7 @@
           {/if}
           {#if done && check.ok && fixable.length}
             <div class="note">
-              {plural(fixable.length, 'name')} don’t fit Tend’s rule (letters, digits, spaces and . , _ -). Tend can
+              {plural(fixable.length, 'name')} don’t fit Tend’s rule (lowercase letters, digits and _). Tend can
               rename them, for example <span class="mono">{fixable[0].path}</span> →
               <span class="mono">{fixable[0].fix}</span>. Other apps’ links to those files will break.
             </div>

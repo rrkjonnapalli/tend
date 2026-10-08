@@ -36,9 +36,9 @@ The vault is the Git working tree:
 
 ```text
 <vault>/
-  notes/                        note files (body only), named by their titles
-  .attachments/                 attachment files, <id>.<ext>
+  work/plan.md …                notes and folders: the vault folder is the notes root
   .tend/                        Tend's own folder (hidden)
+    attachments/<id>.<ext>      attached files
     tend.db                     live database        — never committed
     tend.db-wal / -shm          SQLite side files    — never committed
     staging/                    files being applied  — never committed (§10)
@@ -86,15 +86,15 @@ default statuses (`id` = value) and the root folders (`id` = `'root'`).
 A note is its own record; its body is a file, held by an attachment.
 
 ```text
-notes        id · attachment_id · updated_at
+notes        id · attachment_id · title · updated_at
 attachments  id · path · name · mime_type · size_bytes · sha256 · updated_at   (+ local: mtime, missing_at)
 ```
 
-- `attachments.path` is the file's place in the vault: `notes/<folder>/<name>.md` for a note body,
-  `.attachments/<id>.<ext>` for an attached file.
-- A note's **title is its file name** without `.md`, so it syncs with `attachments.path`. Tend does
-  not read a `# heading` from the file, and new notes start with an empty body.
-- Renaming a note **renames the file** (§11.2); only `attachments.path` changes. The note's `id`
+- `attachments.path` is the file's place in the vault: `<folder>/<name>.md` for a note body,
+  `.tend/attachments/<id>.<ext>` for an attached file.
+- The **title belongs to the note** (free text, synced). The file name is the title's slug
+  (§4.4). Tend never reads the title from the file; a new note's file starts with `# <title>`.
+- Changing the title **renames the file** to the new slug (§11.2); only `attachments.path` changes. The note's `id`
   never changes, so tags, labels and links are unaffected by renames and moves.
 - Editing a note writes the file and bumps `updated_at` on both rows.
 - `attachment_links` always points at an attachment `id`. Linking a note means linking its
@@ -109,27 +109,27 @@ attachments  id · path · name · mime_type · size_bytes · sha256 · updated_
 | `sync_state (id = 1, last_synced_seq, last_synced_commit)` | The markers of the last successful sync (§13). |
 | `access (entity_type, entity_id, used_at, UNIQUE(entity_type, entity_id))` | Last read, edit or create of each entity. Drives "recent" lists, ⌘K ranking and what the UI loads first. Never in snapshots, never in `changes`. |
 | `activity (id, action, status, entity_type, entity_id, at)` | Every write plus open, close, pull and push; capped to the newest 10,000 rows by a trigger. |
+| `path_log (id, kind, reason, old_path, new_path, at)` | Every rename or move of a folder or note file, by the user, a scan fixing a name, or sync applying a rename, so an earlier layout can be restored. Never trimmed. |
 
 Sync configuration (remote URL, branch, username, author, device name, interval, last result) is
 local too and never lives in the vault (§5).
 
 ### 4.4 Name rule
 
-Folder names (notes and tasks) and note names:
+Folder names (notes and tasks) and note file names: `^[a-z0-9]+(_[a-z0-9]+)*$`, at most 200
+characters, unique in their folder (folders clash only with folders, notes only with notes).
 
-- Allowed characters: `A–Z a–z 0–9`, space, and `. , _ -`.
-- Leading and trailing spaces and dots are **trimmed** automatically; what is left must not be empty.
-- At most 200 characters.
-- Unique within the folder, **ignoring case** (as macOS does). Folders clash only with folders, notes
-  only with notes.
-- A clash is **not an error**: the new name gets a suffix, `Plan` → `Plan_1` → `Plan_2`, when
-  creating, renaming, moving, and when sync brings in a clash (§9.2).
-- Checked in Rust; the UI shows the same rule live. Names found on disk that break it are renamed by
-  the scan to the closest valid name once the vault allows it (see `decisions.md`); a name nothing
-  valid can be made from is skipped.
+- Typed folder names and note titles become their **slug**: accents become plain letters,
+  lowercase, each run of other characters one `_`, trimmed. A title with no letter or digit gives
+  `note`.
+- A clash is **not an error**: the name gets a suffix, `plan` → `plan_1` → `plan_2`, when creating,
+  renaming, moving, and when sync brings in a clash (§9.2).
+- Names found on disk that break the rule get their slug from the scan once the vault allows it
+  (see `decisions.md`); the note keeps the old name as its title, and the rename goes to `path_log`.
 
-ASCII-only names avoid Unicode normalization differences between devices (macOS can store "é" in a
-different byte form than Git) and characters other file systems refuse.
+Lowercase ASCII names avoid every case problem (no case-only renames, no `Plan` next to `plan` on a
+disk that ignores case), Unicode normalization differences between devices, and characters other
+file systems refuse.
 
 ---
 
@@ -222,7 +222,7 @@ SQLite, never patched line by line, so shards are always a faithful copy of the 
 bytes did not change are left alone, and clean years are not touched.
 
 Note bodies and attachment files are not in shards; Git sees their changes directly
-(`git status` on `notes/` and `.attachments/`), which also catches edits made in Finder.
+(`git status` on the vault, leaving out `.tend/`), which also catches edits made in Finder.
 
 A **full rebuild** (every shard) runs when there are no markers yet (first sync, restore), after a
 schema upgrade, or when the base commit can no longer be read. It uses the same code with "every
@@ -283,7 +283,7 @@ with their content:
 | Two tags or two labels with the same name | keep the smaller id; every link to the other is **moved** to it; then the other is deleted |
 | Two statuses with the same value | keep the smaller id |
 | Two folders with the same path (notes or tasks) | keep the smaller id (rows point at the path, so nothing moves) |
-| Two notes with the same path | keep both; the note with the larger id gets the next free suffix (`Plan_1`) and its file is renamed |
+| Two notes with the same path | keep both; the note with the larger id gets the next free suffix (`plan_1`) and its file is renamed (logged in `path_log`) |
 
 ### 9.3 References after merging
 
@@ -311,10 +311,9 @@ implemented.
 4. Apply rows to SQLite in **one transaction** (a backup copy of `tend.db` is taken just
    before); check references; commit. A failed apply rolls back, `.tend/staging/` is emptied, and the
    sync fails with the vault unchanged.
-5. Move staged files into place and remove deleted ones. A **case-only rename** (`plan.md` →
-   `Plan.md`) goes through a temporary name, because the disk ignores case. If a move fails, the
+5. Move staged files into place and remove deleted ones; renames go to `path_log`. If a move fails, the
    affected files are restored from the last commit's tree.
-6. Scan `notes/`, matching files to note rows by `attachments.path` (§11.3). Applied files hash the
+6. Scan the vault, matching files to note rows by `attachments.path` (§11.3). Applied files hash the
    same as their rows, so the scan changes nothing.
 7. Resume the watcher; reload stores and reopen the open note if it changed.
 
@@ -326,17 +325,21 @@ Every app command waits for the DB while step 4 runs; it must stay short, and th
 ## 11. Notes
 
 ### 11.1 Creating
-A name is given (§4.4); the file is `<name>.md` and the body starts empty.
+A title is given; the file is its slug (`meeting.md` for "Meeting"), starting with `# Meeting`, so
+nothing is ever renamed after creation.
 
 ### 11.2 Renaming and moving
-Rename → file renamed; move → file moved; a name taken in the target gets a suffix (§4.4).
-`attachments.path` and `updated_at` are updated. Links keep working because they point at ids.
+Title change → file renamed to the new slug; move → file moved, keeping its name; a name taken in
+the target gets a suffix (§4.4). `attachments.path` and `updated_at` are updated and the rename is
+logged in `path_log`. Links keep working because they point at ids.
 
 ### 11.3 Scanning
+- The vault is the notes root. Hidden entries and non-`.md` files are ignored; folders without
+  notes are ignored unless Tend made them.
 - A file whose path matches an attachment row → that note; content changed (sha256) since the last
   scan → `updated_at = now`.
 - A file no row knows: if a vanished row has the same sha256, it is that note renamed or moved
-  outside Tend and keeps its id; otherwise it is a new note.
+  outside Tend and keeps its id and title; otherwise it is a new note titled by its file name.
 - A row whose file is gone → marked missing (grace period), then purged.
 - An outside rename **combined with an edit** gets a new id — the one case where links break.
 
@@ -344,7 +347,7 @@ Rename → file renamed; move → file moved; a name taken in the target gets a 
 
 ## 12. Attachments
 
-Files live in `.attachments/<id>.<ext>`. Files over **100 MB** are not committed; their row still
+Files live in `.tend/attachments/<id>.<ext>`. Files over **100 MB** are not committed; their row still
 syncs, so other devices show "file not synced". Skipped files are listed in Settings → Sync.
 
 ---
@@ -370,7 +373,7 @@ lock (one run at a time; triggers during a run coalesce into it)
   them from counting as local changes next time.
 - A crash after the push but before the markers are saved is harmless: the next run reconciles the
   same data, finds nothing new to commit and only moves the markers.
-- **On app open** the order is always: open the vault → scan `notes/` → sync. Edits made while Tend
+- **On app open** the order is always: open the vault → scan → sync. Edits made while Tend
   was closed are indexed (with their `updated_at`) before the merge sees them.
 
 ---
@@ -385,7 +388,7 @@ fails, the temporary clone is removed and the vault is untouched.
 
 **Restore** (Start page, or Settings → Sync on an empty vault): choose an empty folder, URL, token
 (branch and username under "More") → clone → validate manifest → create the database → **write
-files → import rows → scan `notes/`** → set the markers → open. On a vault that already has data,
+files → import rows → scan** → set the markers → open. On a vault that already has data,
 Settings offers no restore; connecting reconciles instead.
 
 **Disconnect:** clears the remote, token, schedule and markers; `.git` and all data stay.
@@ -446,7 +449,7 @@ unchanged shards produce no diff.
 
 `reconcile.rs` is pure, so it is checked by a **simulation test** before any Git code is written:
 three simulated devices and a simulated remote, thousands of random operations (create, edit,
-delete, rename including case-only, move, link, tag), clocks set wrong on purpose, crashes in the
+delete, rename, move, link, tag), clocks set wrong on purpose, crashes in the
 middle of a run, random sync order. After every round it asserts:
 
 - all devices converge to identical state;
@@ -496,7 +499,7 @@ idle sync writes nothing · only dirty years are rebuilt · failed runs leave a 
 retry later · simulation test passes.
 
 **Files** — notes and attachments sync as files · WAL/SHM and staging never committed · files over
-100 MB skipped and listed · case-only renames applied · note index rebuilt by matching paths.
+100 MB skipped and listed · renames logged · note index rebuilt by matching paths.
 
 **Runtime** — one run at a time · open → scan → sync · watcher paused and rescanned · open note
 saved before and reloaded after · open / interval / close (10 s) / Sync now all work · status icon

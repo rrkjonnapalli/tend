@@ -63,9 +63,12 @@ impl Harness {
 fn notes_round_trip_through_ipc() {
     let h = Harness::new();
     h.ok("folder_create", json!({ "path": "work" }));
-    let note = h.ok("note_create", json!({ "folder": "work", "name": "Plan" }));
+    let note = h.ok("note_create", json!({ "folder": "work", "title": "Plan" }));
     let id = note["id"].as_str().unwrap().to_string();
-    assert_eq!(note["name"], "Plan");
+    assert_eq!(
+        (&note["name"], &note["title"]),
+        (&json!("plan"), &json!("Plan"))
+    );
 
     h.ok(
         "note_write",
@@ -86,27 +89,23 @@ fn notes_round_trip_through_ipc() {
         "item_move",
         json!({ "item": { "kind": "folder", "path": "work" }, "target": "archive" }),
     );
-    assert!(h
-        .vault
-        .path()
-        .join("notes/archive/work/Q4 plan.md")
-        .is_file());
+    assert!(h.vault.path().join("archive/work/q4_plan.md").is_file());
 
     let tree = h.ok("notes_tree", json!({}));
     assert_eq!(tree["folders"], json!(["archive", "archive/work"]));
     assert_eq!(tree["notes"][0]["folder"], "archive/work");
-    assert_eq!(tree["notes"][0]["name"], "Q4 plan");
+    assert_eq!(tree["notes"][0]["title"], "Q4 plan");
 
     let err = h
-        .call("note_create", json!({ "folder": "", "name": "a/b" }))
+        .call("note_create", json!({ "folder": "", "title": " " }))
         .unwrap_err();
-    assert_eq!(err["key"], "NAME_CHARS");
+    assert_eq!(err["key"], "NOTE_TITLE_EMPTY");
 
     h.ok(
         "item_delete",
         json!({ "item": { "kind": "folder", "path": "archive" } }),
     );
-    assert!(!h.vault.path().join("notes/archive").exists());
+    assert!(!h.vault.path().join("archive").exists());
     assert_eq!(h.ok("notes_tree", json!({}))["notes"], json!([]));
 }
 
@@ -177,7 +176,7 @@ fn tasks_round_trip_through_ipc() {
     let links = h.ok("attachments_list", json!({ "owner": "task", "id": pid }));
     assert_eq!(links[0]["name"], "report.txt");
     assert_eq!(
-        std::fs::read_dir(h.vault.path().join(".attachments"))
+        std::fs::read_dir(h.vault.path().join(".tend/attachments"))
             .unwrap()
             .count(),
         1

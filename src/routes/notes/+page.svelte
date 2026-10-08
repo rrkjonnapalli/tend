@@ -15,7 +15,7 @@
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
-  import { nameError, relativeTo } from '#lib/util/names.ts';
+  import { relativeTo, titleError } from '#lib/util/names.ts';
   import { folderCrumbs, folderSummary } from '#lib/util/note-paths.ts';
   import { ago } from '#lib/util/dates.ts';
   import { routes } from '#lib/util/routes.ts';
@@ -24,19 +24,18 @@
   let query = $state('');
   const needle = $derived(searchNeedle(query));
   const inFolder = $derived(notes.under(folder));
-  const rows = $derived(inFolder.filter((n) => textMatches([n.name, n.folder], needle)));
+  const rows = $derived(inFolder.filter((n) => textMatches([n.title, n.name, n.folder], needle)));
   const summary = $derived(folderSummary({ notes: inFolder.length, folders: notes.foldersUnder(folder).length }));
   const crumbs = $derived(folderCrumbs(folder));
 
   let draft = $state('');
   let error = $state('');
-  const draftError = $derived(draft.trim() ? nameError(draft) : '');
 
   async function create() {
     const name = draft.trim();
-    if (!name || draftError) return;
+    if (!name) return;
     try {
-      const row = await notes.create({ folder, name });
+      const row = await notes.create({ folder, title: name });
       draft = '';
       goto(routes.note(row.id, { edit: true }));
     } catch (e) {
@@ -80,21 +79,21 @@
       oninput={() => (error = '')}
       {onkeydown} />
   </label>
-  {#if draftError || error}<span class="err">{draftError || error}</span>{/if}
+  {#if error}<span class="err">{error}</span>{/if}
   <ColumnHeader template="var(--grid-note)" columns={COLUMNS} />
   <div class="list-scroll">
     <div class="rows">
       {#each rows as n (n.id)}
         {#if editingId === n.id}
           <div class="row editing">
-            <InlineTitle value={n.name} label="Note name" check={nameError} onsave={(name) => rename(n, name)} oncancel={stopEditing} />
+            <InlineTitle value={n.title} label="Note title" check={titleError} onsave={(title) => rename(n, title)} oncancel={stopEditing} />
             <span></span>
             <span class="meta">{ago(n.modifiedAt)}</span>
             <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>
           </div>
         {:else}
           <a class="row reveal-on-hover" href={routes.note(n.id)}>
-            <span class="name">{n.name}</span>
+            <span class="name">{n.title}</span>
             <EditButton label="Rename note" onedit={() => (editingId = n.id)} />
             <span class="meta">{ago(n.modifiedAt)}</span>
             <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>

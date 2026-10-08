@@ -30,23 +30,23 @@ Reference for building Tend (Tauri 2 + SvelteKit). The mockups in `docs/design/s
 
 ## 2. Vault
 
-The user picks one **vault folder**. Tend works only inside it:
+The user picks one **vault folder**. It is the **notes root**: its `.md` files and folders are the notes. Tend's own files live in a hidden `.tend/` folder:
 
 ```
 <vault>/
-  notes/          root of all notes (used if present, created if missing)
-  .attachments/   attachment files (created if missing)
-  .tend/tend.db   everything else (created if missing; hidden, like .git)
+  work/plan.md          notes and folders (the folder itself is the notes root)
+  .tend/attachments/    attached files (created if missing)
+  .tend/tend.db         everything else (created if missing)
 ```
 
-- **Opening a vault:** check or create the three items, in that order. Two folders ask first and write nothing until the user agrees:
-  - **Not a vault and not empty** (no `.tend/tend.db`, no `notes/`, other visible items): "This folder isn’t a Tend vault and already has N items…" → *Use this folder* / *Choose another folder*.
-  - **A vault whose `notes/` is gone** while the database lists notes: "`notes/` is missing… Was it moved?" → *Choose another folder* / *Start without them*. On launch this shows as the reopen error.
-  - A folder with `notes/` but no database is opened directly and indexed. What sits above the chosen folder is never checked.
+- Hidden entries (`.tend/`, `.git/`, `.obsidian/`, `.DS_Store`) are never read, renamed or watched. Files other than `.md` are ignored, and so are folders with no notes in them (unless made in Tend).
+- **Opening a vault:** count the notes, then check or create `.tend/attachments/` and `.tend/tend.db`.
+  - **Empty folder** → a new vault.
+  - **Not a vault and not empty** (no `.tend/tend.db`, other visible items) → ask first, writing nothing: "This folder isn’t a Tend vault yet. It has N items, with M notes inside. Tend will use it as your notes folder… and rename notes and folders that hold notes to lowercase names…" → *Use this folder* / *Choose another folder*. Agreeing also lets scans fix names (§5a).
   - **`.tend/tend.db` exists:** read `meta`.
     - `app_id = 'tend'` and `schema_version` ≤ app → migrate up if lower, then open.
     - Anything else → **"An incompatible database exists in .tend/tend.db"**. The user picks another folder.
-- **Existing notes** are never moved or renamed.
+  - What sits above the chosen folder is never checked.
 - **Changing vault:** Settings → General → *Change vault folder…*. This reopens the start-up flow.
 
 ## 3. Start-up page
@@ -55,7 +55,7 @@ The user picks one **vault folder**. Tend works only inside it:
 - **Left column:**
   - The `tend.` wordmark.
   - *Start* → **Choose vault folder…** as a text link.
-  - Three lines explaining `notes/`, `.attachments/` and `.tend/tend.db`.
+  - Three lines explaining the folder (your notes), `.tend/attachments/` and `.tend/tend.db`.
 - **After choosing:**
   - The path is shown with a *Change* link.
   - A checklist runs line by line (✓ green, ✕ red).
@@ -102,10 +102,10 @@ The user picks one **vault folder**. Tend works only inside it:
 
 ## 5. Notes
 
-- **The files in `notes/` are the truth.** A note is a record (`notes`: id) whose body is a file held by an attachment (`attachments.path` = `notes/<folder>/<name>.md`). `note_folders` indexes the folders by path.
-- **A note's title is its file name** without `.md` ("Q4 plan – draft.md" shows as "Q4 plan – draft"). Renaming a note renames the file; renaming the file outside Tend renames the note. The body never sets the title.
+- **The files in the vault are the truth** for bodies and folders. A note is a record (`notes`: id, title) whose body is a file held by an attachment (`attachments.path` = `<folder>/<name>.md`, relative to the vault). `note_folders` indexes the folders by path.
+- **Titles belong to the note** (free text, synced). The file name is the title's slug: creating "Meeting" makes `meeting.md`, whose first line is `# Meeting`; nothing is renamed afterwards because the name was right from the start. Changing the title renames the file to the new slug (a clash gets `_1`). The body never sets the title. A note found on disk is titled by its file name as found (before any fix).
 - **Sync:**
-  1. **Vault open:** walk `notes/` once. Insert or update every folder in `note_folders` and every `.md` file in `notes`. Anything gone from disk gets `missing_at` and is cleaned up after a grace period.
+  1. **Vault open:** walk the vault once. Insert or update every folder in `note_folders` and every `.md` file in `notes`. Anything gone from disk gets `missing_at` and is cleaned up after a grace period.
   2. **While running:** a file watcher applies changes made outside Tend (Finder, other editors) the same way.
   3. **Inside Tend:** create, rename, move and delete write to disk first, then to the database.
   4. **If they ever disagree,** the next scan makes the database match the disk.
@@ -127,15 +127,13 @@ The user picks one **vault folder**. Tend works only inside it:
 ## 5a. Folders (notes and tasks)
 
 - **Separate trees:** notes folders and tasks folders are unrelated, even when they share a name.
-- **Names** of every folder (notes and tasks) and every note:
-  - Letters `A–Z a–z`, digits, spaces and `. , _ -` only; at most 200 characters.
-  - Leading and trailing spaces and dots are trimmed when saved.
-  - Unique within the folder, ignoring case (as macOS does). Folders clash only with folders, notes only with notes. A clash is not an error: the name gets a suffix, `Plan` → `Plan_1` → `Plan_2`, on create, rename and move.
-  - A typed folder path takes the spelling of folders that already exist (`work/x` lands in `Work/x`).
-  - Task titles are free text with no rule.
-  - **Names found on disk that break the rule** (folders and `.md` files under `notes/`) are renamed to the closest valid name: accents become plain letters (`Café` → `Cafe`), other characters are dropped, spaces collapse, the result is trimmed, and a clash gets a suffix. A name nothing valid is left of (`日本.md`) is skipped and not indexed. Hidden (`.`) and non-`.md` files are never touched.
-  - Renaming needs the vault's consent once (setting `notes.fix_names`). A new, empty vault has it from the start. Opening a folder that already has such names asks: *Rename and open →* or *Open without renaming*. Until then they are skipped and listed in Settings → General, each with the name it would get and a *Rename N items to fit* link.
-  - Every rename is written to the activity log (`old → new`).
+- **Names** of every folder (notes and tasks) and every note file: `^[a-z0-9]+(_[a-z0-9]+)*$`, at most 200 characters.
+  - Anything typed becomes its **slug**: accents become plain letters, everything lowercase, each run of other characters one `_`, trimmed ("Café notes (Q4)" → `cafe_notes_q4`). A note title with no letter or digit becomes `note`; a folder name with none is refused ("Use at least one letter or digit").
+  - Unique within the folder. Folders clash only with folders, notes only with notes. A clash is not an error: the name gets a suffix, `plan` → `plan_1` → `plan_2`, on create, rename and move.
+  - Task titles and note titles are free text.
+  - **Names found on disk that break the rule** (folders holding notes, and `.md` files) get their slug, with a suffix when taken. The note keeps the old file name as its title.
+  - Fixing needs the vault's consent once (setting `notes.fix_names`): a new empty vault has it, confirming a non-vault folder gives it, and an existing vault asks on the Start page (*Rename and open →* / *Open without renaming*). Until then such items are skipped and listed in Settings → General with the name each would get and a *Rename N items to fit* link.
+  - **Every rename or move** of a folder or note file, by the user or by a fix, is written to `path_log` (old path, new path, why, when), so an earlier layout can be restored later.
 - **Explorer actions:** hover a row → `⋯`, or right-click, opens a menu: **Rename** (F2) · **Move to…** (⌘⇧M) · **Delete…** (⌫). The root has no menu.
   - **Rename:** edited in place in the row. Invalid or duplicate names turn red with a hint underneath. Enter saves, Esc cancels.
   - **New note / new folder** (toolbar): an inline row in the selected folder, checked against the same rules.
@@ -215,7 +213,7 @@ The user picks one **vault folder**. Tend works only inside it:
 
 ## 8. Attachments
 
-- **Upload:** copy to `.attachments/<id>.<ext>` and insert a row in `attachments` (original name, mime type, size, sha256).
+- **Upload:** copy to `.tend/attachments/<id>.<ext>` and insert a row in `attachments` (original name, mime type, size, sha256).
 - **Linking:** link to a task, note, comment or person through `attachment_links`. A note can also be linked to a task.
 - The UI always refers to attachments by id, never by path.
 - **Task page → Attachments:**

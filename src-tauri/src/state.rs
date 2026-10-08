@@ -40,8 +40,9 @@ impl Vault {
         *self.skipped.lock().unwrap_or_else(|e| e.into_inner()) = items;
     }
 
+    /// The notes root, which is the vault folder itself.
     pub fn notes_dir(&self) -> PathBuf {
-        self.root.join("notes")
+        self.root.clone()
     }
 }
 

@@ -1,39 +1,53 @@
-// The name rule for folders and notes (same as src-tauri/src/names): letters, digits, spaces and
-// . , _ - only. Leading and trailing spaces and dots are trimmed; a name taken in its folder gets a
-// suffix (Plan_1) when saved, so a clash is never an error.
+// The name rule for folders and note files (same as src-tauri/src/names): lowercase letters and
+// digits with single _ between them. Typed folder names and note titles become such names through
+// `slug`; a name taken in its folder gets a suffix (plan_1) when saved, so a clash is never an error.
 
 const MAX_CHARS = 200;
-const ALLOWED = /^[A-Za-z0-9 .,_-]*$/;
+const RULE = /^[a-z0-9]+(_[a-z0-9]+)*$/;
 
 export const nameErrors = {
   empty: 'Name can’t be empty',
-  chars: 'Use letters, digits, spaces and . , _ - only',
-  long: 'Keep names under 200 characters',
+  chars: 'Use at least one letter or digit',
+  title: 'A note needs a title',
 } as const;
 
-/** A typed name without leading or trailing spaces and dots, as it will be saved. */
-export const cleanName = (name: string) => name.replace(/^[ .]+|[ .]+$/g, '');
+export const isValidName = (name: string) => RULE.test(name) && name.length <= MAX_CHARS;
 
-/** The message to show under a name field, or '' when the name is fine. */
+/** The name text becomes on disk: accents dropped, lowercase, other runs → _ ("Café notes (Q4)" →
+ *  "cafe_notes_q4"). '' when no letter or digit is left. */
+export function slug(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, MAX_CHARS)
+    .replace(/_+$/, '');
+}
+
+/** The message to show under a folder name field, or '' when it can be saved. */
 export function nameError(typed: string): string {
-  const name = cleanName(typed);
-  if (!name) return nameErrors.empty;
-  if (!ALLOWED.test(name)) return nameErrors.chars;
-  if (name.length > MAX_CHARS) return nameErrors.long;
+  if (!typed.trim()) return nameErrors.empty;
+  if (!slug(typed)) return nameErrors.chars;
   return '';
 }
 
-/** A typed folder path with each segment cleaned and no slashes at the ends. */
+/** The message to show under a note title field, or ''. */
+export const titleError = (typed: string) => (typed.trim() ? '' : nameErrors.title);
+
+/** A typed folder path, each segment as it will be saved. */
 export const cleanPath = (value: string) =>
   value
     .trim()
     .replace(/^\/+|\/+$/g, '')
     .split('/')
-    .map(cleanName)
+    .map(slug)
     .join('/');
 
-/** The first problem with any segment of a folder path, or '' ('' is the root). */
-export function pathError(path: string): string {
+/** The first problem with any segment of a typed folder path, or '' ('' is the root). */
+export function pathError(typed: string): string {
+  const path = typed.trim().replace(/^\/+|\/+$/g, '');
   if (path === '') return '';
   for (const segment of path.split('/')) {
     const problem = nameError(segment);

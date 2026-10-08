@@ -1,7 +1,9 @@
-//! Notes. A note is a record (`notes`) whose body is a markdown file under `notes/`, held by an
-//! attachment (`attachments.path`). The files are the truth: a note's name is its file name
-//! without `.md`. Every change made inside Tend writes to disk first, then to the
-//! database in one transaction, and puts the disk back if the database step fails.
+//! Notes. A note is a record (`notes`: id, title) whose body is a markdown file in the vault, held
+//! by an attachment (`attachments.path`, relative to the vault, which is the notes root). The file
+//! name is the title's slug. The files are the truth for bodies and folders; titles belong to the
+//! notes. Every change made inside Tend writes to disk first, then to the database in one
+//! transaction, and puts the disk back if the database step fails. Every rename or move of a file or
+//! folder is written to `path_log`.
 
 mod edit;
 mod scan;
@@ -15,7 +17,7 @@ mod watcher_tests;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{params, Connection, OptionalExtension, Transaction};
 use serde::Serialize;
 
 use crate::error::{errors, AppResult};
@@ -32,11 +34,50 @@ pub use scan::{scan, Skipped};
 /// Setting: the vault allows scans to rename folders and notes whose names break the rule.
 pub const FIX_NAMES: &str = "notes.fix_names";
 
+/// What a `path_log` row moved.
+#[derive(Clone, Copy)]
+pub(crate) enum PathKind {
+    Folder,
+    Note,
+}
+
+/// Why a `path_log` row moved it.
+#[derive(Clone, Copy)]
+pub(crate) enum Reason {
+    /// A scan gave a name found on disk a valid one.
+    Fix,
+    Rename,
+    Move,
+}
+
+/// Records a rename or move, so an earlier layout can be restored. Paths are relative to the vault.
+pub(crate) fn log_path(
+    tx: &Transaction,
+    kind: PathKind,
+    reason: Reason,
+    old: &str,
+    new: &str,
+    at: i64,
+) -> AppResult<()> {
+    let kind = match kind {
+        PathKind::Folder => "folder",
+        PathKind::Note => "note",
+    };
+    let reason = match reason {
+        Reason::Fix => "fix",
+        Reason::Rename => "rename",
+        Reason::Move => "move",
+    };
+    tx.execute(
+        "INSERT INTO path_log (kind, reason, old_path, new_path, at) VALUES (?1, ?2, ?3, ?4, ?5)",
+        params![kind, reason, old, new, at],
+    )?;
+    Ok(())
+}
+
 /// Items missing from disk stay in the index this long, then they are purged.
 pub const GRACE_MS: i64 = 7 * 24 * 60 * 60 * 1000;
 const EXT: &str = ".md";
-/// Note bodies live under this folder of the vault; attachment paths start with it.
-const PREFIX: &str = "notes/";
 const MIME: &str = "text/markdown";
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -44,8 +85,9 @@ const MIME: &str = "text/markdown";
 pub struct NoteRow {
     pub id: String,
     pub folder: String,
-    /// File name without `.md`; what the app shows as the note's title.
+    /// File name without `.md` (the title's slug).
     pub name: String,
+    pub title: String,
     pub modified_at: i64,
 }
 
@@ -63,26 +105,20 @@ pub struct NoteDoc {
     pub tags: Vec<String>,
 }
 
-/// `folder` + `name` → the path relative to `notes/` ("work/plan.md").
-fn rel_path(folder: &str, name: &str) -> String {
+/// The attachment path of a note body, relative to the vault: "work/plan.md".
+fn vault_path(folder: &str, name: &str) -> String {
     names::join(folder, &format!("{name}{EXT}"))
 }
 
-/// The attachment path of a note body: "notes/work/plan.md".
-fn vault_path(folder: &str, name: &str) -> String {
-    format!("{PREFIX}{}", rel_path(folder, name))
-}
-
-/// "notes/work/plan.md" → ("work", "plan"): a note's folder and name from its body's path.
+/// "work/plan.md" → ("work", "plan"): a note's folder and name from its body's path.
 pub fn split_vault_path(path: &str) -> (String, String) {
-    let rel = path.strip_prefix(PREFIX).unwrap_or(path);
-    let file = names::base(rel);
+    let file = names::base(path);
     let name = file.strip_suffix(EXT).unwrap_or(file).to_string();
-    (names::parent(rel).to_string(), name)
+    (names::parent(path).to_string(), name)
 }
 
 fn file_path(dir: &Path, folder: &str, name: &str) -> PathBuf {
-    dir.join(rel_path(folder, name))
+    dir.join(vault_path(folder, name))
 }
 
 /// Where an indexed note's body is on disk.
@@ -90,7 +126,7 @@ fn note_path(dir: &Path, note: &NoteRow) -> PathBuf {
     file_path(dir, &note.folder, &note.name)
 }
 
-const ROW_SQL: &str = "SELECT n.id, a.path, max(n.updated_at, a.updated_at)
+const ROW_SQL: &str = "SELECT n.id, a.path, n.title, max(n.updated_at, a.updated_at)
     FROM notes n JOIN attachments a ON a.id = n.attachment_id";
 
 fn to_row(r: &rusqlite::Row) -> rusqlite::Result<NoteRow> {
@@ -100,7 +136,8 @@ fn to_row(r: &rusqlite::Row) -> rusqlite::Result<NoteRow> {
         id: r.get(0)?,
         folder,
         name,
-        modified_at: r.get(2)?,
+        title: r.get(2)?,
+        modified_at: r.get(3)?,
     })
 }
 
@@ -169,7 +206,7 @@ pub fn write(conn: &Connection, dir: &Path, id: &str, text: &str) -> AppResult<N
 
 /// A note row with a body path and no file, for tests in other modules.
 #[cfg(test)]
-pub fn seed(conn: &Connection, id: &str, path: &str) {
+pub fn seed(conn: &Connection, id: &str, path: &str, title: &str) {
     conn.execute(
         "INSERT INTO attachments (id, path, name, mime_type, size_bytes, sha256, created_at, updated_at)
          VALUES (?1, ?2, ?2, 'text/markdown', 0, '', 0, 0)",
@@ -177,8 +214,8 @@ pub fn seed(conn: &Connection, id: &str, path: &str) {
     )
     .unwrap();
     conn.execute(
-        "INSERT INTO notes (id, attachment_id, created_at, updated_at) VALUES (?1, ?2, 0, 0)",
-        params![id, format!("a_{id}")],
+        "INSERT INTO notes (id, attachment_id, title, created_at, updated_at) VALUES (?1, ?2, ?3, 0, 0)",
+        params![id, format!("a_{id}"), title],
     )
     .unwrap();
 }

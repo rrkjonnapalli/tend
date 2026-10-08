@@ -1,6 +1,8 @@
 //! Makes the index match the disk: new files are added, changed ones re-hashed, missing ones
-//! marked, and items missing longer than `GRACE_MS` purged. Folders and notes whose names break the
-//! rule are renamed to the closest valid name when the vault allows it (`fix`), else reported.
+//! marked, and items missing longer than `GRACE_MS` purged. The vault folder is the notes root:
+//! hidden entries (`.tend/`, `.git/`) and files other than `.md` are ignored, and so are folders
+//! with no notes in them unless Tend made them. Folders and notes whose names break the rule get
+//! their slug (logged in `path_log`) when the vault allows it (`fix`), else they are reported.
 
 use std::collections::{HashMap, HashSet};
 use std::fs;
@@ -9,7 +11,7 @@ use std::path::{Path, PathBuf};
 use rusqlite::{params, Connection, Transaction};
 use serde::Serialize;
 
-use super::{file_path, vault_path, EXT, GRACE_MS, MIME, PREFIX};
+use super::{file_path, log_path, vault_path, PathKind, Reason, EXT, GRACE_MS, MIME};
 use crate::error::AppResult;
 use crate::files;
 use crate::names;
@@ -19,17 +21,20 @@ struct DiskNote {
     folder: String,
     /// File name without `.md`.
     name: String,
+    /// The title a new note gets: the file name as found, before any fix.
+    title: String,
     mtime: i64,
 }
 
-/// An item the scan left out of the index because its name breaks the rule.
+/// An item the scan left out of the index because its name breaks the rule and the vault doesn't
+/// allow fixing yet.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Skipped {
-    /// Relative to `notes/`; folders end in `/`.
+    /// Relative to the vault; folders end in `/`.
     pub path: String,
-    /// The path it would be renamed to, when a valid name can be made from it.
-    pub fix: Option<String>,
+    /// The path it would be renamed to.
+    pub fix: String,
 }
 
 #[derive(Default)]
@@ -37,8 +42,8 @@ struct Disk {
     folders: Vec<String>,
     notes: Vec<DiskNote>,
     skipped: Vec<Skipped>,
-    /// (old, new) paths renamed during this scan.
-    renamed: Vec<(String, String)>,
+    /// (kind, old, new) paths renamed during this scan.
+    renamed: Vec<(PathKind, String, String)>,
 }
 
 /// One directory being walked: its place, whether names may be fixed, and the names in it.
@@ -46,7 +51,9 @@ struct Walk<'a> {
     dir: &'a Path,
     rel: &'a str,
     fix: bool,
-    /// Every entry name in `dir`, lowercased (the disk ignores case).
+    /// Folders the index already has: they stay even when they hold no notes.
+    known: &'a HashSet<String>,
+    /// Every entry name in `dir`, lowercased (the disk may ignore case).
     taken: HashSet<String>,
 }
 
@@ -66,8 +73,9 @@ struct Vanished {
 
 /// Returns the skipped items. With `fix`, names that can be made valid are renamed on disk first.
 pub fn scan(conn: &mut Connection, dir: &Path, fix: bool) -> AppResult<Vec<Skipped>> {
+    let known = known_folders(conn)?;
     let mut disk = Disk::default();
-    walk(dir, "", fix, &mut disk);
+    walk(dir, "", fix, &known, &mut disk);
     let now = now_ms();
     let tx = conn.transaction()?;
     log_renames(&tx, &disk.renamed, now)?;
@@ -79,17 +87,26 @@ pub fn scan(conn: &mut Connection, dir: &Path, fix: bool) -> AppResult<Vec<Skipp
     Ok(disk.skipped)
 }
 
-fn log_renames(tx: &Transaction, renamed: &[(String, String)], now: i64) -> AppResult<()> {
-    for (old, new) in renamed {
-        tx.execute(
-            "INSERT INTO activity (action, entity_type, entity_id, at) VALUES ('rename', 'path', ?1, ?2)",
-            params![format!("{old} → {new}"), now],
-        )?;
+fn known_folders(conn: &Connection) -> AppResult<HashSet<String>> {
+    let known = conn
+        .prepare("SELECT path FROM note_folders WHERE missing_at IS NULL")?
+        .query_map([], |r| r.get(0))?
+        .collect::<Result<_, _>>()?;
+    Ok(known)
+}
+
+fn log_renames(
+    tx: &Transaction,
+    renamed: &[(PathKind, String, String)],
+    now: i64,
+) -> AppResult<()> {
+    for (kind, old, new) in renamed {
+        log_path(tx, *kind, Reason::Fix, old, new, now)?;
     }
     Ok(())
 }
 
-fn walk(dir: &Path, rel: &str, fix: bool, out: &mut Disk) {
+fn walk(dir: &Path, rel: &str, fix: bool, known: &HashSet<String>, out: &mut Disk) {
     let Ok(entries) = fs::read_dir(dir) else {
         return;
     };
@@ -103,83 +120,95 @@ fn walk(dir: &Path, rel: &str, fix: bool, out: &mut Disk) {
         dir,
         rel,
         fix,
+        known,
         taken,
     };
     for (file, path) in entries {
         if path.is_dir() {
-            add_folder(&mut here, &file, out);
-        } else {
-            add_file(&mut here, &file, out);
+            add_folder(&mut here, &path, &file, out);
+        } else if let Some(stem) = file.strip_suffix(EXT) {
+            add_disk_note(&mut here, stem, out);
         }
     }
 }
 
-fn add_folder(here: &mut Walk, raw: &str, out: &mut Disk) {
-    let Some(name) = settle(here, raw, "", out) else {
+fn add_folder(here: &mut Walk, path: &Path, raw: &str, out: &mut Disk) {
+    let known = here.known.contains(&names::join(here.rel, raw));
+    if !known && !has_notes(path) {
+        return;
+    }
+    let Some(name) = settle(here, raw, "", PathKind::Folder, out) else {
         return;
     };
     let shown = names::join(here.rel, &name);
     out.folders.push(shown.clone());
-    walk(&here.dir.join(&name), &shown, here.fix, out);
+    walk(&here.dir.join(&name), &shown, here.fix, here.known, out);
 }
 
-fn add_file(here: &mut Walk, file: &str, out: &mut Disk) {
-    let Some(raw) = file.strip_suffix(EXT) else {
-        out.skipped.push(Skipped {
-            path: names::join(here.rel, file),
-            fix: None,
-        });
-        return;
+/// A `.md` file somewhere under `dir`, leaving out hidden entries.
+fn has_notes(dir: &Path) -> bool {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return false;
     };
-    let Some(name) = settle(here, raw, EXT, out) else {
+    entries.flatten().any(|e| {
+        let file = e.file_name().to_string_lossy().into_owned();
+        if file.starts_with('.') {
+            return false;
+        }
+        let path = e.path();
+        if path.is_dir() {
+            has_notes(&path)
+        } else {
+            file.ends_with(EXT)
+        }
+    })
+}
+
+fn add_disk_note(here: &mut Walk, raw: &str, out: &mut Disk) {
+    let Some(name) = settle(here, raw, EXT, PathKind::Note, out) else {
         return;
     };
     out.notes.push(DiskNote {
         folder: here.rel.to_string(),
         mtime: files::mtime(&here.dir.join(format!("{name}{EXT}"))),
+        title: raw.to_string(),
         name,
     });
 }
 
-/// The name an item is indexed under: its own when valid; otherwise the closest valid one, after
-/// renaming it on disk (`fix`). `None` when it is skipped, which is recorded in `out`.
-fn settle(here: &mut Walk, raw: &str, ext: &str, out: &mut Disk) -> Option<String> {
+/// The name an item is indexed under: its own when valid; otherwise its slug (with a suffix when
+/// taken), after renaming it on disk when fixing is allowed. `None` when it is skipped, which is
+/// recorded in `out`.
+fn settle(here: &mut Walk, raw: &str, ext: &str, kind: PathKind, out: &mut Disk) -> Option<String> {
     if names::is_valid(raw) {
         return Some(raw.to_string());
     }
-    let shown = |name: &str| {
-        let path = names::join(here.rel, &format!("{name}{ext}"));
-        if ext.is_empty() {
-            format!("{path}/")
-        } else {
-            path
-        }
+    let fallback = match kind {
+        PathKind::Folder => "folder",
+        PathKind::Note => "note",
     };
-    let fixed = names::normalize(raw).and_then(|base| {
-        names::free(&base, |n| {
-            Ok(here.taken.contains(&format!("{n}{ext}").to_lowercase()))
-        })
-        .ok()
-    });
-    let renamed = fixed.as_deref().filter(|_| here.fix).and_then(|name| {
-        let from = here.dir.join(format!("{raw}{ext}"));
-        let to = here.dir.join(format!("{name}{ext}"));
-        fs::rename(from, to).ok().map(|()| name.to_string())
-    });
-    match renamed {
-        Some(name) => {
-            here.taken.insert(format!("{name}{ext}").to_lowercase());
-            out.renamed.push((shown(raw), shown(&name)));
-            Some(name)
-        }
-        None => {
-            out.skipped.push(Skipped {
-                path: shown(raw),
-                fix: fixed.map(|n| shown(&n)),
-            });
-            None
-        }
+    let base = names::slug(raw).unwrap_or_else(|| fallback.to_string());
+    let taken = |n: &str| Ok(here.taken.contains(&format!("{n}{ext}")));
+    let name = names::free(&base, taken).ok()?;
+    let old = names::join(here.rel, &format!("{raw}{ext}"));
+    let new = names::join(here.rel, &format!("{name}{ext}"));
+    let renamed = here.fix
+        && fs::rename(
+            here.dir.join(format!("{raw}{ext}")),
+            here.dir.join(format!("{name}{ext}")),
+        )
+        .is_ok();
+    if renamed {
+        here.taken.insert(format!("{name}{ext}"));
+        out.renamed.push((kind, old, new));
+        return Some(name);
     }
+    let slash = if ext.is_empty() { "/" } else { "" };
+    out.skipped.push(Skipped {
+        path: format!("{old}{slash}"),
+        fix: format!("{new}{slash}"),
+    });
+    None
 }
 
 /// Folders on disk are present; indexed folders that are gone get `missing_at`.
@@ -326,24 +355,27 @@ fn add_note(
         ],
     )?;
     tx.execute(
-        "INSERT INTO notes (id, attachment_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)",
-        params![new_id(), attachment_id, now],
+        "INSERT INTO notes (id, attachment_id, title, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?4)",
+        params![new_id(), attachment_id, n.title, now],
     )?;
     Ok(())
 }
 
 fn purge(tx: &Transaction, now: i64) -> AppResult<()> {
     let cutoff = now - GRACE_MS;
+    // Note bodies only: attached files under .tend/ are never scanned.
     tx.execute(
-        "DELETE FROM attachments WHERE missing_at < ?1 AND substr(path, 1, length(?2)) = ?2",
-        params![cutoff, PREFIX],
+        "DELETE FROM attachments WHERE missing_at < ?1
+         AND id IN (SELECT attachment_id FROM notes)",
+        [cutoff],
     )?;
     tx.execute(
         "DELETE FROM note_folders WHERE missing_at < ?1
          AND NOT EXISTS (SELECT 1 FROM attachments a
-                         WHERE substr(a.path, 1, length(?2 || note_folders.path || '/'))
-                               = ?2 || note_folders.path || '/')",
-        params![cutoff, PREFIX],
+                         WHERE substr(a.path, 1, length(note_folders.path) + 1)
+                               = note_folders.path || '/')",
+        [cutoff],
     )?;
     Ok(())
 }

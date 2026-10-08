@@ -42,8 +42,8 @@ class NotesStore {
 
   foldersUnder = (folder: string) => this.folders.filter((f) => f !== folder && isUnder(f, folder));
 
-  create = async ({ folder, name }: { folder: string; name: string }) => {
-    const row = await notesAPI.create({ folder, name });
+  create = async ({ folder, title }: { folder: string; title: string }) => {
+    const row = await notesAPI.create({ folder, title });
     await this.load();
     return row;
   };

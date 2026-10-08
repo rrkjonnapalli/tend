@@ -14,7 +14,7 @@
   import { timers } from '#lib/stores/timers.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
-  import { cleanPath, join, nameError, pathError } from '#lib/util/names.ts';
+  import { cleanPath, join, nameError, pathError, titleError } from '#lib/util/names.ts';
   import { parseDuration } from '#lib/util/timer-parse.ts';
   import { timerStartedText } from '#lib/util/timer-text.ts';
   import { label as keyLabel } from '#lib/util/keys.ts';
@@ -24,7 +24,7 @@
 
   const TITLES: Record<QuickKind, string> = { note: 'New note', task: 'New task', folder: 'New folder', timer: 'New timer' };
   const KEYS: Record<QuickKind, string> = { note: 'mod+n', task: 'mod+shift+t', folder: 'mod+shift+n', timer: 'mod+t' };
-  const PLACEHOLDERS: Record<Exclude<QuickKind, 'timer'>, string> = { note: 'Note title', task: 'Task title', folder: 'Folder name' };
+  const PLACEHOLDERS: Record<Exclude<QuickKind, 'timer'>, string> = { note: 'Note title', task: 'Task title', folder: 'folder_name' };
 
   // Folder: Notes or Tasks, defaulting to the section you're in.
   let tree = $state<'notes' | 'tasks'>(page.url.pathname.startsWith(routes.tasks) ? 'tasks' : 'notes');
@@ -56,9 +56,10 @@
 
   const problem = $derived.by(() => {
     if (kind === 'timer') return dur.ok ? '' : dur.error;
-    if (pathError(target)) return pathError(target);
+    if (pathError(path)) return pathError(path);
     if (!title) return '';
-    if (kind === 'folder' || kind === 'note') return nameError(title);
+    if (kind === 'folder') return nameError(title);
+    if (kind === 'note') return titleError(title);
     return '';
   });
   const message = $derived(error || problem);
@@ -88,7 +89,7 @@
   }
 
   async function createNote() {
-    const row = await notes.create({ folder: target, name: title });
+    const row = await notes.create({ folder: target, title });
     onclose();
     goto(routes.note(row.id, { edit: true }));
   }

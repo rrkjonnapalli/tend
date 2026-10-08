@@ -1,6 +1,7 @@
-//! The name rule for folders and notes, and helpers for relative paths ('' is the root).
-//! Names use A–Z a–z 0–9, space and `. , _ -`; leading and trailing spaces and dots are trimmed.
-//! A name that is taken in its folder gets a suffix (`Plan_1`) instead of an error.
+//! The name rule for folders and note files, and helpers for relative paths ('' is the root).
+//! Names are lowercase letters and digits with single underscores between them
+//! (`^[a-z0-9]+(_[a-z0-9]+)*$`). Anything typed or found on disk is turned into such a name by
+//! `slug`; a name taken in its folder gets a suffix (`plan_1`).
 
 #[cfg(test)]
 mod tests;
@@ -15,62 +16,53 @@ const MAX_CHARS: usize = 200;
 /// How many `_1`, `_2`, … suffixes to try before giving up.
 const MAX_SUFFIX: u32 = 9999;
 
-fn allowed(c: char) -> bool {
-    c.is_ascii_alphanumeric() || matches!(c, ' ' | '.' | ',' | '_' | '-')
+/// `^[a-z0-9]+(_[a-z0-9]+)*$`.
+pub fn is_valid(name: &str) -> bool {
+    let allowed = name
+        .bytes()
+        .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_');
+    let edges_ok = !name.starts_with('_') && !name.ends_with('_');
+    !name.is_empty() && allowed && edges_ok && !name.contains("__") && name.len() <= MAX_CHARS
 }
 
-/// `name` without leading or trailing spaces and dots.
-pub fn clean(name: &str) -> &str {
-    name.trim_matches(|c| c == ' ' || c == '.')
+/// The name that text becomes on disk: accents become plain letters, everything lowercase, each
+/// run of other characters one `_`, trimmed, cut to the limit ("Café notes (Q4)!" →
+/// `cafe_notes_q4`). `None` when no letter or digit is left.
+pub fn slug(text: &str) -> Option<String> {
+    let mut out = String::new();
+    let mut gap = false;
+    let letters = text
+        .nfd()
+        .filter(|&c| !is_combining_mark(c))
+        .flat_map(char::to_lowercase);
+    for c in letters {
+        if !(c.is_ascii_lowercase() || c.is_ascii_digit()) {
+            gap = true;
+            continue;
+        }
+        if out.len() >= MAX_CHARS {
+            break;
+        }
+        if gap && !out.is_empty() {
+            out.push('_');
+        }
+        gap = false;
+        out.push(c);
+    }
+    (!out.is_empty()).then_some(out)
 }
 
-/// Checks a cleaned name.
-pub fn check(name: &str) -> AppResult<()> {
-    if name.is_empty() {
+/// A folder name typed by the user, as it will be saved.
+pub fn accept(name: &str) -> AppResult<String> {
+    if name.trim().is_empty() {
         return Err(errors::NAME_EMPTY.err());
     }
-    if !name.chars().all(allowed) {
-        return Err(errors::NAME_CHARS.err());
-    }
-    if name.chars().count() > MAX_CHARS {
-        return Err(errors::NAME_LONG.err());
-    }
-    Ok(())
+    slug(name).ok_or_else(|| errors::NAME_CHARS.err())
 }
 
-/// Cleans and checks one name typed by the user.
-pub fn accept(name: &str) -> AppResult<String> {
-    let cleaned = clean(name);
-    check(cleaned)?;
-    Ok(cleaned.to_string())
-}
-
-/// The valid name closest to `raw`, for a name found on disk that breaks the rule: accents become
-/// plain letters ("Café" → "Cafe"), other characters are dropped, runs of spaces collapse, and the
-/// result is cleaned and cut to the limit. `None` when nothing usable is left.
-pub fn normalize(raw: &str) -> Option<String> {
-    let kept: String = raw
-        .nfd()
-        .filter(|&c| !is_combining_mark(c) && allowed(c))
-        .collect();
-    let spaced = kept
-        .split(' ')
-        .filter(|w| !w.is_empty())
-        .collect::<Vec<_>>()
-        .join(" ");
-    let cut: String = spaced.chars().take(MAX_CHARS).collect();
-    let name = clean(&cut);
-    (!name.is_empty()).then(|| name.to_string())
-}
-
-/// True for a name found on disk that Tend can index as it is (a scan never renames).
-pub fn is_valid(name: &str) -> bool {
-    clean(name) == name && check(name).is_ok()
-}
-
-/// Cleans and checks every segment of a folder path. '' (the root) is fine.
+/// A folder path typed by the user, each segment as it will be saved. '' (the root) is fine.
 pub fn accept_path(path: &str) -> AppResult<String> {
-    let trimmed = path.trim_matches('/');
+    let trimmed = path.trim().trim_matches('/');
     if trimmed.is_empty() {
         return Ok(String::new());
     }
@@ -79,21 +71,6 @@ pub fn accept_path(path: &str) -> AppResult<String> {
         .map(accept)
         .collect::<AppResult<Vec<_>>>()?;
     Ok(segments.join("/"))
-}
-
-/// `path` with each segment spelled as an existing folder spells it ("work/new" → "Work/new" when
-/// "Work" exists), so differently-cased paths never split one folder in two. `stored` looks a path
-/// up ignoring case.
-pub fn canonical(
-    path: &str,
-    stored: impl Fn(&str) -> AppResult<Option<String>>,
-) -> AppResult<String> {
-    let mut current = String::new();
-    for segment in path.split('/').filter(|s| !s.is_empty()) {
-        let candidate = join(&current, segment);
-        current = stored(&candidate)?.unwrap_or(candidate);
-    }
-    Ok(current)
 }
 
 /// `base`, or `base_1`, `base_2`, … — the first one `taken` reports as free.
@@ -108,11 +85,6 @@ pub fn free(base: &str, taken: impl Fn(&str) -> AppResult<bool>) -> AppResult<St
         }
     }
     Err(errors::NAME_TAKEN.err())
-}
-
-/// Two names are the same item when they differ only in case (as on macOS).
-pub fn same(a: &str, b: &str) -> bool {
-    a.eq_ignore_ascii_case(b)
 }
 
 pub fn join(folder: &str, name: &str) -> String {

@@ -6,7 +6,10 @@ use std::path::Path;
 
 use rusqlite::{params, Connection, OptionalExtension, Transaction};
 
-use super::{attachment_of, file_path, note_path, row, vault_path, NoteRow, EXT, MIME, PREFIX};
+use super::{
+    attachment_of, file_path, log_path, note_path, row, vault_path, NoteRow, PathKind, Reason, EXT,
+    MIME,
+};
 use crate::db::{commit_or_undo, in_transaction};
 use crate::error::{errors, AppResult};
 use crate::files;
@@ -27,21 +30,6 @@ fn folder_exists(conn: &Connection, path: &str) -> AppResult<bool> {
     Ok(found.is_some())
 }
 
-/// The cleaned folder path typed by the user, spelled as the index spells existing folders.
-fn target_path(conn: &Connection, path: &str) -> AppResult<String> {
-    let path = names::accept_path(path)?;
-    names::canonical(&path, |p| {
-        let found = conn
-            .query_row(
-                "SELECT path FROM note_folders WHERE path = ?1 AND missing_at IS NULL",
-                [p],
-                |r| r.get(0),
-            )
-            .optional()?;
-        Ok(found)
-    })
-}
-
 fn note_exists(conn: &Connection, folder: &str, name: &str) -> AppResult<bool> {
     let found = conn
         .query_row(
@@ -53,8 +41,8 @@ fn note_exists(conn: &Connection, folder: &str, name: &str) -> AppResult<bool> {
     Ok(found.is_some())
 }
 
-/// Another folder in `parent` already uses `name` (ignoring case, on disk or in the index).
-/// `current` is the folder's own name when renaming it, which counts as free.
+/// Another folder in `parent` already uses `name` (on disk or in the index). `current` is the
+/// folder's own name when renaming it, which counts as free.
 fn folder_taken(
     conn: &Connection,
     dir: &Path,
@@ -62,7 +50,7 @@ fn folder_taken(
     name: &str,
     current: Option<&str>,
 ) -> AppResult<bool> {
-    if current.is_some_and(|c| names::same(c, name)) {
+    if current == Some(name) {
         return Ok(false);
     }
     let path = names::join(parent, name);
@@ -77,7 +65,7 @@ fn note_taken(
     name: &str,
     current: Option<&str>,
 ) -> AppResult<bool> {
-    if current.is_some_and(|c| names::same(c, name)) {
+    if current == Some(name) {
         return Ok(false);
     }
     Ok(note_exists(conn, folder, name)? || file_path(dir, folder, name).exists())
@@ -93,11 +81,10 @@ fn ensure_folder(conn: &mut Connection, dir: &Path, folder: &str) -> AppResult<(
 
 /// Drops index rows left behind by missing items at `path`, so a new item can take the name.
 fn clear_missing(tx: &Transaction, path: &str) -> AppResult<()> {
-    let prefix = format!("{PREFIX}{path}");
     tx.execute(
         "DELETE FROM attachments WHERE missing_at IS NOT NULL
          AND (path = ?1 || ?2 OR substr(path, 1, length(?1) + 1) = ?1 || '/')",
-        params![prefix, EXT],
+        params![path, EXT],
     )?;
     tx.execute(
         "DELETE FROM note_folders WHERE missing_at IS NOT NULL
@@ -110,7 +97,7 @@ fn clear_missing(tx: &Transaction, path: &str) -> AppResult<()> {
 /// Creates the folder `path` typed by the user, and any missing parents. When the last segment is
 /// taken it gets a suffix. Returns the path that was created.
 pub fn folder_create(conn: &mut Connection, dir: &Path, path: &str) -> AppResult<String> {
-    let path = target_path(conn, path)?;
+    let path = names::accept_path(path)?;
     if path.is_empty() {
         return Err(errors::NAME_EMPTY.err());
     }
@@ -153,16 +140,30 @@ fn missing_folders(conn: &Connection, path: &str) -> AppResult<Vec<String>> {
     Ok(missing)
 }
 
-/// A new, empty note called `name` in `folder` (the file is `<name>.md`).
-pub fn create(conn: &mut Connection, dir: &Path, folder: &str, name: &str) -> AppResult<NoteRow> {
-    let folder = target_path(conn, folder)?;
+/// The file name a title asks for: its slug, or `note` when it has no letter or digit.
+fn slug_of(title: &str) -> String {
+    names::slug(title).unwrap_or_else(|| "note".to_string())
+}
+
+fn check_title(title: &str) -> AppResult<&str> {
+    let trimmed = title.trim();
+    if trimmed.is_empty() {
+        return Err(errors::NOTE_TITLE_EMPTY.err());
+    }
+    Ok(trimmed)
+}
+
+/// A new note titled `title` in `folder`. The file is the title's slug (`meeting.md` for
+/// "Meeting") and starts with the title as a heading.
+pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> AppResult<NoteRow> {
+    let title = check_title(title)?.to_string();
+    let folder = names::accept_path(folder)?;
     let folder = folder.as_str();
-    let typed = names::accept(name)?;
     ensure_folder(conn, dir, folder)?;
-    let name = names::free(&typed, |n| note_taken(conn, dir, folder, n, None))?;
+    let name = names::free(&slug_of(&title), |n| note_taken(conn, dir, folder, n, None))?;
     let name = name.as_str();
     let path = file_path(dir, folder, name);
-    fs::write(&path, "")?;
+    fs::write(&path, format!("# {title}\n"))?;
     let facts = files::facts(&path)?;
     let note_id = new_id();
     let attachment_id = new_id();
@@ -189,8 +190,9 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, name: &str) -> Ap
                 ],
             )?;
             tx.execute(
-                "INSERT INTO notes (id, attachment_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)",
-                params![note_id, attachment_id, now],
+                "INSERT INTO notes (id, attachment_id, title, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?4)",
+                params![note_id, attachment_id, title, now],
             )?;
             Ok(())
         },
@@ -198,28 +200,37 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, name: &str) -> Ap
     row(conn, &note_id)
 }
 
-/// Renames the note's file (links point at the note's id, so nothing breaks).
-pub fn rename_note(conn: &mut Connection, dir: &Path, id: &str, name: &str) -> AppResult<NoteRow> {
-    let typed = names::accept(name)?;
+/// Sets the title. When its slug differs, the file is renamed to follow it (links point at the
+/// note's id, so nothing breaks).
+pub fn rename_note(conn: &mut Connection, dir: &Path, id: &str, title: &str) -> AppResult<NoteRow> {
+    let title = check_title(title)?.to_string();
     let note = row(conn, id)?;
-    if note.name == typed {
+    if note.title == title {
         return Ok(note);
     }
+    conn.execute(
+        "UPDATE notes SET title = ?1, updated_at = ?2 WHERE id = ?3",
+        params![title, now_ms(), id],
+    )?;
+    let wanted = slug_of(&title);
+    if wanted == note.name {
+        return row(conn, id);
+    }
     let current = Some(note.name.as_str());
-    let name = names::free(&typed, |n| note_taken(conn, dir, &note.folder, n, current))?;
-    relocate_note(conn, dir, &note, &note.folder, &name)
+    let name = names::free(&wanted, |n| note_taken(conn, dir, &note.folder, n, current))?;
+    relocate_note(conn, dir, &note, &note.folder, &name, Reason::Rename)
 }
 
-/// Moves the note into `target`; a name taken there gets a suffix.
+/// Moves the note into `target`, keeping its file name; a name taken there gets a suffix.
 pub fn move_note(conn: &mut Connection, dir: &Path, id: &str, target: &str) -> AppResult<NoteRow> {
-    let target = target_path(conn, target)?;
+    let target = names::accept_path(target)?;
     let note = row(conn, id)?;
     if note.folder == target {
         return Err(errors::SAME_FOLDER.err());
     }
     ensure_folder(conn, dir, &target)?;
     let name = names::free(&note.name, |n| note_taken(conn, dir, &target, n, None))?;
-    relocate_note(conn, dir, &note, &target, &name)
+    relocate_note(conn, dir, &note, &target, &name, Reason::Move)
 }
 
 fn relocate_note(
@@ -228,6 +239,7 @@ fn relocate_note(
     note: &NoteRow,
     folder: &str,
     name: &str,
+    reason: Reason,
 ) -> AppResult<NoteRow> {
     let from = note_path(dir, note);
     let to = file_path(dir, folder, name);
@@ -239,16 +251,14 @@ fn relocate_note(
             let _ = fs::rename(&to, &from);
         },
         |tx| {
+            let now = now_ms();
+            let new_path = vault_path(folder, name);
             tx.execute(
                 "UPDATE attachments SET path = ?1, name = ?2, updated_at = ?3 WHERE id = ?4",
-                params![
-                    vault_path(folder, name),
-                    format!("{name}{EXT}"),
-                    now_ms(),
-                    attachment_id
-                ],
+                params![new_path, format!("{name}{EXT}"), now, attachment_id],
             )?;
-            Ok(())
+            let old_path = vault_path(&note.folder, &note.name);
+            log_path(tx, PathKind::Note, reason, &old_path, &new_path, now)
         },
     )?;
     row(conn, &note.id)
@@ -269,7 +279,7 @@ pub fn rename_folder(
     let name = names::free(&typed, |n| {
         folder_taken(conn, dir, parent, n, Some(current))
     })?;
-    relocate_folder(conn, dir, path, &names::join(parent, &name))
+    relocate_folder(conn, dir, path, &names::join(parent, &name), Reason::Rename)
 }
 
 /// Moves the folder into `target`; a name taken there gets a suffix.
@@ -279,7 +289,7 @@ pub fn move_folder(
     path: &str,
     target: &str,
 ) -> AppResult<String> {
-    let target = target_path(conn, target)?;
+    let target = names::accept_path(target)?;
     if names::is_under(&target, path) {
         return Err(errors::INTO_SELF.err());
     }
@@ -290,10 +300,16 @@ pub fn move_folder(
     let name = names::free(names::base(path), |n| {
         folder_taken(conn, dir, &target, n, None)
     })?;
-    relocate_folder(conn, dir, path, &names::join(&target, &name))
+    relocate_folder(conn, dir, path, &names::join(&target, &name), Reason::Move)
 }
 
-fn relocate_folder(conn: &mut Connection, dir: &Path, old: &str, new: &str) -> AppResult<String> {
+fn relocate_folder(
+    conn: &mut Connection,
+    dir: &Path,
+    old: &str,
+    new: &str,
+    reason: Reason,
+) -> AppResult<String> {
     if old.is_empty() || !folder_exists(conn, old)? {
         return Err(errors::NOT_FOUND.with("Folder was not found"));
     }
@@ -317,9 +333,9 @@ fn relocate_folder(conn: &mut Connection, dir: &Path, old: &str, new: &str) -> A
             tx.execute(
                 "UPDATE attachments SET path = ?2 || substr(path, length(?1) + 1), updated_at = ?3
                  WHERE substr(path, 1, length(?1)) = ?1",
-                params![format!("{PREFIX}{old}/"), format!("{PREFIX}{new}/"), now],
+                params![format!("{old}/"), format!("{new}/"), now],
             )?;
-            Ok(())
+            log_path(tx, PathKind::Folder, reason, old, new, now)
         },
     )?;
     Ok(new.to_string())
@@ -348,7 +364,7 @@ pub fn delete_folder(conn: &mut Connection, dir: &Path, path: &str) -> AppResult
     in_transaction(conn, |tx| {
         tx.execute(
             "DELETE FROM attachments WHERE substr(path, 1, length(?1)) = ?1",
-            [format!("{PREFIX}{path}/")],
+            [format!("{path}/")],
         )?;
         tx.execute(
             "DELETE FROM note_folders WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",

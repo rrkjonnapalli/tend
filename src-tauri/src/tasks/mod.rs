@@ -160,7 +160,7 @@ pub fn create(conn: &mut Connection, new: &NewTask) -> AppResult<Task> {
     let title = check_title(&new.title)?;
     let path = match &new.parent_id {
         Some(parent) => parent_path(conn, parent)?,
-        None => folders::target_path(conn, &new.path)?,
+        None => crate::names::accept_path(&new.path)?,
     };
     let key = match &new.order_key {
         Some(k) => k.clone(),
@@ -239,7 +239,7 @@ pub fn move_to(conn: &mut Connection, id: &str, target: &str) -> AppResult<Task>
     if task.parent_id.is_some() {
         return Err(errors::SUBTASK_MOVE.err());
     }
-    let target = folders::target_path(conn, target)?;
+    let target = crate::names::accept_path(target)?;
     let tx = conn.transaction()?;
     folders::ensure(&tx, &target)?;
     tx.execute(

@@ -3,48 +3,49 @@ use crate::error::errors;
 
 #[test]
 fn name_rule() {
-    for good in [
-        "work",
-        "Q4 Plan - draft",
-        "notes, old",
-        "a_b",
-        "2024",
-        "v1.2",
+    assert!(is_valid("work_2024") && is_valid("a_b_c") && is_valid("2024"));
+    for bad in [
+        "", "Work", "my notes", "a-b", "a.b", "é", "_a", "a_", "a__b", "_",
     ] {
-        assert!(is_valid(good), "{good:?} should be valid");
+        assert!(!is_valid(bad), "{bad:?} should be invalid");
     }
-    for bad in ["Café", "a/b", "a:b", "ideas (old)", "tab\there"] {
-        assert!(check(bad).unwrap_err().is(errors::NAME_CHARS), "{bad:?}");
-    }
-    assert!(check("").unwrap_err().is(errors::NAME_EMPTY));
-    assert!(check(&"x".repeat(201)).unwrap_err().is(errors::NAME_LONG));
 }
 
 #[test]
-fn typed_names_are_trimmed() {
-    assert_eq!(accept("  .Plan. ").unwrap(), "Plan");
-    assert_eq!(accept(".hidden").unwrap(), "hidden");
-    assert!(accept(" . ").unwrap_err().is(errors::NAME_EMPTY));
-    assert!(
-        !is_valid(".hidden") && !is_valid("Plan "),
-        "a scan takes names as they are"
-    );
+fn slugs() {
+    assert_eq!(slug("Meeting").as_deref(), Some("meeting"));
+    assert_eq!(slug("Café notes (Q4)!").as_deref(), Some("cafe_notes_q4"));
+    assert_eq!(slug("  Résumé -- 2024 ").as_deref(), Some("resume_2024"));
+    assert_eq!(slug(".hidden").as_deref(), Some("hidden"));
+    assert_eq!(slug("日本"), None);
+    assert_eq!(slug("🔥"), None);
+    assert_eq!(slug(&"é".repeat(300)).unwrap().len(), 200);
+    for text in ["a — b • c", "Plan_1", "x__y"] {
+        let made = slug(text).unwrap();
+        assert!(is_valid(&made), "{made}");
+    }
+}
+
+#[test]
+fn typed_folder_names() {
+    assert_eq!(accept("Client Work").unwrap(), "client_work");
+    assert!(accept("  ").unwrap_err().is(errors::NAME_EMPTY));
+    assert!(accept("!!").unwrap_err().is(errors::NAME_CHARS));
+    assert_eq!(accept_path("/Work / Q4 Plans/").unwrap(), "work/q4_plans");
+    assert_eq!(accept_path("").unwrap(), "");
+    assert!(accept_path("work//x").is_err());
 }
 
 #[test]
 fn clashes_get_a_suffix() {
-    let taken = ["plan", "Plan_1"];
-    let is_taken = |n: &str| Ok(taken.iter().any(|t| same(t, n)));
-    assert_eq!(free("Plan", is_taken).unwrap(), "Plan_2");
-    assert_eq!(free("Other", is_taken).unwrap(), "Other");
+    let taken = ["plan", "plan_1"];
+    let is_taken = |n: &str| Ok(taken.contains(&n));
+    assert_eq!(free("plan", is_taken).unwrap(), "plan_2");
+    assert_eq!(free("other", is_taken).unwrap(), "other");
 }
 
 #[test]
 fn paths() {
-    assert_eq!(accept_path("").unwrap(), "");
-    assert_eq!(accept_path("/Work / Tauri app/").unwrap(), "Work/Tauri app");
-    assert!(accept_path("work//x").is_err());
-    assert!(accept_path("work/Café").is_err());
     assert_eq!(join("", "a"), "a");
     assert_eq!(join("a", "b"), "a/b");
     assert_eq!(parent("a/b/c"), "a/b");
@@ -53,19 +54,4 @@ fn paths() {
     assert!(is_under("a/b", "a"));
     assert!(!is_under("ab", "a"));
     assert!(is_under("anything", ""));
-}
-
-#[test]
-fn names_from_disk_are_normalized() {
-    assert_eq!(
-        normalize("Café notes (old)!").as_deref(),
-        Some("Cafe notes old")
-    );
-    assert_eq!(normalize("  Résumé  2024 ").as_deref(), Some("Resume 2024"));
-    assert_eq!(normalize(".hidden").as_deref(), Some("hidden"));
-    assert_eq!(normalize("日本語").as_deref(), None);
-    assert_eq!(normalize("🔥").as_deref(), None);
-    assert_eq!(normalize(&"é".repeat(300)).unwrap().len(), 200);
-    let made = normalize("a — b • c").unwrap();
-    assert!(is_valid(&made), "{made}");
 }
