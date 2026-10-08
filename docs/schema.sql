@@ -15,8 +15,9 @@
 --   * local calendar values stay TEXT: dates 'YYYY-MM-DD', times 'HH:MM' (24h)
 --   * booleans are INTEGER 0/1; colors are '#rrggbb'
 --   * every table is STRICT (SQLite >= 3.37); open with PRAGMA foreign_keys = ON
---   * paths are relative: attachments.path to the vault ('notes/work/plan.md',
---     '.attachments/<id>.pdf'); folder paths to their root ('' = root, 'work', 'work/infra')
+--   * paths are relative: attachments.path to the vault ('notes/Work/Q4 plan.md',
+--     '.attachments/<id>.pdf'); folder paths to their root ('' = root, 'Work', 'Work/Infra').
+--     Paths are unique ignoring ASCII case, like the macOS file system
 --   * deletes are recorded in `deletions` and every write in `activity`, by the triggers at the end
 
 PRAGMA foreign_keys = ON;
@@ -59,7 +60,7 @@ CREATE TABLE tags (
 -- `mtime` and `missing_at` describe this device's copy of the file and are not synced.
 CREATE TABLE attachments (
   id         TEXT PRIMARY KEY,
-  path       TEXT NOT NULL UNIQUE,       -- 'notes/work/plan.md', '.attachments/<id>.pdf'
+  path       TEXT NOT NULL UNIQUE COLLATE NOCASE, -- 'notes/Work/Q4 plan.md', '.attachments/<id>.pdf'
   name       TEXT NOT NULL,              -- display / download name: 'invoice march.pdf', 'plan.md'
   mime_type  TEXT NOT NULL,
   size_bytes INTEGER NOT NULL,
@@ -86,13 +87,13 @@ CREATE INDEX attachment_links_owner ON attachment_links(owner_type, owner_id);
 -------------------------------------------------------------------------------
 -- 3. Notes. The body is a markdown file (an attachment under notes/); the note is the record.
 -------------------------------------------------------------------------------
--- The title belongs to the note (edited in Tend, synced); the file name follows the title under
--- the name rule. Renaming or moving a note changes only attachments.path; the note's id stays,
--- so tags and links follow it. On vault open and on outside changes the app scans notes/ and
+-- A note's title is its file name without .md (read from attachments.path), so renaming a note
+-- renames its file and a rename outside Tend renames the note. Renaming or moving a note changes
+-- only attachments.path; the note's id stays, so tags and links follow it. On vault open and on outside changes the app scans notes/ and
 -- matches files to attachments by path.
 CREATE TABLE note_folders (
   id         TEXT PRIMARY KEY,
-  path       TEXT NOT NULL UNIQUE,       -- '' (= notes/ itself), 'work', 'work/infra'
+  path       TEXT NOT NULL UNIQUE COLLATE NOCASE, -- '' (= notes/ itself), 'Work', 'Work/Infra'
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   missing_at INTEGER                     -- local: folder gone from disk
@@ -103,7 +104,6 @@ INSERT INTO note_folders (id, path, created_at, updated_at) VALUES
 CREATE TABLE notes (
   id            TEXT PRIMARY KEY,
   attachment_id TEXT NOT NULL UNIQUE REFERENCES attachments(id) ON DELETE CASCADE,
-  title         TEXT NOT NULL,
   created_at    INTEGER NOT NULL,
   updated_at    INTEGER NOT NULL
 ) STRICT;
@@ -193,7 +193,7 @@ CREATE TABLE task_labels (
 -- whose display name is settings tasks.root_name. Explorer sorts folders alphabetically.
 CREATE TABLE task_folders (
   id         TEXT PRIMARY KEY,
-  path       TEXT NOT NULL UNIQUE,       -- '' (root), 'work', 'work/infra'
+  path       TEXT NOT NULL UNIQUE COLLATE NOCASE, -- '' (root), 'Work', 'Work/Infra'
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 ) STRICT;

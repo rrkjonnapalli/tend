@@ -35,7 +35,7 @@ src-tauri/src/
   db.rs           connection, migrations (embed docs/schema.sql as v1)
   notes.rs        scan, watcher, note + folder commands
   tasks.rs, people.rs, statuses.rs, attachments.rs, timers.rs, feedback.rs, settings.rs
-  names.rs        the name rule ^[a-z0-9]+(_[a-z0-9]+)*$, title slugs and path helpers
+  names.rs        the name rule (safe free-text names) and path helpers
 src/lib/
   api/            typed wrappers around invoke() (one file per area)
   stores/         Svelte 5 state (vault, notes, tasks, people, timers, ui)
@@ -48,7 +48,7 @@ src/routes/       start, notes, tasks, people, settings
 
 - **Build only what the spec says.** If something is unclear or missing, pick the simplest option that matches the mockups. Note it in `docs/open-questions.md` (create it if needed) and keep going; don't stop to ask.
 - **Match the mockups:** spacing, sizes, colors, hover and selected states, icons (inline SVG paths are in the mockup HTML; reuse them). No shadows on panels. Popovers may have a border only.
-- **The name rule** (`^[a-z0-9]+(_[a-z0-9]+)*$`, unique in folder) applies to note folders, task folders and note file names (made from the note's title). Check it in Rust; the UI shows the same message live.
+- **The name rule** (free text: no `/ \ :` or control characters, no leading `.`, no leading or trailing space, at most 200 characters, unique in its folder ignoring case) applies to note folders, task folders and note names. A note's name is its file name and its title. Check it in Rust; the UI shows the same message live.
 - **Notes on disk are the source of truth.** The DB is an index. Never rename or move a user's files during a scan.
 - **Keyboard:** every popover closes on Esc. Enter confirms. ↑↓ move through lists. Shortcuts are in `decisions.md` §12; override ⌘R/⌘N/⌘T so the webview doesn't reload or open windows.
 - **Accessibility basics:** real `<button>`s, `aria-label` on icon buttons, a visible focus ring (`:focus-visible`, 2px `--focus-ring`).

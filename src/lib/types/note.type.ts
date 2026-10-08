@@ -1,4 +1,5 @@
-export type NoteRow = { id: string; folder: string; name: string; title: string; modifiedAt: number };
+/** `name` is the file name without .md, shown as the note's title. */
+export type NoteRow = { id: string; folder: string; name: string; modifiedAt: number };
 export type NoteTree = { folders: string[]; notes: NoteRow[] };
 export type NoteDoc = NoteRow & { text: string; tags: string[] };
 /** Something in the notes explorer: a note by id, or a folder by path. */

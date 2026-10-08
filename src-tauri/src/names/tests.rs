@@ -3,23 +3,38 @@ use crate::error::errors;
 
 #[test]
 fn name_rule() {
-    assert!(is_valid("work_2024"));
-    assert!(is_valid("a_b_c") && is_valid("2024"));
-    for bad in [
-        "", "Work", "my notes", "a-b", "a.b", "é", "_a", "a_", "a__b", "_",
+    for good in [
+        "work",
+        "Q4 Plan – draft",
+        "ideas (old)",
+        "Café notes",
+        "a_b",
+        "2024",
     ] {
-        assert!(!is_valid(bad), "{bad:?} should be invalid");
+        assert!(is_valid(good), "{good:?} should be valid");
     }
-    assert!(check("").unwrap_err().is(errors::NAME_EMPTY));
-    assert!(check("A").unwrap_err().is(errors::NAME_CHARS));
+    let cases = [
+        ("", errors::NAME_EMPTY),
+        (" padded", errors::NAME_SPACES),
+        ("padded ", errors::NAME_SPACES),
+        ("a/b", errors::NAME_CHARS),
+        ("a\\b", errors::NAME_CHARS),
+        ("a:b", errors::NAME_CHARS),
+        (".hidden", errors::NAME_CHARS),
+        ("tab\there", errors::NAME_CHARS),
+    ];
+    for (bad, def) in cases {
+        assert!(check(bad).unwrap_err().is(def), "{bad:?}");
+    }
+    assert!(check(&"x".repeat(201)).unwrap_err().is(errors::NAME_LONG));
 }
 
 #[test]
 fn paths() {
     assert!(check_path("").is_ok());
-    assert!(check_path("work/tauri").is_ok());
-    assert!(check_path("work/Tauri").is_err());
+    assert!(check_path("Work/Tauri app").is_ok());
     assert!(check_path("work//x").is_err());
+    assert!(check_path("work/.git").is_err());
     assert_eq!(join("", "a"), "a");
     assert_eq!(join("a", "b"), "a/b");
     assert_eq!(parent("a/b/c"), "a/b");
@@ -28,15 +43,4 @@ fn paths() {
     assert!(is_under("a/b", "a"));
     assert!(!is_under("ab", "a"));
     assert!(is_under("anything", ""));
-}
-
-#[test]
-fn slugs_from_titles() {
-    assert_eq!(slug("Window config!").as_deref(), Some("window_config"));
-    assert_eq!(slug(" Q3 -- plan ").as_deref(), Some("q3_plan"));
-    assert_eq!(slug("Café notes").as_deref(), Some("caf_notes"));
-    assert_eq!(slug("___").as_deref(), None);
-    assert_eq!(slug("").as_deref(), None);
-    let made = slug("a  -  B").unwrap();
-    assert!(is_valid(&made), "{made}");
 }

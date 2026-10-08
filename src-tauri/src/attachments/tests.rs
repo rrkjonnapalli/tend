@@ -58,13 +58,13 @@ fn notes_link_once() {
         },
     )
     .unwrap();
-    crate::notes::seed(&conn, "n", "notes/work/plan.md", "Q4 plan");
+    crate::notes::seed(&conn, "n", "notes/Work/Q4 plan.md");
     link_note(&conn, "task", &t.id, "n").unwrap();
     link_note(&conn, "task", &t.id, "n").unwrap();
     let links = list(&conn, "task", &t.id).unwrap();
     assert_eq!(links.len(), 1);
     assert_eq!(
         (links[0].name.as_str(), links[0].folder.as_deref()),
-        ("Q4 plan", Some("work"))
+        ("Q4 plan", Some("Work"))
     );
 }

@@ -32,7 +32,7 @@ The vault is the Git working tree:
 
 ```text
 <vault>/
-  notes/                      note files (body only), folders under the name rule
+  notes/                      note files (body only), named by their titles
   .attachments/               attachment files, <id>.<ext>
   db/
     app.sqlite                live database        — never committed
@@ -81,15 +81,15 @@ therefore make the same pair under different ids; reconciling keeps the newer ro
 A note is its own record; its body is a file, held by an attachment.
 
 ```text
-notes        id · attachment_id · title · updated_at
+notes        id · attachment_id · updated_at
 attachments  id · path · name · mime_type · size_bytes · sha256 · updated_at
 ```
 
 - `attachments.path` is the file's place in the vault: `notes/<folder>/<name>.md` for a note body,
   `.attachments/<id>.<ext>` for an attached file.
-- The **title belongs to the note** (edited in Tend like a task title, synced). Tend no longer reads
-  a `# heading` from the file, and new notes start with an empty body.
-- Changing the title **renames the file** (§11.2); only `attachments.path` changes. The note's `id`
+- A note's **title is its file name** without `.md`, so it syncs with `attachments.path`. Tend does
+  not read a `# heading` from the file, and new notes start with an empty body.
+- Renaming a note **renames the file** (§11.2); only `attachments.path` changes. The note's `id`
   never changes, so tags, labels and links are unaffected by renames and moves.
 - Editing a note writes the file and bumps `updated_at` on both rows.
 - `attachment_links` always points at an attachment `id`. Linking a note means linking its
@@ -106,13 +106,10 @@ attachments  id · path · name · mime_type · size_bytes · sha256 · updated_
 
 ### 4.4 Name rule
 
-File and folder names: `^[a-z0-9]+(_[a-z0-9]+)*$` — lowercase letters and digits, single
-underscores only between them (no leading/trailing `_`, no `__`). Checked in Rust; the UI shows the
-same message live. Existing names that break it are listed as skipped, never renamed by Tend.
-
-Title → file name: lowercase · each run of characters other than a–z/0–9 becomes `_` · trim `_`
-from both ends · empty → `note` · taken in that folder → `_2`, `_3`, …
-("Window config!" → `window_config`, " Q3 -- plan " → `q3_plan`.)
+File and folder names are free text, safe as one name on any OS: no `/ \ :` or control
+characters, no leading `.`, no leading or trailing space, at most 200 characters, unique in the
+folder ignoring ASCII case. Checked in Rust; the UI shows the same message live. Existing names that
+break it are listed as skipped, never renamed by Tend.
 
 ---
 
@@ -120,7 +117,7 @@ from both ends · empty → `note` · taken in that folder → `_2`, `_3`, …
 
 | Synced | Local to the device |
 |---|---|
-| tasks, task folders, comments, statuses, labels and their links, my_day, people, contacts, tags and their links, notes (incl. title), note folders, attachments (rows and files), shared settings (`tasks.root_name`, `timers.sound`) | timers, feedback, activity, deletions bookkeeping beyond what `deleted.jsonl` carries, UI settings (nav, explorer, widths, last view, quick-create paths), sync configuration, the token |
+| tasks, task folders, comments, statuses, labels and their links, my_day, people, contacts, tags and their links, notes, note folders, attachments (rows and files), shared settings (`tasks.root_name`, `timers.sound`) | timers, feedback, activity, deletions bookkeeping beyond what `deleted.jsonl` carries, UI settings (nav, explorer, widths, last view, quick-create paths), sync configuration, the token |
 
 The shared/local split of settings is defined in one place (`settings.config.ts` and its Rust twin).
 
@@ -230,16 +227,16 @@ Every app command waits for the DB while step 4 runs; it must stay short, and th
 ## 11. Notes
 
 ### 11.1 Creating
-A title is given; the file name comes from it (§4.4); the body starts empty.
+A name is given (§4.4); the file is `<name>.md` and the body starts empty.
 
 ### 11.2 Renaming and moving
-Title change → file renamed to the new slug; move → file moved; `attachments.path` and
+Rename → file renamed; move → file moved (a name taken in the target is refused); `attachments.path` and
 `updated_at` updated. Links keep working because they point at ids.
 
 ### 11.3 Scanning
 - A file whose path matches an attachment row → that note; content changed since the last scan →
   `updated_at = now`.
-- A file no row knows → new note, titled from the file name.
+- A file no row knows → new note.
 - A row whose file is gone → marked missing (existing grace period), unless a deletion says it's
   deleted.
 - Renames done outside Tend (Finder) are matched by today's modification-time-and-content heuristic;

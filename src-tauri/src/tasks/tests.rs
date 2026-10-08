@@ -273,3 +273,17 @@ fn subtasks_are_one_level_deep() {
     );
     assert!(deeper.unwrap_err().is(crate::error::errors::SUBTASK_DEPTH));
 }
+
+#[test]
+fn folder_names_are_free_text_and_unique_ignoring_case() {
+    let mut conn = open_memory();
+    folder_create(&mut conn, "Client Work").unwrap();
+    assert!(folder_create(&mut conn, "client work")
+        .unwrap_err()
+        .is(errors::NAME_TAKEN));
+    assert_eq!(
+        folder_rename(&mut conn, "Client Work", "client work").unwrap(),
+        "client work"
+    );
+    assert!(folder_create(&mut conn, "a:b").is_err());
+}

@@ -3,7 +3,7 @@
   // "Move to…": a path field with folder suggestions. Leaves out the item's own folder and,
   // for folders, the folder itself and everything inside it. A new path is created.
   import Panel from './Panel.svelte';
-  import { cleanPath, isUnder, isValidPath } from '#lib/util/names.ts';
+  import { cleanPath, isUnder, pathError } from '#lib/util/names.ts';
   import { label as keyLabel } from '#lib/util/keys.ts';
   import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
 
@@ -47,7 +47,7 @@
   const suggestions = $derived(allowed.filter((f) => !target || f.includes(target)).slice(0, MAX_SUGGESTIONS));
 
   const error = $derived.by(() => {
-    if (target && !isValidPath(target)) return 'Folder names: a–z, 0–9 and _ only';
+    if (pathError(target)) return pathError(target);
     if (insideSelf(target)) return 'Can’t move a folder into itself';
     if (target === current) return 'Already there';
     return '';

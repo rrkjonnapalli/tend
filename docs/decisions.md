@@ -99,8 +99,8 @@ The user picks one **vault folder**. Tend works only inside it:
 
 ## 5. Notes
 
-- **The files in `notes/` are the truth** for bodies and folders. A note is its own record (`notes`: id, title); its body is a file held by an attachment (`attachments.path` = `notes/<folder>/<name>.md`). `note_folders` indexes the folders by path.
-- **Titles belong to the note.** A note is created from a free-text title; the file name is the title's slug (lowercase, other characters → `_`, `note` when nothing is left, `_2`, `_3`… when taken). Changing the title renames the file. A file found on disk becomes a note titled by its file name. The body never sets the title.
+- **The files in `notes/` are the truth.** A note is a record (`notes`: id) whose body is a file held by an attachment (`attachments.path` = `notes/<folder>/<name>.md`). `note_folders` indexes the folders by path.
+- **A note's title is its file name** without `.md` ("Q4 plan – draft.md" shows as "Q4 plan – draft"). Renaming a note renames the file; renaming the file outside Tend renames the note. The body never sets the title.
 - **Sync:**
   1. **Vault open:** walk `notes/` once. Insert or update every folder in `note_folders` and every `.md` file in `notes`. Anything gone from disk gets `missing_at` and is cleaned up after a grace period.
   2. **While running:** a file watcher applies changes made outside Tend (Finder, other editors) the same way.
@@ -124,10 +124,10 @@ The user picks one **vault folder**. Tend works only inside it:
 ## 5a. Folders (notes and tasks)
 
 - **Separate trees:** notes folders and tasks folders are unrelated, even when they share a name.
-- **Names:** `^[a-z0-9]+(_[a-z0-9]+)*$` for every folder (notes and tasks) and every note file name (before `.md`).
-  - Lowercase letters and digits, with single `_` between them. No spaces, capitals, `-`, `.`, leading or trailing `_`, or `__`.
-  - Must be unique within its folder.
-  - Task and note titles are free text; a note's file name comes from its title.
+- **Names** of every folder (notes and tasks) and every note are free text, safe as one file name on any OS:
+  - No `/`, `\`, `:` or control characters; no `.` at the start; no space at the start or end; at most 200 characters.
+  - Unique within the folder, ignoring case (as macOS does). Folders clash only with folders, notes only with notes.
+  - Task titles are free text with no rule.
   - During the vault scan, folders and files that don't match are **skipped**, not renamed. They're listed in Settings → General.
 - **Explorer actions:** hover a row → `⋯`, or right-click, opens a menu: **Rename** (F2) · **Move to…** (⌘⇧M) · **Delete…** (⌫). The root has no menu.
   - **Rename:** edited in place in the row. Invalid or duplicate names turn red with a hint underneath. Enter saves, Esc cancels.

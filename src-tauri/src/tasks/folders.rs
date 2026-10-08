@@ -56,7 +56,12 @@ pub fn rename(conn: &mut Connection, path: &str, name: &str) -> AppResult<String
         return Ok(path.to_string());
     }
     let parent = names::parent(path);
-    check_new(conn, parent, name)?;
+    // A case-only rename ("work" → "Work") would only clash with itself.
+    if names::base(path).eq_ignore_ascii_case(name) {
+        names::check(name)?;
+    } else {
+        check_new(conn, parent, name)?;
+    }
     let new = names::join(parent, name);
     let tx = conn.transaction()?;
     relocate(&tx, path, &new)?;

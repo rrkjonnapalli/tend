@@ -13,9 +13,6 @@ use crate::files;
 use crate::names;
 use crate::util::{new_id, now_ms};
 
-/// How many `_2`, `_3`, … suffixes to try before giving up on a free file name.
-const MAX_SUFFIX: u32 = 999;
-
 fn folder_exists(conn: &Connection, path: &str) -> AppResult<bool> {
     if path.is_empty() {
         return Ok(true);
@@ -41,62 +38,42 @@ fn note_exists(conn: &Connection, folder: &str, name: &str) -> AppResult<bool> {
     Ok(found.is_some())
 }
 
-/// A folder or note called `name` already sits in `folder` (on disk or in the index).
-fn clash(conn: &Connection, dir: &Path, folder: &str, name: &str) -> AppResult<bool> {
-    let path = names::join(folder, name);
-    if folder_exists(conn, &path)? || note_exists(conn, folder, name)? {
-        return Ok(true);
-    }
-    let on_disk = dir.join(&path).exists() || file_path(dir, folder, name).exists();
-    Ok(on_disk)
-}
-
-fn check_new(conn: &Connection, dir: &Path, folder: &str, name: &str) -> AppResult<()> {
+/// `name` follows the rule and no other folder in `parent` uses it (ignoring case, on disk or
+/// in the index). `current` is the folder's own name when renaming it, which counts as free.
+fn check_folder_name(
+    conn: &Connection,
+    dir: &Path,
+    parent: &str,
+    name: &str,
+    current: Option<&str>,
+) -> AppResult<()> {
     names::check(name)?;
-    if clash(conn, dir, folder, name)? {
+    if current.is_some_and(|c| c.eq_ignore_ascii_case(name)) {
+        return Ok(());
+    }
+    let path = names::join(parent, name);
+    if folder_exists(conn, &path)? || dir.join(&path).is_dir() {
         return Err(errors::NAME_TAKEN.err());
     }
     Ok(())
 }
 
-/// The file name a title asks for.
-fn slug_of(title: &str) -> String {
-    names::slug(title).unwrap_or_else(|| "note".to_string())
-}
-
-/// `base` in `folder`, or `base_2`, `base_3`, … when taken. `keep` is a name the note already
-/// has, which counts as free.
-fn free_name(
+/// The same for a note's name in `folder`.
+fn check_note_name(
     conn: &Connection,
     dir: &Path,
     folder: &str,
-    base: &str,
-    keep: Option<&str>,
-) -> AppResult<String> {
-    let is_free = |name: &str| -> AppResult<bool> {
-        if keep == Some(name) {
-            return Ok(true);
-        }
-        Ok(!clash(conn, dir, folder, name)?)
-    };
-    if is_free(base)? {
-        return Ok(base.to_string());
+    name: &str,
+    current: Option<&str>,
+) -> AppResult<()> {
+    names::check(name)?;
+    if current.is_some_and(|c| c.eq_ignore_ascii_case(name)) {
+        return Ok(());
     }
-    for n in 2..=MAX_SUFFIX {
-        let candidate = format!("{base}_{n}");
-        if is_free(&candidate)? {
-            return Ok(candidate);
-        }
+    if note_exists(conn, folder, name)? || file_path(dir, folder, name).exists() {
+        return Err(errors::NAME_TAKEN.err());
     }
-    Err(errors::NAME_NO_ROOM.err())
-}
-
-fn check_title(title: &str) -> AppResult<&str> {
-    let trimmed = title.trim();
-    if trimmed.is_empty() {
-        return Err(errors::NOTE_TITLE_EMPTY.err());
-    }
-    Ok(trimmed)
+    Ok(())
 }
 
 /// Creates `folder` first when it isn't there yet (moves and new notes can target new folders).
@@ -129,7 +106,7 @@ pub fn folder_create(conn: &mut Connection, dir: &Path, path: &str) -> AppResult
     if path.is_empty() {
         return Ok(());
     }
-    check_new(conn, dir, names::parent(path), names::base(path))?;
+    check_folder_name(conn, dir, names::parent(path), names::base(path), None)?;
     let missing = missing_folders(conn, path)?;
     fs::create_dir_all(dir.join(path))?;
     let now = now_ms();
@@ -158,12 +135,11 @@ fn missing_folders(conn: &Connection, path: &str) -> AppResult<Vec<String>> {
     Ok(missing)
 }
 
-/// A new note titled `title` in `folder`, with an empty body. The file name comes from the title.
-pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> AppResult<NoteRow> {
-    let title = check_title(title)?.to_string();
+/// A new, empty note called `name` in `folder` (the file is `<name>.md`).
+pub fn create(conn: &mut Connection, dir: &Path, folder: &str, name: &str) -> AppResult<NoteRow> {
+    check_note_name(conn, dir, folder, name, None)?;
     ensure_folder(conn, dir, folder)?;
-    let name = free_name(conn, dir, folder, &slug_of(&title), None)?;
-    let path = file_path(dir, folder, &name);
+    let path = file_path(dir, folder, name);
     fs::write(&path, "")?;
     let facts = files::facts(&path)?;
     let note_id = new_id();
@@ -181,7 +157,7 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> A
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7, ?8)",
                 params![
                     attachment_id,
-                    vault_path(folder, &name),
+                    vault_path(folder, name),
                     format!("{name}{EXT}"),
                     MIME,
                     facts.size,
@@ -191,9 +167,8 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> A
                 ],
             )?;
             tx.execute(
-                "INSERT INTO notes (id, attachment_id, title, created_at, updated_at)
-                 VALUES (?1, ?2, ?3, ?4, ?4)",
-                params![note_id, attachment_id, title, now],
+                "INSERT INTO notes (id, attachment_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)",
+                params![note_id, attachment_id, now],
             )?;
             Ok(())
         },
@@ -201,23 +176,14 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> A
     row(conn, &note_id)
 }
 
-/// Sets the title; the file is renamed to follow it (links point at the note's id, so nothing
-/// breaks).
-pub fn rename_note(conn: &mut Connection, dir: &Path, id: &str, title: &str) -> AppResult<NoteRow> {
-    let title = check_title(title)?.to_string();
+/// Renames the note's file (links point at the note's id, so nothing breaks).
+pub fn rename_note(conn: &mut Connection, dir: &Path, id: &str, name: &str) -> AppResult<NoteRow> {
     let note = row(conn, id)?;
-    if note.title == title {
+    if note.name == name {
         return Ok(note);
     }
-    let name = free_name(conn, dir, &note.folder, &slug_of(&title), Some(&note.name))?;
-    conn.execute(
-        "UPDATE notes SET title = ?1, updated_at = ?2 WHERE id = ?3",
-        params![title, now_ms(), id],
-    )?;
-    if name == note.name {
-        return row(conn, id);
-    }
-    relocate_note(conn, dir, &note, &note.folder, &name)
+    check_note_name(conn, dir, &note.folder, name, Some(&note.name))?;
+    relocate_note(conn, dir, &note, &note.folder, name)
 }
 
 pub fn move_note(conn: &mut Connection, dir: &Path, id: &str, target: &str) -> AppResult<NoteRow> {
@@ -225,9 +191,10 @@ pub fn move_note(conn: &mut Connection, dir: &Path, id: &str, target: &str) -> A
     if note.folder == target {
         return Err(errors::SAME_FOLDER.err());
     }
+    names::check_path(target)?;
+    check_note_name(conn, dir, target, &note.name, None)?;
     ensure_folder(conn, dir, target)?;
-    // The file name always follows the title, so a move lands on the title's slug.
-    let name = free_name(conn, dir, target, &slug_of(&note.title), None)?;
+    let name = note.name.clone();
     relocate_note(conn, dir, &note, target, &name)
 }
 
@@ -273,7 +240,7 @@ pub fn rename_folder(
         return Ok(path.to_string());
     }
     let parent = names::parent(path);
-    check_new(conn, dir, parent, name)?;
+    check_folder_name(conn, dir, parent, name, Some(names::base(path)))?;
     relocate_folder(conn, dir, path, &names::join(parent, name))
 }
 
@@ -289,9 +256,10 @@ pub fn move_folder(
     if names::parent(path) == target {
         return Err(errors::SAME_FOLDER.err());
     }
-    ensure_folder(conn, dir, target)?;
+    names::check_path(target)?;
     let name = names::base(path);
-    check_new(conn, dir, target, name)?;
+    check_folder_name(conn, dir, target, name, None)?;
+    ensure_folder(conn, dir, target)?;
     relocate_folder(conn, dir, path, &names::join(target, name))
 }
 

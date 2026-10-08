@@ -18,7 +18,7 @@
   const noteId = $derived(page.params.id ?? null);
   const folder = $derived(page.url.searchParams.get('f') ?? '');
   const selected = $derived<ExplorerItem>(noteId ? { kind: 'leaf', id: noteId } : { kind: 'folder', path: folder });
-  const leaves = $derived(notes.notes.map((n) => ({ id: n.id, folder: n.folder, name: n.title })));
+  const leaves = $derived(notes.notes.map((n) => ({ id: n.id, folder: n.folder, name: n.name })));
 
   const toApi = (item: ExplorerItem): Item => (item.kind === 'folder' ? { kind: 'folder', path: item.path } : { kind: 'note', id: item.id });
 
@@ -35,7 +35,7 @@
   }
 
   async function createLeaf({ folder, name }: { folder: string; name: string }) {
-    const row = await notes.create({ folder, title: name });
+    const row = await notes.create({ folder, name });
     goto(routes.note(row.id, { edit: true }));
   }
 

@@ -201,7 +201,7 @@ fn refresh_note(
 }
 
 /// A file the index doesn't know. If a vanished body has the same hash, the file is that note
-/// renamed or moved outside Tend, so the note keeps its id (and its title, tags and links).
+/// renamed or moved outside Tend, so the note keeps its id (and its tags and links).
 fn add_note(
     tx: &Transaction,
     dir: &Path,
@@ -240,9 +240,8 @@ fn add_note(
         ],
     )?;
     tx.execute(
-        "INSERT INTO notes (id, attachment_id, title, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?4)",
-        params![new_id(), attachment_id, n.name, now],
+        "INSERT INTO notes (id, attachment_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)",
+        params![new_id(), attachment_id, now],
     )?;
     Ok(())
 }

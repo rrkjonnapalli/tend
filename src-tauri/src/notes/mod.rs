@@ -1,6 +1,6 @@
-//! Notes. A note is a record (`notes`: id, title) whose body is a markdown file under `notes/`,
-//! held by an attachment (`attachments.path`). The files are the truth for bodies and folders;
-//! titles belong to the notes. Every change made inside Tend writes to disk first, then to the
+//! Notes. A note is a record (`notes`) whose body is a markdown file under `notes/`, held by an
+//! attachment (`attachments.path`). The files are the truth: a note's name is its file name
+//! without `.md`. Every change made inside Tend writes to disk first, then to the
 //! database in one transaction, and puts the disk back if the database step fails.
 
 mod edit;
@@ -41,9 +41,8 @@ const MIME: &str = "text/markdown";
 pub struct NoteRow {
     pub id: String,
     pub folder: String,
-    /// File name without `.md`.
+    /// File name without `.md`; what the app shows as the note's title.
     pub name: String,
-    pub title: String,
     pub modified_at: i64,
 }
 
@@ -71,8 +70,8 @@ fn vault_path(folder: &str, name: &str) -> String {
     format!("{PREFIX}{}", rel_path(folder, name))
 }
 
-/// "notes/work/plan.md" → ("work", "plan").
-fn split_vault_path(path: &str) -> (String, String) {
+/// "notes/work/plan.md" → ("work", "plan"): a note's folder and name from its body's path.
+pub fn split_vault_path(path: &str) -> (String, String) {
     let rel = path.strip_prefix(PREFIX).unwrap_or(path);
     let file = names::base(rel);
     let name = file.strip_suffix(EXT).unwrap_or(file).to_string();
@@ -88,7 +87,7 @@ fn note_path(dir: &Path, note: &NoteRow) -> PathBuf {
     file_path(dir, &note.folder, &note.name)
 }
 
-const ROW_SQL: &str = "SELECT n.id, a.path, n.title, max(n.updated_at, a.updated_at)
+const ROW_SQL: &str = "SELECT n.id, a.path, max(n.updated_at, a.updated_at)
     FROM notes n JOIN attachments a ON a.id = n.attachment_id";
 
 fn to_row(r: &rusqlite::Row) -> rusqlite::Result<NoteRow> {
@@ -98,8 +97,7 @@ fn to_row(r: &rusqlite::Row) -> rusqlite::Result<NoteRow> {
         id: r.get(0)?,
         folder,
         name,
-        title: r.get(2)?,
-        modified_at: r.get(3)?,
+        modified_at: r.get(2)?,
     })
 }
 
@@ -145,8 +143,7 @@ pub fn read(conn: &Connection, dir: &Path, id: &str) -> AppResult<NoteDoc> {
     Ok(NoteDoc { row, text, tags })
 }
 
-/// Writes the body and records the file's new facts. The title is the note's own, so the body
-/// never changes it.
+/// Writes the body and records the file's new facts.
 pub fn write(conn: &Connection, dir: &Path, id: &str, text: &str) -> AppResult<NoteRow> {
     let note = row(conn, id)?;
     let path = note_path(dir, &note);
@@ -169,7 +166,7 @@ pub fn write(conn: &Connection, dir: &Path, id: &str, text: &str) -> AppResult<N
 
 /// A note row with a body path and no file, for tests in other modules.
 #[cfg(test)]
-pub fn seed(conn: &Connection, id: &str, path: &str, title: &str) {
+pub fn seed(conn: &Connection, id: &str, path: &str) {
     conn.execute(
         "INSERT INTO attachments (id, path, name, mime_type, size_bytes, sha256, created_at, updated_at)
          VALUES (?1, ?2, ?2, 'text/markdown', 0, '', 0, 0)",
@@ -177,8 +174,8 @@ pub fn seed(conn: &Connection, id: &str, path: &str, title: &str) {
     )
     .unwrap();
     conn.execute(
-        "INSERT INTO notes (id, attachment_id, title, created_at, updated_at) VALUES (?1, ?2, ?3, 0, 0)",
-        params![id, format!("a_{id}"), title],
+        "INSERT INTO notes (id, attachment_id, created_at, updated_at) VALUES (?1, ?2, 0, 0)",
+        params![id, format!("a_{id}")],
     )
     .unwrap();
 }
