@@ -226,8 +226,8 @@ pub fn move_note(conn: &mut Connection, dir: &Path, id: &str, target: &str) -> A
         return Err(errors::SAME_FOLDER.err());
     }
     ensure_folder(conn, dir, target)?;
-    // A move keeps the file name; only a clash in the target adds a suffix.
-    let name = free_name(conn, dir, target, &note.name, None)?;
+    // The file name always follows the title, so a move lands on the title's slug.
+    let name = free_name(conn, dir, target, &slug_of(&note.title), None)?;
     relocate_note(conn, dir, &note, target, &name)
 }
 

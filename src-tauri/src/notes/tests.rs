@@ -272,10 +272,16 @@ fn rename_and_move_a_note() {
         .into_iter()
         .find(|n| n.name == "x")
         .unwrap();
-    rename_note(&mut f.conn, &f.dir, &x.id, "Some title").unwrap();
-    let x = row(&f.conn, &x.id).unwrap();
-    let kept = move_note(&mut f.conn, &f.dir, &x.id, "").unwrap();
-    assert_eq!(kept.name, x.name, "a move keeps the file name");
+    // A file whose name doesn't match its title yet (from before titles drove names).
+    f.conn
+        .execute(
+            "UPDATE notes SET title = 'Fresh plan' WHERE id = ?1",
+            [&x.id],
+        )
+        .unwrap();
+    let moved = move_note(&mut f.conn, &f.dir, &x.id, "").unwrap();
+    assert_eq!(moved.name, "fresh_plan", "a move lands on the title's slug");
+    assert!(f.dir.join("fresh_plan.md").is_file());
     assert!(rename_note(&mut f.conn, &f.dir, &id, " ").is_err());
     assert_matches_disk(&mut f);
 }
