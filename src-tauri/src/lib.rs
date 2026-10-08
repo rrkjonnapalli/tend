@@ -135,6 +135,8 @@ pub fn run() {
             app.manage(ConfigDir(app.path().app_config_dir()?));
             Ok(())
         });
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_window_state::Builder::default().build());
     with_commands(builder)
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
