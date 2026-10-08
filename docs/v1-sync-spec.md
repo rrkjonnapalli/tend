@@ -44,7 +44,7 @@ The vault is the Git working tree:
     staging/                    files being applied  — never committed (§10)
     sync/
       manifest.json
-      <table>/<YYYY>.jsonl      rows of that table created in year YYYY (§8)
+      <table>/<YYYY>-<NNN>.jsonl  rows created in year YYYY, in id order, 10,000 per shard (§8)
       <table>/fixed.jsonl       rows with fixed, non-ULID ids (settings keys, 'root', default statuses)
       deleted/<YYYY>.jsonl      deletions, by the year they happened
   .git/
@@ -183,17 +183,20 @@ Accepted for V1; a hybrid logical clock is a later decision.
 
 ### 8.1 Files
 
-- Each synced table is split into **year shards**: `db/sync/<table>/<YYYY>.jsonl` holds the rows
-  whose ULID was created in year `YYYY` (UTC, read from the id). A row never moves between shards,
-  and every device puts it in the same one.
+- Rows are grouped by the **year** their ULID was created (UTC, read from the id), sorted by `id`,
+  and cut into **shards of 10,000 rows**: `db/sync/<table>/<YYYY>-<NNN>.jsonl`, numbered from `001`.
+  A year with 80,000 rows has `001`–`008`; row 80,001 starts `009`. There are no months and no
+  stored layout: the shard of a row is its position in the year divided by 10,000, so every device
+  builds the same files from the same rows.
+- At ~1 KB per row a shard is at most ~10 MB, well under host per-file limits.
+- New rows get ids at "now" and land in the year's last shard. A row inserted or deleted earlier
+  in a year's id order shifts every later row of that year by one, so the later shards of that year
+  are rewritten. This is accepted: it is bounded by one year, and Git stores a one-line shift as a
+  tiny delta.
 - Rows whose id is not a ULID (settings keys, `'root'`, default status values) go in
   `<table>/fixed.jsonl`.
-- A year shard over **20 MB** is split into month shards `<YYYY>-<MM>.jsonl`. The split depends only
-  on the merged content, so every device agrees. At 100k rows over ten years a year shard is about
-  4 MB, so this is a safety valve.
-- Inside a shard: one row per line, **sorted by `id`**, fixed column order, stable JSON (serde
-  structs), no values generated while writing. Same data → byte-identical file. An edit changes its
-  line in place, so diffs are small.
+- Inside a shard: one row per line, fixed column order, stable JSON (serde structs), no values
+  generated while writing. Same data → byte-identical file. An edit changes its line in place.
 - `deleted/<YYYY>.jsonl`: `{"table":"tasks","id":"01…","deleted_at":…}` per line, sorted by
   `(table, id)`, sharded by the year of `deleted_at`, never truncated (≈8 MB for 100k deletes).
 - `manifest.json`: `{ "app_id": "tend", "format_version": 1, "schema_version": 1, "tables": [...] }`.
@@ -206,15 +209,16 @@ without any archive state in the database.
 
 ### 8.2 Dirty shards
 
-A shard is **dirty** when a row in it changed locally since the last sync:
+A **year** is dirty when a row created in it changed locally since the last sync (rows can move
+between a year's shards, so the year is the unit):
 
 ```sql
 SELECT table_name, row_id FROM changes WHERE seq > :last_synced_seq
 ```
 
-Each `(table, id)` maps to exactly one shard. A dirty shard is **rebuilt completely** from SQLite,
-never patched line by line, so a shard is always a faithful copy of the database. Clean shards are
-not touched.
+Each `(table, id)` maps to exactly one year. A dirty year's shards are **rebuilt completely** from
+SQLite, never patched line by line, so shards are always a faithful copy of the database. Files whose
+bytes did not change are left alone, and clean years are not touched.
 
 Note bodies and attachment files are not in shards; Git sees their changes directly
 (`git status` on `notes/` and `.attachments/`), which also catches edits made in Finder.
@@ -251,9 +255,10 @@ Rows are compared by their snapshot line (synced columns only).
 
 Delete beats edit in every case, and a deleted id is never used again.
 
-Only rows in **changed shards** are read: local dirty shards (§8.2) and remote shards that differ
-from the base (`git diff base..remote` over `db/sync/`). A row outside both sets is identical in all
-three versions and is skipped. The merged result is written back only into shards that changed.
+Only rows in **changed years** are read: local dirty years (§8.2) and years with a shard that differs
+between base and remote (`git diff base..remote` over `db/sync/`). Rows are matched by `id` across
+all shards of a year. A row outside these years is identical in all three versions and is skipped.
+The merged result is written back only into the shards of those years.
 
 **No base** (first connect of a vault that already has data, restore into a non-empty vault, or a
 base commit lost to a force-push): fall back to two-way rules —
@@ -349,8 +354,8 @@ syncs, so other devices show "file not synced". Skipped files are listed in Sett
 lock (one run at a time; triggers during a run coalesce into it)
 → save open note · pause watcher
 → fetch
-→ idle check: no dirty shards · git status clean · remote head = last_synced_commit  →  stop
-→ rebuild dirty shards (§8.2)
+→ idle check: no dirty years · git status clean · remote head = last_synced_commit  →  stop
+→ rebuild dirty years' shards (§8.2)
 → read base, local and remote changed rows · reconcile (§9)
 → apply (§10) · write changed shards · commit (two parents if the remote moved)
 → push if ahead (retry once after a rejection)
@@ -419,7 +424,7 @@ Settings offers no restore; connecting reconciles instead.
 ```text
 src-tauri/src/sync/
   git.rs         fetch, read trees and diffs, commit (incl. two-parent), push, clone
-  shards.rs      shard of a row, dirty shards, rebuild a shard, read/write deleted/, manifest
+  shards.rs      year of a row, dirty years, rebuild a year's shards, read/write deleted/, manifest
   reconcile.rs   §9: three-way and two-way rules, unique keys, reference fixes (pure functions)
   apply.rs       §10: staging, transaction, file moves, scan, reload
   token.rs       Keychain
@@ -486,7 +491,7 @@ a note renames the file without breaking links · deletions recorded (incl. casc
 **Sync** — pull always before push · a change on one side always survives · same row edited on both:
 newer wins, older gone · delete beats edit · unique-key collisions merged (§9.2) · no Git merge or
 conflict ever surfaces · non-fast-forward push retried once · repeated syncs change nothing · an
-idle sync writes nothing · only dirty shards are rebuilt · failed runs leave a consistent vault and
+idle sync writes nothing · only dirty years are rebuilt · failed runs leave a consistent vault and
 retry later · simulation test passes.
 
 **Files** — notes and attachments sync as files · WAL/SHM and staging never committed · files over
