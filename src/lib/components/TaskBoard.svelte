@@ -121,12 +121,15 @@
 </div>
 
 <style>
+  /* Up to --board-fit columns share the width; more scroll sideways at that column width. */
   .board {
+    --board-gap: 12px;
+    --board-fit: 5;
     flex: 1 1 auto;
     min-height: 0;
     display: flex;
     align-items: stretch;
-    gap: 12px;
+    gap: var(--board-gap);
     overflow-x: auto;
     padding-bottom: 8px;
     user-select: none;

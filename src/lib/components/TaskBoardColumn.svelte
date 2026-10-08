@@ -86,7 +86,8 @@
 
 <style>
   .col {
-    flex: 0 0 248px;
+    flex: 1 1 0;
+    min-width: max(200px, calc((100% - (var(--board-fit) - 1) * var(--board-gap)) / var(--board-fit)));
     min-height: 0;
     display: flex;
     flex-direction: column;
