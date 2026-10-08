@@ -159,7 +159,7 @@
               onblur={flush}
               variant="note"
               minHeight={EDITOR_MIN_HEIGHT}
-              placeholder={'# Title\n\nStart writing…'}
+              placeholder="Start writing…"
               label="Note"
               autofocus />
           {/key}
