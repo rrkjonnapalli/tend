@@ -102,8 +102,9 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 
 ## 5. Notes
 
-- **The files in the vault are the truth** for bodies and folders. A note is a record (`notes`: id, title) whose body is a file held by an attachment (`attachments.path` = `<folder>/<name>.md`, relative to the vault). `note_folders` indexes the folders by path.
-- **Titles belong to the note** (free text, synced). The file name is the title's slug: creating "Meeting" makes `meeting.md`, whose first line is `# Meeting`; nothing is renamed afterwards because the name was right from the start. Changing the title renames the file to the new slug (a clash gets `_1`). The body never sets the title. A note found on disk is titled by its file name as found (before any fix).
+- **The files in the vault are the truth.** A note is a record (`notes`: id) whose body is a file held by an attachment (`attachments.path` = `<folder>/<name>.md`, relative to the vault). `note_folders` indexes the folders by path.
+- **A note is shown by its file name** (without `.md`) in the explorer, lists, ⌘K and breadcrumbs. **The title is part of the file:** its first `# heading`; the database keeps no copy.
+- **Creating** "Meeting" makes `meeting.md`, whose first line is `# Meeting`; nothing is renamed afterwards because the name was right from the start. **Renaming** a note renames its file to the slug of what was typed (a clash gets `_1`); the body, heading included, is untouched.
 - **Sync:**
   1. **Vault open:** walk the vault once. Insert or update every folder in `note_folders` and every `.md` file in `notes`. Anything gone from disk gets `missing_at` and is cleaned up after a grace period.
   2. **While running:** a file watcher applies changes made outside Tend (Finder, other editors) the same way.
@@ -130,8 +131,8 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - **Names** of every folder (notes and tasks) and every note file: `^[a-z0-9]+(_[a-z0-9]+)*$`, at most 200 characters.
   - Anything typed becomes its **slug**: accents become plain letters, everything lowercase, each run of other characters one `_`, trimmed ("Café notes (Q4)" → `cafe_notes_q4`). A note title with no letter or digit becomes `note`; a folder name with none is refused ("Use at least one letter or digit").
   - Unique within the folder. Folders clash only with folders, notes only with notes. A clash is not an error: the name gets a suffix, `plan` → `plan_1` → `plan_2`, on create, rename and move.
-  - Task titles and note titles are free text.
-  - **Names found on disk that break the rule** (folders holding notes, and `.md` files) get their slug, with a suffix when taken. The note keeps the old file name as its title.
+  - Task titles and note titles (the heading inside a note) are free text.
+  - **Names found on disk that break the rule** (folders holding notes, and `.md` files) get their slug, with a suffix when taken. The old path is kept in `path_log`.
   - Fixing needs the vault's consent once (setting `notes.fix_names`): a new empty vault has it, confirming a non-vault folder gives it, and an existing vault asks on the Start page (*Rename and open →* / *Open without renaming*). Until then such items are skipped and listed in Settings → General with the name each would get and a *Rename N items to fit* link.
   - **Every rename or move** of a folder or note file, by the user or by a fix, is written to `path_log` (old path, new path, why, when), so an earlier layout can be restored later.
 - **Explorer actions:** hover a row → `⋯`, or right-click, opens a menu: **Rename** (F2) · **Move to…** (⌘⇧M) · **Delete…** (⌫). The root has no menu.

@@ -75,8 +75,8 @@ pub enum Item {
     Folder { path: String },
 }
 
-/// `name` is the new title for a note, the new folder name for a folder. Returns the item's id
-/// (notes) or new path (folders).
+/// `name` becomes the slug of a note's file or of a folder. Returns the item's id (notes) or new
+/// path (folders).
 #[tauri::command(async)]
 pub fn item_rename(state: State<AppState>, item: Item, name: String) -> AppResult<String> {
     state.with(|db, v| match item {

@@ -154,7 +154,7 @@ fn check_title(title: &str) -> AppResult<&str> {
 }
 
 /// A new note titled `title` in `folder`. The file is the title's slug (`meeting.md` for
-/// "Meeting") and starts with the title as a heading.
+/// "Meeting") and starts with the title as its heading; the title lives only there.
 pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> AppResult<NoteRow> {
     let title = check_title(title)?.to_string();
     let folder = names::accept_path(folder)?;
@@ -190,9 +190,8 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> A
                 ],
             )?;
             tx.execute(
-                "INSERT INTO notes (id, attachment_id, title, created_at, updated_at)
-                 VALUES (?1, ?2, ?3, ?4, ?4)",
-                params![note_id, attachment_id, title, now],
+                "INSERT INTO notes (id, attachment_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)",
+                params![note_id, attachment_id, now],
             )?;
             Ok(())
         },
@@ -200,21 +199,13 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> A
     row(conn, &note_id)
 }
 
-/// Sets the title. When its slug differs, the file is renamed to follow it (links point at the
-/// note's id, so nothing breaks).
-pub fn rename_note(conn: &mut Connection, dir: &Path, id: &str, title: &str) -> AppResult<NoteRow> {
-    let title = check_title(title)?.to_string();
+/// Renames the note's file to the slug of `name` (links point at the note's id, so nothing breaks).
+/// The body, and so the title, is left as it is.
+pub fn rename_note(conn: &mut Connection, dir: &Path, id: &str, name: &str) -> AppResult<NoteRow> {
+    let wanted = names::accept(name)?;
     let note = row(conn, id)?;
-    if note.title == title {
+    if note.name == wanted {
         return Ok(note);
-    }
-    conn.execute(
-        "UPDATE notes SET title = ?1, updated_at = ?2 WHERE id = ?3",
-        params![title, now_ms(), id],
-    )?;
-    let wanted = slug_of(&title);
-    if wanted == note.name {
-        return row(conn, id);
     }
     let current = Some(note.name.as_str());
     let name = names::free(&wanted, |n| note_taken(conn, dir, &note.folder, n, current))?;

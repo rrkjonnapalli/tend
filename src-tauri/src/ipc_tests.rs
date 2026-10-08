@@ -65,10 +65,7 @@ fn notes_round_trip_through_ipc() {
     h.ok("folder_create", json!({ "path": "work" }));
     let note = h.ok("note_create", json!({ "folder": "work", "title": "Plan" }));
     let id = note["id"].as_str().unwrap().to_string();
-    assert_eq!(
-        (&note["name"], &note["title"]),
-        (&json!("plan"), &json!("Plan"))
-    );
+    assert_eq!(note["name"], "plan");
 
     h.ok(
         "note_write",
@@ -94,7 +91,7 @@ fn notes_round_trip_through_ipc() {
     let tree = h.ok("notes_tree", json!({}));
     assert_eq!(tree["folders"], json!(["archive", "archive/work"]));
     assert_eq!(tree["notes"][0]["folder"], "archive/work");
-    assert_eq!(tree["notes"][0]["title"], "Q4 plan");
+    assert_eq!(tree["notes"][0]["name"], "q4_plan");
 
     let err = h
         .call("note_create", json!({ "folder": "", "title": " " }))

@@ -124,7 +124,7 @@
   const crumbs = $derived.by((): Crumb[] => {
     const trail = folderCrumbs(row?.folder ?? '');
     if (!row) return trail;
-    return [...trail, { label: row.title }];
+    return [...trail, { label: row.name }];
   });
 </script>
 

@@ -138,12 +138,12 @@
   }
 
   function noteHits(q: string): PaletteItem[] {
-    const found = notes.notes.filter((n) => hasAllWords(`${n.title} ${n.name} ${n.folder}`, q)).slice(0, MAX_HITS);
+    const found = notes.notes.filter((n) => hasAllWords(`${n.name} ${n.folder}`, q)).slice(0, MAX_HITS);
     return found.map((n) => ({
       key: `n:${n.id}`,
       group: 'Notes',
       icon: ICONS.Notes,
-      label: n.title,
+      label: n.name,
       sub: n.folder || undefined,
       run: () => goto(routes.note(n.id)),
     }));

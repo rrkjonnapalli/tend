@@ -26,7 +26,7 @@ export function slug(text: string): string {
     .replace(/_+$/, '');
 }
 
-/** The message to show under a folder name field, or '' when it can be saved. */
+/** The message to show under a folder or note name field, or '' when it can be saved. */
 export function nameError(typed: string): string {
   if (!typed.trim()) return nameErrors.empty;
   if (!slug(typed)) return nameErrors.chars;

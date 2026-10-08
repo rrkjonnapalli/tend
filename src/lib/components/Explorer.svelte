@@ -98,12 +98,12 @@
   const hasMenu = (row: ExplorerRow) => !row.isNew && (!isRoot(row) || !!actions.renameRoot);
   const allowsDrop = (row: ExplorerRow, target: string) => canDrop({ row, target });
 
-  // The root's display name and leaf titles are free text; folder names become slugs.
+  // The root's display name is free text; a new note takes a title (its file gets the slug);
+  // renamed notes and folders become slugs.
   const draftError = $derived.by(() => {
     if (!editing) return '';
     if (editing.key === ROOT_KEY) return draft.trim() ? '' : nameErrors.empty;
-    const isLeaf = editing.isNew === 'leaf' || editing.item?.kind === 'leaf';
-    return isLeaf ? titleError(draft) : nameError(draft);
+    return editing.isNew === 'leaf' ? titleError(draft) : nameError(draft);
   });
 
   // ---- naming

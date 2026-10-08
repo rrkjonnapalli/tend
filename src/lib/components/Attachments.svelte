@@ -96,7 +96,7 @@
     await load();
   }
 
-  const matchNote = (n: NoteRow, q: string) => !q || n.title.toLowerCase().includes(q) || n.name.includes(q) || n.folder.includes(q);
+  const matchNote = (n: NoteRow, q: string) => !q || n.name.includes(q) || n.folder.includes(q);
 
   async function startLink(e: MouseEvent) {
     // The button sits inside the drop zone, whose click opens the file dialog.
@@ -116,7 +116,7 @@
   <Popover anchor={linkBtn} placement="bottom-end" onclose={() => (picking = false)}>
     <SearchPicker items={notes.notes} match={matchNote} onpick={linkNote} placeholder="Search notes…" label="Notes" empty="No notes found">
       {#snippet row(n)}
-        <span class="note-ic"><Icon name="note" size={14} /></span>{n.title}<span class="sub">{n.folder}</span>
+        <span class="note-ic"><Icon name="note" size={14} /></span>{n.name}<span class="sub">{n.folder}</span>
       {/snippet}
     </SearchPicker>
   </Popover>

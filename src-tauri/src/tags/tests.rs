@@ -4,7 +4,7 @@ use crate::db::open_memory;
 #[test]
 fn set_reuses_tags_case_insensitively() {
     let mut conn = open_memory();
-    crate::notes::seed(&conn, "n", "n.md", "n");
+    crate::notes::seed(&conn, "n", "n.md");
     let tags = set(
         &mut conn,
         Owner::Note,

@@ -86,15 +86,15 @@ default statuses (`id` = value) and the root folders (`id` = `'root'`).
 A note is its own record; its body is a file, held by an attachment.
 
 ```text
-notes        id · attachment_id · title · updated_at
+notes        id · attachment_id · updated_at
 attachments  id · path · name · mime_type · size_bytes · sha256 · updated_at   (+ local: mtime, missing_at)
 ```
 
 - `attachments.path` is the file's place in the vault: `<folder>/<name>.md` for a note body,
   `.tend/attachments/<id>.<ext>` for an attached file.
-- The **title belongs to the note** (free text, synced). The file name is the title's slug
-  (§4.4). Tend never reads the title from the file; a new note's file starts with `# <title>`.
-- Changing the title **renames the file** to the new slug (§11.2); only `attachments.path` changes. The note's `id`
+- A note is **shown by its file name**; the **title is part of the file** (its `# heading`), so it
+  syncs with the body. A new note's file is the title's slug and starts with `# <title>` (§4.4).
+- Renaming a note **renames the file** (§11.2); only `attachments.path` changes. The note's `id`
   never changes, so tags, labels and links are unaffected by renames and moves.
 - Editing a note writes the file and bumps `updated_at` on both rows.
 - `attachment_links` always points at an attachment `id`. Linking a note means linking its
@@ -119,13 +119,13 @@ local too and never lives in the vault (§5).
 Folder names (notes and tasks) and note file names: `^[a-z0-9]+(_[a-z0-9]+)*$`, at most 200
 characters, unique in their folder (folders clash only with folders, notes only with notes).
 
-- Typed folder names and note titles become their **slug**: accents become plain letters,
-  lowercase, each run of other characters one `_`, trimmed. A title with no letter or digit gives
-  `note`.
+- Typed folder names, note names and new-note titles become their **slug**: accents become plain
+  letters, lowercase, each run of other characters one `_`, trimmed. A new-note title with no letter
+  or digit gives `note`.
 - A clash is **not an error**: the name gets a suffix, `plan` → `plan_1` → `plan_2`, when creating,
   renaming, moving, and when sync brings in a clash (§9.2).
 - Names found on disk that break the rule get their slug from the scan once the vault allows it
-  (see `decisions.md`); the note keeps the old name as its title, and the rename goes to `path_log`.
+  (see `decisions.md`); the rename goes to `path_log`.
 
 Lowercase ASCII names avoid every case problem (no case-only renames, no `Plan` next to `plan` on a
 disk that ignores case), Unicode normalization differences between devices, and characters other
@@ -329,7 +329,7 @@ A title is given; the file is its slug (`meeting.md` for "Meeting"), starting wi
 nothing is ever renamed after creation.
 
 ### 11.2 Renaming and moving
-Title change → file renamed to the new slug; move → file moved, keeping its name; a name taken in
+Rename → file renamed to the slug of what was typed; move → file moved, keeping its name; a name taken in
 the target gets a suffix (§4.4). `attachments.path` and `updated_at` are updated and the rename is
 logged in `path_log`. Links keep working because they point at ids.
 
@@ -339,7 +339,7 @@ logged in `path_log`. Links keep working because they point at ids.
 - A file whose path matches an attachment row → that note; content changed (sha256) since the last
   scan → `updated_at = now`.
 - A file no row knows: if a vanished row has the same sha256, it is that note renamed or moved
-  outside Tend and keeps its id and title; otherwise it is a new note titled by its file name.
+  outside Tend and keeps its id; otherwise it is a new note.
 - A row whose file is gone → marked missing (grace period), then purged.
 - An outside rename **combined with an edit** gets a new id — the one case where links break.
 

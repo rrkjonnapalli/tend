@@ -1,7 +1,7 @@
-//! Notes. A note is a record (`notes`: id, title) whose body is a markdown file in the vault, held
-//! by an attachment (`attachments.path`, relative to the vault, which is the notes root). The file
-//! name is the title's slug. The files are the truth for bodies and folders; titles belong to the
-//! notes. Every change made inside Tend writes to disk first, then to the database in one
+//! Notes. A note is a record (`notes`) whose body is a markdown file in the vault, held by an
+//! attachment (`attachments.path`, relative to the vault, which is the notes root). The app shows a
+//! note by its file name; the title is part of the file (its first `# heading`). The files are the
+//! truth. Every change made inside Tend writes to disk first, then to the database in one
 //! transaction, and puts the disk back if the database step fails. Every rename or move of a file or
 //! folder is written to `path_log`.
 
@@ -85,9 +85,8 @@ const MIME: &str = "text/markdown";
 pub struct NoteRow {
     pub id: String,
     pub folder: String,
-    /// File name without `.md` (the title's slug).
+    /// File name without `.md`: what the explorer and lists show.
     pub name: String,
-    pub title: String,
     pub modified_at: i64,
 }
 
@@ -126,7 +125,7 @@ fn note_path(dir: &Path, note: &NoteRow) -> PathBuf {
     file_path(dir, &note.folder, &note.name)
 }
 
-const ROW_SQL: &str = "SELECT n.id, a.path, n.title, max(n.updated_at, a.updated_at)
+const ROW_SQL: &str = "SELECT n.id, a.path, max(n.updated_at, a.updated_at)
     FROM notes n JOIN attachments a ON a.id = n.attachment_id";
 
 fn to_row(r: &rusqlite::Row) -> rusqlite::Result<NoteRow> {
@@ -136,8 +135,7 @@ fn to_row(r: &rusqlite::Row) -> rusqlite::Result<NoteRow> {
         id: r.get(0)?,
         folder,
         name,
-        title: r.get(2)?,
-        modified_at: r.get(3)?,
+        modified_at: r.get(2)?,
     })
 }
 
@@ -206,7 +204,7 @@ pub fn write(conn: &Connection, dir: &Path, id: &str, text: &str) -> AppResult<N
 
 /// A note row with a body path and no file, for tests in other modules.
 #[cfg(test)]
-pub fn seed(conn: &Connection, id: &str, path: &str, title: &str) {
+pub fn seed(conn: &Connection, id: &str, path: &str) {
     conn.execute(
         "INSERT INTO attachments (id, path, name, mime_type, size_bytes, sha256, created_at, updated_at)
          VALUES (?1, ?2, ?2, 'text/markdown', 0, '', 0, 0)",
@@ -214,8 +212,8 @@ pub fn seed(conn: &Connection, id: &str, path: &str, title: &str) {
     )
     .unwrap();
     conn.execute(
-        "INSERT INTO notes (id, attachment_id, title, created_at, updated_at) VALUES (?1, ?2, ?3, 0, 0)",
-        params![id, format!("a_{id}"), title],
+        "INSERT INTO notes (id, attachment_id, created_at, updated_at) VALUES (?1, ?2, 0, 0)",
+        params![id, format!("a_{id}")],
     )
     .unwrap();
 }

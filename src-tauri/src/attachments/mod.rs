@@ -29,7 +29,7 @@ pub struct Link {
     pub kind: String,
     pub attachment_id: Option<String>,
     pub note_id: Option<String>,
-    /// File name, or the note's title.
+    /// File name, or the note's name (its file name without `.md`).
     pub name: String,
     pub mime_type: Option<String>,
     pub size_bytes: Option<i64>,
@@ -162,8 +162,8 @@ fn to_link(r: &rusqlite::Row) -> rusqlite::Result<Link> {
     let note_id: Option<String> = r.get(2)?;
     let path: String = r.get(3)?;
     let is_note = note_id.is_some();
-    let (folder, _) = crate::notes::split_vault_path(&path);
-    let name = r.get(4)?;
+    let (folder, note_name) = crate::notes::split_vault_path(&path);
+    let name = if is_note { note_name } else { r.get(4)? };
     Ok(Link {
         id: r.get(0)?,
         kind: if is_note { "note" } else { "file" }.to_string(),
@@ -180,7 +180,7 @@ fn to_link(r: &rusqlite::Row) -> rusqlite::Result<Link> {
 pub fn list(conn: &Connection, owner: &str, owner_id: &str) -> AppResult<Vec<Link>> {
     let rows = conn
         .prepare(
-            "SELECT l.id, a.id, n.id, a.path, coalesce(n.title, a.name), a.mime_type,
+            "SELECT l.id, a.id, n.id, a.path, a.name, a.mime_type,
                     a.size_bytes, l.created_at
              FROM attachment_links l
              JOIN attachments a ON a.id = l.attachment_id

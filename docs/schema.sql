@@ -89,10 +89,10 @@ CREATE INDEX attachment_links_owner ON attachment_links(owner_type, owner_id);
 -------------------------------------------------------------------------------
 -- 3. Notes. The body is a markdown file (an attachment in the vault); the note is the record.
 -------------------------------------------------------------------------------
--- The title belongs to the note (free text, synced); the file name is the title's slug under the
--- name rule. Changing the title renames the file; renaming or moving a note changes only
--- attachments.path, and the note's id stays, so tags and links follow it. On vault open and on
--- outside changes the app scans the vault and matches files to attachments by path.
+-- A note's title is part of its file (the first `# heading`); the database keeps no copy. The file
+-- name follows the name rule: a new note's title gives it its slug. Renaming or moving a note
+-- changes only attachments.path, and the note's id stays, so tags and links follow it. On vault
+-- open and on outside changes the app scans the vault and matches files to attachments by path.
 CREATE TABLE note_folders (
   id         TEXT PRIMARY KEY,
   path       TEXT NOT NULL UNIQUE,       -- '' (the vault root), 'work', 'work/infra'
@@ -106,7 +106,6 @@ INSERT INTO note_folders (id, path, created_at, updated_at) VALUES
 CREATE TABLE notes (
   id            TEXT PRIMARY KEY,
   attachment_id TEXT NOT NULL UNIQUE REFERENCES attachments(id) ON DELETE CASCADE,
-  title         TEXT NOT NULL,
   created_at    INTEGER NOT NULL,
   updated_at    INTEGER NOT NULL
 ) STRICT;

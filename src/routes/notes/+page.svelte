@@ -15,7 +15,7 @@
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
-  import { relativeTo, titleError } from '#lib/util/names.ts';
+  import { nameError, relativeTo } from '#lib/util/names.ts';
   import { folderCrumbs, folderSummary } from '#lib/util/note-paths.ts';
   import { ago } from '#lib/util/dates.ts';
   import { routes } from '#lib/util/routes.ts';
@@ -24,7 +24,7 @@
   let query = $state('');
   const needle = $derived(searchNeedle(query));
   const inFolder = $derived(notes.under(folder));
-  const rows = $derived(inFolder.filter((n) => textMatches([n.title, n.name, n.folder], needle)));
+  const rows = $derived(inFolder.filter((n) => textMatches([n.name, n.folder], needle)));
   const summary = $derived(folderSummary({ notes: inFolder.length, folders: notes.foldersUnder(folder).length }));
   const crumbs = $derived(folderCrumbs(folder));
 
@@ -46,7 +46,7 @@
   // ---- rename in place
 
   /** Titles over the list columns: name | edit · modified · folder. */
-  const COLUMNS = ['Title', '', 'Modified', 'Folder'];
+  const COLUMNS = ['Name', '', 'Modified', 'Folder'];
 
   let editingId = $state<string | null>(null);
 
@@ -86,14 +86,14 @@
       {#each rows as n (n.id)}
         {#if editingId === n.id}
           <div class="row editing">
-            <InlineTitle value={n.title} label="Note title" check={titleError} onsave={(title) => rename(n, title)} oncancel={stopEditing} />
+            <InlineTitle value={n.name} label="Note name" check={nameError} onsave={(name) => rename(n, name)} oncancel={stopEditing} />
             <span></span>
             <span class="meta">{ago(n.modifiedAt)}</span>
             <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>
           </div>
         {:else}
           <a class="row reveal-on-hover" href={routes.note(n.id)}>
-            <span class="name">{n.title}</span>
+            <span class="name">{n.name}</span>
             <EditButton label="Rename note" onedit={() => (editingId = n.id)} />
             <span class="meta">{ago(n.modifiedAt)}</span>
             <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>

@@ -21,8 +21,6 @@ struct DiskNote {
     folder: String,
     /// File name without `.md`.
     name: String,
-    /// The title a new note gets: the file name as found, before any fix.
-    title: String,
     mtime: i64,
 }
 
@@ -171,7 +169,6 @@ fn add_disk_note(here: &mut Walk, raw: &str, out: &mut Disk) {
     out.notes.push(DiskNote {
         folder: here.rel.to_string(),
         mtime: files::mtime(&here.dir.join(format!("{name}{EXT}"))),
-        title: raw.to_string(),
         name,
     });
 }
@@ -355,9 +352,8 @@ fn add_note(
         ],
     )?;
     tx.execute(
-        "INSERT INTO notes (id, attachment_id, title, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?4)",
-        params![new_id(), attachment_id, n.title, now],
+        "INSERT INTO notes (id, attachment_id, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)",
+        params![new_id(), attachment_id, now],
     )?;
     Ok(())
 }

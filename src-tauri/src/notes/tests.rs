@@ -63,13 +63,6 @@ fn initial_scan_indexes_folders_and_notes() {
 }
 
 #[test]
-fn found_notes_are_titled_by_their_file_name() {
-    let f = fixture(&[("work/plan.md", "# Something else")]);
-    let t = tree(&f.conn).unwrap();
-    assert_eq!(t.notes[0].title, "plan", "the body never sets the title");
-}
-
-#[test]
 fn without_consent_bad_names_are_reported_not_touched() {
     let tmp = tempfile::tempdir().unwrap();
     let dir = tmp.path().to_path_buf();
@@ -180,15 +173,15 @@ fn create_write_and_read() {
     let mut f = fixture(&[]);
     let n = create(&mut f.conn, &f.dir, "Work/Ideas", " Release checklist! ").unwrap();
     assert_eq!(
-        (n.folder.as_str(), n.name.as_str(), n.title.as_str()),
-        ("work/ideas", "release_checklist", "Release checklist!")
+        (n.folder.as_str(), n.name.as_str()),
+        ("work/ideas", "release_checklist")
     );
     let file = f.dir.join("work/ideas/release_checklist.md");
     assert_eq!(fs::read_to_string(&file).unwrap(), "# Release checklist!\n");
     let n = write(&f.conn, &f.dir, &n.id, "# Ship it\n\nnow").unwrap();
     assert_eq!(
-        n.title, "Release checklist!",
-        "the body never sets the title"
+        n.name, "release_checklist",
+        "editing the heading never renames the file"
     );
     assert_eq!(
         read(&f.conn, &f.dir, &n.id).unwrap().text,
@@ -285,16 +278,15 @@ fn rename_and_move_a_note() {
         .id
         .clone();
     let renamed = rename_note(&mut f.conn, &f.dir, &id, "B side").unwrap();
-    assert_eq!(
-        (renamed.name.as_str(), renamed.title.as_str()),
-        ("b_side", "B side")
-    );
+    assert_eq!(renamed.name, "b_side");
     assert!(f.dir.join("b_side.md").is_file() && !f.dir.join("a.md").exists());
-    let same = rename_note(&mut f.conn, &f.dir, &id, "B SIDE").unwrap();
     assert_eq!(
-        (same.name.as_str(), same.title.as_str()),
-        ("b_side", "B SIDE")
+        fs::read_to_string(f.dir.join("b_side.md")).unwrap(),
+        "# A",
+        "the body is untouched"
     );
+    let same = rename_note(&mut f.conn, &f.dir, &id, "B SIDE").unwrap();
+    assert_eq!(same.name, "b_side");
     let moved = move_note(&mut f.conn, &f.dir, &id, "work/new").unwrap();
     assert_eq!(moved.folder, "work/new");
     assert!(f.dir.join("work/new/b_side.md").is_file());
@@ -411,19 +403,9 @@ fn fixing_slugs_bad_names_keeps_titles_and_logs_old_paths() {
     let found: Vec<_> = t
         .notes
         .iter()
-        .map(|n| (names::join(&n.folder, &n.name), n.title.clone()))
+        .map(|n| names::join(&n.folder, &n.name))
         .collect();
-    let expected = [
-        ("cafe_old/resume", "Résumé!"),
-        ("note", "日本"),
-        ("plan", "plan"),
-        ("plan_1", "Plan?"),
-    ];
-    let expected: Vec<_> = expected
-        .iter()
-        .map(|(a, b)| (a.to_string(), b.to_string()))
-        .collect();
-    assert_eq!(found, expected);
+    assert_eq!(found, vec!["cafe_old/resume", "note", "plan", "plan_1"]);
     assert!(
         dir.join(".hidden.md").exists(),
         "hidden files are never touched"
