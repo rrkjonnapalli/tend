@@ -10,7 +10,8 @@ export const notesAPI = {
   read: (id: string) => call<NoteDoc>('note_read', { args: { id } }),
   write: (input: { id: string; text: string }) => call<NoteRow>('note_write', { args: input }),
   create: (input: { folder: string; name: string }) => call<NoteRow>('note_create', { args: input }),
-  createFolder: (path: string) => call<void>('folder_create', { args: { path } }),
+  /** Resolves to the created path (a taken name gets a suffix). */
+  createFolder: (path: string) => call<string>('folder_create', { args: { path } }),
   /** Returns the new id (notes) or path (folders). */
   rename: (input: { item: Item; name: string }) => call<string>('item_rename', { args: input }),
   move: (input: { item: Item; target: string }) => call<string>('item_move', { args: input }),

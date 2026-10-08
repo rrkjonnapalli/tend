@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildRows, canDrop, siblingNames, withAncestors } from './explorer-rows.ts';
+import { buildRows, canDrop, withAncestors } from './explorer-rows.ts';
 
 const tree = {
   folders: ['work', 'work/tauri', 'home'],
@@ -24,27 +24,19 @@ describe('buildRows', () => {
   });
 });
 
-describe('siblingNames', () => {
-  it('lists same-kind names in a folder, minus the excepted row', () => {
-    expect(siblingNames({ tree, folder: 'work', kind: 'folder' })).toEqual(['tauri']);
-    expect(siblingNames({ tree, folder: 'work', kind: 'leaf' })).toEqual(['plan', 'ideas']);
-    expect(siblingNames({ tree, folder: 'work', kind: 'leaf', exceptKey: 'l:a' })).toEqual(['plan']);
-  });
-});
-
 describe('canDrop', () => {
   const rows = buildRows({ tree, rootName: 'notes', expanded: { '': true, work: true }, adding: null });
   const row = (name: string) => rows.find((r) => r.name === name)!;
 
   it('refuses the current folder, the folder itself and its insides', () => {
-    expect(canDrop({ tree, row: row('work'), target: '' })).toBe(false);
-    expect(canDrop({ tree, row: row('work'), target: 'work/tauri' })).toBe(false);
-    expect(canDrop({ tree, row: row('plan'), target: 'work' })).toBe(false);
+    expect(canDrop({ row: row('work'), target: '' })).toBe(false);
+    expect(canDrop({ row: row('work'), target: 'work/tauri' })).toBe(false);
+    expect(canDrop({ row: row('plan'), target: 'work' })).toBe(false);
   });
 
   it('allows a free name elsewhere', () => {
-    expect(canDrop({ tree, row: row('work'), target: 'home' })).toBe(true);
-    expect(canDrop({ tree, row: row('plan'), target: '' })).toBe(true);
+    expect(canDrop({ row: row('work'), target: 'home' })).toBe(true);
+    expect(canDrop({ row: row('plan'), target: '' })).toBe(true);
   });
 });
 

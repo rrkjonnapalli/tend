@@ -116,8 +116,9 @@ class TasksStore {
   };
 
   createFolder = async (path: string) => {
-    await tasksAPI.createFolder(path);
+    const created = await tasksAPI.createFolder(path);
     await this.load();
+    return created;
   };
 
   renameFolder = async ({ path, name }: { path: string; name: string }) => {

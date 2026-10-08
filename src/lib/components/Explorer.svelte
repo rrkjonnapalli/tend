@@ -24,7 +24,6 @@
     folderPath,
     isRoot,
     keyOf,
-    siblingNames,
     withAncestors,
   } from '#lib/util/explorer-rows.ts';
   import { dropTargetAt, trackDrag } from '#lib/util/explorer-drag.ts';
@@ -97,16 +96,13 @@
   const allFolders = $derived(['', ...folders]);
 
   const hasMenu = (row: ExplorerRow) => !row.isNew && (!isRoot(row) || !!actions.renameRoot);
-  const allowsDrop = (row: ExplorerRow, target: string) => canDrop({ tree, row, target });
+  const allowsDrop = (row: ExplorerRow, target: string) => canDrop({ row, target });
 
   // The root's display name is free text; folders and leaves follow the name rule.
   const draftError = $derived.by(() => {
     if (!editing) return '';
-    const name = draft.trim();
-    if (editing.key === ROOT_KEY) return name ? '' : nameErrors.empty;
-    const isLeaf = editing.isNew === 'leaf' || editing.item?.kind === 'leaf';
-    const kind = isLeaf ? 'leaf' : 'folder';
-    return nameError(name, siblingNames({ tree, folder: editing.folder, kind, exceptKey: editing.key }));
+    if (editing.key === ROOT_KEY) return draft.trim() ? '' : nameErrors.empty;
+    return nameError(draft);
   });
 
   // ---- naming
@@ -130,8 +126,8 @@
   }
 
   async function createFolder(parent: string, name: string) {
-    await actions.createFolder({ parent, name });
-    toast.show(`Folder ${join(parent, name)} created`);
+    const path = await actions.createFolder({ parent, name });
+    toast.show(`Folder ${path} created`);
   }
 
   async function renameRoot(name: string) {
@@ -146,7 +142,7 @@
   async function renameItem(item: ExplorerItem, name: string) {
     if (currentName(item) === name) return;
     await actions.rename(item, name);
-    toast.show(`Renamed to ${name}`);
+    toast.show('Renamed');
   }
 
   async function save(edit: ExplorerEdit, name: string) {

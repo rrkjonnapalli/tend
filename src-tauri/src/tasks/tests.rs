@@ -153,9 +153,10 @@ fn folder_rename_rewrites_paths_below() {
     assert_eq!(d.folders, vec!["job", "job/tend_v0_1", "work_x"]);
     let paths: Vec<_> = d.tasks.iter().map(|t| t.path.as_str()).collect();
     assert!(paths.contains(&"job/tend_v0_1") && paths.contains(&"work_x"));
-    assert!(
-        folder_rename(&mut conn, "job", "work_x").is_err(),
-        "name clash"
+    assert_eq!(
+        folder_rename(&mut conn, "job", "work_x").unwrap(),
+        "work_x_1",
+        "a clash gets a suffix"
     );
     assert!(
         folder_move(&mut conn, "job", "job/tend_v0_1").is_err(),
@@ -275,15 +276,33 @@ fn subtasks_are_one_level_deep() {
 }
 
 #[test]
-fn folder_names_are_free_text_and_unique_ignoring_case() {
+fn folder_names_are_cleaned_and_clashes_get_a_suffix() {
     let mut conn = open_memory();
-    folder_create(&mut conn, "Client Work").unwrap();
-    assert!(folder_create(&mut conn, "client work")
-        .unwrap_err()
-        .is(errors::NAME_TAKEN));
+    assert_eq!(
+        folder_create(&mut conn, " Client Work.").unwrap(),
+        "Client Work"
+    );
+    assert_eq!(
+        folder_create(&mut conn, "client work").unwrap(),
+        "Client Work_1"
+    );
     assert_eq!(
         folder_rename(&mut conn, "Client Work", "client work").unwrap(),
-        "client work"
+        "client work",
+        "a case-only rename is allowed"
     );
     assert!(folder_create(&mut conn, "a:b").is_err());
+    let t = create(
+        &mut conn,
+        &NewTask {
+            path: "CLIENT WORK/x".into(),
+            title: "T".into(),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        t.path, "client work/x",
+        "a typed path takes the existing spelling"
+    );
 }

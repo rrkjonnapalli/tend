@@ -58,16 +58,10 @@
     if (kind === 'timer') return dur.ok ? '' : dur.error;
     if (pathError(target)) return pathError(target);
     if (!title) return '';
-    if (kind === 'folder') return folderProblem();
-    if (kind === 'note') return nameError(title);
+    if (kind === 'folder' || kind === 'note') return nameError(title);
     return '';
   });
   const message = $derived(error || problem);
-
-  function folderProblem() {
-    const taken = folders.includes(join(target, title));
-    return nameError(title, taken ? [title] : []);
-  }
 
   async function create() {
     if (problem) return;
@@ -107,10 +101,9 @@
 
   async function createFolder() {
     const full = join(target, title);
-    if (tree === 'notes') await notes.createFolder(full);
-    else await tasks.createFolder(full);
+    const created = tree === 'notes' ? await notes.createFolder(full) : await tasks.createFolder(full);
     onclose();
-    goto(tree === 'notes' ? routes.notesFolder(full) : routes.tasksFolder(full));
+    goto(tree === 'notes' ? routes.notesFolder(created) : routes.tasksFolder(created));
   }
 
   function onEnter(e: KeyboardEvent) {

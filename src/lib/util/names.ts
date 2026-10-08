@@ -1,32 +1,36 @@
-// The name rule for folders and notes (same as src-tauri/src/names): free text that is safe as
-// one file or folder name everywhere, unique in its folder ignoring case.
+// The name rule for folders and notes (same as src-tauri/src/names): letters, digits, spaces and
+// . , _ - only. Leading and trailing spaces and dots are trimmed; a name taken in its folder gets a
+// suffix (Plan_1) when saved, so a clash is never an error.
 
 const MAX_CHARS = 200;
-const FORBIDDEN = /[/\\:\p{Cc}]/u;
+const ALLOWED = /^[A-Za-z0-9 .,_-]*$/;
 
 export const nameErrors = {
   empty: 'Name can’t be empty',
-  spaces: 'No spaces at the start or end',
-  chars: 'No / \\ or :, and no dot at the start',
+  chars: 'Use letters, digits, spaces and . , _ - only',
   long: 'Keep names under 200 characters',
-  clash: 'Something with this name already exists here',
 } as const;
 
-/** Case folding as the database and macOS do it: ASCII letters only. */
-const fold = (name: string) => name.replace(/[A-Z]/g, (c) => c.toLowerCase());
+/** A typed name without leading or trailing spaces and dots, as it will be saved. */
+export const cleanName = (name: string) => name.replace(/^[ .]+|[ .]+$/g, '');
 
 /** The message to show under a name field, or '' when the name is fine. */
-export function nameError(name: string, siblings: Iterable<string> = []): string {
+export function nameError(typed: string): string {
+  const name = cleanName(typed);
   if (!name) return nameErrors.empty;
-  if (name.trim() !== name) return nameErrors.spaces;
-  if (FORBIDDEN.test(name) || name.startsWith('.')) return nameErrors.chars;
-  if ([...name].length > MAX_CHARS) return nameErrors.long;
-  const folded = fold(name);
-  for (const sibling of siblings) {
-    if (fold(sibling) === folded) return nameErrors.clash;
-  }
+  if (!ALLOWED.test(name)) return nameErrors.chars;
+  if (name.length > MAX_CHARS) return nameErrors.long;
   return '';
 }
+
+/** A typed folder path with each segment cleaned and no slashes at the ends. */
+export const cleanPath = (value: string) =>
+  value
+    .trim()
+    .replace(/^\/+|\/+$/g, '')
+    .split('/')
+    .map(cleanName)
+    .join('/');
 
 /** The first problem with any segment of a folder path, or '' ('' is the root). */
 export function pathError(path: string): string {
@@ -49,6 +53,3 @@ export function relativeTo(path: string, root: string): string {
   if (root === '') return path;
   return path.slice(root.length + 1);
 }
-
-/** A typed folder path without surrounding spaces or trailing slashes. */
-export const cleanPath = (value: string) => value.trim().replace(/\/+$/, '');

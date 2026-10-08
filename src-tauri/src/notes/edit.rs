@@ -27,6 +27,21 @@ fn folder_exists(conn: &Connection, path: &str) -> AppResult<bool> {
     Ok(found.is_some())
 }
 
+/// The cleaned folder path typed by the user, spelled as the index spells existing folders.
+fn target_path(conn: &Connection, path: &str) -> AppResult<String> {
+    let path = names::accept_path(path)?;
+    names::canonical(&path, |p| {
+        let found = conn
+            .query_row(
+                "SELECT path FROM note_folders WHERE path = ?1 AND missing_at IS NULL",
+                [p],
+                |r| r.get(0),
+            )
+            .optional()?;
+        Ok(found)
+    })
+}
+
 fn note_exists(conn: &Connection, folder: &str, name: &str) -> AppResult<bool> {
     let found = conn
         .query_row(
@@ -38,42 +53,34 @@ fn note_exists(conn: &Connection, folder: &str, name: &str) -> AppResult<bool> {
     Ok(found.is_some())
 }
 
-/// `name` follows the rule and no other folder in `parent` uses it (ignoring case, on disk or
-/// in the index). `current` is the folder's own name when renaming it, which counts as free.
-fn check_folder_name(
+/// Another folder in `parent` already uses `name` (ignoring case, on disk or in the index).
+/// `current` is the folder's own name when renaming it, which counts as free.
+fn folder_taken(
     conn: &Connection,
     dir: &Path,
     parent: &str,
     name: &str,
     current: Option<&str>,
-) -> AppResult<()> {
-    names::check(name)?;
-    if current.is_some_and(|c| c.eq_ignore_ascii_case(name)) {
-        return Ok(());
+) -> AppResult<bool> {
+    if current.is_some_and(|c| names::same(c, name)) {
+        return Ok(false);
     }
     let path = names::join(parent, name);
-    if folder_exists(conn, &path)? || dir.join(&path).is_dir() {
-        return Err(errors::NAME_TAKEN.err());
-    }
-    Ok(())
+    Ok(folder_exists(conn, &path)? || dir.join(&path).is_dir())
 }
 
 /// The same for a note's name in `folder`.
-fn check_note_name(
+fn note_taken(
     conn: &Connection,
     dir: &Path,
     folder: &str,
     name: &str,
     current: Option<&str>,
-) -> AppResult<()> {
-    names::check(name)?;
-    if current.is_some_and(|c| c.eq_ignore_ascii_case(name)) {
-        return Ok(());
+) -> AppResult<bool> {
+    if current.is_some_and(|c| names::same(c, name)) {
+        return Ok(false);
     }
-    if note_exists(conn, folder, name)? || file_path(dir, folder, name).exists() {
-        return Err(errors::NAME_TAKEN.err());
-    }
-    Ok(())
+    Ok(note_exists(conn, folder, name)? || file_path(dir, folder, name).exists())
 }
 
 /// Creates `folder` first when it isn't there yet (moves and new notes can target new folders).
@@ -81,7 +88,7 @@ fn ensure_folder(conn: &mut Connection, dir: &Path, folder: &str) -> AppResult<(
     if folder_exists(conn, folder)? {
         return Ok(());
     }
-    folder_create(conn, dir, folder)
+    create_path(conn, dir, folder)
 }
 
 /// Drops index rows left behind by missing items at `path`, so a new item can take the name.
@@ -100,13 +107,24 @@ fn clear_missing(tx: &Transaction, path: &str) -> AppResult<()> {
     Ok(())
 }
 
-/// Creates `path` and any missing parents. Each segment must follow the name rule.
-pub fn folder_create(conn: &mut Connection, dir: &Path, path: &str) -> AppResult<()> {
-    names::check_path(path)?;
+/// Creates the folder `path` typed by the user, and any missing parents. When the last segment is
+/// taken it gets a suffix. Returns the path that was created.
+pub fn folder_create(conn: &mut Connection, dir: &Path, path: &str) -> AppResult<String> {
+    let path = target_path(conn, path)?;
     if path.is_empty() {
-        return Ok(());
+        return Err(errors::NAME_EMPTY.err());
     }
-    check_folder_name(conn, dir, names::parent(path), names::base(path), None)?;
+    let parent = names::parent(&path);
+    let name = names::free(names::base(&path), |n| {
+        folder_taken(conn, dir, parent, n, None)
+    })?;
+    let path = names::join(parent, &name);
+    create_path(conn, dir, &path)?;
+    Ok(path)
+}
+
+/// Makes `path` exist on disk and in the index, parents included.
+fn create_path(conn: &mut Connection, dir: &Path, path: &str) -> AppResult<()> {
     let missing = missing_folders(conn, path)?;
     fs::create_dir_all(dir.join(path))?;
     let now = now_ms();
@@ -137,8 +155,12 @@ fn missing_folders(conn: &Connection, path: &str) -> AppResult<Vec<String>> {
 
 /// A new, empty note called `name` in `folder` (the file is `<name>.md`).
 pub fn create(conn: &mut Connection, dir: &Path, folder: &str, name: &str) -> AppResult<NoteRow> {
-    check_note_name(conn, dir, folder, name, None)?;
+    let folder = target_path(conn, folder)?;
+    let folder = folder.as_str();
+    let typed = names::accept(name)?;
     ensure_folder(conn, dir, folder)?;
+    let name = names::free(&typed, |n| note_taken(conn, dir, folder, n, None))?;
+    let name = name.as_str();
     let path = file_path(dir, folder, name);
     fs::write(&path, "")?;
     let facts = files::facts(&path)?;
@@ -178,24 +200,26 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, name: &str) -> Ap
 
 /// Renames the note's file (links point at the note's id, so nothing breaks).
 pub fn rename_note(conn: &mut Connection, dir: &Path, id: &str, name: &str) -> AppResult<NoteRow> {
+    let typed = names::accept(name)?;
     let note = row(conn, id)?;
-    if note.name == name {
+    if note.name == typed {
         return Ok(note);
     }
-    check_note_name(conn, dir, &note.folder, name, Some(&note.name))?;
-    relocate_note(conn, dir, &note, &note.folder, name)
+    let current = Some(note.name.as_str());
+    let name = names::free(&typed, |n| note_taken(conn, dir, &note.folder, n, current))?;
+    relocate_note(conn, dir, &note, &note.folder, &name)
 }
 
+/// Moves the note into `target`; a name taken there gets a suffix.
 pub fn move_note(conn: &mut Connection, dir: &Path, id: &str, target: &str) -> AppResult<NoteRow> {
+    let target = target_path(conn, target)?;
     let note = row(conn, id)?;
     if note.folder == target {
         return Err(errors::SAME_FOLDER.err());
     }
-    names::check_path(target)?;
-    check_note_name(conn, dir, target, &note.name, None)?;
-    ensure_folder(conn, dir, target)?;
-    let name = note.name.clone();
-    relocate_note(conn, dir, &note, target, &name)
+    ensure_folder(conn, dir, &target)?;
+    let name = names::free(&note.name, |n| note_taken(conn, dir, &target, n, None))?;
+    relocate_note(conn, dir, &note, &target, &name)
 }
 
 fn relocate_note(
@@ -236,31 +260,37 @@ pub fn rename_folder(
     path: &str,
     name: &str,
 ) -> AppResult<String> {
-    if names::base(path) == name {
+    let typed = names::accept(name)?;
+    let current = names::base(path);
+    if current == typed {
         return Ok(path.to_string());
     }
     let parent = names::parent(path);
-    check_folder_name(conn, dir, parent, name, Some(names::base(path)))?;
-    relocate_folder(conn, dir, path, &names::join(parent, name))
+    let name = names::free(&typed, |n| {
+        folder_taken(conn, dir, parent, n, Some(current))
+    })?;
+    relocate_folder(conn, dir, path, &names::join(parent, &name))
 }
 
+/// Moves the folder into `target`; a name taken there gets a suffix.
 pub fn move_folder(
     conn: &mut Connection,
     dir: &Path,
     path: &str,
     target: &str,
 ) -> AppResult<String> {
-    if names::is_under(target, path) {
+    let target = target_path(conn, target)?;
+    if names::is_under(&target, path) {
         return Err(errors::INTO_SELF.err());
     }
     if names::parent(path) == target {
         return Err(errors::SAME_FOLDER.err());
     }
-    names::check_path(target)?;
-    let name = names::base(path);
-    check_folder_name(conn, dir, target, name, None)?;
-    ensure_folder(conn, dir, target)?;
-    relocate_folder(conn, dir, path, &names::join(target, name))
+    ensure_folder(conn, dir, &target)?;
+    let name = names::free(names::base(path), |n| {
+        folder_taken(conn, dir, &target, n, None)
+    })?;
+    relocate_folder(conn, dir, path, &names::join(&target, &name))
 }
 
 fn relocate_folder(conn: &mut Connection, dir: &Path, old: &str, new: &str) -> AppResult<String> {

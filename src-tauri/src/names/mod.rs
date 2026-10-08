@@ -1,26 +1,32 @@
-//! The name rule for folders and note files, and helpers for relative paths ('' is the root).
-//! Names are free text, as long as they are safe as one file or folder name on every OS.
+//! The name rule for folders and notes, and helpers for relative paths ('' is the root).
+//! Names use A–Z a–z 0–9, space and `. , _ -`; leading and trailing spaces and dots are trimmed.
+//! A name that is taken in its folder gets a suffix (`Plan_1`) instead of an error.
 
 #[cfg(test)]
 mod tests;
 
 use crate::error::{errors, AppResult};
 
-/// Longest name in characters; leaves room for `.md` under common 255-byte limits.
+/// Longest name in characters; leaves room for `.md` and a suffix under 255-byte limits.
 const MAX_CHARS: usize = 200;
-const FORBIDDEN: [char; 3] = ['/', '\\', ':'];
+/// How many `_1`, `_2`, … suffixes to try before giving up.
+const MAX_SUFFIX: u32 = 9999;
 
+fn allowed(c: char) -> bool {
+    c.is_ascii_alphanumeric() || matches!(c, ' ' | '.' | ',' | '_' | '-')
+}
+
+/// `name` without leading or trailing spaces and dots.
+pub fn clean(name: &str) -> &str {
+    name.trim_matches(|c| c == ' ' || c == '.')
+}
+
+/// Checks a cleaned name.
 pub fn check(name: &str) -> AppResult<()> {
     if name.is_empty() {
         return Err(errors::NAME_EMPTY.err());
     }
-    if name.trim() != name {
-        return Err(errors::NAME_SPACES.err());
-    }
-    let bad_char = name
-        .chars()
-        .any(|c| FORBIDDEN.contains(&c) || c.is_control());
-    if bad_char || name.starts_with('.') {
+    if !name.chars().all(allowed) {
         return Err(errors::NAME_CHARS.err());
     }
     if name.chars().count() > MAX_CHARS {
@@ -29,16 +35,63 @@ pub fn check(name: &str) -> AppResult<()> {
     Ok(())
 }
 
-pub fn is_valid(name: &str) -> bool {
-    check(name).is_ok()
+/// Cleans and checks one name typed by the user.
+pub fn accept(name: &str) -> AppResult<String> {
+    let cleaned = clean(name);
+    check(cleaned)?;
+    Ok(cleaned.to_string())
 }
 
-/// Every segment of a folder path must follow the rule. '' (the root) is fine.
-pub fn check_path(path: &str) -> AppResult<()> {
-    if path.is_empty() {
-        return Ok(());
+/// True for a name found on disk that Tend can index as it is (a scan never renames).
+pub fn is_valid(name: &str) -> bool {
+    clean(name) == name && check(name).is_ok()
+}
+
+/// Cleans and checks every segment of a folder path. '' (the root) is fine.
+pub fn accept_path(path: &str) -> AppResult<String> {
+    let trimmed = path.trim_matches('/');
+    if trimmed.is_empty() {
+        return Ok(String::new());
     }
-    path.split('/').try_for_each(check)
+    let segments = trimmed
+        .split('/')
+        .map(accept)
+        .collect::<AppResult<Vec<_>>>()?;
+    Ok(segments.join("/"))
+}
+
+/// `path` with each segment spelled as an existing folder spells it ("work/new" → "Work/new" when
+/// "Work" exists), so differently-cased paths never split one folder in two. `stored` looks a path
+/// up ignoring case.
+pub fn canonical(
+    path: &str,
+    stored: impl Fn(&str) -> AppResult<Option<String>>,
+) -> AppResult<String> {
+    let mut current = String::new();
+    for segment in path.split('/').filter(|s| !s.is_empty()) {
+        let candidate = join(&current, segment);
+        current = stored(&candidate)?.unwrap_or(candidate);
+    }
+    Ok(current)
+}
+
+/// `base`, or `base_1`, `base_2`, … — the first one `taken` reports as free.
+pub fn free(base: &str, taken: impl Fn(&str) -> AppResult<bool>) -> AppResult<String> {
+    if !taken(base)? {
+        return Ok(base.to_string());
+    }
+    for n in 1..=MAX_SUFFIX {
+        let candidate = format!("{base}_{n}");
+        if !taken(&candidate)? {
+            return Ok(candidate);
+        }
+    }
+    Err(errors::NAME_TAKEN.err())
+}
+
+/// Two names are the same item when they differ only in case (as on macOS).
+pub fn same(a: &str, b: &str) -> bool {
+    a.eq_ignore_ascii_case(b)
 }
 
 pub fn join(folder: &str, name: &str) -> String {

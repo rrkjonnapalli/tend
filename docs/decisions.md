@@ -124,9 +124,11 @@ The user picks one **vault folder**. Tend works only inside it:
 ## 5a. Folders (notes and tasks)
 
 - **Separate trees:** notes folders and tasks folders are unrelated, even when they share a name.
-- **Names** of every folder (notes and tasks) and every note are free text, safe as one file name on any OS:
-  - No `/`, `\`, `:` or control characters; no `.` at the start; no space at the start or end; at most 200 characters.
-  - Unique within the folder, ignoring case (as macOS does). Folders clash only with folders, notes only with notes.
+- **Names** of every folder (notes and tasks) and every note:
+  - Letters `A–Z a–z`, digits, spaces and `. , _ -` only; at most 200 characters.
+  - Leading and trailing spaces and dots are trimmed when saved.
+  - Unique within the folder, ignoring case (as macOS does). Folders clash only with folders, notes only with notes. A clash is not an error: the name gets a suffix, `Plan` → `Plan_1` → `Plan_2`, on create, rename and move.
+  - A typed folder path takes the spelling of folders that already exist (`work/x` lands in `Work/x`).
   - Task titles are free text with no rule.
   - During the vault scan, folders and files that don't match are **skipped**, not renamed. They're listed in Settings → General.
 - **Explorer actions:** hover a row → `⋯`, or right-click, opens a menu: **Rename** (F2) · **Move to…** (⌘⇧M) · **Delete…** (⌫). The root has no menu.

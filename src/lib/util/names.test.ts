@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { baseOf, isUnder, join, nameError, nameErrors, parentOf, pathError, relativeTo } from './names.ts';
+import { baseOf, cleanName, cleanPath, isUnder, join, nameError, nameErrors, parentOf, pathError, relativeTo } from './names.ts';
 
 describe('nameError', () => {
-  it('accepts free text', () => {
-    for (const ok of ['weekly_plan_2', 'Q4 Plan – draft', 'ideas (old)', 'Café notes']) expect(nameError(ok)).toBe('');
+  it('accepts letters, digits, spaces and . , _ -', () => {
+    for (const ok of ['weekly_plan_2', 'Q4 Plan - draft', 'notes, v1.2', ' .trimmed. ']) expect(nameError(ok)).toBe('');
   });
 
-  it('rejects what is unsafe on disk', () => {
-    expect(nameError('')).toBe(nameErrors.empty);
-    for (const bad of [' a', 'a ']) expect(nameError(bad)).toBe(nameErrors.spaces);
-    for (const bad of ['a/b', 'a\\b', 'a:b', '.hidden', 'tab\there']) expect(nameError(bad)).toBe(nameErrors.chars);
+  it('rejects empty names, other characters and long names', () => {
+    for (const empty of ['', ' . ']) expect(nameError(empty)).toBe(nameErrors.empty);
+    for (const bad of ['a/b', 'a:b', 'Café', 'ideas (old)']) expect(nameError(bad)).toBe(nameErrors.chars);
     expect(nameError('x'.repeat(201))).toBe(nameErrors.long);
   });
 
-  it('rejects a name already used in the folder, ignoring case', () => {
-    expect(nameError('Ideas', ['ideas', 'plan'])).toBe(nameErrors.clash);
+  it('cleans what it will save', () => {
+    expect(cleanName('  .Plan. ')).toBe('Plan');
+    expect(cleanPath(' /Work / .Ideas/ ')).toBe('Work/Ideas');
   });
 });
 
@@ -39,7 +39,7 @@ describe('paths', () => {
   it('validates every segment', () => {
     expect(pathError('')).toBe('');
     expect(pathError('Work/Tend v0.1')).toBe('');
-    expect(pathError('work/.git')).toBe(nameErrors.chars);
+    expect(pathError('work/a:b')).toBe(nameErrors.chars);
     expect(pathError('work//x')).toBe(nameErrors.empty);
   });
 });

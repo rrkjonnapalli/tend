@@ -71,7 +71,8 @@ pub fn my_day_set(
 }
 
 #[tauri::command(async)]
-pub fn task_folder_create(state: State<AppState>, path: String) -> AppResult<()> {
+/// Returns the created path (a taken name gets a suffix).
+pub fn task_folder_create(state: State<AppState>, path: String) -> AppResult<String> {
     state.with(|db, _| tasks::folder_create(db, &path))
 }
 

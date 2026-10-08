@@ -458,8 +458,8 @@ Failures shrink to the smallest sequence of steps that reproduces them.
 
 ## 20. Open items
 
-- **Code to change before sync:** the name rule (§4.4, today's code allows any safe text and refuses
-  clashes), the `changes`, `sync_state` and `access` tables, and open → scan → sync ordering.
+- **Code to change before sync:** the `changes`, `sync_state` and `access` tables, and open → scan →
+  sync ordering.
 - **Many files:** at tens of thousands of note files, `git status` and the scan walk every file;
   measure with libgit2 before release.
 

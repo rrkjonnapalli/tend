@@ -49,8 +49,9 @@ class NotesStore {
   };
 
   createFolder = async (path: string) => {
-    await notesAPI.createFolder(path);
+    const created = await notesAPI.createFolder(path);
     await this.load();
+    return created;
   };
 
   rename = async (item: Item, name: string) => {

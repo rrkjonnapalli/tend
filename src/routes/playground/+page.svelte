@@ -39,7 +39,9 @@
       selected = item;
     },
     createFolder: async ({ parent, name }: { parent: string; name: string }) => {
-      folders = [...folders, join(parent, name)];
+      const path = join(parent, name);
+      folders = [...folders, path];
+      return path;
     },
     createLeaf: async ({ folder, name }: { folder: string; name: string }) => {
       const id = `n${Date.now()}`;

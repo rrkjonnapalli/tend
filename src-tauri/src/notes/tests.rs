@@ -63,13 +63,16 @@ fn initial_scan_indexes_folders_and_notes() {
 }
 
 #[test]
-fn free_text_names_are_indexed() {
-    let f = fixture(&[("Work Stuff/Q4 plan – draft.md", ""), ("Café notes.md", "")]);
+fn readable_names_are_indexed() {
+    let f = fixture(&[
+        ("Work Stuff/Q4 plan - draft.md", ""),
+        ("notes, v1.2.md", ""),
+    ]);
     let t = tree(&f.conn).unwrap();
     assert_eq!(t.folders, vec!["Work Stuff"]);
     assert_eq!(
         names_in(&t),
-        vec!["Café notes", "Work Stuff/Q4 plan – draft"]
+        vec!["notes, v1.2", "Work Stuff/Q4 plan - draft"]
     );
 }
 
@@ -165,12 +168,12 @@ fn external_delete_marks_missing_then_purges() {
 #[test]
 fn create_write_and_read() {
     let mut f = fixture(&[]);
-    let n = create(&mut f.conn, &f.dir, "Work/Ideas", "Release checklist!").unwrap();
-    assert_eq!(n.name, "Release checklist!");
-    assert!(f.dir.join("Work/Ideas/Release checklist!.md").is_file());
+    let n = create(&mut f.conn, &f.dir, "Work/Ideas", "Release checklist").unwrap();
+    assert_eq!(n.name, "Release checklist");
+    assert!(f.dir.join("Work/Ideas/Release checklist.md").is_file());
     let n = write(&f.conn, &f.dir, &n.id, "# Ship it\n\nnow").unwrap();
     assert_eq!(
-        n.name, "Release checklist!",
+        n.name, "Release checklist",
         "the body never renames the note"
     );
     assert_eq!(
@@ -182,31 +185,39 @@ fn create_write_and_read() {
 }
 
 #[test]
-fn name_rule_and_clashes_ignore_case() {
+fn typed_names_are_cleaned_and_clashes_get_a_suffix() {
     let mut f = fixture(&[("work/a.md", "")]);
     let fails = |r: AppResult<NoteRow>, def| r.unwrap_err().is(def);
     assert!(fails(
-        create(&mut f.conn, &f.dir, "", ""),
+        create(&mut f.conn, &f.dir, "", " . "),
         errors::NAME_EMPTY
-    ));
-    assert!(fails(
-        create(&mut f.conn, &f.dir, "", " a"),
-        errors::NAME_SPACES
     ));
     assert!(fails(
         create(&mut f.conn, &f.dir, "", "a:b"),
         errors::NAME_CHARS
     ));
-    assert!(fails(
-        create(&mut f.conn, &f.dir, "work", "A"),
-        errors::NAME_TAKEN
-    ));
-    assert!(
-        create(&mut f.conn, &f.dir, "", "work").is_ok(),
+    let name = |f: &mut Fixture, folder: &str, typed: &str| {
+        create(&mut f.conn, &f.dir, folder, typed).unwrap().name
+    };
+    assert_eq!(name(&mut f, "", " .Plan. "), "Plan");
+    assert_eq!(name(&mut f, "", "plan"), "plan_1", "clashes ignore case");
+    assert_eq!(name(&mut f, "", "Plan"), "Plan_2");
+    assert_eq!(name(&mut f, "work", "A"), "A_1");
+    assert_eq!(
+        name(&mut f, "", "work"),
+        "work",
         "a note and a folder may share a name"
     );
-    assert!(folder_create(&mut f.conn, &f.dir, "Work").is_err());
-    assert!(folder_create(&mut f.conn, &f.dir, ".git").is_err());
+    let made = create(&mut f.conn, &f.dir, "WORK", "b").unwrap();
+    assert_eq!(
+        made.folder, "work",
+        "a typed path takes the existing spelling"
+    );
+    assert_eq!(
+        folder_create(&mut f.conn, &f.dir, "Work").unwrap(),
+        "work_1"
+    );
+    assert_eq!(folder_create(&mut f.conn, &f.dir, "x/.y").unwrap(), "x/y");
 }
 
 #[test]
@@ -281,12 +292,8 @@ fn rename_and_move_a_note() {
         .into_iter()
         .find(|n| n.folder == "work" && n.name == "x")
         .unwrap();
-    assert!(
-        move_note(&mut f.conn, &f.dir, &x.id, "")
-            .unwrap_err()
-            .is(errors::NAME_TAKEN),
-        "the target already has x"
-    );
+    let moved = move_note(&mut f.conn, &f.dir, &x.id, "").unwrap();
+    assert_eq!(moved.name, "x_1", "the target already has x");
     assert!(rename_note(&mut f.conn, &f.dir, &id, " ").is_err());
     assert_matches_disk(&mut f);
 }

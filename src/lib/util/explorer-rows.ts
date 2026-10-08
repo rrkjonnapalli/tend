@@ -1,6 +1,6 @@
 // The explorer tree as a flat list of rows, plus the rules for naming and dropping into it.
 import type { ExplorerItem, ExplorerRow, ExplorerTree, Leaf, NewKind } from '#lib/types/explorer.type.ts';
-import { baseOf, isUnder, nameError, nameErrors, parentOf } from './names.ts';
+import { baseOf, isUnder, parentOf } from './names.ts';
 
 /** Row key of the root folder (path ''). */
 export const ROOT_KEY = 'f:';
@@ -90,28 +90,12 @@ export function buildRows({ tree, rootName, expanded, adding }: RowsOptions): Ex
   return rows;
 }
 
-type SiblingsOptions = {
-  tree: ExplorerTree;
-  folder: string;
-  /** Folders clash only with folders, leaves only with leaves. */
-  kind: 'folder' | 'leaf';
-  /** The row being renamed, left out. */
-  exceptKey?: string;
-};
-
-/** Names already used in `folder` by items of the same kind. */
-export function siblingNames({ tree, folder, kind, exceptKey }: SiblingsOptions): string[] {
-  if (kind === 'folder') return tree.folders.filter((f) => parentOf(f) === folder && `f:${f}` !== exceptKey).map(baseOf);
-  return tree.leaves.filter((l) => l.folder === folder && `l:${l.id}` !== exceptKey).map((l) => l.name);
-}
-
-/** A row can move into `target` unless it is already there, would land inside itself, or its name is taken. */
-export function canDrop({ tree, row, target }: { tree: ExplorerTree; row: ExplorerRow; target: string }): boolean {
-  const kind = row.item.kind === 'folder' ? 'folder' : 'leaf';
-  const taken = (name: string) => nameError(name, siblingNames({ tree, folder: target, kind })) === nameErrors.clash;
+/** A row can move into `target` unless it is already there or would land inside itself. A name
+ *  taken in the target gets a suffix when the move is saved. */
+export function canDrop({ row, target }: { row: ExplorerRow; target: string }): boolean {
   if (row.item.kind === 'folder') {
     const path = row.item.path;
-    return !isUnder(target, path) && parentOf(path) !== target && !taken(baseOf(path));
+    return !isUnder(target, path) && parentOf(path) !== target;
   }
-  return row.folder !== target && !taken(row.name);
+  return row.folder !== target;
 }

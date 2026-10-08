@@ -16,7 +16,6 @@
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
   import { nameError, relativeTo } from '#lib/util/names.ts';
-  import { siblingNames } from '#lib/util/explorer-rows.ts';
   import { folderCrumbs, folderSummary } from '#lib/util/note-paths.ts';
   import { ago } from '#lib/util/dates.ts';
   import { routes } from '#lib/util/routes.ts';
@@ -31,8 +30,7 @@
 
   let draft = $state('');
   let error = $state('');
-  const tree = $derived({ folders: notes.folders, leaves: notes.notes });
-  const draftError = $derived(draft.trim() ? nameError(draft.trim(), siblingNames({ tree, folder, kind: 'leaf' })) : '');
+  const draftError = $derived(draft.trim() ? nameError(draft) : '');
 
   async function create() {
     const name = draft.trim();
@@ -57,10 +55,6 @@
     editingId = null;
   }
 
-  /** The name rule, and no clash with another note in the same folder. */
-  function renameProblem(note: NoteRow, name: string): string {
-    return nameError(name, siblingNames({ tree, folder: note.folder, kind: 'leaf', exceptKey: `l:${note.id}` }));
-  }
 
   function rename(note: NoteRow, name: string) {
     stopEditing();
@@ -93,7 +87,7 @@
       {#each rows as n (n.id)}
         {#if editingId === n.id}
           <div class="row editing">
-            <InlineTitle value={n.name} label="Note name" check={(name) => renameProblem(n, name)} onsave={(name) => rename(n, name)} oncancel={stopEditing} />
+            <InlineTitle value={n.name} label="Note name" check={nameError} onsave={(name) => rename(n, name)} oncancel={stopEditing} />
             <span></span>
             <span class="meta">{ago(n.modifiedAt)}</span>
             <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>

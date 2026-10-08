@@ -45,7 +45,8 @@ pub fn note_create(
 }
 
 #[tauri::command(async)]
-pub fn folder_create(state: State<AppState>, path: String) -> AppResult<()> {
+/// Returns the created path (a taken name gets a suffix).
+pub fn folder_create(state: State<AppState>, path: String) -> AppResult<String> {
     state.with(|db, v| notes::folder_create(db, &v.notes_dir(), &path))
 }
 

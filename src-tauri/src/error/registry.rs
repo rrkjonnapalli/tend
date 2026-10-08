@@ -27,10 +27,9 @@ pub const OPEN_FAILED: ErrorDef = def("OPEN_FAILED", "The file couldn’t be ope
 
 // ---- names and folders
 pub const NAME_EMPTY: ErrorDef = def("NAME_EMPTY", "Name can’t be empty");
-pub const NAME_CHARS: ErrorDef = def("NAME_CHARS", "No / \\ or :, and no dot at the start");
-pub const NAME_SPACES: ErrorDef = def("NAME_SPACES", "No spaces at the start or end");
+pub const NAME_CHARS: ErrorDef = def("NAME_CHARS", "Use letters, digits, spaces and . , _ - only");
 pub const NAME_LONG: ErrorDef = def("NAME_LONG", "Keep names under 200 characters");
-pub const NAME_TAKEN: ErrorDef = def("NAME_TAKEN", "Something with this name already exists here");
+pub const NAME_TAKEN: ErrorDef = def("NAME_TAKEN", "Too many items with this name here");
 pub const SAME_FOLDER: ErrorDef = def("SAME_FOLDER", "It’s already in that folder");
 pub const INTO_SELF: ErrorDef = def("INTO_SELF", "A folder can’t move into itself");
 pub const ROOT_FOLDER: ErrorDef = def("ROOT_FOLDER", "The root folder can’t be deleted");

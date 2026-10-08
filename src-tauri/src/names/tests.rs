@@ -5,36 +5,46 @@ use crate::error::errors;
 fn name_rule() {
     for good in [
         "work",
-        "Q4 Plan – draft",
-        "ideas (old)",
-        "Café notes",
+        "Q4 Plan - draft",
+        "notes, old",
         "a_b",
         "2024",
+        "v1.2",
     ] {
         assert!(is_valid(good), "{good:?} should be valid");
     }
-    let cases = [
-        ("", errors::NAME_EMPTY),
-        (" padded", errors::NAME_SPACES),
-        ("padded ", errors::NAME_SPACES),
-        ("a/b", errors::NAME_CHARS),
-        ("a\\b", errors::NAME_CHARS),
-        ("a:b", errors::NAME_CHARS),
-        (".hidden", errors::NAME_CHARS),
-        ("tab\there", errors::NAME_CHARS),
-    ];
-    for (bad, def) in cases {
-        assert!(check(bad).unwrap_err().is(def), "{bad:?}");
+    for bad in ["Café", "a/b", "a:b", "ideas (old)", "tab\there"] {
+        assert!(check(bad).unwrap_err().is(errors::NAME_CHARS), "{bad:?}");
     }
+    assert!(check("").unwrap_err().is(errors::NAME_EMPTY));
     assert!(check(&"x".repeat(201)).unwrap_err().is(errors::NAME_LONG));
 }
 
 #[test]
+fn typed_names_are_trimmed() {
+    assert_eq!(accept("  .Plan. ").unwrap(), "Plan");
+    assert_eq!(accept(".hidden").unwrap(), "hidden");
+    assert!(accept(" . ").unwrap_err().is(errors::NAME_EMPTY));
+    assert!(
+        !is_valid(".hidden") && !is_valid("Plan "),
+        "a scan takes names as they are"
+    );
+}
+
+#[test]
+fn clashes_get_a_suffix() {
+    let taken = ["plan", "Plan_1"];
+    let is_taken = |n: &str| Ok(taken.iter().any(|t| same(t, n)));
+    assert_eq!(free("Plan", is_taken).unwrap(), "Plan_2");
+    assert_eq!(free("Other", is_taken).unwrap(), "Other");
+}
+
+#[test]
 fn paths() {
-    assert!(check_path("").is_ok());
-    assert!(check_path("Work/Tauri app").is_ok());
-    assert!(check_path("work//x").is_err());
-    assert!(check_path("work/.git").is_err());
+    assert_eq!(accept_path("").unwrap(), "");
+    assert_eq!(accept_path("/Work / Tauri app/").unwrap(), "Work/Tauri app");
+    assert!(accept_path("work//x").is_err());
+    assert!(accept_path("work/Café").is_err());
     assert_eq!(join("", "a"), "a");
     assert_eq!(join("a", "b"), "a/b");
     assert_eq!(parent("a/b/c"), "a/b");

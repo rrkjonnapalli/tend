@@ -16,29 +16,46 @@ fn exists(conn: &Connection, path: &str) -> AppResult<bool> {
     Ok(found.is_some())
 }
 
-fn check_new(conn: &Connection, parent: &str, name: &str) -> AppResult<()> {
-    names::check(name)?;
-    if exists(conn, &names::join(parent, name))? {
-        return Err(errors::NAME_TAKEN.err());
-    }
-    Ok(())
+/// The cleaned folder path typed by the user, spelled as existing folders are spelled.
+pub(super) fn target_path(conn: &Connection, path: &str) -> AppResult<String> {
+    let path = names::accept_path(path)?;
+    names::canonical(&path, |p| {
+        let found = conn
+            .query_row("SELECT path FROM task_folders WHERE path = ?1", [p], |r| {
+                r.get(0)
+            })
+            .optional()?;
+        Ok(found)
+    })
 }
 
-/// Creates `path` and any missing parents.
-pub fn create(conn: &mut Connection, path: &str) -> AppResult<()> {
-    names::check_path(path)?;
-    if path.is_empty() || exists(conn, path)? {
-        return Err(errors::NAME_TAKEN.err());
+/// Another folder in `parent` already uses `name` (ignoring case). `current` is the folder's own
+/// name when renaming it, which counts as free.
+fn taken(conn: &Connection, parent: &str, name: &str, current: Option<&str>) -> AppResult<bool> {
+    if current.is_some_and(|c| names::same(c, name)) {
+        return Ok(false);
     }
+    exists(conn, &names::join(parent, name))
+}
+
+/// Creates the folder `path` typed by the user, and any missing parents. When the last segment is
+/// taken it gets a suffix. Returns the path that was created.
+pub fn create(conn: &mut Connection, path: &str) -> AppResult<String> {
+    let path = target_path(conn, path)?;
+    if path.is_empty() {
+        return Err(errors::NAME_EMPTY.err());
+    }
+    let parent = names::parent(&path);
+    let name = names::free(names::base(&path), |n| taken(conn, parent, n, None))?;
+    let path = names::join(parent, &name);
     let tx = conn.transaction()?;
-    ensure(&tx, path)?;
+    ensure(&tx, &path)?;
     tx.commit()?;
-    Ok(())
+    Ok(path)
 }
 
-/// Adds `path` and its parents when they're missing; existing ones are left alone.
+/// Adds the cleaned `path` and its parents when they're missing; existing ones are left alone.
 pub(super) fn ensure(tx: &Transaction, path: &str) -> AppResult<()> {
-    names::check_path(path)?;
     let now = now_ms();
     let mut current = String::new();
     for segment in path.split('/').filter(|s| !s.is_empty()) {
@@ -52,35 +69,33 @@ pub(super) fn ensure(tx: &Transaction, path: &str) -> AppResult<()> {
 }
 
 pub fn rename(conn: &mut Connection, path: &str, name: &str) -> AppResult<String> {
-    if names::base(path) == name {
+    let typed = names::accept(name)?;
+    let current = names::base(path);
+    if current == typed {
         return Ok(path.to_string());
     }
     let parent = names::parent(path);
-    // A case-only rename ("work" → "Work") would only clash with itself.
-    if names::base(path).eq_ignore_ascii_case(name) {
-        names::check(name)?;
-    } else {
-        check_new(conn, parent, name)?;
-    }
-    let new = names::join(parent, name);
+    let name = names::free(&typed, |n| taken(conn, parent, n, Some(current)))?;
+    let new = names::join(parent, &name);
     let tx = conn.transaction()?;
     relocate(&tx, path, &new)?;
     tx.commit()?;
     Ok(new)
 }
 
+/// Moves the folder into `target`; a name taken there gets a suffix.
 pub fn move_to(conn: &mut Connection, path: &str, target: &str) -> AppResult<String> {
-    if names::is_under(target, path) {
+    let target = target_path(conn, target)?;
+    if names::is_under(&target, path) {
         return Err(errors::INTO_SELF.err());
     }
     if names::parent(path) == target {
         return Err(errors::SAME_FOLDER.err());
     }
-    let name = names::base(path);
-    check_new(conn, target, name)?;
-    let new = names::join(target, name);
+    let name = names::free(names::base(path), |n| taken(conn, &target, n, None))?;
+    let new = names::join(&target, &name);
     let tx = conn.transaction()?;
-    ensure(&tx, target)?;
+    ensure(&tx, &target)?;
     relocate(&tx, path, &new)?;
     tx.commit()?;
     Ok(new)

@@ -4,7 +4,8 @@ export type ExplorerItem = { kind: 'folder'; path: string } | { kind: 'leaf'; id
 
 export type ExplorerActions = {
   open: (item: ExplorerItem) => void;
-  createFolder: (input: { parent: string; name: string }) => Promise<void>;
+  /** Resolves to the created path (a taken name gets a suffix). */
+  createFolder: (input: { parent: string; name: string }) => Promise<string>;
   /** Notes: create a leaf inline. Left out for explorers that hold folders only. */
   createLeaf?: (input: { folder: string; name: string }) => Promise<void>;
   /** The "new item" toolbar button when there is no inline leaf creation (tasks). */

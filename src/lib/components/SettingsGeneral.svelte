@@ -31,7 +31,7 @@
   {#if skipped.length}
     <button class="skipped" aria-expanded={showSkipped} onclick={toggleSkipped}>
       <Icon name={showSkipped ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />
-      {plural(skipped.length, 'item')} skipped: names can’t contain / \\ or :, start with a dot, or start or end with a space
+      {plural(skipped.length, 'item')} skipped: names may use only letters, digits, spaces and . , _ -, and can’t start or end with a space or dot
     </button>
     {#if showSkipped}
       <ul class="skiplist">
