@@ -29,9 +29,10 @@ pub async fn vault_open<R: Runtime>(
     state: State<'_, AppState>,
     cfg: State<'_, ConfigDir>,
     path: String,
+    confirmed: Option<bool>,
 ) -> AppResult<vault::Check> {
     let root = PathBuf::from(&path);
-    let (check, opened) = vault::open(&root);
+    let (check, opened) = vault::open(&root, confirmed.unwrap_or(false));
     if let Some(v) = opened {
         activate(&app, &state, v)?;
         config::remember_vault(&cfg.0, &root)?;

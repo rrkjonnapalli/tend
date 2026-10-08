@@ -35,12 +35,12 @@
     await checkFolder(picked);
   }
 
-  async function checkFolder(path: string) {
+  async function checkFolder(path: string, confirmed = false) {
     stopReveal();
     failure = null;
     shown = 0;
     try {
-      check = await vaultAPI.open(path);
+      check = await vaultAPI.open(path, confirmed);
       fixable = check.ok ? (await notesAPI.skipped()).filter((s) => s.fix) : [];
     } catch (e) {
       check = null;
@@ -111,7 +111,27 @@
             <button class="gbtn sm" onclick={reset}>Change</button>
           </div>
           <StartChecklist steps={check.steps} {shown} />
-          {#if done && !check.ok}
+          {#if check.confirm?.kind === 'notAVault'}
+            <div class="note">
+              This folder isn’t a Tend vault and already has {plural(check.confirm.items, 'item')}. Tend will add
+              <span class="mono">notes/</span>, <span class="mono">.attachments/</span> and
+              <span class="mono">db/</span> here and leave the rest alone.
+            </div>
+            <div class="row">
+              <button class="pbtn" onclick={() => check && checkFolder(check.path, true)}>Use this folder</button>
+              <button class="gbtn" onclick={choose}>Choose another folder</button>
+            </div>
+          {:else if check.confirm?.kind === 'notesMissing'}
+            <div class="note">
+              <span class="mono">notes/</span> is missing, but this vault lists {plural(check.confirm.notes, 'note')}.
+              Was it moved? Starting without it creates an empty <span class="mono">notes/</span>; those notes, with
+              their tags and links, leave the index after 7 days unless the folder comes back.
+            </div>
+            <div class="row">
+              <button class="pbtn" onclick={choose}>Choose another folder</button>
+              <button class="gbtn" onclick={() => check && checkFolder(check.path, true)}>Start without them</button>
+            </div>
+          {:else if done && !check.ok}
             <div class="err" role="alert">
               An incompatible database exists in <span class="mono">db/app.sqlite</span>. Choose another folder, or
               move that file out of the way and try again.

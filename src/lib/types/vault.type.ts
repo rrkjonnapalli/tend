@@ -1,6 +1,9 @@
 export type StepStatus = 'found' | 'created' | 'error';
 export type Step = { item: string; status: StepStatus; detail: string };
-export type Check = { path: string; steps: Step[]; ok: boolean };
+/** A question asked before Tend writes into the folder. */
+export type Confirm = { kind: 'notAVault'; items: number } | { kind: 'notesMissing'; notes: number };
+/** With `confirm`, nothing was done yet: open again with `confirmed` once the user agrees. */
+export type Check = { path: string; steps: Step[]; ok: boolean; confirm: Confirm | null };
 
 /** How a vault check step shows on the start page while the steps are revealed one by one. */
 export type StepState = 'ok' | 'bad' | 'run' | 'wait';

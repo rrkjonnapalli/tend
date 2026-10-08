@@ -3,6 +3,6 @@ import { call } from './core.ts';
 
 // Both may wait on macOS asking the user for folder access, so neither has a deadline.
 export const vaultAPI = {
-  open: (path: string) => call<Check>('vault_open', { args: { path }, timeoutMs: null }),
+  open: (path: string, confirmed = false) => call<Check>('vault_open', { args: { path, confirmed }, timeoutMs: null }),
   restore: () => call<Restore>('vault_restore', { timeoutMs: null }),
 };

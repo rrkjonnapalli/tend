@@ -89,6 +89,7 @@ const handlers: Record<string, Handler> = {
   vault_open: ({ path }) => ({
     path,
     ok: true,
+    confirm: null,
     steps: [
       { item: 'notes/', status: 'found', detail: 'found · 42 notes' },
       { item: '.attachments/', status: 'found', detail: 'found · 9 files' },

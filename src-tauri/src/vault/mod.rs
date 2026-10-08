@@ -1,4 +1,5 @@
 //! Opening a vault: check or create `notes/`, `.attachments/` and `db/app.sqlite`, in that order.
+//! Before writing anything, folders that look like a mistake ask first (`Confirm`).
 
 #[cfg(test)]
 mod tests;
@@ -7,7 +8,7 @@ use std::fs;
 use std::io::ErrorKind;
 use std::path::Path;
 
-use rusqlite::Connection;
+use rusqlite::{Connection, OpenFlags};
 use serde::Serialize;
 
 use crate::db::{self, Opened};
@@ -29,12 +30,25 @@ pub struct Step {
     pub detail: String,
 }
 
-/// The step-by-step result the start page shows as a checklist.
+/// Something the user agrees to before Tend writes into the folder.
+#[derive(Debug, Serialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum Confirm {
+    /// Not a vault and not empty: Tend would add its folders next to `items` other entries.
+    NotAVault { items: usize },
+    /// A vault whose `notes/` is gone while `notes` notes are indexed (moved or deleted?).
+    #[serde(rename_all = "camelCase")]
+    NotesMissing { notes: i64 },
+}
+
+/// The step-by-step result the start page shows as a checklist. With `confirm`, nothing was done
+/// yet: the folder is opened only after the user agrees.
 #[derive(Debug, Serialize)]
 pub struct Check {
     pub path: String,
     pub steps: Vec<Step>,
     pub ok: bool,
+    pub confirm: Option<Confirm>,
 }
 
 const DB_ITEM: &str = "db/app.sqlite";
@@ -110,15 +124,60 @@ pub fn reopen(root: &Path) -> Result<Vault, String> {
         // Never recreate a vault that has gone (moved, renamed, or on a drive that isn't attached).
         _ => return Err(GONE_MESSAGE.into()),
     }
-    let (check, opened) = open(root);
+    let (check, opened) = open(root, false);
     match opened {
         Some(vault) => Ok(vault),
         None => Err(failure_message(&check)),
     }
 }
 
-/// Why `open` failed, from its first failed step.
+/// What to ask before opening `root`, if anything. Reads only; never writes.
+pub fn inspect(root: &Path) -> Option<Confirm> {
+    let db = root.join("db").join("app.sqlite");
+    let notes = root.join("notes");
+    if db.is_file() {
+        let indexed = indexed_notes(&db)?;
+        return (!notes.is_dir() && indexed > 0)
+            .then_some(Confirm::NotesMissing { notes: indexed });
+    }
+    if notes.is_dir() {
+        return None;
+    }
+    let items = other_entries(root);
+    (items > 0).then_some(Confirm::NotAVault { items })
+}
+
+/// Notes indexed in the database, or `None` when it can't be read (`open` reports why).
+fn indexed_notes(db: &Path) -> Option<i64> {
+    let conn = Connection::open_with_flags(db, OpenFlags::SQLITE_OPEN_READ_ONLY).ok()?;
+    conn.query_row("SELECT count(*) FROM notes", [], |r| r.get(0))
+        .ok()
+}
+
+/// Visible entries in `root` other than Tend's own.
+fn other_entries(root: &Path) -> usize {
+    let Ok(entries) = fs::read_dir(root) else {
+        return 0;
+    };
+    entries
+        .flatten()
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .filter(|n| !n.starts_with('.') && n != "notes" && n != "db")
+        .count()
+}
+
+/// Why `open` failed: what it would have asked, or its first failed step.
 fn failure_message(check: &Check) -> String {
+    match check.confirm {
+        Some(Confirm::NotesMissing { notes }) => {
+            return format!(
+                "notes/ is missing ({}). Was it moved?",
+                plural(notes as usize, "note")
+            );
+        }
+        Some(Confirm::NotAVault { .. }) => return "This folder isn’t a Tend vault.".into(),
+        None => {}
+    }
     let Some(failed) = check.steps.iter().find(|s| s.status == StepStatus::Error) else {
         return "The vault couldn’t be opened.".into();
     };
@@ -129,7 +188,16 @@ fn failure_message(check: &Check) -> String {
     }
 }
 
-pub fn open(root: &Path) -> (Check, Option<Vault>) {
+/// Opens `root`, creating what is missing. Unless `confirmed`, a folder that needs the user's say
+/// (`inspect`) is left untouched and the check carries the question.
+pub fn open(root: &Path, confirmed: bool) -> (Check, Option<Vault>) {
+    if !confirmed {
+        if let Some(confirm) = inspect(root) {
+            let mut check = finish(root, Vec::new(), false);
+            check.confirm = Some(confirm);
+            return (check, None);
+        }
+    }
     let mut steps = Vec::new();
     if !check_dirs(root, &mut steps) {
         return (finish(root, steps, false), None);
@@ -221,5 +289,6 @@ fn finish(root: &Path, steps: Vec<Step>, ok: bool) -> Check {
         path: root.to_string_lossy().into_owned(),
         steps,
         ok,
+        confirm: None,
     }
 }

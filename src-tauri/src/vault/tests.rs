@@ -8,7 +8,7 @@ fn statuses(c: &Check) -> Vec<StepStatus> {
 #[test]
 fn empty_folder_creates_everything() {
     let dir = tempfile::tempdir().unwrap();
-    let (check, vault) = open(dir.path());
+    let (check, vault) = open(dir.path(), false);
     assert!(check.ok);
     assert!(vault.is_some());
     assert_eq!(statuses(&check), vec![StepStatus::Created; 3]);
@@ -20,12 +20,12 @@ fn empty_folder_creates_everything() {
 #[test]
 fn existing_vault_opens_and_counts() {
     let dir = tempfile::tempdir().unwrap();
-    drop(open(dir.path()));
+    drop(open(dir.path(), false));
     fs::create_dir_all(dir.path().join("notes/work")).unwrap();
     fs::write(dir.path().join("notes/a.md"), "# A").unwrap();
     fs::write(dir.path().join("notes/work/b.md"), "# B").unwrap();
     fs::write(dir.path().join("notes/skip.txt"), "x").unwrap();
-    let (check, vault) = open(dir.path());
+    let (check, vault) = open(dir.path(), false);
     assert!(check.ok && vault.is_some());
     assert_eq!(statuses(&check), vec![StepStatus::Found; 3]);
     assert_eq!(check.steps[0].detail, "found · 2 notes");
@@ -41,7 +41,7 @@ fn incompatible(setup: &str) {
     drop(conn);
     let before = fs::read(&path).unwrap();
 
-    let (check, vault) = open(dir.path());
+    let (check, vault) = open(dir.path(), false);
     assert!(!check.ok);
     assert!(vault.is_none());
     assert_eq!(check.steps[2].status, StepStatus::Error);
@@ -116,7 +116,7 @@ fn non_sqlite_file_is_incompatible() {
     let dir = tempfile::tempdir().unwrap();
     fs::create_dir_all(dir.path().join("db")).unwrap();
     fs::write(dir.path().join("db/app.sqlite"), "not a database").unwrap();
-    let (check, vault) = open(dir.path());
+    let (check, vault) = open(dir.path(), false);
     assert!(!check.ok && vault.is_none());
     assert_eq!(
         fs::read_to_string(dir.path().join("db/app.sqlite")).unwrap(),
@@ -133,12 +133,56 @@ fn only_a_new_empty_vault_fixes_names_without_asking() {
     let fresh = tempfile::tempdir().unwrap();
     fs::create_dir_all(fresh.path().join("notes")).unwrap();
     fs::write(fresh.path().join("notes/.DS_Store"), "").unwrap();
-    let vault = open(fresh.path()).1.unwrap();
+    let vault = open(fresh.path(), false).1.unwrap();
     assert_eq!(fix_names(&vault), Some(serde_json::Value::Bool(true)));
 
     let existing = tempfile::tempdir().unwrap();
     fs::create_dir_all(existing.path().join("notes")).unwrap();
     fs::write(existing.path().join("notes/Café.md"), "x").unwrap();
-    let vault = open(existing.path()).1.unwrap();
+    let vault = open(existing.path(), false).1.unwrap();
     assert_eq!(fix_names(&vault), None, "files of its own: ask first");
+}
+
+#[test]
+fn a_folder_with_other_things_asks_before_becoming_a_vault() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::write(dir.path().join("taxes.pdf"), "x").unwrap();
+    fs::create_dir_all(dir.path().join("Photos")).unwrap();
+    fs::write(dir.path().join(".DS_Store"), "").unwrap();
+    let (check, vault) = open(dir.path(), false);
+    assert_eq!(check.confirm, Some(Confirm::NotAVault { items: 2 }));
+    assert!(vault.is_none() && check.steps.is_empty());
+    assert!(
+        !dir.path().join("notes").exists(),
+        "nothing is written before the user agrees"
+    );
+
+    let (check, vault) = open(dir.path(), true);
+    assert!(check.ok && vault.is_some());
+    assert!(dir.path().join("notes").is_dir());
+}
+
+#[test]
+fn a_vault_whose_notes_folder_is_gone_asks_first() {
+    let dir = tempfile::tempdir().unwrap();
+    let vault = open(dir.path(), false).1.unwrap();
+    fs::write(dir.path().join("notes/a.md"), "x").unwrap();
+    crate::notes::scan(&mut vault.db(), &vault.notes_dir(), false).unwrap();
+    drop(vault);
+    fs::rename(dir.path().join("notes"), dir.path().join("moved")).unwrap();
+
+    let (check, opened) = open(dir.path(), false);
+    assert_eq!(check.confirm, Some(Confirm::NotesMissing { notes: 1 }));
+    assert!(opened.is_none() && !dir.path().join("notes").exists());
+    assert!(reopen_err(dir.path()).contains("notes/ is missing (1 note)"));
+    assert!(open(dir.path(), true).1.is_some(), "start without them");
+}
+
+#[test]
+fn notes_folder_alone_opens_without_asking() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir_all(dir.path().join("notes")).unwrap();
+    fs::write(dir.path().join("notes/a.md"), "x").unwrap();
+    fs::write(dir.path().join("README.txt"), "x").unwrap();
+    assert_eq!(inspect(dir.path()), None);
 }

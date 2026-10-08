@@ -39,7 +39,10 @@ The user picks one **vault folder**. Tend works only inside it:
   db/app.sqlite   everything else (created if missing)
 ```
 
-- **Opening a vault:** check or create the three items, in that order.
+- **Opening a vault:** check or create the three items, in that order. Two folders ask first and write nothing until the user agrees:
+  - **Not a vault and not empty** (no `db/app.sqlite`, no `notes/`, other visible items): "This folder isn’t a Tend vault and already has N items…" → *Use this folder* / *Choose another folder*.
+  - **A vault whose `notes/` is gone** while the database lists notes: "`notes/` is missing… Was it moved?" → *Choose another folder* / *Start without them*. On launch this shows as the reopen error.
+  - A folder with `notes/` but no database is opened directly and indexed. What sits above the chosen folder is never checked.
   - **`db/app.sqlite` exists:** read `meta`.
     - `app_id = 'tend'` and `schema_version` ≤ app → migrate up if lower, then open.
     - Anything else → **"An incompatible database exists in db/app.sqlite"**. The user picks another folder.

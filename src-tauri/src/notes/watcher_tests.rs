@@ -8,7 +8,7 @@ use std::time::Instant;
 #[test]
 fn outside_file_reaches_the_index_within_a_second() {
     let tmp = tempfile::tempdir().unwrap();
-    let (_, opened) = crate::vault::open(tmp.path());
+    let (_, opened) = crate::vault::open(tmp.path(), false);
     let vault = Arc::new(opened.unwrap());
     std::fs::write(vault.notes_dir().join("a.md"), "# Before").unwrap();
     rescan(&vault).unwrap();
