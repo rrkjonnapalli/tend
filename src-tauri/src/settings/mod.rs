@@ -5,7 +5,7 @@ mod tests;
 
 use std::collections::HashMap;
 
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde_json::Value;
 
 use crate::error::AppResult;
@@ -20,6 +20,15 @@ pub fn all(conn: &Connection) -> AppResult<HashMap<String, Value>> {
         out.insert(key, serde_json::from_str(&text)?);
     }
     Ok(out)
+}
+
+pub fn get(conn: &Connection, key: &str) -> AppResult<Option<Value>> {
+    let text: Option<String> = conn
+        .query_row("SELECT value FROM settings WHERE key = ?1", [key], |r| {
+            r.get(0)
+        })
+        .optional()?;
+    Ok(text.map(|t| serde_json::from_str(&t)).transpose()?)
 }
 
 pub fn set(conn: &Connection, key: &str, value: &Value) -> AppResult<()> {

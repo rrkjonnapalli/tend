@@ -19,7 +19,7 @@ fn fixture(files: &[(&str, &str)]) -> Fixture {
         fs::write(p, text).unwrap();
     }
     let mut conn = open_memory();
-    scan(&mut conn, &dir).unwrap();
+    scan(&mut conn, &dir, false).unwrap();
     Fixture {
         _tmp: tmp,
         dir,
@@ -37,7 +37,7 @@ fn names_in(t: &Tree) -> Vec<String> {
 /// The index lists exactly what is on disk.
 fn assert_matches_disk(f: &mut Fixture) {
     let before = tree(&f.conn).unwrap();
-    scan(&mut f.conn, &f.dir).unwrap();
+    scan(&mut f.conn, &f.dir, false).unwrap();
     let after = tree(&f.conn).unwrap();
     assert_eq!(before.folders, after.folders);
     assert_eq!(names_in(&before), names_in(&after));
@@ -87,8 +87,11 @@ fn skips_invalid_names_without_touching_them() {
     fs::write(dir.join(".DS_Store"), "x").unwrap();
     fs::write(dir.join("ok.md"), "x").unwrap();
     let mut conn = open_memory();
-    let skipped = scan(&mut conn, &dir).unwrap();
-    assert_eq!(skipped, vec![" padded.md", "Bad: Folder/", "image.png"]);
+    let skipped = scan(&mut conn, &dir, false).unwrap();
+    let paths: Vec<_> = skipped.iter().map(|s| s.path.as_str()).collect();
+    assert_eq!(paths, vec![" padded.md", "Bad: Folder/", "image.png"]);
+    let fixes: Vec<_> = skipped.iter().map(|s| s.fix.as_deref()).collect();
+    assert_eq!(fixes, vec![Some("padded.md"), Some("Bad Folder/"), None]);
     assert_eq!(names_in(&tree(&conn).unwrap()), vec!["ok"]);
     assert!(dir.join(" padded.md").exists() && dir.join("Bad: Folder/a.md").exists());
 }
@@ -99,7 +102,7 @@ fn external_rename_keeps_the_id() {
     let id = tree(&f.conn).unwrap().notes[0].id.clone();
     fs::create_dir_all(f.dir.join("x")).unwrap();
     fs::rename(f.dir.join("a.md"), f.dir.join("x/b.md")).unwrap();
-    scan(&mut f.conn, &f.dir).unwrap();
+    scan(&mut f.conn, &f.dir, false).unwrap();
     let t = tree(&f.conn).unwrap();
     assert_eq!(names_in(&t), vec!["x/b"]);
     assert_eq!(t.notes[0].id, id);
@@ -111,7 +114,7 @@ fn external_edit_bumps_updated_at() {
     let before = tree(&f.conn).unwrap().notes[0].clone();
     std::thread::sleep(std::time::Duration::from_millis(20));
     fs::write(f.dir.join("a.md"), "# New title").unwrap();
-    scan(&mut f.conn, &f.dir).unwrap();
+    scan(&mut f.conn, &f.dir, false).unwrap();
     let after = tree(&f.conn).unwrap().notes[0].clone();
     assert_eq!(after.name, "a");
     assert!(after.modified_at > before.modified_at);
@@ -123,7 +126,7 @@ fn touch_without_change_keeps_updated_at() {
     let before = tree(&f.conn).unwrap().notes[0].modified_at;
     std::thread::sleep(std::time::Duration::from_millis(20));
     fs::write(f.dir.join("a.md"), "same").unwrap();
-    scan(&mut f.conn, &f.dir).unwrap();
+    scan(&mut f.conn, &f.dir, false).unwrap();
     assert_eq!(tree(&f.conn).unwrap().notes[0].modified_at, before);
 }
 
@@ -131,7 +134,7 @@ fn touch_without_change_keeps_updated_at() {
 fn external_delete_marks_missing_then_purges() {
     let mut f = fixture(&[("gone/a.md", "# A"), ("b.md", "# B")]);
     fs::remove_dir_all(f.dir.join("gone")).unwrap();
-    scan(&mut f.conn, &f.dir).unwrap();
+    scan(&mut f.conn, &f.dir, false).unwrap();
     assert_eq!(names_in(&tree(&f.conn).unwrap()), vec!["b"]);
     assert!(tree(&f.conn).unwrap().folders.is_empty());
     let rows: i64 = f
@@ -153,7 +156,7 @@ fn external_delete_marks_missing_then_purges() {
             [old],
         )
         .unwrap();
-    scan(&mut f.conn, &f.dir).unwrap();
+    scan(&mut f.conn, &f.dir, false).unwrap();
     let rows: i64 = f
         .conn
         .query_row("SELECT count(*) FROM notes", [], |r| r.get(0))
@@ -285,7 +288,7 @@ fn rename_and_move_a_note() {
     assert_eq!(moved.folder, "work/new");
     assert!(f.dir.join("work/new/B Side.md").is_file());
     fs::write(f.dir.join("x.md"), "").unwrap();
-    scan(&mut f.conn, &f.dir).unwrap();
+    scan(&mut f.conn, &f.dir, false).unwrap();
     let x = tree(&f.conn)
         .unwrap()
         .notes
@@ -329,7 +332,7 @@ fn rescan_repairs_drift() {
             [],
         )
         .unwrap();
-    scan(&mut f.conn, &f.dir).unwrap();
+    scan(&mut f.conn, &f.dir, false).unwrap();
     let t = tree(&f.conn).unwrap();
     assert_eq!(names_in(&t), vec!["a"]);
     assert!(t.folders.is_empty());
@@ -351,10 +354,49 @@ fn rescan_without_changes_writes_nothing() {
         .conn
         .query_row("SELECT count(*) FROM activity", [], |r| r.get(0))
         .unwrap();
-    scan(&mut f.conn, &f.dir).unwrap();
+    scan(&mut f.conn, &f.dir, false).unwrap();
     let after: i64 = f
         .conn
         .query_row("SELECT count(*) FROM activity", [], |r| r.get(0))
         .unwrap();
     assert_eq!(before, after);
+}
+
+#[test]
+fn fixing_renames_bad_names_and_indexes_them() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().to_path_buf();
+    fs::create_dir_all(dir.join("Café (old)")).unwrap();
+    fs::write(dir.join("Café (old)/Résumé!.md"), "x").unwrap();
+    fs::write(dir.join("plan.md"), "x").unwrap();
+    fs::write(dir.join("Plan?.md"), "y").unwrap();
+    fs::write(dir.join("日本.md"), "z").unwrap();
+    fs::write(dir.join(".hidden.md"), "h").unwrap();
+    let mut conn = open_memory();
+    let skipped = scan(&mut conn, &dir, true).unwrap();
+    let t = tree(&conn).unwrap();
+    assert_eq!(t.folders, vec!["Cafe old"]);
+    assert_eq!(names_in(&t), vec!["Cafe old/Resume", "plan", "Plan_1"]);
+    assert!(dir.join("Cafe old/Resume.md").is_file() && dir.join("Plan_1.md").is_file());
+    let left: Vec<_> = skipped
+        .iter()
+        .map(|s| (s.path.as_str(), s.fix.is_none()))
+        .collect();
+    assert_eq!(
+        left,
+        vec![("日本.md", true)],
+        "nothing valid can be made from it"
+    );
+    assert!(
+        dir.join(".hidden.md").exists(),
+        "hidden files are never touched"
+    );
+    let logged: i64 = conn
+        .query_row(
+            "SELECT count(*) FROM activity WHERE action = 'rename'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(logged, 3);
 }

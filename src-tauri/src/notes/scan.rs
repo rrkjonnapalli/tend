@@ -1,11 +1,13 @@
 //! Makes the index match the disk: new files are added, changed ones re-hashed, missing ones
-//! marked, and items missing longer than `GRACE_MS` purged.
+//! marked, and items missing longer than `GRACE_MS` purged. Folders and notes whose names break the
+//! rule are renamed to the closest valid name when the vault allows it (`fix`), else reported.
 
 use std::collections::{HashMap, HashSet};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use rusqlite::{params, Connection, Transaction};
+use serde::Serialize;
 
 use super::{file_path, vault_path, EXT, GRACE_MS, MIME, PREFIX};
 use crate::error::AppResult;
@@ -20,11 +22,32 @@ struct DiskNote {
     mtime: i64,
 }
 
+/// An item the scan left out of the index because its name breaks the rule.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Skipped {
+    /// Relative to `notes/`; folders end in `/`.
+    pub path: String,
+    /// The path it would be renamed to, when a valid name can be made from it.
+    pub fix: Option<String>,
+}
+
 #[derive(Default)]
 struct Disk {
     folders: Vec<String>,
     notes: Vec<DiskNote>,
-    skipped: Vec<String>,
+    skipped: Vec<Skipped>,
+    /// (old, new) paths renamed during this scan.
+    renamed: Vec<(String, String)>,
+}
+
+/// One directory being walked: its place, whether names may be fixed, and the names in it.
+struct Walk<'a> {
+    dir: &'a Path,
+    rel: &'a str,
+    fix: bool,
+    /// Every entry name in `dir`, lowercased (the disk ignores case).
+    taken: HashSet<String>,
 }
 
 /// A note body the index knows, keyed by its attachment path.
@@ -41,59 +64,122 @@ struct Vanished {
     sha256: String,
 }
 
-/// Returns the skipped items (names that break the rule).
-pub fn scan(conn: &mut Connection, dir: &Path) -> AppResult<Vec<String>> {
+/// Returns the skipped items. With `fix`, names that can be made valid are renamed on disk first.
+pub fn scan(conn: &mut Connection, dir: &Path, fix: bool) -> AppResult<Vec<Skipped>> {
     let mut disk = Disk::default();
-    walk(dir, "", &mut disk);
+    walk(dir, "", fix, &mut disk);
     let now = now_ms();
     let tx = conn.transaction()?;
+    log_renames(&tx, &disk.renamed, now)?;
     sync_folders(&tx, &disk.folders, now)?;
     sync_notes(&tx, dir, &disk.notes, now)?;
     purge(&tx, now)?;
     tx.commit()?;
-    disk.skipped.sort();
+    disk.skipped.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(disk.skipped)
 }
 
-fn walk(dir: &Path, rel: &str, out: &mut Disk) {
+fn log_renames(tx: &Transaction, renamed: &[(String, String)], now: i64) -> AppResult<()> {
+    for (old, new) in renamed {
+        tx.execute(
+            "INSERT INTO activity (action, entity_type, entity_id, at) VALUES ('rename', 'path', ?1, ?2)",
+            params![format!("{old} → {new}"), now],
+        )?;
+    }
+    Ok(())
+}
+
+fn walk(dir: &Path, rel: &str, fix: bool, out: &mut Disk) {
     let Ok(entries) = fs::read_dir(dir) else {
         return;
     };
-    for entry in entries.flatten() {
-        let file = entry.file_name().to_string_lossy().into_owned();
-        if file.starts_with('.') {
-            continue;
-        }
-        let path = entry.path();
+    let entries: Vec<(String, PathBuf)> = entries
+        .flatten()
+        .map(|e| (e.file_name().to_string_lossy().into_owned(), e.path()))
+        .filter(|(file, _)| !file.starts_with('.'))
+        .collect();
+    let taken = entries.iter().map(|(f, _)| f.to_lowercase()).collect();
+    let mut here = Walk {
+        dir,
+        rel,
+        fix,
+        taken,
+    };
+    for (file, path) in entries {
         if path.is_dir() {
-            add_folder(&path, rel, &file, out);
+            add_folder(&mut here, &file, out);
         } else {
-            add_file(&path, rel, &file, out);
+            add_file(&mut here, &file, out);
         }
     }
 }
 
-fn add_folder(path: &Path, rel: &str, name: &str, out: &mut Disk) {
-    let shown = names::join(rel, name);
-    if !names::is_valid(name) {
-        out.skipped.push(format!("{shown}/"));
+fn add_folder(here: &mut Walk, raw: &str, out: &mut Disk) {
+    let Some(name) = settle(here, raw, "", out) else {
         return;
-    }
+    };
+    let shown = names::join(here.rel, &name);
     out.folders.push(shown.clone());
-    walk(path, &shown, out);
+    walk(&here.dir.join(&name), &shown, here.fix, out);
 }
 
-fn add_file(path: &Path, rel: &str, file: &str, out: &mut Disk) {
-    let name = file.strip_suffix(EXT).filter(|n| names::is_valid(n));
-    let Some(name) = name else {
-        out.skipped.push(names::join(rel, file));
+fn add_file(here: &mut Walk, file: &str, out: &mut Disk) {
+    let Some(raw) = file.strip_suffix(EXT) else {
+        out.skipped.push(Skipped {
+            path: names::join(here.rel, file),
+            fix: None,
+        });
+        return;
+    };
+    let Some(name) = settle(here, raw, EXT, out) else {
         return;
     };
     out.notes.push(DiskNote {
-        folder: rel.to_string(),
-        name: name.to_string(),
-        mtime: files::mtime(path),
+        folder: here.rel.to_string(),
+        mtime: files::mtime(&here.dir.join(format!("{name}{EXT}"))),
+        name,
     });
+}
+
+/// The name an item is indexed under: its own when valid; otherwise the closest valid one, after
+/// renaming it on disk (`fix`). `None` when it is skipped, which is recorded in `out`.
+fn settle(here: &mut Walk, raw: &str, ext: &str, out: &mut Disk) -> Option<String> {
+    if names::is_valid(raw) {
+        return Some(raw.to_string());
+    }
+    let shown = |name: &str| {
+        let path = names::join(here.rel, &format!("{name}{ext}"));
+        if ext.is_empty() {
+            format!("{path}/")
+        } else {
+            path
+        }
+    };
+    let fixed = names::normalize(raw).and_then(|base| {
+        names::free(&base, |n| {
+            Ok(here.taken.contains(&format!("{n}{ext}").to_lowercase()))
+        })
+        .ok()
+    });
+    let renamed = fixed.as_deref().filter(|_| here.fix).and_then(|name| {
+        let from = here.dir.join(format!("{raw}{ext}"));
+        let to = here.dir.join(format!("{name}{ext}"));
+        fs::rename(from, to).ok().map(|()| name.to_string())
+    });
+    match renamed {
+        Some(name) => {
+            here.taken.insert(format!("{name}{ext}").to_lowercase());
+            out.renamed.push((shown(raw), shown(&name)));
+            Some(name)
+        }
+        None => {
+            out.skipped.push(Skipped {
+                path: shown(raw),
+                fix: fixed.map(|n| shown(&n)),
+            });
+            None
+        }
+    }
 }
 
 /// Folders on disk are present; indexed folders that are gone get `missing_at`.

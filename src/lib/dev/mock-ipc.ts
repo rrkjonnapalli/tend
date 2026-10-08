@@ -132,7 +132,11 @@ const handlers: Record<string, Handler> = {
     if (index >= 0) timerList.splice(index, 1);
   },
   timer_add_minute: () => null,
-  skipped_items: () => ['Bad Name.md', 'My Folder/'],
+  skipped_items: () => [
+    { path: 'Café notes.md', fix: 'Cafe notes.md' },
+    { path: '日本/', fix: null },
+  ],
+  notes_fix_names: () => [{ path: '日本/', fix: null }],
   feedback_send: () => null,
   tasks_data: () => ({ folders: taskFolders, tasks, myDay: [...myDay], labels: labelLinks() }),
   labels_list: () => labels,

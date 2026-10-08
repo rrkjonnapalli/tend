@@ -6,12 +6,13 @@ use std::sync::{Arc, Mutex, MutexGuard, RwLock};
 use rusqlite::Connection;
 
 use crate::error::{errors, AppResult};
+use crate::notes::Skipped;
 
 pub struct Vault {
     pub root: PathBuf,
     conn: Mutex<Connection>,
     /// Items the last scan skipped because their names break the rule.
-    skipped: Mutex<Vec<String>>,
+    skipped: Mutex<Vec<Skipped>>,
 }
 
 impl Vault {
@@ -28,14 +29,14 @@ impl Vault {
         self.conn.lock().unwrap_or_else(|e| e.into_inner())
     }
 
-    pub fn skipped(&self) -> Vec<String> {
+    pub fn skipped(&self) -> Vec<Skipped> {
         self.skipped
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .clone()
     }
 
-    pub fn set_skipped(&self, items: Vec<String>) {
+    pub fn set_skipped(&self, items: Vec<Skipped>) {
         *self.skipped.lock().unwrap_or_else(|e| e.into_inner()) = items;
     }
 

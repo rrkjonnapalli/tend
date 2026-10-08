@@ -1,15 +1,19 @@
 <script lang="ts">
-  // Settings → General: the vault folder and any note files skipped for breaking the name rule.
+  // Settings → General: the vault folder, and notes or folders skipped for breaking the name rule
+  // (with the name each can be renamed to, and one button to rename them all).
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import Icon from './Icon.svelte';
   import { notesAPI } from '#lib/api/notes.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
+  import type { Skipped } from '#lib/types/note.type.ts';
+  import { toast } from '#lib/stores/toast.svelte.ts';
   import { plural } from '#lib/util/plural.ts';
   import { routes } from '#lib/util/routes.ts';
 
-  let skipped = $state<string[]>([]);
+  let skipped = $state<Skipped[]>([]);
   let showSkipped = $state(false);
+  const fixable = $derived(skipped.filter((s) => s.fix).length);
 
   onMount(loadSkipped);
 
@@ -19,6 +23,12 @@
 
   function toggleSkipped() {
     showSkipped = !showSkipped;
+  }
+
+  async function fixNames() {
+    const left = await notesAPI.fixNames();
+    toast.show(`Renamed ${plural(skipped.length - left.length, 'item')}`);
+    skipped = left;
   }
 </script>
 
@@ -35,8 +45,13 @@
     </button>
     {#if showSkipped}
       <ul class="skiplist">
-        {#each skipped as item (item)}<li>notes/{item}</li>{/each}
+        {#each skipped as item (item.path)}
+          <li>notes/{item.path} <span class="to">{item.fix ? `→ ${item.fix}` : '· no valid name'}</span></li>
+        {/each}
       </ul>
+      {#if fixable}
+        <div><button class="tlink" onclick={fixNames}>Rename {plural(fixable, 'item')} to fit</button></div>
+      {/if}
     {/if}
   {/if}
 </section>
@@ -92,6 +107,10 @@
     list-style: none;
     font: 400 12px/20px var(--font-mono);
     color: var(--text-muted);
+  }
+
+  .to {
+    color: var(--c-muted-2);
   }
 
   .tlink {

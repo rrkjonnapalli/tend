@@ -61,6 +61,7 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
             commands::notes::skipped_items,
             commands::notes::notes_tree,
             commands::notes::notes_rescan,
+            commands::notes::notes_fix_names,
             commands::notes::note_read,
             commands::notes::note_write,
             commands::notes::note_create,

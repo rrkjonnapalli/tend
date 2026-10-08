@@ -27,7 +27,10 @@ pub use edit::{
     create, delete_folder, delete_note, folder_create, move_folder, move_note, rename_folder,
     rename_note,
 };
-pub use scan::scan;
+pub use scan::{scan, Skipped};
+
+/// Setting: the vault allows scans to rename folders and notes whose names break the rule.
+pub const FIX_NAMES: &str = "notes.fix_names";
 
 /// Items missing from disk stay in the index this long, then they are purged.
 pub const GRACE_MS: i64 = 7 * 24 * 60 * 60 * 1000;

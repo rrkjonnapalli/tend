@@ -54,3 +54,18 @@ fn paths() {
     assert!(!is_under("ab", "a"));
     assert!(is_under("anything", ""));
 }
+
+#[test]
+fn names_from_disk_are_normalized() {
+    assert_eq!(
+        normalize("Café notes (old)!").as_deref(),
+        Some("Cafe notes old")
+    );
+    assert_eq!(normalize("  Résumé  2024 ").as_deref(), Some("Resume 2024"));
+    assert_eq!(normalize(".hidden").as_deref(), Some("hidden"));
+    assert_eq!(normalize("日本語").as_deref(), None);
+    assert_eq!(normalize("🔥").as_deref(), None);
+    assert_eq!(normalize(&"é".repeat(300)).unwrap().len(), 200);
+    let made = normalize("a — b • c").unwrap();
+    assert!(is_valid(&made), "{made}");
+}

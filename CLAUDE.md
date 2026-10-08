@@ -49,7 +49,7 @@ src/routes/       start, notes, tasks, people, settings
 - **Build only what the spec says.** If something is unclear or missing, pick the simplest option that matches the mockups. Note it in `docs/open-questions.md` (create it if needed) and keep going; don't stop to ask.
 - **Match the mockups:** spacing, sizes, colors, hover and selected states, icons (inline SVG paths are in the mockup HTML; reuse them). No shadows on panels. Popovers may have a border only.
 - **The name rule** (letters, digits, spaces and `. , _ -`; leading and trailing spaces and dots trimmed; at most 200 characters; unique in its folder ignoring case, a clash gets `_1`, `_2`) applies to note folders, task folders and note names. A note's name is its file name and its title. Check it in Rust; the UI shows the same message live.
-- **Notes on disk are the source of truth.** The DB is an index. Never rename or move a user's files during a scan.
+- **Notes on disk are the source of truth.** The DB is an index. A scan renames a folder or `.md` file only to fix a name that breaks the rule, and only once the vault allows it (new empty vaults do; otherwise the user agrees once). It never moves files, never touches hidden or non-`.md` files, and skips names nothing valid can be made from.
 - **Keyboard:** every popover closes on Esc. Enter confirms. ↑↓ move through lists. Shortcuts are in `decisions.md` §12; override ⌘R/⌘N/⌘T so the webview doesn't reload or open windows.
 - **Accessibility basics:** real `<button>`s, `aria-label` on icon buttons, a visible focus ring (`:focus-visible`, 2px `--focus-ring`).
 - Keep functions small. No dead code, no TODO stubs in finished milestones.

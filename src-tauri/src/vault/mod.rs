@@ -135,7 +135,20 @@ pub fn open(root: &Path) -> (Check, Option<Vault>) {
         return (finish(root, steps, false), None);
     }
     let (db_step, conn) = open_db(root);
+    let fresh = db_step.status == StepStatus::Created && is_empty(&root.join("notes"));
     steps.push(db_step);
+    if let (true, Some(conn)) = (fresh, &conn) {
+        // A new, empty vault has no names of its own to protect: files added later get fixed.
+        let allowed = crate::settings::set(
+            conn,
+            crate::notes::FIX_NAMES,
+            &serde_json::Value::Bool(true),
+        );
+        if let Err(e) = allowed {
+            steps.push(step(DB_ITEM, StepStatus::Error, e.to_string()));
+            return (finish(root, steps, false), None);
+        }
+    }
     match conn {
         Some(conn) => (
             finish(root, steps, true),
@@ -163,6 +176,15 @@ fn check_dirs(root: &Path, steps: &mut Vec<Step>) -> bool {
     let attachments_ok = attachments_step.status != StepStatus::Error;
     steps.push(attachments_step);
     attachments_ok
+}
+
+/// No entries other than hidden ones (`.DS_Store`).
+fn is_empty(dir: &Path) -> bool {
+    fs::read_dir(dir).map_or(true, |entries| {
+        entries
+            .flatten()
+            .all(|e| e.file_name().to_string_lossy().starts_with('.'))
+    })
 }
 
 fn open_db(root: &Path) -> (Step, Option<Connection>) {

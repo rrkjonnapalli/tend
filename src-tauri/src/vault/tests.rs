@@ -123,3 +123,22 @@ fn non_sqlite_file_is_incompatible() {
         "not a database"
     );
 }
+
+fn fix_names(vault: &Vault) -> Option<serde_json::Value> {
+    crate::settings::get(&vault.db(), crate::notes::FIX_NAMES).unwrap()
+}
+
+#[test]
+fn only_a_new_empty_vault_fixes_names_without_asking() {
+    let fresh = tempfile::tempdir().unwrap();
+    fs::create_dir_all(fresh.path().join("notes")).unwrap();
+    fs::write(fresh.path().join("notes/.DS_Store"), "").unwrap();
+    let vault = open(fresh.path()).1.unwrap();
+    assert_eq!(fix_names(&vault), Some(serde_json::Value::Bool(true)));
+
+    let existing = tempfile::tempdir().unwrap();
+    fs::create_dir_all(existing.path().join("notes")).unwrap();
+    fs::write(existing.path().join("notes/Café.md"), "x").unwrap();
+    let vault = open(existing.path()).1.unwrap();
+    assert_eq!(fix_names(&vault), None, "files of its own: ask first");
+}

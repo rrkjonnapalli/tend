@@ -8,15 +8,21 @@ use notify_debouncer_full::{new_debouncer, DebounceEventResult};
 use tauri::{AppHandle, Emitter, Runtime};
 
 use crate::error::{errors, AppResult};
+use serde_json::Value;
+
 use crate::notes;
+use crate::settings;
 use crate::state::{Guard, Vault};
 
 pub const CHANGED: &str = "notes:changed";
 const DEBOUNCE: Duration = Duration::from_millis(300);
 
-/// Rescans the notes folder and records what it skipped.
+/// Rescans the notes folder and records what it skipped. Names are fixed on disk only when the
+/// vault allows it (`FIX_NAMES`).
 pub fn rescan(vault: &Vault) -> AppResult<()> {
-    let skipped = notes::scan(&mut vault.db(), &vault.notes_dir())?;
+    let mut db = vault.db();
+    let fix = settings::get(&db, notes::FIX_NAMES)? == Some(Value::Bool(true));
+    let skipped = notes::scan(&mut db, &vault.notes_dir(), fix)?;
     vault.set_skipped(skipped);
     Ok(())
 }

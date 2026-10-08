@@ -124,8 +124,9 @@ Folder names (notes and tasks) and note names:
   only with notes.
 - A clash is **not an error**: the new name gets a suffix, `Plan` → `Plan_1` → `Plan_2`, when
   creating, renaming, moving, and when sync brings in a clash (§9.2).
-- Checked in Rust; the UI shows the same rule live. Existing names on disk that break it are listed
-  as skipped, never renamed by a scan.
+- Checked in Rust; the UI shows the same rule live. Names found on disk that break it are renamed by
+  the scan to the closest valid name once the vault allows it (see `decisions.md`); a name nothing
+  valid can be made from is skipped.
 
 ASCII-only names avoid Unicode normalization differences between devices (macOS can store "é" in a
 different byte form than Git) and characters other file systems refuse.

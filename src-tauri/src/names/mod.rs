@@ -5,6 +5,9 @@
 #[cfg(test)]
 mod tests;
 
+use unicode_normalization::char::is_combining_mark;
+use unicode_normalization::UnicodeNormalization;
+
 use crate::error::{errors, AppResult};
 
 /// Longest name in characters; leaves room for `.md` and a suffix under 255-byte limits.
@@ -40,6 +43,24 @@ pub fn accept(name: &str) -> AppResult<String> {
     let cleaned = clean(name);
     check(cleaned)?;
     Ok(cleaned.to_string())
+}
+
+/// The valid name closest to `raw`, for a name found on disk that breaks the rule: accents become
+/// plain letters ("Café" → "Cafe"), other characters are dropped, runs of spaces collapse, and the
+/// result is cleaned and cut to the limit. `None` when nothing usable is left.
+pub fn normalize(raw: &str) -> Option<String> {
+    let kept: String = raw
+        .nfd()
+        .filter(|&c| !is_combining_mark(c) && allowed(c))
+        .collect();
+    let spaced = kept
+        .split(' ')
+        .filter(|w| !w.is_empty())
+        .collect::<Vec<_>>()
+        .join(" ");
+    let cut: String = spaced.chars().take(MAX_CHARS).collect();
+    let name = clean(&cut);
+    (!name.is_empty()).then(|| name.to_string())
 }
 
 /// True for a name found on disk that Tend can index as it is (a scan never renames).

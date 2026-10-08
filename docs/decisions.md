@@ -130,7 +130,9 @@ The user picks one **vault folder**. Tend works only inside it:
   - Unique within the folder, ignoring case (as macOS does). Folders clash only with folders, notes only with notes. A clash is not an error: the name gets a suffix, `Plan` → `Plan_1` → `Plan_2`, on create, rename and move.
   - A typed folder path takes the spelling of folders that already exist (`work/x` lands in `Work/x`).
   - Task titles are free text with no rule.
-  - During the vault scan, folders and files that don't match are **skipped**, not renamed. They're listed in Settings → General.
+  - **Names found on disk that break the rule** (folders and `.md` files under `notes/`) are renamed to the closest valid name: accents become plain letters (`Café` → `Cafe`), other characters are dropped, spaces collapse, the result is trimmed, and a clash gets a suffix. A name nothing valid is left of (`日本.md`) is skipped and not indexed. Hidden (`.`) and non-`.md` files are never touched.
+  - Renaming needs the vault's consent once (setting `notes.fix_names`). A new, empty vault has it from the start. Opening a folder that already has such names asks: *Rename and open →* or *Open without renaming*. Until then they are skipped and listed in Settings → General, each with the name it would get and a *Rename N items to fit* link.
+  - Every rename is written to the activity log (`old → new`).
 - **Explorer actions:** hover a row → `⋯`, or right-click, opens a menu: **Rename** (F2) · **Move to…** (⌘⇧M) · **Delete…** (⌫). The root has no menu.
   - **Rename:** edited in place in the row. Invalid or duplicate names turn red with a hint underneath. Enter saves, Esc cancels.
   - **New note / new folder** (toolbar): an inline row in the selected folder, checked against the same rules.

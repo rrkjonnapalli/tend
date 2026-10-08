@@ -4,6 +4,9 @@
   import Icon from '#lib/components/Icon.svelte';
   import StartChecklist from '#lib/components/StartChecklist.svelte';
   import { vaultAPI } from '#lib/api/vault.ts';
+  import { notesAPI } from '#lib/api/notes.ts';
+  import type { Skipped } from '#lib/types/note.type.ts';
+  import { plural } from '#lib/util/plural.ts';
   import type { Check } from '#lib/types/vault.type.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
@@ -21,6 +24,8 @@
   let timer: ReturnType<typeof setInterval> | undefined;
 
   const done = $derived(check !== null && shown >= check.steps.length);
+  /** Names in the vault that break the rule but can be renamed to fit, asked about once. */
+  let fixable = $state<Skipped[]>([]);
 
   onDestroy(stopReveal);
 
@@ -36,6 +41,7 @@
     shown = 0;
     try {
       check = await vaultAPI.open(path);
+      fixable = check.ok ? (await notesAPI.skipped()).filter((s) => s.fix) : [];
     } catch (e) {
       check = null;
       failure = messageOf(e);
@@ -67,6 +73,11 @@
     if (!check) return;
     await vault.opened(check.path);
     nav.replace(routes.notes);
+  }
+
+  async function fixAndEnter() {
+    await notesAPI.fixNames();
+    await enter();
   }
 
   const examples = [
@@ -107,7 +118,17 @@
             </div>
             <div><button class="pbtn" onclick={choose}>Choose another folder</button></div>
           {/if}
-          {#if done && check.ok}
+          {#if done && check.ok && fixable.length}
+            <div class="note">
+              {plural(fixable.length, 'name')} don’t fit Tend’s rule (letters, digits, spaces and . , _ -). Tend can
+              rename them, for example <span class="mono">{fixable[0].path}</span> →
+              <span class="mono">{fixable[0].fix}</span>. Other apps’ links to those files will break.
+            </div>
+            <div class="row">
+              <button class="pbtn" onclick={fixAndEnter}>Rename and open →</button>
+              <button class="gbtn" onclick={enter}>Open without renaming</button>
+            </div>
+          {:else if done && check.ok}
             <div><button class="pbtn" onclick={enter}>Open vault →</button></div>
           {/if}
         {/if}
@@ -286,6 +307,19 @@
 
   .err .mono {
     color: var(--on-danger-soft);
+  }
+
+  .note {
+    padding: 10px 12px;
+    border-radius: 6px;
+    background: var(--c-hover);
+    font: 400 13px/18px var(--font-ui);
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .pbtn {
