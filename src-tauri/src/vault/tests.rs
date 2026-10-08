@@ -14,7 +14,7 @@ fn empty_folder_creates_everything() {
     assert_eq!(statuses(&check), vec![StepStatus::Created; 3]);
     assert!(dir.path().join("notes").is_dir());
     assert!(dir.path().join(".attachments").is_dir());
-    assert!(dir.path().join("db/app.sqlite").is_file());
+    assert!(dir.path().join(".tend/tend.db").is_file());
 }
 
 #[test]
@@ -34,8 +34,8 @@ fn existing_vault_opens_and_counts() {
 
 fn incompatible(setup: &str) {
     let dir = tempfile::tempdir().unwrap();
-    fs::create_dir_all(dir.path().join("db")).unwrap();
-    let path = dir.path().join("db/app.sqlite");
+    fs::create_dir_all(dir.path().join(".tend")).unwrap();
+    let path = dir.path().join(".tend/tend.db");
     let conn = Connection::open(&path).unwrap();
     conn.execute_batch(setup).unwrap();
     drop(conn);
@@ -90,11 +90,11 @@ fn reopen_explains_what_went_wrong() {
 
     assert!(reopen(dir.path()).is_ok());
     let bad = tempfile::tempdir().unwrap();
-    fs::create_dir_all(bad.path().join("db")).unwrap();
-    fs::write(bad.path().join("db/app.sqlite"), "junk").unwrap();
+    fs::create_dir_all(bad.path().join(".tend")).unwrap();
+    fs::write(bad.path().join(".tend/tend.db"), "junk").unwrap();
     assert_eq!(
         reopen_err(bad.path()),
-        "An incompatible database exists in db/app.sqlite."
+        "An incompatible database exists in .tend/tend.db."
     );
 }
 
@@ -114,12 +114,12 @@ fn reopen_reports_missing_permission() {
 #[test]
 fn non_sqlite_file_is_incompatible() {
     let dir = tempfile::tempdir().unwrap();
-    fs::create_dir_all(dir.path().join("db")).unwrap();
-    fs::write(dir.path().join("db/app.sqlite"), "not a database").unwrap();
+    fs::create_dir_all(dir.path().join(".tend")).unwrap();
+    fs::write(dir.path().join(".tend/tend.db"), "not a database").unwrap();
     let (check, vault) = open(dir.path(), false);
     assert!(!check.ok && vault.is_none());
     assert_eq!(
-        fs::read_to_string(dir.path().join("db/app.sqlite")).unwrap(),
+        fs::read_to_string(dir.path().join(".tend/tend.db")).unwrap(),
         "not a database"
     );
 }

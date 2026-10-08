@@ -38,9 +38,9 @@ The vault is the Git working tree:
 <vault>/
   notes/                        note files (body only), named by their titles
   .attachments/                 attachment files, <id>.<ext>
-  db/
-    app.sqlite                  live database        — never committed
-    app.sqlite-wal / -shm       SQLite side files    — never committed
+  .tend/                        Tend's own folder (hidden)
+    tend.db                     live database        — never committed
+    tend.db-wal / -shm          SQLite side files    — never committed
     staging/                    files being applied  — never committed (§10)
     sync/
       manifest.json
@@ -48,7 +48,7 @@ The vault is the Git working tree:
       <table>/fixed.jsonl       rows with fixed, non-ULID ids (settings keys, 'root', default statuses)
       deleted/<YYYY>.jsonl      deletions, by the year they happened
   .git/
-  .gitignore                    db/app.sqlite*, db/staging/, .DS_Store
+  .gitignore                    .tend/tend.db*, .tend/staging/, .DS_Store
 ```
 
 There is no `.conflicts/` folder.
@@ -104,7 +104,7 @@ attachments  id · path · name · mime_type · size_bytes · sha256 · updated_
 
 | Table | Purpose |
 |---|---|
-| `deletions (id, table_name, row_id, deleted_at)` | Every delete, including `ON DELETE CASCADE` rows, by trigger. Mirrored into `db/sync/deleted/` (§8). Kept **forever**. |
+| `deletions (id, table_name, row_id, deleted_at)` | Every delete, including `ON DELETE CASCADE` rows, by trigger. Mirrored into `.tend/sync/deleted/` (§8). Kept **forever**. |
 | `changes (seq INTEGER PRIMARY KEY AUTOINCREMENT, table_name, row_id, UNIQUE(table_name, row_id))` | Which rows changed locally, by trigger on insert, update and delete of every synced table: `INSERT OR REPLACE`, so each row has one entry carrying its latest `seq`. `seq` only grows and never depends on the clock. Used to find dirty years (§8.2). |
 | `sync_state (id = 1, last_synced_seq, last_synced_commit)` | The markers of the last successful sync (§13). |
 | `access (entity_type, entity_id, used_at, UNIQUE(entity_type, entity_id))` | Last read, edit or create of each entity. Drives "recent" lists, ⌘K ranking and what the UI loads first. Never in snapshots, never in `changes`. |
@@ -185,7 +185,7 @@ Accepted for V1; a hybrid logical clock is a later decision.
 ### 8.1 Files
 
 - Rows are grouped by the **year** their ULID was created (UTC, read from the id), sorted by `id`,
-  and cut into **shards of 10,000 rows**: `db/sync/<table>/<YYYY>-<NNN>.jsonl`, numbered from `001`.
+  and cut into **shards of 10,000 rows**: `.tend/sync/<table>/<YYYY>-<NNN>.jsonl`, numbered from `001`.
   A year with 80,000 rows has `001`–`008`; row 80,001 starts `009`. There are no months and no
   stored layout: the shard of a row is its position in the year divided by 10,000, so every device
   builds the same files from the same rows.
@@ -257,7 +257,7 @@ Rows are compared by their snapshot line (synced columns only).
 Delete beats edit in every case, and a deleted id is never used again.
 
 Only rows in **changed years** are read: local dirty years (§8.2) and years with a shard that differs
-between base and remote (`git diff base..remote` over `db/sync/`). Rows are matched by `id` across
+between base and remote (`git diff base..remote` over `.tend/sync/`). Rows are matched by `id` across
 all shards of a year. A row outside these years is identical in all three versions and is skipped.
 The merged result is written back only into the shards of those years.
 
@@ -307,9 +307,9 @@ implemented.
 
 1. Save any note open in the editor (so autosave can't write stale text after the pull).
 2. Pause the notes watcher.
-3. Write incoming files (note bodies, attachments) into `db/staging/`.
-4. Apply rows to SQLite in **one transaction** (a backup copy of `app.sqlite` is taken just
-   before); check references; commit. A failed apply rolls back, `db/staging/` is emptied, and the
+3. Write incoming files (note bodies, attachments) into `.tend/staging/`.
+4. Apply rows to SQLite in **one transaction** (a backup copy of `tend.db` is taken just
+   before); check references; commit. A failed apply rolls back, `.tend/staging/` is emptied, and the
    sync fails with the vault unchanged.
 5. Move staged files into place and remove deleted ones. A **case-only rename** (`plan.md` →
    `Plan.md`) goes through a temporary name, because the disk ignores case. If a move fails, the

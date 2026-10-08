@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn creates_schema_and_meta() {
     let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("app.sqlite");
+    let path = dir.path().join("tend.db");
     let (conn, opened) = open(&path).unwrap();
     assert_eq!(opened, Opened::Created);
     let app: String = conn
@@ -29,7 +29,7 @@ fn creates_schema_and_meta() {
 #[test]
 fn reopens_existing_without_migrating() {
     let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("app.sqlite");
+    let path = dir.path().join("tend.db");
     drop(open(&path).unwrap());
     let (_, opened) = open(&path).unwrap();
     assert_eq!(opened, Opened::Current);

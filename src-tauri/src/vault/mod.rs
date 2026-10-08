@@ -1,4 +1,4 @@
-//! Opening a vault: check or create `notes/`, `.attachments/` and `db/app.sqlite`, in that order.
+//! Opening a vault: check or create `notes/`, `.attachments/` and `.tend/tend.db`, in that order.
 //! Before writing anything, folders that look like a mistake ask first (`Confirm`).
 
 #[cfg(test)]
@@ -51,14 +51,17 @@ pub struct Check {
     pub confirm: Option<Confirm>,
 }
 
-const DB_ITEM: &str = "db/app.sqlite";
+/// Tend's own folder in the vault: the database now, sync files later.
+const TEND_DIR: &str = ".tend";
+const DB_FILE: &str = "tend.db";
+const DB_ITEM: &str = ".tend/tend.db";
 const NO_PERMISSION: &str = "no permission to access this folder";
 const INCOMPATIBLE: &str = "incompatible schema";
 
 const NO_PERMISSION_MESSAGE: &str = "Tend doesn’t have permission to open this folder.";
 const GONE_MESSAGE: &str = "The folder isn’t there any more. It may have been moved or renamed, \
                             or it's on a drive that isn’t connected.";
-const INCOMPATIBLE_MESSAGE: &str = "An incompatible database exists in db/app.sqlite.";
+const INCOMPATIBLE_MESSAGE: &str = "An incompatible database exists in .tend/tend.db.";
 
 fn plural(n: usize, word: &str) -> String {
     if n == 1 {
@@ -133,7 +136,7 @@ pub fn reopen(root: &Path) -> Result<Vault, String> {
 
 /// What to ask before opening `root`, if anything. Reads only; never writes.
 pub fn inspect(root: &Path) -> Option<Confirm> {
-    let db = root.join("db").join("app.sqlite");
+    let db = root.join(TEND_DIR).join(DB_FILE);
     let notes = root.join("notes");
     if db.is_file() {
         let indexed = indexed_notes(&db)?;
@@ -162,7 +165,7 @@ fn other_entries(root: &Path) -> usize {
     entries
         .flatten()
         .map(|e| e.file_name().to_string_lossy().into_owned())
-        .filter(|n| !n.starts_with('.') && n != "notes" && n != "db")
+        .filter(|n| !n.starts_with('.') && n != "notes")
         .count()
 }
 
@@ -256,10 +259,10 @@ fn is_empty(dir: &Path) -> bool {
 }
 
 fn open_db(root: &Path) -> (Step, Option<Connection>) {
-    let db_dir = root.join("db");
+    let db_dir = root.join(TEND_DIR);
     let opened = fs::create_dir_all(&db_dir)
         .map_err(AppError::from)
-        .and_then(|_| db::open(&db_dir.join("app.sqlite")));
+        .and_then(|_| db::open(&db_dir.join(DB_FILE)));
     match opened {
         Ok((conn, how)) => (opened_step(how), Some(conn)),
         Err(e) => (step(DB_ITEM, StepStatus::Error, db_error_detail(e)), None),

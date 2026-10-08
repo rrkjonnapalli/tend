@@ -35,8 +35,8 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 
 **Build (Rust)**
 - `vault_open(path)`:
-  - ensures `notes/` exists (uses it as-is if present), creates `.attachments/` and `db/` if missing.
-  - opens or creates `db/app.sqlite` with `foreign_keys=ON` and WAL.
+  - ensures `notes/` exists (uses it as-is if present), creates `.attachments/` and `.tend/` if missing.
+  - opens or creates `.tend/tend.db` with `foreign_keys=ON` and WAL.
   - **New DB:** run `schema.sql` as migration 1.
   - **Existing DB:**
     - reads `meta`: `app_id='tend'` and `schema_version` ≤ app version → run pending migrations.
@@ -52,8 +52,8 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - **Settings → General:** vault path + "Change vault folder…" (back to the start page). The rest of Settings comes in M9.
 
 **Done when**
-- Empty folder → `notes/`, `.attachments/`, `db/app.sqlite` created; `meta` has `app_id=tend`, `schema_version=1`.
-- Existing vault opens without changes. A random `db/app.sqlite` from another app shows the incompatible error and isn't modified.
+- Empty folder → `notes/`, `.attachments/`, `.tend/tend.db` created; `meta` has `app_id=tend`, `schema_version=1`.
+- Existing vault opens without changes. A random `.tend/tend.db` from another app shows the incompatible error and isn't modified.
 - Restarting the app reopens the last vault.
 - `cargo test` covers: new vault, existing vault, incompatible DB (wrong app_id, higher version, missing meta).
 

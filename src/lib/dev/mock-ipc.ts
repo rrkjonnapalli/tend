@@ -93,7 +93,7 @@ const handlers: Record<string, Handler> = {
     steps: [
       { item: 'notes/', status: 'found', detail: 'found · 42 notes' },
       { item: '.attachments/', status: 'found', detail: 'found · 9 files' },
-      { item: 'db/app.sqlite', status: 'found', detail: 'schema matches' },
+      { item: '.tend/tend.db', status: 'found', detail: 'schema matches' },
     ],
   }),
   'plugin:dialog|open': () => '/Users/demo/Dropbox/Tend',

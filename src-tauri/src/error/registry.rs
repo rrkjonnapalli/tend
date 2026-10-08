@@ -12,7 +12,7 @@ pub const NOT_FOUND: ErrorDef = def("NOT_FOUND", "Not found");
 pub const NO_VAULT: ErrorDef = def("NO_VAULT", "No vault is open");
 pub const INCOMPATIBLE_DB: ErrorDef = def(
     "INCOMPATIBLE_DB",
-    "An incompatible database exists in db/app.sqlite",
+    "An incompatible database exists in .tend/tend.db",
 );
 pub const NO_PERMISSION: ErrorDef = def(
     "NO_PERMISSION",

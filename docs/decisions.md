@@ -36,16 +36,16 @@ The user picks one **vault folder**. Tend works only inside it:
 <vault>/
   notes/          root of all notes (used if present, created if missing)
   .attachments/   attachment files (created if missing)
-  db/app.sqlite   everything else (created if missing)
+  .tend/tend.db   everything else (created if missing; hidden, like .git)
 ```
 
 - **Opening a vault:** check or create the three items, in that order. Two folders ask first and write nothing until the user agrees:
-  - **Not a vault and not empty** (no `db/app.sqlite`, no `notes/`, other visible items): "This folder isn’t a Tend vault and already has N items…" → *Use this folder* / *Choose another folder*.
+  - **Not a vault and not empty** (no `.tend/tend.db`, no `notes/`, other visible items): "This folder isn’t a Tend vault and already has N items…" → *Use this folder* / *Choose another folder*.
   - **A vault whose `notes/` is gone** while the database lists notes: "`notes/` is missing… Was it moved?" → *Choose another folder* / *Start without them*. On launch this shows as the reopen error.
   - A folder with `notes/` but no database is opened directly and indexed. What sits above the chosen folder is never checked.
-  - **`db/app.sqlite` exists:** read `meta`.
+  - **`.tend/tend.db` exists:** read `meta`.
     - `app_id = 'tend'` and `schema_version` ≤ app → migrate up if lower, then open.
-    - Anything else → **"An incompatible database exists in db/app.sqlite"**. The user picks another folder.
+    - Anything else → **"An incompatible database exists in .tend/tend.db"**. The user picks another folder.
 - **Existing notes** are never moved or renamed.
 - **Changing vault:** Settings → General → *Change vault folder…*. This reopens the start-up flow.
 
@@ -55,7 +55,7 @@ The user picks one **vault folder**. Tend works only inside it:
 - **Left column:**
   - The `tend.` wordmark.
   - *Start* → **Choose vault folder…** as a text link.
-  - Three lines explaining `notes/`, `.attachments/` and `db/app.sqlite`.
+  - Three lines explaining `notes/`, `.attachments/` and `.tend/tend.db`.
 - **After choosing:**
   - The path is shown with a *Change* link.
   - A checklist runs line by line (✓ green, ✕ red).

@@ -1,4 +1,4 @@
--- Tend · db/app.sqlite · schema v1
+-- Tend · .tend/tend.db · schema v1
 -- Nothing has shipped yet, so this file is edited in place; migrations start with the first
 -- release. Scope: notes, tasks, people, timers, labels. Calendar, events and reminders come later
 -- (docs/later/).

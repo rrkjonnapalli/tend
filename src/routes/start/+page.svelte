@@ -101,7 +101,7 @@
           <div class="vlist">
             <div><span class="mono">notes/</span><span class="cap">your notes, used if it exists</span></div>
             <div><span class="mono">.attachments/</span><span class="cap">attached files, created if missing</span></div>
-            <div><span class="mono">db/app.sqlite</span><span class="cap">everything else, created if missing</span></div>
+            <div><span class="mono">.tend/tend.db</span><span class="cap">everything else, created if missing</span></div>
           </div>
           {#if failure}<div class="err" role="alert">{failure}</div>{/if}
         {:else}
@@ -115,7 +115,7 @@
             <div class="note">
               This folder isn’t a Tend vault and already has {plural(check.confirm.items, 'item')}. Tend will add
               <span class="mono">notes/</span>, <span class="mono">.attachments/</span> and
-              <span class="mono">db/</span> here and leave the rest alone.
+              <span class="mono">.tend/</span> here and leave the rest alone.
             </div>
             <div class="row">
               <button class="pbtn" onclick={() => check && checkFolder(check.path, true)}>Use this folder</button>
@@ -133,7 +133,7 @@
             </div>
           {:else if done && !check.ok}
             <div class="err" role="alert">
-              An incompatible database exists in <span class="mono">db/app.sqlite</span>. Choose another folder, or
+              An incompatible database exists in <span class="mono">.tend/tend.db</span>. Choose another folder, or
               move that file out of the way and try again.
             </div>
             <div><button class="pbtn" onclick={choose}>Choose another folder</button></div>
