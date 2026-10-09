@@ -5,8 +5,14 @@
   import SettingsGeneral from '#lib/components/SettingsGeneral.svelte';
   import SettingsPalette from '#lib/components/SettingsPalette.svelte';
   import SettingsSync from '#lib/components/SettingsSync.svelte';
+  import PageBar from '#lib/components/PageBar.svelte';
+  import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
+  import PageTitle from '#lib/components/PageTitle.svelte';
   import { nav } from '#lib/stores/history.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
+
+  /** The Settings root in breadcrumbs, lowercase like `notes`, `tasks` and `people`. */
+  const SETTINGS_ROOT_NAME = 'settings';
 
   /** The query parameter holding the open section (see routes.settingsSection). */
   const SECTION_PARAM = 's';
@@ -37,12 +43,10 @@
   </nav>
 </aside>
 
-<main class="main">
-  <article class="body">
-    <div class="head">
-      <h1 class="heading">{current.label}</h1>
-      <span class="caption muted">{current.sub}</span>
-    </div>
+<main class="detail-page detail-stack">
+  <PageBar><Breadcrumbs crumbs={[{ label: SETTINGS_ROOT_NAME }, { label: current.label }]} /></PageBar>
+  <article class="detail-body">
+    <PageTitle title={current.label} meta={current.sub} />
 
     {#if current.id === 'general'}
       <SettingsGeneral />
@@ -100,24 +104,4 @@
     color: var(--c-current-ink);
   }
 
-  .main {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: 12px 24px 64px;
-    overflow: auto;
-  }
-
-  .body {
-    max-width: 620px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-  }
-
-  .head {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
 </style>

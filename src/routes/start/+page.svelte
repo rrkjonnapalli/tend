@@ -113,7 +113,7 @@
         <span class="cap">Notes · Tasks · People</span>
       </div>
       <section class="sec">
-        <h3 class="h3">Start</h3>
+        <h3 class="section-title">Start</h3>
         {#if !check}
           <button class="link-btn lead" onclick={choose}><Icon name="folder" size={15} />Choose vault folder…</button>
           <div class="vlist">
@@ -167,14 +167,14 @@
     </div>
     <div class="col right">
       <section class="sec">
-        <h3 class="h3">Command palette</h3>
+        <h3 class="section-title">Command palette</h3>
         <span class="cap">Press <kbd>{mod}</kbd><kbd>K</kbd> anywhere. Type to search, or write what you want:</span>
         {#each examples as [text, what] (text)}
           <div class="cmd"><span class="mono">{text}</span>{what}</div>
         {/each}
       </section>
       <section class="sec">
-        <h3 class="h3">Shortcuts</h3>
+        <h3 class="section-title">Shortcuts</h3>
         <div class="cap keys">
           <span><kbd>{mod}</kbd><kbd>1</kbd>–<kbd>3</kbd></span><span>switch sections</span>
           <span><kbd>{mod}</kbd><kbd>N</kbd></span><span>new note</span>
@@ -229,11 +229,6 @@
 
   .brand .cap {
     font-size: 14px;
-  }
-
-  .h3 {
-    font: var(--text-section);
-    margin: 0;
   }
 
   .cap {

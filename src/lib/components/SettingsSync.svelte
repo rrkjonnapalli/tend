@@ -62,7 +62,7 @@
 
 {#if !config}
   <section class="group">
-    <h2 class="h2">Connect a repo</h2>
+    <h2 class="section-title">Connect a repo</h2>
     <span class="cap">Use a new Git repo (a README in it is fine). Tend pushes this vault there, then syncs it on its own.</span>
     <SyncFields bind:setup />
     {#if failure}<div class="banner-err" role="alert">{failure}</div>{/if}
@@ -70,7 +70,7 @@
   </section>
 {:else}
   <section class="group">
-    <h2 class="h2">Repo</h2>
+    <h2 class="section-title">Repo</h2>
     <div class="kv"><span class="k">URL</span><span class="v mono">{config.url}</span></div>
     <div class="kv"><span class="k">Branch</span><span class="v mono">{config.branch}</span></div>
     <div class="kv">
@@ -88,13 +88,13 @@
   </section>
 
   <section class="group">
-    <h2 class="h2">Schedule</h2>
+    <h2 class="section-title">Schedule</h2>
     <span class="cap">Minutes between automatic syncs. Tend also syncs when the vault opens and when you quit.</span>
     <SyncInterval minutes={config.intervalMinutes} onsave={sync.setInterval} />
   </section>
 
   <section class="group">
-    <h2 class="h2">Last sync</h2>
+    <h2 class="section-title">Last sync</h2>
     {#if sync.state === 'running'}
       <div class="kv"><span class="v">Syncing…</span></div>
     {:else if sync.state === 'failed'}
@@ -125,11 +125,6 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-  }
-
-  .h2 {
-    font: var(--text-section);
-    margin: 0;
   }
 
   .cap,

@@ -4,7 +4,7 @@
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
-  import ListTitle from '#lib/components/ListTitle.svelte';
+  import PageTitle from '#lib/components/PageTitle.svelte';
   import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import EditButton from '#lib/components/EditButton.svelte';
   import InlineTitle from '#lib/components/InlineTitle.svelte';
@@ -63,7 +63,7 @@
 
 <main class="list-page" use:rowNav>
   <PageBar><Breadcrumbs {crumbs} /></PageBar>
-  <ListTitle title={crumbs[crumbs.length - 1].label} meta={summary} />
+  <PageTitle title={crumbs[crumbs.length - 1].label} meta={summary} />
   <SearchLine bind:value={query} label="Search notes" placeholder="Search notes" />
   <AddLine bind:value={draft} label="New note" placeholder="new note" {error} onadd={create} oninput={() => (error = '')} />
   <ColumnHeader template="var(--grid-note)" columns={COLUMNS} />

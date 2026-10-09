@@ -29,7 +29,7 @@
   <div class="box">
     <div class="mark">tend<i>.</i></div>
     {#if vault.problem}
-      <h3 class="h3">Can’t open your vault</h3>
+      <h3 class="section-title">Can’t open your vault</h3>
       {#if vault.problem.path}<span class="mono">{vault.problem.path}</span>{/if}
       <div class="banner-err" role="alert">{vault.problem.message}</div>
       {#if permission}
@@ -70,11 +70,6 @@
   .mark i {
     font-style: normal;
     color: var(--accent);
-  }
-
-  .h3 {
-    font: var(--text-section);
-    margin: 0;
   }
 
   .mono {

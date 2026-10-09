@@ -21,7 +21,7 @@
 <section class="palette">
   {#each groups as g (g.name)}
     <div class="group">
-      <h2 class="h2 gh">{g.name}</h2>
+      <h2 class="section-title gh">{g.name}</h2>
       {#each g.items as c (c.id)}
         <div class="crow">
           <span>{c.label}</span>
@@ -44,11 +44,6 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-  }
-
-  .h2 {
-    font: var(--text-section);
-    margin: 0;
   }
 
   .gh {

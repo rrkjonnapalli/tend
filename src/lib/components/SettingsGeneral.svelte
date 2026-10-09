@@ -36,7 +36,7 @@
 </script>
 
 <section class="group">
-  <h2 class="h2">Vault</h2>
+  <h2 class="section-title">Vault</h2>
   <div class="vault">
     <span class="vpath">{vault.path}</span>
     <button class="link-btn" onclick={() => goto(routes.start)}>Change vault folder…</button>
@@ -60,7 +60,7 @@
 </section>
 
 <section class="group">
-  <h2 class="h2">Timers</h2>
+  <h2 class="section-title">Timers</h2>
   <label class="check">
     <input
       type="checkbox"
@@ -75,11 +75,6 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-  }
-
-  .h2 {
-    font: var(--text-section);
-    margin: 0;
   }
 
   .vault {
