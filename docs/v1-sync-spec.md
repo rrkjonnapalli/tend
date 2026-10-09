@@ -383,9 +383,15 @@ lock (one run at a time; triggers during a run coalesce into it)
 name. New connections sync every 15 min. The remote must **hold no vault**: no branch yet, or a branch
 without `.tend/sync/` (a README or licence made with the repo is fine). A remote that holds a vault
 is refused (`SYNC_REMOTE_NOT_EMPTY`: "This repo already has a vault. Restore it into an empty folder
-instead."). Files Tend doesn't manage (anything outside `.tend/`, `.gitignore` and the files rows
-point at) carry over from the remote's head into every commit, so the README stays; Tend never
-writes them into the vault. Tend writes the shards, commits, pushes and records that commit as the base. If any step
+instead."). **Files on the remote that Tend doesn't manage** (anything outside `.tend/`, `.gitignore` and the
+files rows point at), checked on connect and on every sync:
+- **Markdown** (`*.md`, any case: the README made with the repo, a file added on the host's web
+  editor) becomes a note. Each folder and the file name get their slug (`Docs/Guide.md` →
+  `docs/guide.md`); a taken name gets `_1`, `_2` (a local `readme.md` makes the remote README
+  `readme_1.md`). The commit then holds the note in place of the original path. A file whose exact
+  content is already a note in that folder isn't taken in twice (a run whose push failed).
+- **Anything else** (a licence, an image) carries over from the remote's head into every commit
+  untouched; Tend never writes it into the vault. Tend writes the shards, commits, pushes and records that commit as the base. If any step
 fails, nothing in the vault changes except `.git`, and the token is removed again.
 
 **Token:** kept only in the system credential store (the macOS Keychain, service `app.tend.sync`,

@@ -196,6 +196,22 @@ impl Repo {
         Ok(index.write_tree()?)
     }
 
+    /// The commit's files Tend doesn't manage (see `is_managed`).
+    pub fn foreign_files(&self, commit: Oid, managed: &BTreeSet<String>) -> AppResult<Vec<String>> {
+        let tree = self.repo.find_commit(commit)?.tree()?;
+        let mut out = Vec::new();
+        tree.walk(TreeWalkMode::PreOrder, |parent, item| {
+            if item.kind() == Some(ObjectType::Blob) {
+                let path = PathBuf::from(parent).join(item.name().unwrap_or_default());
+                if !is_managed(&path, managed) {
+                    out.push(path.to_string_lossy().into_owned());
+                }
+            }
+            TreeWalkResult::Ok
+        })?;
+        Ok(out)
+    }
+
     /// Loads the commit's tree into `index`, minus every file Tend manages there.
     fn read_foreign(&self, index: &mut git2::Index, kept: &Kept) -> AppResult<()> {
         let tree = self.repo.find_commit(kept.commit)?.tree()?;

@@ -48,8 +48,9 @@ Each can come back later; none changes the shard layout.
    bodies, `.tend/attachments/*`). Other files in the vault (a PDF next to your notes) are never
    committed, so a sync can't spread or delete files Tend doesn't manage. Files over 100 MB are
    left out; their rows still sync.
-9. **Connect** refuses a remote that already holds a vault (`SYNC_REMOTE_NOT_EMPTY`); a README or
-   licence made with the repo is fine and stays in every commit. **Restore** expects
+9. **Connect** refuses a remote that already holds a vault (`SYNC_REMOTE_NOT_EMPTY`). Markdown on
+   the remote that Tend doesn't manage (the README) becomes a note, slugged, `_1` on a clash; other
+   files (a licence) stay in every commit untouched. **Restore** expects
    a new, empty vault. **A rewritten remote** (base gone from its history) stops sync with
    `SYNC_BASE_LOST`.
 10. **Network deadlines:** libgit2's connect timeout 15 s and read timeout 60 s, set once per

@@ -34,6 +34,10 @@ impl Device {
         sync(&mut self.vault.db(), &root, remote)
     }
 
+    fn read(&self, path: &str) -> String {
+        fs::read_to_string(self.root().join(path)).unwrap()
+    }
+
     fn task(&self, title: &str) -> String {
         let new = NewTask {
             title: title.into(),
@@ -73,7 +77,7 @@ fn two_devices_connect_restore_and_converge() {
     let a = Device::new();
     let plan = notes::create(&mut a.vault.db(), &a.vault.notes_dir(), "work", "Plan").unwrap();
     let task = a.task("Ship");
-    connect(&a.vault.db(), a.root(), &remote).unwrap();
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
 
     let b = Device::new();
     let root = b.root().to_path_buf();
@@ -129,9 +133,9 @@ fn a_remote_with_a_vault_is_refused_on_connect() {
     let server = tempfile::tempdir().unwrap();
     let remote = remote(server.path());
     let a = Device::new();
-    connect(&a.vault.db(), a.root(), &remote).unwrap();
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
     let c = Device::new();
-    let refused = connect(&c.vault.db(), c.root(), &remote).unwrap_err();
+    let refused = connect(&mut c.vault.db(), c.root(), &remote).unwrap_err();
     assert!(refused.is(errors::SYNC_REMOTE_NOT_EMPTY));
 }
 
@@ -140,7 +144,7 @@ fn a_rewritten_remote_stops_sync_and_asks_for_a_restore() {
     let server = tempfile::tempdir().unwrap();
     let remote = remote(server.path());
     let a = Device::new();
-    connect(&a.vault.db(), a.root(), &remote).unwrap();
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
     // Someone replaces the branch with unrelated history.
     let other = Device::new();
     let bare = git2::Repository::open_bare(server.path()).unwrap();
@@ -148,7 +152,7 @@ fn a_rewritten_remote_stops_sync_and_asks_for_a_restore() {
         .unwrap()
         .delete()
         .unwrap();
-    connect(&other.vault.db(), other.root(), &remote).unwrap();
+    connect(&mut other.vault.db(), other.root(), &remote).unwrap();
     let stopped = a.sync(&remote).unwrap_err();
     assert!(stopped.is(errors::SYNC_BASE_LOST));
 }
@@ -158,7 +162,7 @@ fn a_push_that_landed_before_a_crash_becomes_the_base() {
     let server = tempfile::tempdir().unwrap();
     let remote = remote(server.path());
     let a = Device::new();
-    connect(&a.vault.db(), a.root(), &remote).unwrap();
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
     let id = "01HZZZZZZZZZZZZZZZZZZZZZZZ";
     person(&a, id);
     assert_eq!(a.sync(&remote).unwrap(), Outcome::Pushed);
@@ -181,13 +185,30 @@ fn a_push_that_landed_before_a_crash_becomes_the_base() {
     assert!(!a.rows()["people"].contains_key(id));
 }
 
-/// Makes the remote's first commit hold only a README, the way a host's "new repo" page does.
-fn add_readme(server: &Path) {
+/// Makes the remote's first commit hold `files`, the way a host's "new repo" page (or its web
+/// editor) does.
+fn host_commit(server: &Path, files: &[(&str, &str)]) {
     let bare = git2::Repository::open_bare(server).unwrap();
-    let blob = bare.blob(b"# notes\n").unwrap();
-    let mut tree = bare.treebuilder(None).unwrap();
-    tree.insert("README.md", blob, 0o100644).unwrap();
-    let tree = bare.find_tree(tree.write().unwrap()).unwrap();
+    let mut index = git2::Index::new().unwrap();
+    for (path, text) in files {
+        let blob = bare.blob(text.as_bytes()).unwrap();
+        let entry = git2::IndexEntry {
+            ctime: git2::IndexTime::new(0, 0),
+            mtime: git2::IndexTime::new(0, 0),
+            dev: 0,
+            ino: 0,
+            mode: 0o100644,
+            uid: 0,
+            gid: 0,
+            file_size: text.len() as u32,
+            id: blob,
+            flags: 0,
+            flags_extended: 0,
+            path: path.as_bytes().to_vec(),
+        };
+        index.add(&entry).unwrap();
+    }
+    let tree = bare.find_tree(index.write_tree_to(&bare).unwrap()).unwrap();
     let who = git2::Signature::now("Host", "host@example.com").unwrap();
     bare.commit(
         Some("refs/heads/main"),
@@ -200,38 +221,114 @@ fn add_readme(server: &Path) {
     .unwrap();
 }
 
-fn remote_has_readme(server: &Path) -> bool {
+fn remote_files(server: &Path) -> Vec<String> {
     let bare = git2::Repository::open_bare(server).unwrap();
     let head = bare.refname_to_id("refs/heads/main").unwrap();
     let tree = bare.find_commit(head).unwrap().tree().unwrap();
-    tree.get_path(Path::new("README.md")).is_ok()
+    let mut out = Vec::new();
+    tree.walk(git2::TreeWalkMode::PreOrder, |parent, item| {
+        let is_file = item.kind() == Some(git2::ObjectType::Blob);
+        let path = format!("{parent}{}", item.name().unwrap());
+        if is_file && !path.starts_with(".tend/") {
+            out.push(path);
+        }
+        git2::TreeWalkResult::Ok
+    })
+    .unwrap();
+    out.sort();
+    out
 }
 
 #[test]
-fn a_repo_with_only_a_readme_connects_and_keeps_it() {
+fn markdown_made_on_the_host_becomes_notes_and_other_files_stay() {
     let server = tempfile::tempdir().unwrap();
     let remote = remote(server.path());
-    add_readme(server.path());
+    host_commit(
+        server.path(),
+        &[
+            ("README.md", "# notes\n"),
+            ("Docs/Guide.md", "# Guide\n"),
+            ("LICENSE", "MIT"),
+        ],
+    );
     let a = Device::new();
-    a.task("Ship");
-    connect(&a.vault.db(), a.root(), &remote).unwrap();
-    assert!(remote_has_readme(server.path()));
+    notes::create(&mut a.vault.db(), &a.vault.notes_dir(), "", "Readme").unwrap();
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
+
+    // The local readme keeps its name; the remote one is taken in next to it.
+    assert_eq!(a.read("readme.md"), "# Readme\n");
+    assert_eq!(a.read("readme_1.md"), "# notes\n");
+    assert_eq!(a.read("docs/guide.md"), "# Guide\n");
+    assert_eq!(
+        remote_files(server.path()),
+        [
+            ".gitignore",
+            "LICENSE",
+            "docs/guide.md",
+            "readme.md",
+            "readme_1.md"
+        ]
+    );
+    assert!(
+        !a.root().join("LICENSE").exists(),
+        "Tend writes only its own files"
+    );
 
     let b = Device::new();
     let root = b.root().to_path_buf();
     restore(&mut b.vault.db(), &root, &remote).unwrap();
     assert_eq!(b.rows(), a.rows());
-    assert!(
-        !b.root().join("README.md").exists(),
-        "Tend writes only its own files"
-    );
-
     person(&b, "01HZZZZZZZZZZZZZZZZZZZZZZZ");
     assert_eq!(b.sync(&remote).unwrap(), Outcome::Pushed);
-    assert!(
-        remote_has_readme(server.path()),
-        "later commits keep it too"
-    );
+    assert!(remote_files(server.path()).contains(&"LICENSE".to_string()));
     assert_eq!(a.sync(&remote).unwrap(), Outcome::Pulled);
     assert_eq!(a.sync(&remote).unwrap(), Outcome::Idle);
+}
+
+#[test]
+fn a_markdown_file_added_on_the_host_later_is_taken_in_on_the_next_sync() {
+    let server = tempfile::tempdir().unwrap();
+    let remote = remote(server.path());
+    let a = Device::new();
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
+    // Someone adds a file through the host's web editor, on top of Tend's commit.
+    let bare = git2::Repository::open_bare(server.path()).unwrap();
+    let head = bare
+        .find_commit(bare.refname_to_id("refs/heads/main").unwrap())
+        .unwrap();
+    let mut tree = bare.treebuilder(Some(&head.tree().unwrap())).unwrap();
+    tree.insert("Todo.md", bare.blob(b"- milk").unwrap(), 0o100644)
+        .unwrap();
+    let tree = bare.find_tree(tree.write().unwrap()).unwrap();
+    let who = git2::Signature::now("Host", "host@example.com").unwrap();
+    bare.commit(
+        Some("refs/heads/main"),
+        &who,
+        &who,
+        "Add Todo",
+        &tree,
+        &[&head],
+    )
+    .unwrap();
+
+    assert_eq!(a.sync(&remote).unwrap(), Outcome::Pushed);
+    assert_eq!(a.read("todo.md"), "- milk");
+    assert!(remote_files(server.path()).contains(&"todo.md".to_string()));
+    assert!(!remote_files(server.path()).contains(&"Todo.md".to_string()));
+}
+
+#[test]
+fn a_file_taken_in_before_a_failed_push_is_not_taken_in_twice() {
+    let server = tempfile::tempdir().unwrap();
+    let remote = remote(server.path());
+    host_commit(server.path(), &[("README.md", "# notes\n")]);
+    let a = Device::new();
+    // An earlier connect took the README in, then its push failed.
+    let repo = Repo::open(a.root()).unwrap();
+    let head = repo.fetch(&remote).unwrap().unwrap();
+    adopt(&mut a.vault.db(), a.root(), &repo, head).unwrap();
+    assert!(a.root().join("readme.md").is_file());
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
+    assert!(!a.root().join("readme_1.md").exists());
+    assert_eq!(remote_files(server.path()), [".gitignore", "readme.md"]);
 }

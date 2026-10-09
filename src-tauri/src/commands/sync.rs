@@ -99,8 +99,8 @@ pub async fn sync_connect<R: Runtime>(
     let config = config_of(&setup);
     token::save(&config.url, &setup.token)?;
     let remote = runner::remote_of(&config)?;
-    let (conn, _) = db::open(&vault::db_path(&vault.root))?;
-    if let Err(e) = run::connect(&conn, &vault.root, &remote) {
+    let (mut conn, _) = db::open(&vault::db_path(&vault.root))?;
+    if let Err(e) = run::connect(&mut conn, &vault.root, &remote) {
         token::clear(&config.url)?;
         return Err(e);
     }

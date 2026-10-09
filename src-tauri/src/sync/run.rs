@@ -11,12 +11,15 @@ use std::path::Path;
 use git2::Oid;
 use rusqlite::{Connection, Transaction};
 
-use super::apply::{apply, Change};
+use super::apply::{apply, Blobs, Change};
 use super::git::{Kept, Remote, Repo};
 use super::reconcile::reconcile;
 use super::shards::{self, Snapshot};
 use super::state;
 use crate::error::{errors, AppResult};
+use crate::files;
+use crate::names;
+use crate::notes;
 use crate::vault::SYNC_DIR;
 
 /// Files above this are not committed (host limits); their rows still sync.
@@ -69,13 +72,19 @@ fn collect_files(root: &Path, dir: &Path, out: &mut Vec<String>) -> AppResult<()
 }
 
 /// The tree to commit on top of `parent`: the vault's synced files, plus the parent's files Tend
-/// doesn't manage (a README made with the repo, say).
-fn tree_now(conn: &Connection, root: &Path, repo: &Repo, parent: Option<Oid>) -> AppResult<Oid> {
+/// doesn't manage (a licence, say). `adopted` files became notes, so they leave the tree.
+fn tree_now(
+    conn: &Connection,
+    root: &Path,
+    repo: &Repo,
+    (parent, adopted): (Option<Oid>, &[String]),
+) -> AppResult<Oid> {
     let paths = synced_paths(conn, root)?;
     let Some(commit) = parent else {
         return repo.tree_of_files(&paths, None);
     };
-    let managed = managed_paths(repo, commit)?;
+    let mut managed = managed_paths(repo, commit)?;
+    managed.extend(adopted.iter().cloned());
     let kept = Kept {
         commit,
         managed: &managed,
@@ -98,6 +107,69 @@ fn managed_paths(repo: &Repo, commit: Oid) -> AppResult<BTreeSet<String>> {
     Ok(paths)
 }
 
+/// Markdown files on the remote that Tend doesn't manage (the README made with the repo, a file
+/// added on the host's website) become notes: each folder and the file name get their slug, and a
+/// taken name gets `_1`, `_2`. Returns the remote paths taken in, which leave the next commit.
+fn adopt(conn: &mut Connection, root: &Path, repo: &Repo, head: Oid) -> AppResult<Vec<String>> {
+    let managed = managed_paths(repo, head)?;
+    let blobs = repo.blobs(head)?;
+    let mut adopted = Vec::new();
+    for path in repo.foreign_files(head, &managed)? {
+        let Some(place) = note_place(&path) else {
+            continue;
+        };
+        let Some(bytes) = blobs.read(&path)? else {
+            continue;
+        };
+        // Taken in on a run whose push failed: the note is already here.
+        if !has_note_like(conn, &place.folder, &bytes)? {
+            let text = String::from_utf8_lossy(&bytes);
+            let note = notes::create(conn, root, &place.folder, &place.name)?;
+            notes::write(conn, root, &note.id, &text)?;
+        }
+        adopted.push(path);
+    }
+    Ok(adopted)
+}
+
+/// A note directly in `folder` already holds exactly these bytes.
+fn has_note_like(conn: &Connection, folder: &str, bytes: &[u8]) -> AppResult<bool> {
+    let sha = files::sha256_of(bytes);
+    let mut stmt = conn.prepare(
+        "SELECT a.path FROM attachments a JOIN notes n ON n.attachment_id = a.id
+         WHERE a.sha256 = ?1 AND a.missing_at IS NULL",
+    )?;
+    let paths: Vec<String> = stmt
+        .query_map([sha], |r| r.get(0))?
+        .collect::<Result<_, _>>()?;
+    Ok(paths.iter().any(|p| names::parent(p) == folder))
+}
+
+/// Where a remote Markdown file goes as a note: its folders slugged, and its name (without `.md`)
+/// as the note's title, which `notes::create` slugs. `None` for other files, or a folder name
+/// with no letter or digit.
+struct NotePlace {
+    folder: String,
+    name: String,
+}
+
+fn note_place(path: &str) -> Option<NotePlace> {
+    let path = Path::new(path);
+    let is_markdown = path
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case(&notes::EXT[1..]));
+    if !is_markdown {
+        return None;
+    }
+    let mut folder = String::new();
+    for part in path.parent()?.iter() {
+        let part = names::slug(&part.to_string_lossy())?;
+        folder = names::join(&folder, &part);
+    }
+    let name = path.file_stem()?.to_string_lossy().into_owned();
+    Some(NotePlace { folder, name })
+}
+
 fn holds_vault(repo: &Repo, commit: Oid) -> AppResult<bool> {
     Ok(!repo.files_under(commit, SYNC_DIR)?.is_empty())
 }
@@ -115,7 +187,7 @@ fn oid(text: &str) -> AppResult<Oid> {
 
 /// Starts syncing a vault to a remote that holds no vault yet (it may be empty, or hold a README
 /// and the like, which stay). The first commit is the base.
-pub fn connect(conn: &Connection, root: &Path, remote: &Remote) -> AppResult<()> {
+pub fn connect(conn: &mut Connection, root: &Path, remote: &Remote) -> AppResult<()> {
     let repo = Repo::open(root)?;
     let head = repo.fetch(remote)?;
     if let Some(head) = head {
@@ -123,8 +195,12 @@ pub fn connect(conn: &Connection, root: &Path, remote: &Remote) -> AppResult<()>
             return Err(errors::SYNC_REMOTE_NOT_EMPTY.err());
         }
     }
+    let adopted = match head {
+        Some(head) => adopt(conn, root, &repo, head)?,
+        None => Vec::new(),
+    };
     shards::export(conn, root)?;
-    let tree = tree_now(conn, root, &repo, head)?;
+    let tree = tree_now(conn, root, &repo, (head, &adopted))?;
     let commit = repo.commit(remote, tree, head, "Start syncing")?;
     state::set_pending(conn, Some(&commit.to_string()))?;
     repo.push(remote)?;
@@ -193,15 +269,16 @@ fn run_once(conn: &mut Connection, root: &Path, remote: &Remote) -> AppResult<Ou
         .fetch(remote)?
         .ok_or_else(|| errors::SYNC_BASE_LOST.err())?;
     let base = resolve_base(conn, &repo, head)?;
+    let adopted = adopt(conn, root, &repo, head)?;
     shards::export(conn, root)?;
-    let tree = tree_now(conn, root, &repo, Some(head))?;
+    let tree = tree_now(conn, root, &repo, (Some(head), &adopted))?;
     let idle = head == base && tree == repo.tree_of(base)?;
     if idle {
         return Ok(Outcome::Idle);
     }
     merge_in(conn, root, &repo, (base, head))?;
     shards::export(conn, root)?;
-    let tree = tree_now(conn, root, &repo, Some(head))?;
+    let tree = tree_now(conn, root, &repo, (Some(head), &adopted))?;
     if tree == repo.tree_of(head)? {
         repo.point_branch(remote, head)?;
         return Ok(Outcome::Pulled);

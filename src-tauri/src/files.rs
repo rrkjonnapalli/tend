@@ -22,12 +22,22 @@ pub fn sha256(path: &Path) -> AppResult<String> {
         }
         hasher.update(&buf[..n]);
     }
-    let hex = hasher
+    Ok(hex(hasher))
+}
+
+/// The hash of bytes in memory, the same way `sha256` hashes a file.
+pub fn sha256_of(bytes: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    hex(hasher)
+}
+
+fn hex(hasher: Sha256) -> String {
+    hasher
         .finalize()
         .iter()
         .map(|b| format!("{b:02x}"))
-        .collect();
-    Ok(hex)
+        .collect()
 }
 
 /// Last-modified time in ms, or 0 when the file can't be read.
