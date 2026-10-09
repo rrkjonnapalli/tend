@@ -5,6 +5,7 @@
 // first row.
 import { moveTo } from '#lib/util/list-nav.ts';
 import { isTypingTarget } from '#lib/util/keys.ts';
+import { hasLayers } from '#lib/util/layers.ts';
 
 const ROW = '[data-row]';
 
@@ -35,7 +36,8 @@ function focusRow(row: HTMLElement) {
 /** Handles a key for the rows inside `node`; true when it did something. */
 export function rowKey(node: HTMLElement, e: KeyboardEvent): boolean {
   const hasModifier = e.metaKey || e.ctrlKey || e.altKey || e.shiftKey;
-  if (e.defaultPrevented || hasModifier) return false;
+  // An open dropdown or dialog owns the keys until it closes.
+  if (e.defaultPrevented || hasModifier || hasLayers()) return false;
   const target = e.target as HTMLElement;
   const row = target.closest<HTMLElement>(ROW);
   const typing = isTypingTarget(target);

@@ -147,7 +147,9 @@
   }
 
   function onkeydown(e: KeyboardEvent) {
-    if (enterPage(e) || leaveDock(e) || spacePresses(e)) return;
+    // An open dropdown or dialog owns plain keys (arrows, Space) until it closes.
+    const ownedByLayer = hasLayers() && !e.metaKey && !e.ctrlKey;
+    if (!ownedByLayer && (enterPage(e) || leaveDock(e) || spacePresses(e))) return;
     if (isPaneChord(e)) {
       paneKey(e);
       return;

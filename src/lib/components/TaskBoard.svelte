@@ -6,6 +6,7 @@
   import type { Task, TaskPatch } from '#lib/types/task.type.ts';
   import { onDestroy, tick } from 'svelte';
   import { cardTarget, statusTarget } from '#lib/util/board-nav.ts';
+  import { hasLayers } from '#lib/util/layers.ts';
   import TaskBoardColumn from './TaskBoardColumn.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { people } from '#lib/stores/people.svelte.ts';
@@ -118,7 +119,7 @@
   function onkeydown(e: KeyboardEvent) {
     const card = (e.target as HTMLElement).closest<HTMLElement>('[data-card]');
     const hasOtherModifier = e.metaKey || e.ctrlKey || e.altKey;
-    if (!card || hasOtherModifier || card !== e.target) return;
+    if (!card || hasOtherModifier || card !== e.target || hasLayers()) return;
     const cols = columnsOnScreen(e.currentTarget as HTMLElement);
     const col = cols.findIndex((c) => c.contains(card));
     const task = items.find((t) => t.id === card.dataset.card);

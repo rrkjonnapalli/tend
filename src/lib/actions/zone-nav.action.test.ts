@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { zoneNav } from './zone-nav.action.ts';
+import { pushLayer } from '#lib/util/layers.ts';
 
 /** A page bar, a view line, an empty list, a search field and a list of two rows. */
 function page() {
@@ -106,5 +107,16 @@ describe('zoneNav', () => {
     expect(document.activeElement).toBe(el('sub-edit'));
     key(el('sub-edit'), 'ArrowLeft');
     expect(document.activeElement).toBe(el('sub'));
+  });
+
+  it('leaves every arrow to an open dropdown', () => {
+    const { el } = page();
+    el('r1').focus();
+    const close = pushLayer(() => {});
+    key(el('r1'), 'ArrowDown');
+    expect(document.activeElement).toBe(el('r1'));
+    close();
+    key(el('r1'), 'ArrowDown');
+    expect(document.activeElement).toBe(el('r2'));
   });
 });

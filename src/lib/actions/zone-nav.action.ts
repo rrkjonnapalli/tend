@@ -14,6 +14,7 @@
 // its first or last character; a rich editor (the Markdown editor) keeps all its arrows.
 import { rowKey } from './row-nav.action.ts';
 import { isTypingTarget } from '#lib/util/keys.ts';
+import { hasLayers } from '#lib/util/layers.ts';
 
 const ZONE = '[data-zone]';
 const CONTROL =
@@ -141,7 +142,8 @@ function handle(node: HTMLElement, e: KeyboardEvent): boolean {
 export function zoneNav(node: HTMLElement) {
   function onkeydown(e: KeyboardEvent) {
     const hasModifier = e.metaKey || e.ctrlKey || e.altKey || e.shiftKey;
-    if (e.defaultPrevented || hasModifier) return;
+    // An open dropdown or dialog owns the keys until it closes.
+    if (e.defaultPrevented || hasModifier || hasLayers()) return;
     if (handle(node, e)) e.preventDefault();
   }
 
