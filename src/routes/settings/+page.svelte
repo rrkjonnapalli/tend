@@ -6,7 +6,10 @@
   import SettingsPalette from '#lib/components/SettingsPalette.svelte';
   import SettingsSync from '#lib/components/SettingsSync.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
-  import { rowNav } from '#lib/actions/row-nav.action.ts';
+  import { tick } from 'svelte';
+  import { hasLayers } from '#lib/util/layers.ts';
+  import { isTypingTarget } from '#lib/util/keys.ts';
+  import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageTitle from '#lib/components/PageTitle.svelte';
   import { nav } from '#lib/stores/history.svelte.ts';
@@ -28,16 +31,35 @@
   const requested = $derived(page.url.searchParams.get(SECTION_PARAM));
   const current = $derived(sections.find((s) => s.id === requested) ?? sections[0]);
 
+  let navEl = $state<HTMLElement>();
+
   function show(id: string) {
     nav.replace(routes.settingsSection(id));
   }
+
+  /** ↑↓ switch sections, like a sidebar, unless focus is in a field or the page's content. */
+  async function onkeydown(e: KeyboardEvent) {
+    const isArrow = e.key === 'ArrowDown' || e.key === 'ArrowUp';
+    const hasModifier = e.metaKey || e.ctrlKey || e.altKey || e.shiftKey;
+    if (!isArrow || hasModifier || hasLayers() || isTypingTarget(e.target)) return;
+    const onNav = e.target === document.body || navEl?.contains(e.target as Node);
+    if (!onNav) return;
+    e.preventDefault();
+    const at = sections.findIndex((s) => s.id === current.id);
+    const next = e.key === 'ArrowDown' ? nextIndex(at, sections.length) : prevIndex(at);
+    show(sections[next].id);
+    await tick();
+    navEl?.querySelectorAll<HTMLElement>('.sec')[next]?.focus();
+  }
 </script>
+
+<svelte:window {onkeydown} />
 
 <aside class="side" aria-label="Settings sections">
   <div class="top"><span class="caption muted">Settings</span></div>
-  <nav class="secs" use:rowNav>
+  <nav class="secs" bind:this={navEl}>
     {#each sections as s (s.id)}
-      <button class="sec" data-row class:on={s.id === current.id} aria-current={s.id === current.id ? 'page' : undefined} onclick={() => show(s.id)}>
+      <button class="sec" class:on={s.id === current.id} aria-current={s.id === current.id ? 'page' : undefined} onclick={() => show(s.id)}>
         {s.label}
       </button>
     {/each}
