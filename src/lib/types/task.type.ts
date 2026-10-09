@@ -27,3 +27,6 @@ export type TaskPatch = Partial<{
   assigneeId: string | null;
   orderKey: string;
 }>;
+
+/** What "keep" puts back of a task deleted elsewhere: the last copy, and the detail the page held. */
+export type TaskRestore = { task: Task; description: string; tags: string[]; labels: string[] };

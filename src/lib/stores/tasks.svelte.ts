@@ -1,7 +1,8 @@
 // Tasks, task folders, statuses, labels and today's My day choices, loaded once and patched in
 // place.
 import { tasksAPI } from '#lib/api/tasks.ts';
-import type { NewTask, Task, TaskPatch } from '#lib/types/task.type.ts';
+import type { NewTask, Task, TaskPatch, TaskRestore } from '#lib/types/task.type.ts';
+import { people } from '#lib/stores/people.svelte.ts';
 import { statusesAPI } from '#lib/api/statuses.ts';
 import type { Status } from '#lib/types/status.type.ts';
 import { labelsAPI } from '#lib/api/labels.ts';
@@ -96,6 +97,26 @@ class TasksStore {
     this.#replace(task);
     return task;
   };
+
+  /** Recreates a task deleted elsewhere as a new one (new id): its fields, description, tags and
+   *  labels. A parent, assignee or label that is gone too is left off. */
+  restore = async ({ task, description, tags, labels }: TaskRestore) => {
+    const made = await tasksAPI.create(this.#restoredTask(task));
+    const assigneeId = people.byId(task.assigneeId) ? task.assigneeId : null;
+    await tasksAPI.update({ id: made.id, patch: { description, dueTime: task.dueTime, assigneeId } });
+    if (tags.length > 0) await tasksAPI.setTags({ id: made.id, tags });
+    const known = labels.filter((id) => this.labels.some((l) => l.id === id));
+    if (known.length > 0) await labelsAPI.setForTask({ id: made.id, labels: known });
+    await this.load();
+    return made;
+  };
+
+  #restoredTask(task: Task): NewTask {
+    const input: NewTask = { path: task.path, title: task.title, status: task.status };
+    if (task.parentId !== null && this.byId(task.parentId)) input.parentId = task.parentId;
+    if (task.dueDate) input.dueDate = task.dueDate;
+    return input;
+  }
 
   move = async ({ id, target }: { id: string; target: string }) => {
     await tasksAPI.move({ id, target });

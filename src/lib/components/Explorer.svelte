@@ -12,7 +12,7 @@
   import ExplorerRowView from './ExplorerRow.svelte';
   import ExplorerMenu from './ExplorerMenu.svelte';
   import MoveToDialog from './MoveToDialog.svelte';
-  import DeleteDialog from './DeleteDialog.svelte';
+  import ConfirmDialog from './ConfirmDialog.svelte';
   import { baseOf, join, nameError, nameErrors, parentOf, titleError } from '#lib/util/names.ts';
   import { isTypingTarget, matches } from '#lib/util/keys.ts';
   import { hasLayers } from '#lib/util/layers.ts';
@@ -258,12 +258,13 @@
         title: `Delete folder ${row.name}?`,
         body: actions.contents(row.item.path),
         confirmWord: row.name,
-        button: 'Delete folder',
+        confirm: 'Delete folder',
       };
     }
     return {
       title: `Delete ${row.name}?`,
       body: 'The file is deleted from disk. Tags and attachment links on it are removed.',
+      confirm: 'Delete',
     };
   }
 
@@ -395,7 +396,7 @@
 
 {#if deleting}
   {@const row = deleting}
-  <DeleteDialog {...deleteCopy(row)} ondelete={() => confirmDelete(row)} onclose={() => (deleting = null)} />
+  <ConfirmDialog {...deleteCopy(row)} danger onconfirm={() => confirmDelete(row)} onclose={() => (deleting = null)} />
 {/if}
 
 {#if drag}

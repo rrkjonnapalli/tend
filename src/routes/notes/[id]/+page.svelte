@@ -5,12 +5,15 @@
   import type { Crumb } from '#lib/types/breadcrumb.type.ts';
   import type { NoteDoc } from '#lib/types/note.type.ts';
   import { beforeNavigate } from '$app/navigation';
+  import { untrack } from 'svelte';
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
   import TagEditor from '#lib/components/TagEditor.svelte';
-  import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
+  import DeletedDialog from '#lib/components/DeletedDialog.svelte';
+  import { useDeleted } from '#lib/hooks/deleted.hook.svelte.ts';
+  import { errors } from '#lib/errors/registry.ts';
   import MarkdownView from '#lib/components/MarkdownView.svelte';
   import MarkdownEditor from '#lib/components/MarkdownEditor.svelte';
   import { notesAPI } from '#lib/api/notes.ts';
@@ -30,13 +33,10 @@
 
   const id = $derived(page.params.id!);
   const row = $derived(notes.byId(id));
-  /** Where the open note lives, kept after it leaves the tree (deleted outside Tend or by sync). */
-  let last = $state({ folder: '', name: '' });
-  $effect(() => {
-    if (row) last = { folder: row.folder, name: row.name };
-  });
-  /** The open note was deleted elsewhere; its text stays here until the user keeps or drops it. */
-  let gone = $state(false);
+  /** Deleted elsewhere: the page keeps the note and its text until the user keeps or discards it. */
+  const deleted = useDeleted({ id: () => id, live: () => row });
+  /** The note's place, still known while it is gone. */
+  const place = $derived(row ?? deleted.last);
 
   let text = $state('');
   let saved = $state('');
@@ -80,45 +80,47 @@
     saved = doc.text;
   }
 
-  /** A read or save found the note deleted: hold on to the text and ask (see `keepDeleted`). */
-  function markGone(e: unknown) {
-    if (!toAppError(e).is('NOT_FOUND')) throw e;
-    clearTimeout(timer);
-    gone = true;
+  /** A note deleted elsewhere is noticed by `deleted` when the tree reloads; a read or save that
+   *  races it just stops. */
+  function ignoreMissing(e: unknown) {
+    if (!toAppError(e).is(errors.NOT_FOUND)) throw e;
   }
 
-  /** Recreates the deleted note as a new one: same folder, name, text (with unsaved edits) and tags. */
-  async function keepDeleted() {
-    const body = text;
-    const kept = await notes.create({ folder: last.folder, title: last.name });
-    await notesAPI.write({ id: kept.id, text: body });
-    if (tags.length) await tagsAPI.setForNote({ id: kept.id, tags });
-    gone = false;
+  async function keep() {
+    if (!deleted.last) return;
+    const { folder, name } = deleted.last;
+    const made = await notes.restore({ folder, name, text, tags });
+    deleted.settle();
     toast.show('Kept as a new note');
-    nav.replace(routes.note(kept.id, { edit: editing }));
+    nav.replace(routes.note(made.id, { edit: editing }));
   }
 
-  function dropDeleted() {
-    gone = false;
-    nav.replace(routes.notesFolder(last.folder));
+  function discard() {
+    deleted.settle();
+    nav.replace(routes.notesFolder(place?.folder ?? ''));
   }
 
-  // After outside changes: a note that isn't being edited takes the new text, and a note deleted
-  // elsewhere is noticed even while it is being edited.
+  // After outside changes, a note that isn't being edited takes the new text. The id is captured,
+  // so a late answer for a note that was left never lands in the next one.
   $effect(() => {
     void notes.version;
-    if (loadedId === id) notesAPI.read(id).then(takeOutsideText, markGone);
+    const noteId = untrack(() => loadedId);
+    if (noteId === null) return;
+    const takeIfStillOpen = (doc: NoteDoc) => {
+      if (noteId === loadedId) takeOutsideText(doc);
+    };
+    notesAPI.read(noteId).then(takeIfStillOpen, ignoreMissing);
   });
 
   async function flush() {
     clearTimeout(timer);
-    if (gone || loadedId === null || text === saved) return;
+    if (deleted.gone || loadedId === null || text === saved) return;
     const noteId = loadedId;
     const body = text;
     try {
       await notesAPI.write({ id: noteId, text: body });
     } catch (e) {
-      markGone(e);
+      ignoreMissing(e);
       return;
     }
     if (loadedId === noteId) saved = body;
@@ -159,14 +161,14 @@
   }
 
   const crumbs = $derived.by((): Crumb[] => {
-    const trail = folderCrumbs(row?.folder ?? '');
-    if (!row) return trail;
-    return [...trail, { label: row.name }];
+    const trail = folderCrumbs(place?.folder ?? '');
+    if (!place) return trail;
+    return [...trail, { label: place.name }];
   });
 </script>
 
 <main class="main">
-  <PageBar onback={() => nav.back(routes.notesFolder(row?.folder ?? ''))}>
+  <PageBar onback={() => nav.back(routes.notesFolder(place?.folder ?? ''))}>
     <Breadcrumbs {crumbs} />
     {#snippet actions()}
     <button
@@ -210,14 +212,8 @@
   {/if}
 </main>
 
-{#if gone}
-  <ConfirmDialog
-    title="This note was deleted"
-    body="It was deleted outside Tend or on another device. Keep it as a new note, with the text you have open?"
-    confirm="Keep"
-    cancel="Discard"
-    onconfirm={keepDeleted}
-    onclose={dropDeleted} />
+{#if deleted.gone}
+  <DeletedDialog kind="note" onkeep={keep} ondiscard={discard} />
 {/if}
 
 <style>

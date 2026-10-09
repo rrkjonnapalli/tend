@@ -8,7 +8,7 @@
   import ContactSection from '#lib/components/ContactSection.svelte';
   import MarkdownField from '#lib/components/MarkdownField.svelte';
   import EditControls from '#lib/components/EditControls.svelte';
-  import DeleteDialog from '#lib/components/DeleteDialog.svelte';
+  import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
   import PersonFields from '#lib/components/PersonFields.svelte';
   import PersonTasks from '#lib/components/PersonTasks.svelte';
   import { peopleAPI } from '#lib/api/people.ts';
@@ -99,10 +99,12 @@
 </main>
 
 {#if deleting && person}
-  <DeleteDialog
+  <ConfirmDialog
     title="Delete {displayName(person)}?"
     body="Their contacts and notes are deleted, and their tasks become unassigned."
-    ondelete={remove}
+    confirm="Delete"
+    danger
+    onconfirm={remove}
     onclose={() => (deleting = false)} />
 {/if}
 

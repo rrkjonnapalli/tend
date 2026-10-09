@@ -6,7 +6,7 @@
   import ColorListRow from './ColorListRow.svelte';
   import ColorListAddRow from './ColorListAddRow.svelte';
   import SwatchPicker from './SwatchPicker.svelte';
-  import DeleteDialog from './DeleteDialog.svelte';
+  import ConfirmDialog from './ConfirmDialog.svelte';
   import { labelsAPI } from '#lib/api/labels.ts';
   import type { Label } from '#lib/types/label.type.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
@@ -147,10 +147,12 @@
 {/if}
 
 {#if deleting}
-  <DeleteDialog
+  <ConfirmDialog
     title="Delete “{deleting.label.name}”?"
     body="It comes off {plural(deleting.uses, 'task')} that carry it."
-    ondelete={confirmRemove}
+    confirm="Delete"
+    danger
+    onconfirm={confirmRemove}
     onclose={() => (deleting = null)} />
 {/if}
 
