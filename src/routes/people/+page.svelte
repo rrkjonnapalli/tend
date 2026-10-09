@@ -70,7 +70,7 @@
           <span class="m">{p.email ?? ''}</span>
         </a>
       {/each}
-      {#if shown.length === 0}<span class="list-empty">{emptyText}</span>{/if}
+      {#if people.loaded && shown.length === 0}<span class="list-empty">{emptyText}</span>{/if}
     </div>
   </div>
 </main>

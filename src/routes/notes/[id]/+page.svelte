@@ -11,6 +11,8 @@
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
   import TagEditor from '#lib/components/TagEditor.svelte';
+  import SaveStatus from '#lib/components/SaveStatus.svelte';
+  import type { SaveState } from '#lib/types/save.type.ts';
   import DeletedDialog from '#lib/components/DeletedDialog.svelte';
   import { useDeleted } from '#lib/hooks/deleted.hook.svelte.ts';
   import { errors } from '#lib/errors/registry.ts';
@@ -44,6 +46,17 @@
   let editing = $state(false);
   let loadedId = $state<string | null>(null);
   let timer: ReturnType<typeof setTimeout> | undefined;
+  /** A write is on its way to disk. */
+  let writing = $state(false);
+  /** The last write failed; the text stays on screen until a retry works. */
+  let failed = $state(false);
+
+  /** Edits not yet on disk count as saving: the autosave is at most SAVE_MS away. */
+  const saveState = $derived.by((): SaveState => {
+    if (failed) return 'failed';
+    if (writing || text !== saved) return 'saving';
+    return 'saved';
+  });
 
   const wide = $derived(settings.get(settingKeys.notesWide, settingDefaults.notesWide));
   const widthLabel = $derived(wide ? 'Narrow width' : 'Full width');
@@ -117,12 +130,17 @@
     if (deleted.gone || loadedId === null || text === saved) return;
     const noteId = loadedId;
     const body = text;
+    writing = true;
     try {
       await notesAPI.write({ id: noteId, text: body });
     } catch (e) {
+      failed = !toAppError(e).is(errors.NOT_FOUND);
       ignoreMissing(e);
       return;
+    } finally {
+      writing = false;
     }
+    failed = false;
     if (loadedId === noteId) saved = body;
   }
 
@@ -171,6 +189,7 @@
   <PageBar onback={() => nav.back(routes.notesFolder(place?.folder ?? ''))}>
     <Breadcrumbs {crumbs} />
     {#snippet actions()}
+      {#if loadedId === id}<SaveStatus state={saveState} onretry={flush} />{/if}
       {#if editing}
         <button class="icon-btn" aria-label="Read" title="Read ({keyLabel('mod+r')})" onclick={() => setMode(false)}><Icon name="read" size={14} /></button>
       {:else}

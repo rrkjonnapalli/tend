@@ -69,7 +69,7 @@ class SyncStore {
 
   #onLive = async (live: SyncLive) => {
     const firstFailure = live.error !== null && !this.status?.error;
-    if (firstFailure) toast.show(`Sync: ${live.error?.message}`);
+    if (firstFailure) toast.error(`Sync: ${live.error?.message}`);
     this.#showFor(live.running);
     if (live.running) {
       if (this.status) this.status = { ...this.status, ...live };

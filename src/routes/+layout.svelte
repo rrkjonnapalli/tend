@@ -32,7 +32,7 @@
   afterNavigate(nav.record);
 
   // Errors nobody handled (a failed command, a thrown error) show here as a toast.
-  $effect(() => installErrorHandler(toast.show));
+  $effect(() => installErrorHandler(toast.error));
 
   // Once launch is settled: no vault → start page; "/" → Notes.
   $effect(() => {
