@@ -1,8 +1,10 @@
-// ⌘← and ⌘→: between the side pane (the explorer, the Settings sections) and the page's main
-// content. The side pane is marked `data-pane="side"`; the main content is the page's <main>.
+// ⌘← ⌘→ ⌘↓ ⌘↑: between the side pane (the explorer, the Settings sections), the page's main
+// content and the dock. The side pane is `data-pane="side"`, the dock `data-pane="dock"`, the
+// main content the page's <main>.
 
 /** Where focus lands, best first (a selector list would match in page order instead). */
 const SIDE_ENTRY = ['[data-row][aria-selected="true"]', '[aria-current="page"]', '[data-row]', 'button'];
+const DOCK_ENTRY = ['[aria-current="page"]', 'a[href]', 'button'];
 const MAIN_ENTRY = ['[data-zone="rows"] [data-row]', '[data-zone="board"] [data-card]', '[data-zone] input', 'button', 'a[href]'];
 
 function firstOf(root: ParentNode, selectors: string[]): HTMLElement | null {
@@ -17,6 +19,14 @@ function firstOf(root: ParentNode, selectors: string[]): HTMLElement | null {
 export function focusSide(root: ParentNode): boolean {
   const side = root.querySelector<HTMLElement>('[data-pane="side"]');
   const entry = side ? firstOf(side, SIDE_ENTRY) : null;
+  entry?.focus();
+  return Boolean(entry);
+}
+
+/** Focuses the dock on the current section's icon; false when the dock isn't shown. */
+export function focusDock(root: ParentNode): boolean {
+  const dock = root.querySelector<HTMLElement>('[data-pane="dock"]');
+  const entry = dock ? firstOf(dock, DOCK_ENTRY) : null;
   entry?.focus();
   return Boolean(entry);
 }

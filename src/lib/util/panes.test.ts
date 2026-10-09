@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { focusMain, focusSide } from './panes.ts';
+import { focusDock, focusMain, focusSide } from './panes.ts';
 
 describe('panes', () => {
   it('goes to the open item on the side and back to where the main content was left', () => {
@@ -19,5 +19,12 @@ describe('panes', () => {
   it('says when there is no side pane', () => {
     document.body.innerHTML = '<main></main>';
     expect(focusSide(document)).toBe(false);
+  });
+
+  it('goes to the dock on the current section', () => {
+    document.body.innerHTML = `
+      <nav data-pane="dock"><a href="/notes" id="notes">n</a><a href="/tasks" id="tasks" aria-current="page">t</a><button id="gear">s</button></nav>`;
+    expect(focusDock(document)).toBe(true);
+    expect(document.activeElement?.id).toBe('tasks');
   });
 });

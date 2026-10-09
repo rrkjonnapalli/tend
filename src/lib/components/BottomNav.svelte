@@ -7,6 +7,7 @@
   import TimerChip from './TimerChip.svelte';
   import SyncIcon from './SyncIcon.svelte';
   import { ui } from '#lib/stores/ui.svelte.ts';
+  import { zoneNav } from '#lib/actions/zone-nav.action.ts';
   import { routes } from '#lib/util/routes.ts';
 
   const sections: { href: string; label: string; icon: IconName }[] = [
@@ -31,7 +32,7 @@
     <button class="tog" aria-label="Hide sections bar" title="Hide" onclick={ui.toggleNav}>
       <Icon name="chevronDown" size={12} stroke={2.5} />
     </button>
-    <nav class="row" aria-label="Sections">
+    <nav class="row" aria-label="Sections" data-pane="dock" data-zone="bar" use:zoneNav>
       {#each sections as s (s.href)}
         <a
           class="ico"

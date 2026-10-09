@@ -22,7 +22,8 @@
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import { applyTheme } from '#lib/util/theme.ts';
   import { startTabbingIn } from '#lib/util/focus-start.ts';
-  import { focusMain, focusSide } from '#lib/util/panes.ts';
+  import { focusDock, focusMain, focusSide } from '#lib/util/panes.ts';
+  import { hasLayers } from '#lib/util/layers.ts';
   import { isTypingTarget, matches } from '#lib/util/keys.ts';
   import { tick } from 'svelte';
   import type { ThemePref } from '#lib/types/theme.type.ts';
@@ -88,16 +89,22 @@
 
   /** ⌘← or ⌘→ outside a field (in a field they move the caret to the line's start or end). */
   function isPaneChord(e: KeyboardEvent): boolean {
-    const isPaneKey = e.key === 'ArrowLeft' || e.key === 'ArrowRight';
+    const isPaneKey = e.key.startsWith('Arrow');
     const onlyCmd = e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey;
     return isPaneKey && onlyCmd && !isTypingTarget(e.target);
   }
 
-  /** ⌘← to the explorer (opening it if hidden) or the Settings sections, ⌘→ back to the page. */
+  /** ⌘← to the explorer (opening it if hidden) or the Settings sections, ⌘↓ to the dock (opening
+   *  it if hidden), ⌘→ / ⌘↑ back to the page. */
   async function paneKey(e: KeyboardEvent): Promise<boolean> {
     if (!inVault || !pageEl) return false;
     e.preventDefault();
-    if (e.key === 'ArrowRight') return focusMain(pageEl, lastInMain);
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') return focusMain(pageEl, lastInMain);
+    if (e.key === 'ArrowDown') {
+      if (!ui.navOpen) ui.toggleNav();
+      await tick();
+      return focusDock(document);
+    }
     if (!focusSide(pageEl) && !ui.explorerOpen) {
       ui.toggleExplorer();
       await tick();
@@ -117,8 +124,17 @@
     return focusMain(pageEl, lastInMain);
   }
 
+  /** ↑ or Esc on the dock returns to the page. */
+  function leaveDock(e: KeyboardEvent): boolean {
+    const inDock = (e.target as HTMLElement).closest('[data-pane="dock"]') !== null;
+    const isLeaveKey = e.key === 'ArrowUp' || e.key === 'Escape';
+    if (!inDock || !isLeaveKey || hasLayers() || !pageEl) return false;
+    e.preventDefault();
+    return focusMain(pageEl, lastInMain);
+  }
+
   function onkeydown(e: KeyboardEvent) {
-    if (enterPage(e)) return;
+    if (enterPage(e) || leaveDock(e)) return;
     if (isPaneChord(e)) {
       paneKey(e);
       return;
