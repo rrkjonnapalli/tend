@@ -9,7 +9,7 @@
   import SearchLine from '#lib/components/SearchLine.svelte';
   import AddLine from '#lib/components/AddLine.svelte';
   import { peopleAPI } from '#lib/api/people.ts';
-  import { displayName, personMatches, splitName } from '#lib/util/people.ts';
+  import { displayName, PEOPLE_ROOT_NAME, personMatches, splitName } from '#lib/util/people.ts';
   import type { PersonRow } from '#lib/types/person.type.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { personBirthday } from '#lib/util/birthdays.ts';
@@ -53,8 +53,8 @@
 </script>
 
 <main class="list-page">
-  <PageBar><Breadcrumbs crumbs={[{ label: 'People' }]} /></PageBar>
-  <ListTitle title="People" meta={summary} />
+  <PageBar><Breadcrumbs crumbs={[{ label: PEOPLE_ROOT_NAME }]} /></PageBar>
+  <ListTitle title={PEOPLE_ROOT_NAME} meta={summary} />
   <SearchLine bind:value={query} label="Search people" placeholder="Search name, phone or email" />
   <AddLine bind:value={draft} bind:input={addInput} label="Add person" placeholder="add person (first and last name)" onadd={add} />
   <ColumnHeader template="var(--grid-person)" gap="16px" columns={COLUMNS} />

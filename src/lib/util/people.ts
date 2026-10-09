@@ -1,6 +1,9 @@
 import type { PersonName, PersonRow } from '#lib/types/person.type.ts';
 import { textMatches } from './search.ts';
 
+/** The People section's name in breadcrumbs and its title, lowercase like `notes` and `tasks`. */
+export const PEOPLE_ROOT_NAME = 'people';
+
 /** Nickname when set, otherwise first and last name. */
 export function displayName(p: PersonName): string {
   const nickname = p.nickname?.trim();

@@ -12,7 +12,7 @@
   import PersonFields from '#lib/components/PersonFields.svelte';
   import PersonTasks from '#lib/components/PersonTasks.svelte';
   import { peopleAPI } from '#lib/api/people.ts';
-  import { displayName } from '#lib/util/people.ts';
+  import { displayName, PEOPLE_ROOT_NAME } from '#lib/util/people.ts';
   import type { ContactKind, Person, PersonPatch } from '#lib/types/person.type.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
@@ -64,7 +64,7 @@
   {#if person}
     <div class="detail-stack">
       <PageBar onback={() => nav.back(routes.people)}>
-        <Breadcrumbs crumbs={[{ label: 'People', href: routes.people }, { label: displayName(person) }]} />
+        <Breadcrumbs crumbs={[{ label: PEOPLE_ROOT_NAME, href: routes.people }, { label: displayName(person) }]} />
         {#snippet actions()}
           <button class="icon-btn" aria-label="Delete person" title="Delete person" onclick={() => (deleting = true)}><Icon name="trash" size={14} /></button>
         {/snippet}
