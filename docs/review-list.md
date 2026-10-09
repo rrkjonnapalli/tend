@@ -2,11 +2,24 @@
 
 Things decided or found while building; each needs a look, a yes, or a no.
 
+## Cut from the sync plan (you said "cut all six")
+
+Each can come back later; none changes the shard layout.
+
+| # | What was cut | Why | Consequence today |
+|---|---|---|---|
+| C1 | **The 2-way fallback and tombstones** (`deletions` table, `deleted/` shards) | Only needed when two vaults that both have data meet without a shared base. | **Connect needs an empty remote**; a second device restores into an empty folder; a lost base (force-push) stops sync and asks for a restore. *Open:* a cheaper option is a first merge on an empty base (a union of both sides, no tombstones); its cost is that deletions made while disconnected come back once. |
+| C2 | **Two-parent merge commits** | Tend writes the whole merged tree, so one commit on the fetched head is enough and the push is a fast-forward. | Linear history. |
+| C3 | **The per-write activity log** (`activity` table + triggers) | Nothing needed it except a "recent activity" list. | Settings shows only the last run and its result (`sync_state`). |
+| C4 | **The `access` table** | For "recent" lists and ranking, not sync. | No recents. |
+| C5 | **The `changes` table (deferred)** | Only speeds things up around 100k rows. | Every run rebuilds all shards; Git decides what changed. Add back if a vault gets slow. |
+| C6 | **Restore from Settings** | A restore makes a new vault, which belongs on the Start page. | Restore only on the Start page. |
+
 ## Decided for you
 
 1. **`git2` dependency (for S4).** "Do till S4" taken as the OK the plan asked for. Vendored
-   libgit2 and OpenSSL: about +4.3 MB to the app, perl at build time. The Keychain crate is *not*
-   added yet; S4 is tested against a local bare repo, and the token is only needed for S5's UI.
+   libgit2 and OpenSSL: about +4.3 MB to the app, perl at build time. S4 is tested against a
+   local bare repo; the Keychain crates came with S5 (#12).
 2. **Year from a ULID** is computed with a 10-line calendar function (`sync/shards`), not a date
    crate: it's the only date sync needs.
 3. **Shared settings** that sync are `tasks.root_name` and `timers.sound`
