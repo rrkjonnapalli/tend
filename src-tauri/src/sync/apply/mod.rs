@@ -59,7 +59,13 @@ fn write_rows(
     change: &Change,
     also: impl FnOnce(&Transaction) -> AppResult<()>,
 ) -> AppResult<()> {
-    let tx = conn.transaction()?;
+    // Immediate: the app's own connection can't write between this check and the commit.
+    let tx = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+    // The merge was worked out from `local`; an edit made since then must not be overwritten,
+    // so the run starts over (`sync` retries a rejected run once).
+    if super::shards::snapshot(&tx)? != *change.local {
+        return Err(crate::error::errors::SYNC_REJECTED.with("The vault changed during the sync"));
+    }
     rows::write(&tx, change.local, change.merged)?;
     log_moves(&tx, change)?;
     also(&tx)?;

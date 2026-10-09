@@ -4,7 +4,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
 
@@ -21,9 +21,6 @@ use crate::files;
 use crate::names;
 use crate::notes;
 use crate::vault::SYNC_DIR;
-
-/// Files above this are not committed (host limits); their rows still sync.
-const MAX_FILE_BYTES: u64 = 100 * 1024 * 1024;
 
 /// What a run did.
 #[derive(Debug, PartialEq, Eq)]
@@ -48,7 +45,7 @@ fn synced_paths(conn: &Connection, root: &Path) -> AppResult<Vec<String>> {
         .collect::<Result<_, _>>()?;
     for path in files {
         let size = fs::metadata(root.join(&path)).map(|m| m.len());
-        if size.is_ok_and(|s| s <= MAX_FILE_BYTES) {
+        if size.is_ok_and(files::within_limit) {
             paths.push(path);
         }
     }
@@ -83,35 +80,56 @@ fn tree_now(
     let Some(commit) = parent else {
         return repo.tree_of_files(&paths, None);
     };
-    let mut managed = managed_paths(repo, commit)?;
+    let in_parent = managed_files(repo, commit)?;
+    let mut managed: BTreeSet<String> = in_parent.keys().cloned().collect();
     managed.extend(adopted.iter().cloned());
+    let unchanged = unchanged_files(conn, &in_parent)?;
     let kept = Kept {
         commit,
         managed: &managed,
+        unchanged: &unchanged,
     };
     repo.tree_of_files(&paths, Some(kept))
 }
 
-/// The files Tend manages in a commit: those its `attachments` rows point at. None in a commit
-/// that holds no vault.
-fn managed_paths(repo: &Repo, commit: Oid) -> AppResult<BTreeSet<String>> {
+/// The files Tend manages in a commit, with their hashes: those its `attachments` rows point at.
+/// None in a commit that holds no vault.
+fn managed_files(repo: &Repo, commit: Oid) -> AppResult<BTreeMap<String, String>> {
     if !holds_vault(repo, commit)? {
-        return Ok(BTreeSet::new());
+        return Ok(BTreeMap::new());
     }
     let rows = rows_at(repo, commit)?;
-    let paths = rows["attachments"]
+    let text = |row: &shards::Row, c: &str| row.get(c).and_then(|v| v.as_str()).map(String::from);
+    let files = rows["attachments"]
         .values()
-        .filter_map(|row| row.get("path")?.as_str())
-        .map(String::from)
+        .filter_map(|row| Some((text(row, "path")?, text(row, "sha256")?)))
         .collect();
-    Ok(paths)
+    Ok(files)
+}
+
+/// Files whose path and hash are the same here as in the parent commit: the commit reuses the
+/// parent's copy instead of reading and hashing them again.
+fn unchanged_files(
+    conn: &Connection,
+    in_parent: &BTreeMap<String, String>,
+) -> AppResult<BTreeSet<String>> {
+    let mut stmt = conn.prepare("SELECT path, sha256 FROM attachments WHERE missing_at IS NULL")?;
+    let here = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
+    let mut same = BTreeSet::new();
+    for row in here {
+        let (path, sha) = row?;
+        if in_parent.get(&path) == Some(&sha) {
+            same.insert(path);
+        }
+    }
+    Ok(same)
 }
 
 /// Markdown files on the remote that Tend doesn't manage (the README made with the repo, a file
 /// added on the host's website) become notes: each folder and the file name get their slug, and a
 /// taken name gets `_1`, `_2`. Returns the remote paths taken in, which leave the next commit.
 fn adopt(conn: &mut Connection, root: &Path, repo: &Repo, head: Oid) -> AppResult<Vec<String>> {
-    let managed = managed_paths(repo, head)?;
+    let managed: BTreeSet<String> = managed_files(repo, head)?.into_keys().collect();
     let blobs = repo.blobs(head)?;
     let mut adopted = Vec::new();
     for path in repo.foreign_files(head, &managed)? {
@@ -121,6 +139,9 @@ fn adopt(conn: &mut Connection, root: &Path, repo: &Repo, head: Oid) -> AppResul
         let Some(bytes) = blobs.read(&path)? else {
             continue;
         };
+        if !files::within_limit(bytes.len() as u64) {
+            continue;
+        }
         // Taken in on a run whose push failed: the note is already here.
         if !has_note_like(conn, &place.folder, &bytes)? {
             let text = String::from_utf8_lossy(&bytes);
@@ -154,6 +175,11 @@ struct NotePlace {
 }
 
 fn note_place(path: &str) -> Option<NotePlace> {
+    // Hidden folders (`.github/`) hold the host's own files, never notes.
+    let hidden = path.split('/').any(names::is_hidden);
+    if hidden {
+        return None;
+    }
     let path = Path::new(path);
     let is_markdown = path
         .extension()

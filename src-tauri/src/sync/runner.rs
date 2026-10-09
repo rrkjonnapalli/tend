@@ -215,6 +215,9 @@ fn run_once(place: &Place) -> AppResult<Outcome> {
     };
     let remote = remote_of(&cfg)?;
     let (mut conn, _) = db::open(&vault::db_path(&place.root))?;
+    // Index edits made on disk since the last scan, so the merge sees them (spec §13).
+    let fix = crate::notes::fix_allowed(&conn)?;
+    crate::notes::scan(&mut conn, &place.root, fix)?;
     run::sync(&mut conn, &place.root, &remote)
 }
 

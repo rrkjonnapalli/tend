@@ -13,7 +13,7 @@ use rusqlite::types::Value as SqlValue;
 use rusqlite::{params_from_iter, Transaction};
 use serde_json::Value;
 
-use crate::error::AppResult;
+use crate::error::{errors, AppResult};
 use crate::sync::shards::{table_names, Row, Snapshot};
 
 /// Written before anything is deleted (see step 2 above), and only then.
@@ -28,8 +28,29 @@ const UNIQUE_COLUMNS: &[(&str, &str)] = &[
     ("task_folders", "path"),
 ];
 
+/// Column names go into the SQL text, so a row from the remote may only use plain ones
+/// (`snake_case`); anything else would be SQL.
+fn check_columns(merged: &Snapshot) -> AppResult<()> {
+    let plain = |c: &str| {
+        !c.is_empty()
+            && c.bytes()
+                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_')
+    };
+    for rows in merged.values() {
+        for row in rows.values() {
+            if let Some(bad) = row.keys().find(|c| !plain(c)) {
+                return Err(
+                    errors::SYNC_APPLY_FAILED.with(format!("Refused a column named {bad:?}"))
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Makes the database's synced rows equal `merged`, given they are `local` now.
 pub fn write(tx: &Transaction, local: &Snapshot, merged: &Snapshot) -> AppResult<()> {
+    check_columns(merged)?;
     tx.pragma_update(None, "defer_foreign_keys", "ON")?;
     upsert(tx, FIRST, local, merged)?;
     for table in table_names().into_iter().rev() {

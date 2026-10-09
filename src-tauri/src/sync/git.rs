@@ -84,6 +84,8 @@ fn callbacks(remote: &Remote) -> RemoteCallbacks<'_> {
 pub struct Kept<'a> {
     pub commit: Oid,
     pub managed: &'a BTreeSet<String>,
+    /// Managed files the vault still holds unchanged: the parent's entry is reused, unread.
+    pub unchanged: &'a BTreeSet<String>,
 }
 
 /// Tend's own files: `.gitignore`, everything under `.tend/`, and files rows point at.
@@ -186,11 +188,15 @@ impl Repo {
     pub fn tree_of_files(&self, paths: &[String], keep: Option<Kept>) -> AppResult<Oid> {
         let mut index = self.repo.index()?;
         index.clear()?;
-        if let Some(kept) = keep {
-            self.read_foreign(&mut index, &kept)?;
+        if let Some(kept) = &keep {
+            self.read_foreign(&mut index, kept)?;
         }
+        let reused = keep.as_ref().map(|k| k.unchanged);
         index.add_all([GITIGNORE], IndexAddOption::FORCE, None)?;
         for path in paths {
+            if reused.is_some_and(|r| r.contains(path)) {
+                continue;
+            }
             index.add_path(Path::new(path))?;
         }
         Ok(index.write_tree()?)
@@ -212,16 +218,25 @@ impl Repo {
         Ok(out)
     }
 
-    /// Loads the commit's tree into `index`, minus every file Tend manages there.
+    /// Loads the commit's tree into `index`, minus every file Tend manages there (unless it is
+    /// unchanged) and every file too big to keep (`files::MAX_FILE_BYTES`).
     fn read_foreign(&self, index: &mut git2::Index, kept: &Kept) -> AppResult<()> {
         let tree = self.repo.find_commit(kept.commit)?.tree()?;
         index.read_tree(&tree)?;
-        let managed: Vec<PathBuf> = index
+        let odb = self.repo.odb()?;
+        let dropped: Vec<PathBuf> = index
             .iter()
-            .map(|entry| PathBuf::from(String::from_utf8_lossy(&entry.path).into_owned()))
-            .filter(|path| is_managed(path, kept.managed))
+            .filter_map(|entry| {
+                let path = String::from_utf8_lossy(&entry.path).into_owned();
+                // The object's header holds its size; the content isn't read.
+                let size = odb.read_header(entry.id).map_or(0, |(size, _)| size as u64);
+                let reused = kept.unchanged.contains(&path) && crate::files::within_limit(size);
+                let stale = is_managed(Path::new(&path), kept.managed) && !reused;
+                let too_big = !crate::files::within_limit(size);
+                (stale || too_big).then(|| PathBuf::from(path))
+            })
             .collect();
-        for path in managed {
+        for path in dropped {
             index.remove_path(&path)?;
         }
         Ok(())

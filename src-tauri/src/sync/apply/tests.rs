@@ -5,7 +5,6 @@ use serde_json::json;
 
 use super::*;
 use crate::db::open_memory;
-use crate::error::errors;
 use crate::notes;
 use crate::sync::shards::{snapshot, Row};
 
@@ -161,7 +160,7 @@ fn files_follow_the_rows_moved_swapped_fetched_and_removed() {
 }
 
 #[test]
-fn a_failure_before_the_commit_leaves_the_vault_as_it_was() {
+fn a_file_the_remote_lacks_lets_its_row_in_and_leaves_the_old_file() {
     let mut v = vault();
     let plan = v.note("", "Plan");
     let local = snapshot(&v.conn).unwrap();
@@ -178,11 +177,44 @@ fn a_failure_before_the_commit_leaves_the_vault_as_it_was() {
         remote: &merged,
     };
     let root = v.root().to_path_buf();
-    let failed = apply(&mut v.conn, &root, &change, &Remote(HashMap::new()), no_tx);
-    assert!(failed.unwrap_err().is(errors::SYNC_APPLY_FAILED));
-    assert_eq!(snapshot(&v.conn).unwrap(), local);
+    apply(&mut v.conn, &root, &change, &Remote(HashMap::new()), no_tx).unwrap();
+    assert_eq!(snapshot(&v.conn).unwrap(), merged);
     assert_eq!(v.read("plan.md"), "# Plan\n");
     assert!(!v.root().join(".tend/staging").exists());
+}
+
+#[test]
+fn a_folder_that_cannot_be_made_rolls_the_apply_back() {
+    let mut v = vault();
+    let local = snapshot(&v.conn).unwrap();
+    let mut merged = local.clone();
+    // A plain file sits where the incoming folder must go.
+    fs::write(v.root().join("ideas"), "not a folder").unwrap();
+    merged.get_mut("note_folders").unwrap().insert(
+        "f1".into(),
+        json!({ "id": "f1", "path": "ideas", "created_at": 0, "updated_at": 0 })
+            .as_object()
+            .unwrap()
+            .clone(),
+    );
+    let change = Change {
+        local: &local,
+        merged: &merged,
+        remote: &merged,
+    };
+    let root = v.root().to_path_buf();
+    assert!(apply(&mut v.conn, &root, &change, &Remote(HashMap::new()), no_tx).is_err());
+    assert_eq!(snapshot(&v.conn).unwrap(), local);
+}
+
+#[test]
+fn a_path_outside_the_vault_is_refused() {
+    for bad in ["../x.md", "/tmp/x.md", "a/../../x.md", ".tend/tend.db"] {
+        assert!(files::check_path(bad).is_err(), "{bad}");
+    }
+    for ok in ["", "work/plan.md", ".tend/attachments/01H.pdf"] {
+        assert!(files::check_path(ok).is_ok(), "{ok}");
+    }
 }
 
 #[test]

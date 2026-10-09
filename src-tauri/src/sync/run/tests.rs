@@ -332,3 +332,28 @@ fn a_file_taken_in_before_a_failed_push_is_not_taken_in_twice() {
     assert!(!a.root().join("readme_1.md").exists());
     assert_eq!(remote_files(server.path()), [".gitignore", "readme.md"]);
 }
+
+#[test]
+fn hidden_and_oversized_files_on_the_host_are_never_taken_in_and_big_ones_leave_the_repo() {
+    let server = tempfile::tempdir().unwrap();
+    let remote = remote(server.path());
+    let big = "x".repeat(crate::files::MAX_FILE_BYTES as usize);
+    host_commit(
+        server.path(),
+        &[
+            (".github/ISSUE_TEMPLATE/bug.md", "# Bug\n"),
+            ("huge.md", big.as_str()),
+        ],
+    );
+    let a = Device::new();
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
+    assert!(
+        !a.root().join("github").exists(),
+        "a hidden folder's Markdown is not a note"
+    );
+    assert!(!a.root().join("huge.md").exists());
+    assert_eq!(
+        remote_files(server.path()),
+        [".github/ISSUE_TEMPLATE/bug.md", ".gitignore"]
+    );
+}

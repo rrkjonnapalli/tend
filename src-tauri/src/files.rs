@@ -11,6 +11,15 @@ use crate::error::AppResult;
 
 const READ_CHUNK: usize = 64 * 1024;
 
+/// Files this size or larger are left alone: the scan doesn't index a note this big, a file this
+/// big can't be attached, and sync never commits one.
+pub const MAX_FILE_BYTES: u64 = 30 * 1024 * 1024;
+
+/// True for a file Tend works with (under `MAX_FILE_BYTES`).
+pub fn within_limit(size: u64) -> bool {
+    size < MAX_FILE_BYTES
+}
+
 pub fn sha256(path: &Path) -> AppResult<String> {
     let mut file = fs::File::open(path)?;
     let mut hasher = Sha256::new();

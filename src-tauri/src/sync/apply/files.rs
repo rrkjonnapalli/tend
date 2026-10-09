@@ -52,7 +52,28 @@ fn paths(s: &Snapshot, table: &str) -> BTreeSet<String> {
         .unwrap_or_default()
 }
 
+/// A path from a row may only point inside the vault: relative, no `..`, and under `.tend/` only
+/// in the attachment store. A row from the remote is not trusted to say otherwise.
+pub fn check_path(path: &str) -> AppResult<()> {
+    use std::path::Component;
+    let p = Path::new(path);
+    // The empty path is the root folder itself.
+    let plain = p.components().all(|c| matches!(c, Component::Normal(_)));
+    let in_tend = p.starts_with(crate::vault::TEND_DIR);
+    let in_store = p.starts_with(crate::vault::ATTACHMENTS_DIR);
+    if plain && (!in_tend || in_store) {
+        return Ok(());
+    }
+    Err(errors::SYNC_APPLY_FAILED.with(format!("Refused a path outside the vault: {path}")))
+}
+
 pub fn plan(local: &Snapshot, merged: &Snapshot, remote: &Snapshot) -> AppResult<Plan> {
+    for path in paths(merged, "attachments")
+        .iter()
+        .chain(&paths(merged, "note_folders"))
+    {
+        check_path(path)?;
+    }
     let empty = Default::default();
     let local_files = local.get("attachments").unwrap_or(&empty);
     let remote_files = remote.get("attachments").unwrap_or(&empty);
@@ -67,7 +88,12 @@ pub fn plan(local: &Snapshot, merged: &Snapshot, remote: &Snapshot) -> AppResult
         }
         let source = match have {
             Some(h) if same_bytes => Source::Local(text(h, "path").to_string()),
-            _ => Source::Remote(remote_path(id, want, remote_files)?),
+            _ => match remote_path(id, want, remote_files) {
+                Some(path) => Source::Remote(path),
+                // The remote has the row but not the file (too big, or gone from disk there):
+                // the row comes in, the file stays missing until it arrives.
+                None => continue,
+            },
         };
         installs.push(Install {
             target: text(want, "path").to_string(),
@@ -92,64 +118,58 @@ pub fn plan(local: &Snapshot, merged: &Snapshot, remote: &Snapshot) -> AppResult
     })
 }
 
-/// Where the remote commit holds the bytes a merged row wants.
+/// Where the remote commit holds the bytes a merged row wants, if it holds them at all.
 fn remote_path(
     id: &str,
     want: &Row,
     remote: &std::collections::BTreeMap<String, Row>,
-) -> AppResult<String> {
-    let found = remote
+) -> Option<String> {
+    remote
         .get(id)
-        .filter(|r| text(r, "sha256") == text(want, "sha256"));
-    match found {
-        Some(r) => Ok(text(r, "path").to_string()),
-        None => {
-            Err(errors::SYNC_APPLY_FAILED
-                .with(format!("No copy of {} to apply", text(want, "path"))))
-        }
-    }
+        .filter(|r| text(r, "sha256") == text(want, "sha256"))
+        .map(|r| text(r, "path").to_string())
 }
 
-/// Copies every incoming file into staging. Returns the staged path of each install, in order.
-pub fn stage(root: &Path, plan: &Plan, blobs: &dyn Blobs) -> AppResult<Vec<PathBuf>> {
+/// Copies every incoming file into staging and makes every folder the files need, all before the
+/// commit, so a clash (a file where a folder must go) rolls the whole apply back. Returns the staged
+/// path of each install, in order; `None` where the remote has no copy of the file.
+pub fn stage(root: &Path, plan: &Plan, blobs: &dyn Blobs) -> AppResult<Vec<Option<PathBuf>>> {
     let dir = root.join(STAGING_DIR);
     discard(root)?;
     fs::create_dir_all(&dir)?;
+    for folder in &plan.folders {
+        fs::create_dir_all(root.join(folder))?;
+    }
     let mut staged = Vec::new();
     for (n, install) in plan.installs.iter().enumerate() {
-        let path = dir.join(n.to_string());
-        match &install.source {
-            Source::Local(from) => {
-                fs::copy(root.join(from), &path)?;
-            }
-            Source::Remote(from) => {
-                let Some(bytes) = blobs.read(from)? else {
-                    return Err(errors::SYNC_APPLY_FAILED
-                        .with(format!("{from} is missing from the remote")));
-                };
-                fs::write(&path, bytes)?;
-            }
+        if let Some(parent) = root.join(&install.target).parent() {
+            fs::create_dir_all(parent)?;
         }
-        staged.push(path);
+        let path = dir.join(n.to_string());
+        let bytes = match &install.source {
+            Source::Local(from) => Some(fs::read(root.join(from))?),
+            Source::Remote(from) => blobs.read(from)?,
+        };
+        match bytes {
+            Some(bytes) => {
+                fs::write(&path, bytes)?;
+                staged.push(Some(path));
+            }
+            None => staged.push(None),
+        }
     }
     Ok(staged)
 }
 
-/// After the commit: removes what is gone, moves staged files into place, and makes the note
-/// folders match.
-pub fn install(root: &Path, plan: &Plan, staged: &[PathBuf]) -> AppResult<()> {
+/// After the commit: removes what is gone and moves staged files into place (same volume, so only
+/// renames are left to fail).
+pub fn install(root: &Path, plan: &Plan, staged: &[Option<PathBuf>]) -> AppResult<()> {
     for path in &plan.removals {
         remove_if_there(&root.join(path))?;
     }
-    for folder in &plan.folders {
-        fs::create_dir_all(root.join(folder))?;
-    }
     for (install, from) in plan.installs.iter().zip(staged) {
-        let to = root.join(&install.target);
-        if let Some(parent) = to.parent() {
-            fs::create_dir_all(parent)?;
-        }
-        fs::rename(from, to)?;
+        let Some(from) = from else { continue };
+        fs::rename(from, root.join(&install.target))?;
     }
     remove_empty_folders(root, &plan.gone_folders);
     discard(root)
