@@ -128,7 +128,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     background: var(--c-page);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
   }
 
   .fld:focus-within {
@@ -148,7 +148,7 @@
     outline: none;
     background: transparent;
     text-align: center;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     border-radius: var(--radius-xs);
   }
 
@@ -167,7 +167,7 @@
     border: 0;
     border-radius: var(--radius-xs);
     background: transparent;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     cursor: pointer;
   }
 

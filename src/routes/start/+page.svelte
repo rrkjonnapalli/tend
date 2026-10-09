@@ -218,7 +218,7 @@
   }
 
   .mark {
-    font: 600 32px/40px var(--font-heading);
+    font: var(--text-brand);
     letter-spacing: -0.01em;
   }
 
@@ -232,12 +232,12 @@
   }
 
   .h3 {
-    font: 500 15px/20px var(--font-heading);
+    font: var(--text-section);
     margin: 0;
   }
 
   .cap {
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--c-muted-2);
   }
 
@@ -261,7 +261,7 @@
     border: 0;
     background: transparent;
     color: var(--primary);
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     cursor: pointer;
     align-self: flex-start;
   }
@@ -305,7 +305,7 @@
   .path .p {
     flex: 1;
     min-width: 0;
-    font: 400 13px/18px var(--font-mono);
+    font: var(--text-mono);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -320,7 +320,7 @@
     border-radius: var(--radius-md);
     background: var(--c-page);
     color: var(--text);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     cursor: pointer;
   }
 
@@ -333,7 +333,7 @@
     border-radius: 6px;
     background: var(--danger-soft);
     color: var(--on-danger-soft);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
   }
 
   .err .mono {
@@ -344,7 +344,7 @@
     padding: 10px 12px;
     border-radius: var(--radius-sm);
     background: var(--c-hover);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
   }
 
   .row {
@@ -363,7 +363,7 @@
     border-radius: var(--radius-md);
     background: var(--primary);
     color: var(--on-primary);
-    font: 700 14px/20px var(--font-ui);
+    font: var(--text-ui-strong);
     cursor: pointer;
   }
 
@@ -379,7 +379,7 @@
     padding: 0 12px;
     border: 1px solid var(--border);
     border-radius: 6px;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--text-muted);
   }
 

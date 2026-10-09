@@ -142,7 +142,7 @@
   }
 
   .note :global(.cm-scroller) {
-    font: 400 15px/26px var(--font-mono);
+    font: var(--text-editor);
   }
 
   .field :global(.cm-scroller) {

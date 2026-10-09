@@ -115,7 +115,7 @@
     border: 0;
     border-radius: var(--radius-sm);
     background: transparent;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     cursor: pointer;
   }
 

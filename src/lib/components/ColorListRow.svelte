@@ -112,7 +112,7 @@
     min-height: 36px;
     padding: 0 16px;
     margin: 0 -16px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     user-select: none;
   }
 
@@ -170,12 +170,12 @@
   }
 
   .pin {
-    font: 400 11px/16px var(--font-ui);
+    font: var(--text-tiny);
     color: var(--c-faint);
   }
 
   .sval {
-    font: 400 12px/16px var(--font-mono);
+    font: var(--text-mono-meta);
     color: var(--c-faint);
     letter-spacing: 0.02em;
   }
@@ -205,13 +205,13 @@
     border-radius: var(--radius-sm);
     background: var(--c-hover);
     outline: none;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .err {
     grid-column: 3 / -1;
     padding: 0 0 8px;
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--danger);
   }
 </style>

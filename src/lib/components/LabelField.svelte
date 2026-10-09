@@ -89,7 +89,7 @@
     border-radius: var(--radius-sm);
     background: transparent;
     color: var(--c-muted-2);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     cursor: pointer;
   }
 
@@ -120,7 +120,7 @@
   .none {
     max-width: 220px;
     padding: 6px 8px;
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 </style>

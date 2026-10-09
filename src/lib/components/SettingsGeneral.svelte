@@ -78,7 +78,7 @@
   }
 
   .h2 {
-    font: 500 15px/20px var(--font-heading);
+    font: var(--text-section);
     margin: 0;
   }
 
@@ -92,7 +92,7 @@
   .vpath {
     flex: 1;
     min-width: 0;
-    font: 400 13px/18px var(--font-mono);
+    font: var(--text-mono);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -105,7 +105,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--c-muted-2);
     cursor: pointer;
     text-align: left;
@@ -131,7 +131,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     cursor: pointer;
   }
 
@@ -144,7 +144,7 @@
     border: 0;
     background: transparent;
     color: var(--link);
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     white-space: nowrap;
     cursor: pointer;
   }

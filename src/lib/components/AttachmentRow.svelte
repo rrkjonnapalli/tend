@@ -56,7 +56,7 @@
     min-height: 36px;
     padding: 0 10px 0 16px;
     margin: 0 -16px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .arow:hover {
@@ -72,7 +72,7 @@
   }
 
   .am {
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 

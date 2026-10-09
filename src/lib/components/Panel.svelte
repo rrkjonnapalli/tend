@@ -27,7 +27,7 @@
     height: 30px;
     padding: 0 14px;
     border-bottom: 1px solid var(--c-chip);
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 
@@ -38,7 +38,7 @@
     height: 30px;
     padding: 0 14px;
     border-top: 1px solid var(--c-chip);
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-faint);
   }
 

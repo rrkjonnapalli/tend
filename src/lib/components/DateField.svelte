@@ -155,7 +155,7 @@
     border-radius: var(--radius-sm);
     background: var(--c-page);
     color: var(--text);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     cursor: pointer;
   }
 
@@ -200,7 +200,7 @@
     border: 0;
     background: transparent;
     text-align: left;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--text-muted);
     cursor: pointer;
   }
@@ -223,7 +223,7 @@
   }
 
   .foot {
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 
@@ -236,7 +236,7 @@
     border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-muted);
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     cursor: pointer;
   }
 

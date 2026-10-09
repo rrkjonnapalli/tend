@@ -73,7 +73,7 @@
     border: 0;
     background: transparent;
     color: var(--primary);
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     cursor: pointer;
     align-self: flex-start;
   }
@@ -98,7 +98,7 @@
   .p {
     flex: 1;
     min-width: 0;
-    font: 400 13px/18px var(--font-mono);
+    font: var(--text-mono);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -114,7 +114,7 @@
     border-radius: 6px;
     background: var(--danger-soft);
     color: var(--on-danger-soft);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
   }
 
   .gbtn {
@@ -124,7 +124,7 @@
     border-radius: var(--radius-md);
     background: var(--c-page);
     color: var(--text);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     cursor: pointer;
   }
 
@@ -139,7 +139,7 @@
     border-radius: var(--radius-md);
     background: var(--primary);
     color: var(--on-primary);
-    font: 700 14px/20px var(--font-ui);
+    font: var(--text-ui-strong);
     cursor: pointer;
   }
 

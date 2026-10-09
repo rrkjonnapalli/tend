@@ -90,7 +90,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 13px/20px var(--font-mono);
+    font: var(--text-code);
     color: var(--text-muted);
   }
 
@@ -118,7 +118,7 @@
     border: 0;
     background: transparent;
     text-align: left;
-    font: 400 13px/18px var(--font-mono);
+    font: var(--text-mono);
     color: var(--text-muted);
     cursor: pointer;
   }

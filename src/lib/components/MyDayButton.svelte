@@ -29,7 +29,7 @@
     border: 0;
     border-radius: var(--radius-sm);
     background: transparent;
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     white-space: nowrap;
     cursor: pointer;
   }

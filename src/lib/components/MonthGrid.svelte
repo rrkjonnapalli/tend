@@ -104,7 +104,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font: 500 14px/20px var(--font-ui);
+    font: var(--text-label);
   }
 
   .nav {
@@ -131,7 +131,7 @@
   }
 
   .wd {
-    font: 400 11px/16px var(--font-ui);
+    font: var(--text-tiny);
     color: var(--c-muted-2);
     text-align: center;
     padding-bottom: 4px;
@@ -166,7 +166,7 @@
     border-radius: 15px;
     background: transparent;
     color: var(--text);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     cursor: pointer;
   }
 

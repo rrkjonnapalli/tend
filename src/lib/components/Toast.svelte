@@ -17,7 +17,7 @@
     border-radius: 6px;
     background: var(--text);
     color: var(--c-page);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     white-space: nowrap;
     pointer-events: none;
   }

@@ -47,7 +47,7 @@
   }
 
   .txt {
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
   }
 
   .ico:hover {

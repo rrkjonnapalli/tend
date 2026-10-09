@@ -184,7 +184,7 @@
 
   .ql {
     flex: 0 0 40px;
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-faint);
   }
 
@@ -233,7 +233,7 @@
     border-radius: var(--radius-sm);
     background: transparent;
     color: var(--c-muted-2);
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     cursor: pointer;
   }
 

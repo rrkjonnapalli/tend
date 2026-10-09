@@ -128,7 +128,7 @@
     min-height: 36px;
     padding: 0 16px;
     margin: 0 -16px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .crow:hover {
@@ -156,7 +156,7 @@
   }
 
   .cl {
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 
@@ -184,7 +184,7 @@
     border-radius: var(--radius-sm);
     background: var(--c-hover);
     outline: none;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .ein.lab,
@@ -198,7 +198,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text);
   }
 

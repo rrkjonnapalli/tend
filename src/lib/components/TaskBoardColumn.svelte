@@ -106,7 +106,7 @@
   }
 
   .vc {
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 
@@ -127,7 +127,7 @@
     border-radius: 6px;
     outline: none;
     background: var(--c-page);
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .cadd::placeholder {
@@ -142,7 +142,7 @@
     background: transparent;
     text-align: left;
     color: var(--c-muted-2);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     cursor: pointer;
   }
 
@@ -153,7 +153,7 @@
 
   .cempty {
     padding: 12px 4px;
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-faint);
     text-align: center;
   }

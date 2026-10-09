@@ -127,14 +127,14 @@
   }
 
   .h2 {
-    font: 500 15px/20px var(--font-heading);
+    font: var(--text-section);
     margin: 0;
   }
 
   .cap,
   .warn {
     margin: 0;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--c-muted-2);
   }
 
@@ -152,7 +152,7 @@
 
   .k {
     flex: 0 0 88px;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--text-muted);
   }
 
@@ -161,11 +161,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .v.mono {
-    font: 400 13px/18px var(--font-mono);
+    font: var(--text-mono);
   }
 
   .v.bad {
@@ -182,7 +182,7 @@
     outline: none;
     background: var(--c-page);
     color: var(--text);
-    font: 400 13px/18px var(--font-mono);
+    font: var(--text-mono);
   }
 
   .fld:focus {
@@ -199,7 +199,7 @@
     border-radius: 6px;
     background: var(--danger-soft);
     color: var(--on-danger-soft);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
   }
 
   .tlink {
@@ -207,7 +207,7 @@
     border: 0;
     background: transparent;
     color: var(--link);
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     white-space: nowrap;
     cursor: pointer;
   }
@@ -224,7 +224,7 @@
     border-radius: var(--radius-md);
     background: var(--primary);
     color: var(--on-primary);
-    font: 700 14px/20px var(--font-ui);
+    font: var(--text-ui-strong);
     cursor: pointer;
   }
 
@@ -239,7 +239,7 @@
     border-radius: var(--radius-md);
     background: var(--c-page);
     color: var(--text);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     cursor: pointer;
   }
 

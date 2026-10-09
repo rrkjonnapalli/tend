@@ -48,7 +48,7 @@
     border-radius: var(--radius-sm);
     background: transparent;
     color: var(--primary);
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     cursor: pointer;
   }
 

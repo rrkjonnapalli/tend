@@ -75,7 +75,7 @@
   }
 
   .val {
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .fld {
@@ -87,7 +87,7 @@
     outline: none;
     background: var(--c-page);
     color: var(--text);
-    font: 400 13px/18px var(--font-mono);
+    font: var(--text-mono);
   }
 
   .fld:focus {
@@ -99,7 +99,7 @@
   }
 
   .unit {
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--c-muted-2);
   }
 </style>

@@ -81,7 +81,7 @@
     align-items: center;
     gap: 12px;
     min-height: 36px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--c-muted-2);
   }
 
@@ -101,7 +101,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text);
   }
 
@@ -110,7 +110,7 @@
   }
 
   .addrow .vin {
-    font: 400 12px/16px var(--font-mono);
+    font: var(--text-mono-meta);
     color: var(--text-muted);
     letter-spacing: 0.02em;
   }
@@ -121,7 +121,7 @@
 
   .adderr {
     padding: 0 0 0 54px;
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--danger);
   }
 </style>

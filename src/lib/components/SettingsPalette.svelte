@@ -47,7 +47,7 @@
   }
 
   .h2 {
-    font: 500 15px/20px var(--font-heading);
+    font: var(--text-section);
     margin: 0;
   }
 
@@ -64,7 +64,7 @@
     padding: 0 16px;
     margin: 0 -16px;
     border-top: 1px solid var(--c-chip);
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .crow:hover {
@@ -72,7 +72,7 @@
   }
 
   .cex {
-    font: 400 12px/16px var(--font-mono);
+    font: var(--text-mono-meta);
     color: var(--c-muted-2);
     overflow: hidden;
     text-overflow: ellipsis;

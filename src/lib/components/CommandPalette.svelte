@@ -295,7 +295,7 @@
     border: 0;
     background: transparent;
     text-align: left;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text);
     cursor: pointer;
   }
@@ -335,7 +335,7 @@
 
   .empty {
     padding: 20px 16px;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--c-muted-2);
   }
 
@@ -346,7 +346,7 @@
     height: 34px;
     padding: 0 16px;
     border-top: 1px solid var(--border);
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 

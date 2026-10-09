@@ -26,7 +26,7 @@
     display: grid;
     padding: 0 0 6px;
     border-bottom: 1px solid var(--c-chip);
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-faint);
   }
 

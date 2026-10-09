@@ -62,7 +62,7 @@
     padding: 0 16px;
     border: 0;
     background: transparent;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--c-muted-2);
     text-align: left;
     cursor: pointer;

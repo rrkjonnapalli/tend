@@ -69,6 +69,6 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 </style>

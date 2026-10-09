@@ -89,12 +89,23 @@
   --font-ui: 'Lato', sans-serif;              /* 14/20 body UI; 13/18 captions; 12/16 meta */
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;  /* note editor 15/26, values, paths, kbd */
 
-  --text-display: 600 40px/48px var(--font-heading);
-  --text-heading: 500 28px/36px var(--font-heading);
-  --text-title: 500 18px/26px var(--font-heading);
-  --text-body: 400 15px/22px var(--font-mono);
-  --text-label: 500 14px/20px var(--font-ui);
-  --text-caption: 400 13px/18px var(--font-ui);
+  /* type roles: use these, not raw font values */
+  --text-heading:        500 28px/36px var(--font-heading);  /* page titles */
+  --text-brand:          600 32px/40px var(--font-heading);  /* the wordmark */
+  --text-title:          500 18px/26px var(--font-heading);  /* headings inside a note */
+  --text-section:        500 15px/20px var(--font-heading);  /* section titles (Settings, popups) */
+  --text-subsection:     500 14px/20px var(--font-heading);  /* small headings */
+  --text-ui:             400 14px/20px var(--font-ui);  /* rows, fields, buttons: the default */
+  --text-ui-strong:      700 14px/20px var(--font-ui);  /* primary buttons */
+  --text-label:          500 14px/20px var(--font-ui);  /* labels */
+  --text-caption:        400 13px/18px var(--font-ui);  /* secondary text, chips, breadcrumbs */
+  --text-caption-strong: 700 13px/18px var(--font-ui);  /* emphasis at caption size */
+  --text-meta:           400 12px/16px var(--font-ui);  /* dates, counts, hints */
+  --text-tiny:           400 11px/16px var(--font-ui);  /* badges */
+  --text-editor:         400 15px/26px var(--font-mono);  /* the note editor and note body */
+  --text-code:           400 13px/20px var(--font-mono);  /* code blocks */
+  --text-mono:           400 13px/18px var(--font-mono);  /* paths, values, kbd */
+  --text-mono-meta:      400 12px/16px var(--font-mono);  /* small mono values */
 
   /* spacing & radius */
   --space-0_5: 2px;

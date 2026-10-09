@@ -51,7 +51,7 @@
 
   .lbl {
     flex: 0 0 80px;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--text-muted);
   }
 
@@ -65,7 +65,7 @@
     outline: none;
     background: var(--c-page);
     color: var(--text);
-    font: 400 13px/18px var(--font-mono);
+    font: var(--text-mono);
   }
 
   .fld:focus {
@@ -80,7 +80,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--c-muted-2);
     cursor: pointer;
   }
@@ -91,7 +91,7 @@
 
   .warn {
     margin: 0;
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 </style>

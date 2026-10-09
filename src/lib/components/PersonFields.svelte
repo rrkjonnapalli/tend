@@ -116,7 +116,7 @@
   }
 
   .pl {
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--c-muted-2);
   }
 
@@ -125,7 +125,7 @@
     align-items: center;
     gap: 10px;
     min-height: 32px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .fld {
@@ -135,7 +135,7 @@
     border-radius: var(--radius-sm);
     outline: none;
     background: var(--c-page);
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .fld:focus {
@@ -143,7 +143,7 @@
   }
 
   .fld.mono {
-    font: 400 13px/18px var(--font-mono);
+    font: var(--text-mono);
   }
 
   .fld.bad {
@@ -152,7 +152,7 @@
   }
 
   .hint {
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 

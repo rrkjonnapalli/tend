@@ -117,7 +117,7 @@
     align-items: center;
     gap: 12px;
     min-height: 36px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--c-muted-2);
   }
 
@@ -126,7 +126,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text);
   }
 
@@ -136,7 +136,7 @@
 
   .err {
     padding: 0 0 8px 22px;
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--danger);
   }
 
@@ -149,7 +149,7 @@
     min-height: 36px;
     padding: 0 16px;
     margin: 0 -16px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text);
     text-decoration: none;
   }
@@ -170,7 +170,7 @@
   }
 
   .meta {
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--c-muted-2);
   }
 

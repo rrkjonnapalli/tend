@@ -46,7 +46,7 @@
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
     pointer-events: none;
   }

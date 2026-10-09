@@ -35,7 +35,7 @@
     border-radius: var(--radius-sm);
     background: var(--c-hover);
     color: var(--text-muted);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
   }
 
   .dot {

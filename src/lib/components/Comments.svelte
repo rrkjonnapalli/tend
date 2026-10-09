@@ -89,7 +89,7 @@
   }
 
   .hint {
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
     padding-right: 4px;
   }

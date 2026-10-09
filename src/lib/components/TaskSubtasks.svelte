@@ -88,7 +88,7 @@
     align-items: center;
     gap: 12px;
     min-height: 32px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--c-muted-2);
   }
 
@@ -102,7 +102,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text);
   }
 
@@ -125,7 +125,7 @@
     margin-top: 4px;
     border: 0;
     background: transparent;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--c-muted-2);
     cursor: pointer;
     align-self: flex-start;

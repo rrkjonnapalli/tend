@@ -465,7 +465,7 @@
     border-radius: var(--radius-sm);
     background: var(--text);
     color: var(--c-page);
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     white-space: nowrap;
   }
 </style>

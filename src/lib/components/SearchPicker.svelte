@@ -75,7 +75,7 @@
     border: 0;
     border-bottom: 1px solid var(--c-chip);
     outline: none;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .po {
@@ -88,7 +88,7 @@
     border: 0;
     background: transparent;
     text-align: left;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text);
     cursor: pointer;
   }
@@ -105,7 +105,7 @@
 
   .none {
     padding: 8px 12px;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--c-muted-2);
   }
 </style>

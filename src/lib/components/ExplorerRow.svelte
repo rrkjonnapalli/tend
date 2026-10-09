@@ -116,7 +116,7 @@
     gap: 6px;
     flex: 0 0 28px;
     padding-right: 6px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text);
     cursor: pointer;
     touch-action: none;
@@ -227,7 +227,7 @@
 
   .name-err {
     padding: 2px 8px 6px;
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--danger);
   }
 </style>

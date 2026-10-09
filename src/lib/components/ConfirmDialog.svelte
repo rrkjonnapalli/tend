@@ -84,7 +84,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     border-radius: 10px;
   }
 

@@ -155,7 +155,7 @@
     border-radius: var(--radius-sm);
     background: var(--c-hover);
     outline: none;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
   }
 
   .in::placeholder {
@@ -169,7 +169,7 @@
     border-radius: var(--radius-sm);
     background: transparent;
     color: var(--c-muted-2);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     cursor: pointer;
   }
 

@@ -48,7 +48,7 @@
     padding: 0 4px;
     border-radius: 13px;
     background: var(--c-nav-active-soft);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
   }
 
   .who a {
@@ -80,7 +80,7 @@
     border-radius: var(--radius-sm);
     background: transparent;
     color: var(--c-muted-2);
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     cursor: pointer;
   }
 

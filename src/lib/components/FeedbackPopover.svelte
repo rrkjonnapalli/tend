@@ -74,14 +74,14 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
   }
 
   .head {
     display: flex;
     align-items: center;
     gap: 8px;
-    font: 500 14px/20px var(--font-heading);
+    font: var(--text-subsection);
   }
 
   .x {
@@ -100,7 +100,7 @@
     border-radius: 12px;
     background: var(--c-page);
     color: var(--text-muted);
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     cursor: pointer;
   }
 

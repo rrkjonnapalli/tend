@@ -89,7 +89,7 @@
     border: 0;
     background: transparent;
     text-align: left;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text-muted);
     cursor: pointer;
   }

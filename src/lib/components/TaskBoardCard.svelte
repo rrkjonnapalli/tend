@@ -64,7 +64,7 @@
     background: var(--c-page);
     border: 1px solid var(--border);
     border-radius: 6px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     cursor: pointer;
     touch-action: none;
   }
@@ -98,7 +98,7 @@
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 

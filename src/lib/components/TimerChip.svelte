@@ -64,7 +64,7 @@
   }
 
   .more {
-    font: 400 11px/16px var(--font-ui);
+    font: var(--text-tiny);
     color: var(--c-muted-2);
   }
 
@@ -72,7 +72,7 @@
     width: 320px;
     display: flex;
     flex-direction: column;
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
   }
 
   .head {
@@ -80,7 +80,7 @@
     align-items: center;
     gap: 8px;
     padding: 10px 12px 8px;
-    font: 500 14px/20px var(--font-heading);
+    font: var(--text-subsection);
   }
 
   .x {

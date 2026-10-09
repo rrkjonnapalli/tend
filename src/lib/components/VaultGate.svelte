@@ -62,7 +62,7 @@
   }
 
   .mark {
-    font: 600 32px/40px var(--font-heading);
+    font: var(--text-brand);
     letter-spacing: -0.01em;
     margin-bottom: 8px;
   }
@@ -73,18 +73,18 @@
   }
 
   .h3 {
-    font: 500 15px/20px var(--font-heading);
+    font: var(--text-section);
     margin: 0;
   }
 
   .mono {
-    font: 400 13px/18px var(--font-mono);
+    font: var(--text-mono);
     color: var(--text-muted);
     overflow-wrap: anywhere;
   }
 
   .cap {
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
     color: var(--c-muted-2);
   }
 
@@ -93,7 +93,7 @@
     border-radius: 6px;
     background: var(--danger-soft);
     color: var(--on-danger-soft);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
   }
 
   .acts {
@@ -109,7 +109,7 @@
     border-radius: 6px;
     background: var(--primary);
     color: var(--on-primary);
-    font: 700 13px/18px var(--font-ui);
+    font: var(--text-caption-strong);
     cursor: pointer;
   }
 
@@ -121,7 +121,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text-muted);
   }
 

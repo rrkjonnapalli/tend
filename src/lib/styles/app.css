@@ -23,7 +23,7 @@ body {
 
 body {
   color: var(--text);
-  font: 400 14px/20px var(--font-ui);
+  font: var(--text-ui);
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
@@ -120,7 +120,7 @@ a:hover {
   border-radius: 6px;
   background: var(--primary);
   color: var(--on-primary);
-  font: 700 13px/18px var(--font-ui);
+  font: var(--text-caption-strong);
   cursor: pointer;
 }
 
@@ -141,7 +141,7 @@ a:hover {
   border-radius: 6px;
   background: var(--danger-fill);
   color: var(--on-danger);
-  font: 700 13px/18px var(--font-ui);
+  font: var(--text-caption-strong);
   cursor: pointer;
 }
 
@@ -159,7 +159,7 @@ a:hover {
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-muted);
-  font: 400 13px/18px var(--font-ui);
+  font: var(--text-caption);
   cursor: pointer;
 }
 
@@ -223,7 +223,7 @@ kbd {
   border: 0;
   background: transparent;
   text-align: left;
-  font: 400 13px/18px var(--font-ui);
+  font: var(--text-caption);
   color: var(--text);
   white-space: nowrap;
   cursor: pointer;
@@ -266,7 +266,7 @@ kbd {
   border-radius: 6px;
   background: var(--c-page);
   color: var(--text);
-  font: 400 13px/18px var(--font-ui);
+  font: var(--text-caption);
   cursor: pointer;
 }
 

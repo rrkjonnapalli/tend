@@ -93,7 +93,7 @@
     align-items: center;
     gap: 12px;
     min-height: 36px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--c-muted-2);
   }
 
@@ -107,7 +107,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text);
   }
 
@@ -126,7 +126,7 @@
     min-height: 40px;
     padding: 0 16px;
     margin: 0 -16px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text);
     text-decoration: none;
   }

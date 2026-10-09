@@ -87,7 +87,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     color: var(--text);
-    font: 400 13px/18px var(--font-ui);
+    font: var(--text-caption);
   }
 
   .pad {

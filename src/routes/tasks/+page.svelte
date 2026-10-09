@@ -269,7 +269,7 @@
     margin-bottom: 12px;
     flex-wrap: wrap;
     gap: 4px 8px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .vbtn {
@@ -282,7 +282,7 @@
     border-bottom: 2px solid transparent;
     background: transparent;
     color: var(--c-muted-2);
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     cursor: pointer;
   }
 
@@ -296,7 +296,7 @@
   }
 
   .vc {
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 
@@ -316,7 +316,7 @@
     align-items: center;
     gap: 12px;
     min-height: 36px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--c-muted-2);
   }
 
@@ -330,7 +330,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
     color: var(--text);
   }
 

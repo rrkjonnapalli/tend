@@ -64,7 +64,7 @@
     padding: 10px 12px;
     background: var(--c-hover);
     border-radius: var(--radius-sm);
-    font: 400 13px/20px var(--font-mono);
+    font: var(--text-code);
     white-space: pre-wrap;
   }
 
@@ -75,7 +75,7 @@
   }
 
   .md :global(code) {
-    font: 400 13px/20px var(--font-mono);
+    font: var(--text-code);
     background: var(--c-hover);
     padding: 0 4px;
     border-radius: var(--radius-xs);
@@ -135,7 +135,7 @@
 
   /* Note page */
   .note {
-    font: 400 15px/26px var(--font-mono);
+    font: var(--text-editor);
   }
 
   .note :global(h1) {
@@ -146,7 +146,7 @@
   .note :global(h2),
   .note :global(h3),
   .note :global(h4) {
-    font: 500 18px/26px var(--font-heading);
+    font: var(--text-title);
     margin: 20px 0 8px;
   }
 

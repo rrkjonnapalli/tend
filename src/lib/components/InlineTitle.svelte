@@ -76,7 +76,7 @@
 
   .err {
     flex: 0 0 auto;
-    font: 400 12px/16px var(--font-ui);
+    font: var(--text-meta);
     color: var(--danger);
   }
 </style>

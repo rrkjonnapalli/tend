@@ -49,7 +49,7 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    font: 400 14px/20px var(--font-ui);
+    font: var(--text-ui);
   }
 
   .step .name {

@@ -129,7 +129,7 @@
     border-radius: var(--radius-sm);
     outline: none;
     background: var(--c-hover);
-    font: 400 12px/16px var(--font-mono);
+    font: var(--text-mono-meta);
     color: var(--text);
   }
 
