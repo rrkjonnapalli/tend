@@ -23,7 +23,9 @@ use serde::Serialize;
 use crate::error::{errors, AppResult};
 use crate::files;
 use crate::names;
+use crate::settings;
 use crate::util::now_ms;
+use serde_json::Value;
 
 pub use edit::{
     create, delete_folder, delete_note, folder_create, move_folder, move_note, rename_folder,
@@ -32,13 +34,32 @@ pub use edit::{
 pub use scan::{scan, Skipped};
 
 /// Setting: the vault allows scans to rename folders and notes whose names break the rule.
-pub const FIX_NAMES: &str = "notes.fix_names";
+const FIX_NAMES: &str = "notes.fix_names";
+
+/// Lets scans rename folders and notes whose names break the rule (asked once per vault).
+pub fn allow_fix(conn: &Connection) -> AppResult<()> {
+    settings::set(conn, FIX_NAMES, &Value::Bool(true))
+}
+
+pub fn fix_allowed(conn: &Connection) -> AppResult<bool> {
+    Ok(settings::get(conn, FIX_NAMES)? == Some(Value::Bool(true)))
+}
 
 /// What a `path_log` row moved.
 #[derive(Clone, Copy)]
 pub(crate) enum PathKind {
     Folder,
     Note,
+}
+
+impl PathKind {
+    /// Also the fallback name of an item whose name has no letter or digit.
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            PathKind::Folder => "folder",
+            PathKind::Note => "note",
+        }
+    }
 }
 
 /// Why a `path_log` row moved it.
@@ -50,34 +71,43 @@ pub(crate) enum Reason {
     Move,
 }
 
-/// Records a rename or move, so an earlier layout can be restored. Paths are relative to the vault.
-pub(crate) fn log_path(
-    tx: &Transaction,
-    kind: PathKind,
-    reason: Reason,
-    old: &str,
-    new: &str,
-    at: i64,
-) -> AppResult<()> {
-    let kind = match kind {
-        PathKind::Folder => "folder",
-        PathKind::Note => "note",
-    };
-    let reason = match reason {
-        Reason::Fix => "fix",
-        Reason::Rename => "rename",
-        Reason::Move => "move",
-    };
+impl Reason {
+    fn as_str(self) -> &'static str {
+        match self {
+            Reason::Fix => "fix",
+            Reason::Rename => "rename",
+            Reason::Move => "move",
+        }
+    }
+}
+
+/// One rename or move of a folder or note file; paths are relative to the vault.
+pub(crate) struct Moved {
+    pub kind: PathKind,
+    pub reason: Reason,
+    pub old: String,
+    pub new: String,
+}
+
+/// Records a rename or move, so an earlier layout can be restored.
+pub(crate) fn log_path(tx: &Transaction, moved: &Moved, at: i64) -> AppResult<()> {
     tx.execute(
         "INSERT INTO path_log (kind, reason, old_path, new_path, at) VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![kind, reason, old, new, at],
+        params![
+            moved.kind.as_str(),
+            moved.reason.as_str(),
+            moved.old,
+            moved.new,
+            at
+        ],
     )?;
     Ok(())
 }
 
 /// Items missing from disk stay in the index this long, then they are purged.
 pub const GRACE_MS: i64 = 7 * 24 * 60 * 60 * 1000;
-const EXT: &str = ".md";
+/// The extension of note files.
+pub const EXT: &str = ".md";
 const MIME: &str = "text/markdown";
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

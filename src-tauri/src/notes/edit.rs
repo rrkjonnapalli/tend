@@ -7,8 +7,8 @@ use std::path::Path;
 use rusqlite::{params, Connection, OptionalExtension, Transaction};
 
 use super::{
-    attachment_of, file_path, log_path, note_path, row, vault_path, NoteRow, PathKind, Reason, EXT,
-    MIME,
+    attachment_of, file_path, log_path, note_path, row, vault_path, Moved, NoteRow, PathKind,
+    Reason, EXT, MIME,
 };
 use crate::db::{commit_or_undo, in_transaction};
 use crate::error::{errors, AppResult};
@@ -41,34 +41,29 @@ fn note_exists(conn: &Connection, folder: &str, name: &str) -> AppResult<bool> {
     Ok(found.is_some())
 }
 
-/// Another folder in `parent` already uses `name` (on disk or in the index). `current` is the
-/// folder's own name when renaming it, which counts as free.
-fn folder_taken(
-    conn: &Connection,
-    dir: &Path,
-    parent: &str,
-    name: &str,
-    current: Option<&str>,
-) -> AppResult<bool> {
-    if current == Some(name) {
+/// Where a name is wanted: the folder it goes in, and the item's own current name when renaming
+/// (that one counts as free).
+#[derive(Clone, Copy)]
+struct Slot<'a> {
+    folder: &'a str,
+    current: Option<&'a str>,
+}
+
+/// Another folder in the slot already uses `name` (on disk or in the index).
+fn folder_taken(conn: &Connection, dir: &Path, slot: Slot, name: &str) -> AppResult<bool> {
+    if slot.current == Some(name) {
         return Ok(false);
     }
-    let path = names::join(parent, name);
+    let path = names::join(slot.folder, name);
     Ok(folder_exists(conn, &path)? || dir.join(&path).is_dir())
 }
 
-/// The same for a note's name in `folder`.
-fn note_taken(
-    conn: &Connection,
-    dir: &Path,
-    folder: &str,
-    name: &str,
-    current: Option<&str>,
-) -> AppResult<bool> {
-    if current == Some(name) {
+/// Another note in the slot already uses `name` (on disk or in the index).
+fn note_taken(conn: &Connection, dir: &Path, slot: Slot, name: &str) -> AppResult<bool> {
+    if slot.current == Some(name) {
         return Ok(false);
     }
-    Ok(note_exists(conn, folder, name)? || file_path(dir, folder, name).exists())
+    Ok(note_exists(conn, slot.folder, name)? || file_path(dir, slot.folder, name).exists())
 }
 
 /// Creates `folder` first when it isn't there yet (moves and new notes can target new folders).
@@ -102,9 +97,11 @@ pub fn folder_create(conn: &mut Connection, dir: &Path, path: &str) -> AppResult
         return Err(errors::NAME_EMPTY.err());
     }
     let parent = names::parent(&path);
-    let name = names::free(names::base(&path), |n| {
-        folder_taken(conn, dir, parent, n, None)
-    })?;
+    let slot = Slot {
+        folder: parent,
+        current: None,
+    };
+    let name = names::free(names::base(&path), |n| folder_taken(conn, dir, slot, n))?;
     let path = names::join(parent, &name);
     create_path(conn, dir, &path)?;
     Ok(path)
@@ -142,7 +139,7 @@ fn missing_folders(conn: &Connection, path: &str) -> AppResult<Vec<String>> {
 
 /// The file name a title asks for: its slug, or `note` when it has no letter or digit.
 fn slug_of(title: &str) -> String {
-    names::slug(title).unwrap_or_else(|| "note".to_string())
+    names::slug(title).unwrap_or_else(|| PathKind::Note.as_str().to_string())
 }
 
 fn check_title(title: &str) -> AppResult<&str> {
@@ -158,11 +155,13 @@ fn check_title(title: &str) -> AppResult<&str> {
 pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> AppResult<NoteRow> {
     let title = check_title(title)?.to_string();
     let folder = names::accept_path(folder)?;
-    let folder = folder.as_str();
-    ensure_folder(conn, dir, folder)?;
-    let name = names::free(&slug_of(&title), |n| note_taken(conn, dir, folder, n, None))?;
-    let name = name.as_str();
-    let path = file_path(dir, folder, name);
+    ensure_folder(conn, dir, &folder)?;
+    let slot = Slot {
+        folder: &folder,
+        current: None,
+    };
+    let name = names::free(&slug_of(&title), |n| note_taken(conn, dir, slot, n))?;
+    let path = file_path(dir, &folder, &name);
     fs::write(&path, format!("# {title}\n"))?;
     let facts = files::facts(&path)?;
     let note_id = new_id();
@@ -180,7 +179,7 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> A
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7, ?8)",
                 params![
                     attachment_id,
-                    vault_path(folder, name),
+                    vault_path(&folder, &name),
                     format!("{name}{EXT}"),
                     MIME,
                     facts.size,
@@ -207,9 +206,17 @@ pub fn rename_note(conn: &mut Connection, dir: &Path, id: &str, name: &str) -> A
     if note.name == wanted {
         return Ok(note);
     }
-    let current = Some(note.name.as_str());
-    let name = names::free(&wanted, |n| note_taken(conn, dir, &note.folder, n, current))?;
-    relocate_note(conn, dir, &note, &note.folder, &name, Reason::Rename)
+    let slot = Slot {
+        folder: &note.folder,
+        current: Some(&note.name),
+    };
+    let name = names::free(&wanted, |n| note_taken(conn, dir, slot, n))?;
+    let to = Relocation {
+        folder: &note.folder,
+        name: &name,
+        reason: Reason::Rename,
+    };
+    relocate_note(conn, dir, &note, to)
 }
 
 /// Moves the note into `target`, keeping its file name; a name taken there gets a suffix.
@@ -220,18 +227,37 @@ pub fn move_note(conn: &mut Connection, dir: &Path, id: &str, target: &str) -> A
         return Err(errors::SAME_FOLDER.err());
     }
     ensure_folder(conn, dir, &target)?;
-    let name = names::free(&note.name, |n| note_taken(conn, dir, &target, n, None))?;
-    relocate_note(conn, dir, &note, &target, &name, Reason::Move)
+    let slot = Slot {
+        folder: &target,
+        current: None,
+    };
+    let name = names::free(&note.name, |n| note_taken(conn, dir, slot, n))?;
+    let to = Relocation {
+        folder: &target,
+        name: &name,
+        reason: Reason::Move,
+    };
+    relocate_note(conn, dir, &note, to)
+}
+
+/// Where a note goes: its folder and file name, and why it moves.
+struct Relocation<'a> {
+    folder: &'a str,
+    name: &'a str,
+    reason: Reason,
 }
 
 fn relocate_note(
     conn: &mut Connection,
     dir: &Path,
     note: &NoteRow,
-    folder: &str,
-    name: &str,
-    reason: Reason,
+    dest: Relocation,
 ) -> AppResult<NoteRow> {
+    let Relocation {
+        folder,
+        name,
+        reason,
+    } = dest;
     let from = note_path(dir, note);
     let to = file_path(dir, folder, name);
     fs::rename(&from, &to)?;
@@ -248,8 +274,13 @@ fn relocate_note(
                 "UPDATE attachments SET path = ?1, name = ?2, updated_at = ?3 WHERE id = ?4",
                 params![new_path, format!("{name}{EXT}"), now, attachment_id],
             )?;
-            let old_path = vault_path(&note.folder, &note.name);
-            log_path(tx, PathKind::Note, reason, &old_path, &new_path, now)
+            let moved = Moved {
+                kind: PathKind::Note,
+                reason,
+                old: vault_path(&note.folder, &note.name),
+                new: new_path,
+            };
+            log_path(tx, &moved, now)
         },
     )?;
     row(conn, &note.id)
@@ -267,10 +298,18 @@ pub fn rename_folder(
         return Ok(path.to_string());
     }
     let parent = names::parent(path);
-    let name = names::free(&typed, |n| {
-        folder_taken(conn, dir, parent, n, Some(current))
-    })?;
-    relocate_folder(conn, dir, path, &names::join(parent, &name), Reason::Rename)
+    let slot = Slot {
+        folder: parent,
+        current: Some(current),
+    };
+    let name = names::free(&typed, |n| folder_taken(conn, dir, slot, n))?;
+    let moved = Moved {
+        kind: PathKind::Folder,
+        reason: Reason::Rename,
+        old: path.to_string(),
+        new: names::join(parent, &name),
+    };
+    relocate_folder(conn, dir, moved)
 }
 
 /// Moves the folder into `target`; a name taken there gets a suffix.
@@ -288,19 +327,22 @@ pub fn move_folder(
         return Err(errors::SAME_FOLDER.err());
     }
     ensure_folder(conn, dir, &target)?;
-    let name = names::free(names::base(path), |n| {
-        folder_taken(conn, dir, &target, n, None)
-    })?;
-    relocate_folder(conn, dir, path, &names::join(&target, &name), Reason::Move)
+    let slot = Slot {
+        folder: &target,
+        current: None,
+    };
+    let name = names::free(names::base(path), |n| folder_taken(conn, dir, slot, n))?;
+    let moved = Moved {
+        kind: PathKind::Folder,
+        reason: Reason::Move,
+        old: path.to_string(),
+        new: names::join(&target, &name),
+    };
+    relocate_folder(conn, dir, moved)
 }
 
-fn relocate_folder(
-    conn: &mut Connection,
-    dir: &Path,
-    old: &str,
-    new: &str,
-    reason: Reason,
-) -> AppResult<String> {
+fn relocate_folder(conn: &mut Connection, dir: &Path, moved: Moved) -> AppResult<String> {
+    let (old, new) = (moved.old.as_str(), moved.new.as_str());
     if old.is_empty() || !folder_exists(conn, old)? {
         return Err(errors::NOT_FOUND.with("Folder was not found"));
     }
@@ -326,10 +368,10 @@ fn relocate_folder(
                  WHERE substr(path, 1, length(?1)) = ?1",
                 params![format!("{old}/"), format!("{new}/"), now],
             )?;
-            log_path(tx, PathKind::Folder, reason, old, new, now)
+            log_path(tx, &moved, now)
         },
     )?;
-    Ok(new.to_string())
+    Ok(moved.new)
 }
 
 /// Removes the body and the note (its attachment row goes, and the note with it).

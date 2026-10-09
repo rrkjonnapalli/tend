@@ -28,7 +28,10 @@ pub fn get(conn: &Connection, key: &str) -> AppResult<Option<Value>> {
             r.get(0)
         })
         .optional()?;
-    Ok(text.map(|t| serde_json::from_str(&t)).transpose()?)
+    let Some(text) = text else {
+        return Ok(None);
+    };
+    Ok(Some(serde_json::from_str(&text)?))
 }
 
 pub fn set(conn: &Connection, key: &str, value: &Value) -> AppResult<()> {

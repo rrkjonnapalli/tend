@@ -425,3 +425,16 @@ fn fixing_slugs_bad_names_keeps_titles_and_logs_old_paths() {
     assert!(logged.contains(&("Plan?.md".into(), "plan_1.md".into())));
     assert_eq!(logged.len(), 4);
 }
+
+#[cfg(unix)]
+#[test]
+fn symlinks_are_skipped_so_a_loop_cannot_hang_the_scan() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().to_path_buf();
+    fs::create_dir_all(dir.join("work")).unwrap();
+    fs::write(dir.join("work/a.md"), "x").unwrap();
+    std::os::unix::fs::symlink(&dir, dir.join("work/loop")).unwrap();
+    let mut conn = open_memory();
+    scan(&mut conn, &dir, true).unwrap();
+    assert_eq!(names_in(&tree(&conn).unwrap()), vec!["work/a"]);
+}

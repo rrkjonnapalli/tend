@@ -15,6 +15,7 @@ use serde::Serialize;
 use crate::db::{self, Opened};
 use crate::error::{errors, AppError};
 use crate::state::Vault;
+use crate::{names, notes};
 
 #[derive(Debug, Serialize, PartialEq, Eq, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
@@ -52,16 +53,20 @@ pub struct Check {
 
 /// Tend's own folder in the vault: attachments and the database now, sync files later.
 pub const TEND_DIR: &str = ".tend";
+/// Attached files, relative to the vault (also the prefix of their `attachments.path`).
+pub const ATTACHMENTS_DIR: &str = ".tend/attachments";
 const DB_FILE: &str = "tend.db";
-const DB_ITEM: &str = ".tend/tend.db";
+// Labels of the start page checklist.
+const NOTES_ITEM: &str = "notes";
 const ATTACHMENTS_ITEM: &str = ".tend/attachments/";
+const DB_ITEM: &str = ".tend/tend.db";
 const NO_PERMISSION: &str = "no permission to access this folder";
 const INCOMPATIBLE: &str = "incompatible schema";
 
 const NO_PERMISSION_MESSAGE: &str = "Tend doesn’t have permission to open this folder.";
 const GONE_MESSAGE: &str = "The folder isn’t there any more. It may have been moved or renamed, \
                             or it's on a drive that isn’t connected.";
-const INCOMPATIBLE_MESSAGE: &str = "An incompatible database exists in .tend/tend.db.";
+const NOT_A_VAULT_MESSAGE: &str = "This folder isn’t a Tend vault.";
 
 fn plural(n: usize, word: &str) -> String {
     if n == 1 {
@@ -70,15 +75,16 @@ fn plural(n: usize, word: &str) -> String {
     format!("{n} {word}s")
 }
 
-/// Files under `dir`, in subfolders too, leaving out hidden ones (`.tend/`, `.git/`). With `ext`,
-/// only files with that extension.
+/// Files under `dir`, in subfolders too, leaving out hidden ones (`.tend/`, `.git/`). With `ext`
+/// (`.md`), only files whose names end with it.
 fn count_files(dir: &Path, ext: Option<&str>) -> usize {
     let Ok(entries) = fs::read_dir(dir) else {
         return 0;
     };
     let mut count = 0;
     for entry in entries.flatten() {
-        if entry.file_name().to_string_lossy().starts_with('.') {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if names::is_hidden(&name) {
             continue;
         }
         let path = entry.path();
@@ -86,7 +92,7 @@ fn count_files(dir: &Path, ext: Option<&str>) -> usize {
             count += count_files(&path, ext);
             continue;
         }
-        let matches = ext.is_none_or(|x| path.extension().is_some_and(|e| e == x));
+        let matches = ext.is_none_or(|x| name.ends_with(x));
         if matches {
             count += 1;
         }
@@ -144,9 +150,12 @@ pub fn inspect(root: &Path) -> Option<Confirm> {
         return None;
     }
     let items = visible_entries(root);
-    (items > 0).then(|| Confirm::NotAVault {
+    if items == 0 {
+        return None;
+    }
+    Some(Confirm::NotAVault {
         items,
-        notes: count_files(root, Some("md")),
+        notes: count_files(root, Some(notes::EXT)),
     })
 }
 
@@ -157,20 +166,20 @@ fn visible_entries(root: &Path) -> usize {
     };
     entries
         .flatten()
-        .filter(|e| !e.file_name().to_string_lossy().starts_with('.'))
+        .filter(|e| !names::is_hidden(&e.file_name().to_string_lossy()))
         .count()
 }
 
 /// Why `open` failed: what it would have asked, or its first failed step.
 fn failure_message(check: &Check) -> String {
     if check.confirm.is_some() {
-        return "This folder isn’t a Tend vault.".into();
+        return NOT_A_VAULT_MESSAGE.into();
     }
     let Some(failed) = check.steps.iter().find(|s| s.status == StepStatus::Error) else {
         return "The vault couldn’t be opened.".into();
     };
     match failed.detail.as_str() {
-        INCOMPATIBLE => INCOMPATIBLE_MESSAGE.into(),
+        INCOMPATIBLE => errors::INCOMPATIBLE_DB.message.into(),
         NO_PERMISSION => NO_PERMISSION_MESSAGE.into(),
         detail => format!("{}: {detail}", failed.item),
     }
@@ -193,48 +202,35 @@ pub fn open(root: &Path, confirmed: bool) -> (Check, Option<Vault>) {
     let (db_step, conn) = open_db(root);
     let new_db = db_step.status == StepStatus::Created;
     steps.push(db_step);
-    if let (true, Some(conn)) = (new_db && (confirmed || is_empty(root)), &conn) {
-        // A new, empty vault has no names of its own to protect, and the user who confirmed a
-        // folder agreed to its names being fixed: from now on scans fix names.
-        let allowed = crate::settings::set(
-            conn,
-            crate::notes::FIX_NAMES,
-            &serde_json::Value::Bool(true),
-        );
-        if let Err(e) = allowed {
+    let Some(conn) = conn else {
+        return (finish(root, steps, false), None);
+    };
+    // A new, empty vault has no names of its own to protect, and the user who confirmed a folder
+    // agreed to its names being fixed: from now on scans fix names.
+    let allow_fix = new_db && (confirmed || visible_entries(root) == 0);
+    if allow_fix {
+        if let Err(e) = notes::allow_fix(&conn) {
             steps.push(step(DB_ITEM, StepStatus::Error, e.to_string()));
             return (finish(root, steps, false), None);
         }
     }
-    match conn {
-        Some(conn) => (
-            finish(root, steps, true),
-            Some(Vault::new(root.to_path_buf(), conn)),
-        ),
-        None => (finish(root, steps, false), None),
-    }
+    (
+        finish(root, steps, true),
+        Some(Vault::new(root.to_path_buf(), conn)),
+    )
 }
 
 /// Counts the notes in `root`, then checks or creates `.tend/attachments/`.
 fn check_dirs(root: &Path, steps: &mut Vec<Step>) -> bool {
-    let notes = count_files(root, Some("md"));
-    steps.push(step("notes", StepStatus::Found, plural(notes, "note")));
-    let attachments = root.join(TEND_DIR).join("attachments");
+    let found = count_files(root, Some(notes::EXT));
+    steps.push(step(NOTES_ITEM, StepStatus::Found, plural(found, "note")));
+    let attachments = root.join(ATTACHMENTS_DIR);
     let attachments_step = ensure_dir(&attachments, ATTACHMENTS_ITEM, || {
         plural(count_files(&attachments, None), "file")
     });
     let attachments_ok = attachments_step.status != StepStatus::Error;
     steps.push(attachments_step);
     attachments_ok
-}
-
-/// No entries other than hidden ones (`.DS_Store`).
-fn is_empty(dir: &Path) -> bool {
-    fs::read_dir(dir).map_or(true, |entries| {
-        entries
-            .flatten()
-            .all(|e| e.file_name().to_string_lossy().starts_with('.'))
-    })
 }
 
 fn open_db(root: &Path) -> (Step, Option<Connection>) {

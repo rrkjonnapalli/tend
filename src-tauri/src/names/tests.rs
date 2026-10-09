@@ -55,3 +55,11 @@ fn paths() {
     assert!(!is_under("ab", "a"));
     assert!(is_under("anything", ""));
 }
+
+#[test]
+fn a_suffixed_long_name_still_fits_the_rule() {
+    let long = "a".repeat(200);
+    let name = free(&long, |n| Ok(n == long)).unwrap();
+    assert_eq!(name.len(), 200);
+    assert!(name.ends_with("_1") && is_valid(&name), "{name}");
+}

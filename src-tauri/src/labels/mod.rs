@@ -4,12 +4,12 @@
 #[cfg(test)]
 mod tests;
 
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{params, Connection, ErrorCode, OptionalExtension};
 use serde::Serialize;
 
 use crate::colors;
 use crate::db::in_transaction;
-use crate::error::{errors, AppResult};
+use crate::error::{errors, AppError, AppResult};
 use crate::names;
 use crate::util::{new_id, now_ms};
 
@@ -47,35 +47,28 @@ fn get(conn: &Connection, id: &str) -> AppResult<Label> {
         .ok_or_else(|| errors::NOT_FOUND.with("Label was not found"))
 }
 
-/// A non-empty name no other label uses (`except` is the label being renamed).
-fn check_name(conn: &Connection, name: &str, except: Option<&str>) -> AppResult<String> {
+/// The trimmed name, which must not be empty.
+fn check_name(name: &str) -> AppResult<String> {
     let name = name.trim();
     if name.is_empty() {
         return Err(errors::LABEL_NAME_EMPTY.err());
     }
-    let taken = conn
-        .query_row(
-            "SELECT 1 FROM task_labels WHERE name = ?1 COLLATE NOCASE AND id IS NOT ?2",
-            params![name, except],
-            |_| Ok(()),
-        )
-        .optional()?;
-    if taken.is_some() {
-        return Err(errors::LABEL_NAME_TAKEN.err());
-    }
     Ok(name.to_string())
+}
+
+/// A unique-key conflict on insert or rename means another label has this name or id; the
+/// database is the one check for it.
+fn taken_on_conflict(e: rusqlite::Error) -> AppError {
+    match e.sqlite_error_code() {
+        Some(ErrorCode::ConstraintViolation) => errors::LABEL_NAME_TAKEN.err(),
+        _ => e.into(),
+    }
 }
 
 /// Adds a label at the end of the list. Its id is the slug of its name, fixed from now on.
 pub fn add(conn: &Connection, name: &str, color: &str) -> AppResult<Label> {
-    let name = check_name(conn, name, None)?;
+    let name = check_name(name)?;
     let id = names::slug(&name).ok_or_else(|| errors::NAME_CHARS.err())?;
-    let taken = conn
-        .query_row("SELECT 1 FROM task_labels WHERE id = ?1", [&id], |_| Ok(()))
-        .optional()?;
-    if taken.is_some() {
-        return Err(errors::LABEL_NAME_TAKEN.err());
-    }
     colors::check(color)?;
     let position: i64 = conn.query_row(
         "SELECT coalesce(max(position) + 1, 0) FROM task_labels",
@@ -86,16 +79,18 @@ pub fn add(conn: &Connection, name: &str, color: &str) -> AppResult<Label> {
         "INSERT INTO task_labels (id, name, color, position, created_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?5)",
         params![id, name, color, position, now_ms()],
-    )?;
+    )
+    .map_err(taken_on_conflict)?;
     get(conn, &id)
 }
 
 pub fn rename(conn: &Connection, id: &str, name: &str) -> AppResult<Label> {
-    let name = check_name(conn, name, Some(id))?;
+    let name = check_name(name)?;
     conn.execute(
         "UPDATE task_labels SET name = ?1, updated_at = ?2 WHERE id = ?3",
         params![name, now_ms(), id],
-    )?;
+    )
+    .map_err(taken_on_conflict)?;
     get(conn, id)
 }
 

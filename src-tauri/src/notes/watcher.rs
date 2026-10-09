@@ -9,11 +9,12 @@ use notify_debouncer_full::{new_debouncer, DebounceEventResult};
 use tauri::{AppHandle, Emitter, Runtime};
 
 use crate::error::{errors, AppResult};
-use serde_json::Value;
-
+use crate::names;
 use crate::notes;
-use crate::settings;
 use crate::state::{Guard, Vault};
+
+pub const CHANGED: &str = "notes:changed";
+const DEBOUNCE: Duration = Duration::from_millis(300);
 
 /// `path` is inside `root` under a hidden entry (or outside `root` altogether).
 fn is_hidden(root: &Path, path: &Path) -> bool {
@@ -21,20 +22,23 @@ fn is_hidden(root: &Path, path: &Path) -> bool {
         return true;
     };
     rel.components()
-        .any(|c| c.as_os_str().to_string_lossy().starts_with('.'))
+        .any(|c| names::is_hidden(&c.as_os_str().to_string_lossy()))
 }
 
-pub const CHANGED: &str = "notes:changed";
-const DEBOUNCE: Duration = Duration::from_millis(300);
-
 /// Rescans the notes folder and records what it skipped. Names are fixed on disk only when the
-/// vault allows it (`FIX_NAMES`).
+/// vault allows it.
 pub fn rescan(vault: &Vault) -> AppResult<()> {
     let mut db = vault.db();
-    let fix = settings::get(&db, notes::FIX_NAMES)? == Some(Value::Bool(true));
+    let fix = notes::fix_allowed(&db)?;
     let skipped = notes::scan(&mut db, &vault.notes_dir(), fix)?;
     vault.set_skipped(skipped);
     Ok(())
+}
+
+/// Lets this vault's scans fix names, then rescans so they are fixed now.
+pub fn fix_names<R: Runtime>(app: &AppHandle<R>, vault: &Vault) -> AppResult<()> {
+    notes::allow_fix(&vault.db())?;
+    rescan_and_emit(app, vault)
 }
 
 /// Rescans, then tells the UI.
@@ -59,11 +63,10 @@ pub fn start(vault: Arc<Vault>, changed: impl Fn(&Vault) + Send + 'static) -> Ap
         let Ok(events) = res else {
             return;
         };
-        let visible = events.iter().flat_map(|e| e.paths.iter()).any(|p| {
-            roots
-                .iter()
-                .any(|root| p.starts_with(root) && !is_hidden(root, p))
-        });
+        let visible = events
+            .iter()
+            .flat_map(|e| e.paths.iter())
+            .any(|p| roots.iter().any(|root| !is_hidden(root, p)));
         if visible {
             changed(&vault);
         }

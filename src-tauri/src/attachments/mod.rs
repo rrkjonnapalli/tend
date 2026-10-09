@@ -19,7 +19,7 @@ use crate::util::{new_id, now_ms};
 
 const OWNERS: [&str; 4] = ["task", "note", "comment", "person"];
 /// Where added files are copied, relative to the vault root.
-const STORE: &str = ".tend/attachments";
+const STORE: &str = crate::vault::ATTACHMENTS_DIR;
 
 #[derive(Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]

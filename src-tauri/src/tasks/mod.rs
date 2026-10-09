@@ -9,6 +9,7 @@ use rusqlite::{params, Connection, OptionalExtension, ToSql, Transaction};
 use serde::{Deserialize, Serialize};
 
 use crate::error::{errors, AppResult};
+use crate::names;
 use crate::statuses::{DONE, FIRST};
 use crate::util::{new_id, now_ms};
 
@@ -162,7 +163,7 @@ pub fn create(conn: &mut Connection, new: &NewTask) -> AppResult<Task> {
     let title = check_title(&new.title)?;
     let path = match &new.parent_id {
         Some(parent) => parent_path(conn, parent)?,
-        None => crate::names::accept_path(&new.path)?,
+        None => names::accept_path(&new.path)?,
     };
     let key = match &new.order_key {
         Some(k) => k.clone(),
@@ -241,7 +242,7 @@ pub fn move_to(conn: &mut Connection, id: &str, target: &str) -> AppResult<Task>
     if task.parent_id.is_some() {
         return Err(errors::SUBTASK_MOVE.err());
     }
-    let target = crate::names::accept_path(target)?;
+    let target = names::accept_path(target)?;
     let tx = conn.transaction()?;
     folders::ensure(&tx, &target)?;
     tx.execute(

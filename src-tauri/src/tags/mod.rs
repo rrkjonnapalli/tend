@@ -63,10 +63,9 @@ fn ensure(conn: &Connection, tag: &str) -> AppResult<()> {
     Ok(())
 }
 
-/// Replaces the owner's tags with `names`, each saved as its slug. Text with no letter or digit
-/// is ignored; tags no longer used anywhere stay in the
-/// pool. Only links that change are written, so unchanged links keep their ids (and aren't
-/// recorded as deleted).
+/// Replaces the owner's tags with `names`, each saved as its slug. Text with no letter or digit is
+/// ignored; tags no longer used anywhere stay in the pool. Only links that change are written, so
+/// unchanged links keep their ids (and aren't recorded as deleted).
 pub fn set(
     conn: &mut Connection,
     owner: Owner,

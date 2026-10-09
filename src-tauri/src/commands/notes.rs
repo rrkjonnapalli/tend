@@ -12,19 +12,14 @@ pub fn skipped_items(state: State<AppState>) -> AppResult<Vec<notes::Skipped>> {
 }
 
 /// Lets scans rename folders and notes whose names break the rule, then rescans. Returns what is
-/// still skipped (names nothing valid can be made from).
+/// still skipped (names no free name was left for).
 #[tauri::command(async)]
 pub fn notes_fix_names<R: Runtime>(
     app: AppHandle<R>,
     state: State<AppState>,
 ) -> AppResult<Vec<notes::Skipped>> {
     let vault = state.vault()?;
-    crate::settings::set(
-        &vault.db(),
-        notes::FIX_NAMES,
-        &serde_json::Value::Bool(true),
-    )?;
-    notes::watcher::rescan_and_emit(&app, &vault)?;
+    notes::watcher::fix_names(&app, &vault)?;
     Ok(vault.skipped())
 }
 

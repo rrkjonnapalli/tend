@@ -102,7 +102,7 @@ fn reopen_explains_what_went_wrong() {
     fs::write(bad.path().join(".tend/tend.db"), "junk").unwrap();
     assert_eq!(
         reopen_err(bad.path()),
-        "An incompatible database exists in .tend/tend.db."
+        "An incompatible database exists in .tend/tend.db"
     );
 }
 
@@ -132,8 +132,8 @@ fn non_sqlite_file_is_incompatible() {
     );
 }
 
-fn fix_names(vault: &Vault) -> Option<serde_json::Value> {
-    crate::settings::get(&vault.db(), crate::notes::FIX_NAMES).unwrap()
+fn fix_names(vault: &Vault) -> bool {
+    crate::notes::fix_allowed(&vault.db()).unwrap()
 }
 
 #[test]
@@ -141,7 +141,7 @@ fn a_new_empty_vault_fixes_names_without_asking() {
     let fresh = tempfile::tempdir().unwrap();
     fs::write(fresh.path().join(".DS_Store"), "").unwrap();
     let vault = open(fresh.path(), false).1.unwrap();
-    assert_eq!(fix_names(&vault), Some(serde_json::Value::Bool(true)));
+    assert!(fix_names(&vault));
 }
 
 #[test]
@@ -165,6 +165,6 @@ fn a_folder_with_things_in_it_asks_first_and_agreeing_allows_fixes() {
     let (check, vault) = open(dir.path(), true);
     assert!(check.ok);
     let vault = vault.unwrap();
-    assert_eq!(fix_names(&vault), Some(serde_json::Value::Bool(true)));
+    assert!(fix_names(&vault));
     assert_eq!(inspect(dir.path()), None, "now it is a vault");
 }

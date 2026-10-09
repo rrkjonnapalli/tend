@@ -16,13 +16,25 @@ const MAX_CHARS: usize = 200;
 /// How many `_1`, `_2`, … suffixes to try before giving up.
 const MAX_SUFFIX: u32 = 9999;
 
-/// `^[a-z0-9]+(_[a-z0-9]+)*$`.
+/// Entries whose names start with this are hidden (`.tend/`, `.git/`, `.DS_Store`): Tend never
+/// reads, renames or watches them.
+const HIDDEN_PREFIX: char = '.';
+
+pub fn is_hidden(name: &str) -> bool {
+    name.starts_with(HIDDEN_PREFIX)
+}
+
+/// `^[a-z0-9]+(_[a-z0-9]+)*$`, at most `MAX_CHARS` long.
 pub fn is_valid(name: &str) -> bool {
+    if name.is_empty() || name.len() > MAX_CHARS {
+        return false;
+    }
     let allowed = name
         .bytes()
         .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'_');
     let edges_ok = !name.starts_with('_') && !name.ends_with('_');
-    !name.is_empty() && allowed && edges_ok && !name.contains("__") && name.len() <= MAX_CHARS
+    let single_gaps = !name.contains("__");
+    allowed && edges_ok && single_gaps
 }
 
 /// The name that text becomes on disk: accents become plain letters, everything lowercase, each
@@ -49,7 +61,10 @@ pub fn slug(text: &str) -> Option<String> {
         gap = false;
         out.push(c);
     }
-    (!out.is_empty()).then_some(out)
+    if out.is_empty() {
+        return None;
+    }
+    Some(out)
 }
 
 /// A folder name typed by the user, as it will be saved.
@@ -73,18 +88,27 @@ pub fn accept_path(path: &str) -> AppResult<String> {
     Ok(segments.join("/"))
 }
 
-/// `base`, or `base_1`, `base_2`, … — the first one `taken` reports as free.
+/// `base`, or `base_1`, `base_2`, … — the first one `taken` reports as free. A suffixed name is
+/// cut so it still fits `MAX_CHARS` (an over-long name would fail the rule and be fixed again).
 pub fn free(base: &str, taken: impl Fn(&str) -> AppResult<bool>) -> AppResult<String> {
     if !taken(base)? {
         return Ok(base.to_string());
     }
     for n in 1..=MAX_SUFFIX {
-        let candidate = format!("{base}_{n}");
+        let candidate = with_suffix(base, n);
         if !taken(&candidate)? {
             return Ok(candidate);
         }
     }
     Err(errors::NAME_TAKEN.err())
+}
+
+/// `base_n`, with `base` shortened when needed to stay within `MAX_CHARS`. Names are ASCII.
+fn with_suffix(base: &str, n: u32) -> String {
+    let suffix = format!("_{n}");
+    let room = MAX_CHARS - suffix.len();
+    let kept = base[..base.len().min(room)].trim_end_matches('_');
+    format!("{kept}{suffix}")
 }
 
 pub fn join(folder: &str, name: &str) -> String {

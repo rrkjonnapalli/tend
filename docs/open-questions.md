@@ -22,3 +22,4 @@ status).
 | # | Where | Item |
 |---|---|---|
 | 10 | M10 | A timer firing right after the laptop wakes depends on the interval and focus ticks; only a manual test can confirm it. |
+| 11 | M3 | A scan that fixes names renames the files first and logs them in one transaction after; if that transaction fails, the files keep their new names but the `path_log` rows are lost (the next scan indexes them as they are). Accepted: disk is the truth, and the case needs a database failure mid-scan. |
