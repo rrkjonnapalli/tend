@@ -58,7 +58,7 @@
         {/each}
       </div>
       <textarea use:plainText aria-label="Feedback" placeholder="A bug, an idea, something you’d like…" bind:value={draft} {onkeydown} use:focusOnMount></textarea>
-      {#if error}<span class="err">{error}</span>{/if}
+      {#if error}<span class="err-line" role="alert">{error}</span>{/if}
       <div class="foot">
         <span class="muted small">Saved in your vault</span>
         <button class="btn-primary send" disabled={!draft.trim()} onclick={send}>Send</button>
@@ -123,7 +123,7 @@
     border-radius: var(--radius-control);
     outline: none;
     resize: vertical;
-    font: 400 13px/20px var(--font-ui);
+    font: var(--text-caption);
     background: var(--c-page);
   }
 
@@ -153,8 +153,4 @@
     color: var(--success);
   }
 
-  .err {
-    color: var(--danger);
-    font-size: 12px;
-  }
 </style>

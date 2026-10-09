@@ -95,9 +95,9 @@
   }
 
   .key {
-    font: 500 13px/18px var(--font-mono);
+    font: var(--text-mono-strong);
     padding: 0 var(--space-1);
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
     background: var(--c-chip);
   }
 

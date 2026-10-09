@@ -35,7 +35,7 @@
 
   .more {
     margin-left: 1px;
-    font: 400 11px/14px var(--font-ui);
+    font: var(--text-tiny);
     color: var(--c-muted-2);
   }
 </style>

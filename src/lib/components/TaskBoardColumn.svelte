@@ -102,7 +102,7 @@
     align-items: center;
     gap: 8px;
     padding: 0 4px;
-    font: 500 13px/18px var(--font-heading);
+    font: var(--text-subsection);
   }
 
   .vc {

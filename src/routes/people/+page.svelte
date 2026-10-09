@@ -90,7 +90,7 @@
 
   .prow {
     align-items: center;
-    min-height: 40px;
+    min-height: 36px;
     padding: 0 16px;
     margin: 0 -16px;
     font: var(--text-ui);

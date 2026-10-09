@@ -195,7 +195,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 15px/22px var(--font-ui);
+    font: var(--text-input-lg);
   }
 
   .qi::placeholder {
@@ -208,7 +208,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 500 15px/22px var(--font-mono);
+    font: var(--text-count-lg);
   }
 
   .time.bad {

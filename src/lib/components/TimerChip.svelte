@@ -55,7 +55,7 @@
     border-radius: 13px;
     background: var(--c-nav-active-soft);
     color: var(--c-current-ink);
-    font: 500 12px/16px var(--font-mono);
+    font: var(--text-count-sm);
     cursor: pointer;
   }
 

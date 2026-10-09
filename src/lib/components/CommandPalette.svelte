@@ -265,7 +265,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 16px/22px var(--font-ui);
+    font: var(--text-input-lg);
   }
 
   .pin input::placeholder {

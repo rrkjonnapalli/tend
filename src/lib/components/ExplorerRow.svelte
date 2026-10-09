@@ -107,7 +107,7 @@
   {/if}
 </div>
 {#if showsError}
-  <div class="name-err" style:padding-left="{indent}px">{draftError}</div>
+  <div class="err-line name-err" role="alert" style:padding-left="{indent}px">{draftError}</div>
 {/if}
 
 <style>
@@ -229,7 +229,5 @@
 
   .name-err {
     padding: 2px 8px 6px;
-    font: var(--text-meta);
-    color: var(--danger);
   }
 </style>

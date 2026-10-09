@@ -237,7 +237,7 @@
   }
 
   .mono {
-    font: 400 12px/18px var(--font-mono);
+    font: var(--text-path);
     color: var(--text-muted);
   }
 

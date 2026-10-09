@@ -58,7 +58,7 @@
 
 <span class="wrap">
   <input use:plainText use:focusAndSelect class="inline-field field" class:bad={problem} data-no-drag aria-label={label} bind:value={text} {onkeydown} {onblur} />
-  {#if problem}<span class="err">{problem}</span>{/if}
+  {#if problem}<span class="err-line err" role="alert">{problem}</span>{/if}
 </span>
 
 <style>
@@ -76,7 +76,5 @@
 
   .err {
     flex: 0 0 auto;
-    font: var(--text-meta);
-    color: var(--danger);
   }
 </style>

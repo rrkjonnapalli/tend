@@ -29,6 +29,7 @@
   import { dropTargetAt, trackDrag } from '#lib/util/explorer-drag.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { ui } from '#lib/stores/ui.svelte.ts';
+  import { NOTE_DELETE_BODY } from '#lib/util/note-paths.ts';
   import { rowNav } from '#lib/actions/row-nav.action.ts';
 
   let {
@@ -264,7 +265,7 @@
     }
     return {
       title: `Delete ${row.name}?`,
-      body: 'The file is deleted from disk. Tags and attachment links on it are removed.',
+      body: NOTE_DELETE_BODY,
       confirm: 'Delete',
     };
   }

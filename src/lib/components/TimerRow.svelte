@@ -38,7 +38,7 @@
   }
 
   .left {
-    font: 500 14px/20px var(--font-mono);
+    font: var(--text-count);
   }
 
   .plus {

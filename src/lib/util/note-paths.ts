@@ -6,6 +6,9 @@ import { routes } from './routes.ts';
 /** The name the notes root goes by in the explorer, headings and breadcrumbs. */
 export const NOTES_ROOT_NAME = 'notes';
 
+/** What deleting a note does, for its confirmation (the explorer and the note page). */
+export const NOTE_DELETE_BODY = 'The file is deleted from disk. Tags and attachment links on it are removed.';
+
 /** "notes / work / tauri": the root, then one link per folder segment. */
 export function folderCrumbs(folder: string): Crumb[] {
   const crumbs: Crumb[] = [{ label: NOTES_ROOT_NAME, href: routes.notesFolder('') }];

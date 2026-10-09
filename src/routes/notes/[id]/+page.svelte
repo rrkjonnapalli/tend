@@ -25,7 +25,10 @@
   import { label as keyLabel } from '#lib/util/keys.ts';
   import { pageActions } from '#lib/stores/page-actions.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
-  import { folderCrumbs } from '#lib/util/note-paths.ts';
+  import { folderCrumbs, NOTE_DELETE_BODY, NOTES_ROOT_NAME } from '#lib/util/note-paths.ts';
+  import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
+  import MoveToDialog from '#lib/components/MoveToDialog.svelte';
+  import { join } from '#lib/util/names.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { toAppError } from '#lib/errors/app-error.ts';
@@ -46,6 +49,9 @@
   let editing = $state(false);
   let loadedId = $state<string | null>(null);
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let moving = $state(false);
+  let deleting = $state(false);
+
   /** A write is on its way to disk. */
   let writing = $state(false);
   /** The last write failed; the text stays on screen until a retry works. */
@@ -155,6 +161,24 @@
     editing = edit;
   }
 
+  async function moveTo(target: string) {
+    moving = false;
+    await flush();
+    await notes.move({ kind: 'note', id }, target);
+    toast.show(`Moved to ${target || NOTES_ROOT_NAME}/`);
+  }
+
+  /** Deleting the open note goes back to its folder; it isn't taken for a deletion elsewhere. */
+  async function remove() {
+    const folder = place?.folder ?? '';
+    const name = place?.name ?? '';
+    clearTimeout(timer);
+    await deleted.leave(() => notes.remove({ kind: 'note', id }));
+    deleting = false;
+    toast.show(`Deleted ${name}`);
+    nav.back(routes.notesFolder(folder));
+  }
+
   async function setTags(next: string[]) {
     tags = next;
     tags = await tagsAPI.setForNote({ id, tags: next });
@@ -195,6 +219,8 @@
       {:else}
         <button class="icon-btn" aria-label="Edit" title="Edit ({keyLabel('mod+r')})" onclick={() => setMode(true)}><Icon name="edit" size={14} /></button>
       {/if}
+      <button class="icon-btn" aria-label="Move to…" title="Move to…" onclick={() => (moving = true)}><Icon name="folder" size={14} /></button>
+      <button class="icon-btn" aria-label="Delete note" title="Delete note" onclick={() => (deleting = true)}><Icon name="trash" size={14} /></button>
       <button class="icon-btn" aria-label={widthLabel} title={widthLabel} onclick={toggleWidth}>
         <Icon name={wide ? 'narrow' : 'widen'} size={14} />
       </button>
@@ -218,7 +244,7 @@
               autofocus />
           {/key}
         {:else}
-          <div class="view">
+          <div class="view" style:min-height="{EDITOR_MIN_HEIGHT}px">
             <MarkdownView {text} variant="note" empty="Empty note" ondblclick={() => setMode(true)} />
           </div>
         {/if}
@@ -231,13 +257,30 @@
   <DeletedDialog kind="note" onkeep={keep} ondiscard={discard} />
 {/if}
 
+{#if moving && place}
+  <MoveToDialog
+    what={join(place.folder, place.name)}
+    folders={['', ...notes.folders]}
+    current={place.folder}
+    rootName={NOTES_ROOT_NAME}
+    onmove={moveTo}
+    onclose={() => (moving = false)} />
+{/if}
+
+{#if deleting && place}
+  <ConfirmDialog
+    title="Delete {place.name}?"
+    body={NOTE_DELETE_BODY}
+    confirm="Delete"
+    danger
+    onconfirm={remove}
+    onclose={() => (deleting = false)} />
+{/if}
+
 <style>
   /* Tags sit just above the text. */
   .note {
     gap: 16px;
   }
 
-  .view {
-    min-height: 600px;
-  }
 </style>

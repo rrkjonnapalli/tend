@@ -97,7 +97,7 @@
   --text-heading:        500 28px/36px var(--font-heading);  /* page titles */
   --text-brand:          600 32px/40px var(--font-heading);  /* the wordmark */
   --text-title:          500 18px/26px var(--font-heading);  /* headings inside a note */
-  --text-section:        500 15px/20px var(--font-heading);  /* section titles (Settings, popups) */
+  --text-section:        500 15px/20px var(--font-heading);  /* section titles everywhere (.section-title, Section) */
   --text-subsection:     500 14px/20px var(--font-heading);  /* small headings */
   --text-ui:             400 14px/20px var(--font-ui);  /* rows, fields, buttons: the default */
   --text-ui-strong:      700 14px/20px var(--font-ui);  /* primary buttons */
@@ -111,6 +111,14 @@
   --text-code:           400 13px/20px var(--font-mono);  /* code blocks */
   --text-mono:           400 13px/18px var(--font-mono);  /* paths, values, kbd */
   --text-mono-meta:      400 12px/16px var(--font-mono);  /* small mono values */
+  --text-input-lg:       400 15px/22px var(--font-ui);  /* the ⌘K and quick-create fields */
+  --text-count-lg:       500 15px/22px var(--font-mono);  /* a duration typed in quick create */
+  --text-count:          500 14px/20px var(--font-mono);  /* a timer countdown in its row */
+  --text-count-sm:       500 12px/16px var(--font-mono);  /* the countdown in the timer chip */
+  --text-mono-strong:    500 13px/18px var(--font-mono);  /* a name to type, in a confirmation */
+  --text-path:           400 12px/18px var(--font-mono);  /* vault paths and file lists on Start and in Settings */
+  --text-kbd:            400 11px/14px var(--font-mono);  /* key caps */
+  --text-hint:           400 11px/16px var(--font-mono);  /* shortcut hints in menus and panels */
 
   /* spacing & radius */
   --space-0_5: 2px;
@@ -128,7 +136,6 @@
   --explorer-w: 232px;
   --content-w: 760px;      /* note/task page narrow width */
   --bottom-nav-h: 44px;
-  --row-h: 32px;
 
   /* list rows: fixed right-hand columns, so they line up on every row */
   --col-gap: 6px;

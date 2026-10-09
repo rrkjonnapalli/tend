@@ -99,7 +99,7 @@
       <button class="icon-btn sm edit" aria-label="Edit {name}" title="Edit" onclick={startEdit}><Icon name="edit" size={13} /></button>
     {/if}
   </span>
-  {#if error}<span class="err" role="alert">{error}</span>{/if}
+  {#if error}<span class="err-line err" role="alert">{error}</span>{/if}
 </div>
 
 <style>
@@ -211,7 +211,5 @@
   .err {
     grid-column: 3 / -1;
     padding: 0 0 8px;
-    font: var(--text-meta);
-    color: var(--danger);
   }
 </style>

@@ -300,7 +300,6 @@ textarea,
   color: var(--on-danger-soft);
 }
 
-/* What a list says when it has no rows. */
 /* The keyboard cursor in a list or the explorer (see the rowNav action). */
 [data-row]:focus-visible {
   outline: none;
@@ -308,6 +307,7 @@ textarea,
   box-shadow: inset 2px 0 0 var(--c-current);
 }
 
+/* What a list says when it has no rows. */
 .list-empty {
   display: block;
   padding: 8px 0;
@@ -331,7 +331,7 @@ kbd {
   border-bottom-width: 2px;
   border-radius: var(--radius-sm);
   background: var(--c-page);
-  font: 400 11px/14px var(--font-mono);
+  font: var(--text-kbd);
   color: var(--text-muted);
 }
 
@@ -391,7 +391,7 @@ kbd {
 
 .opt .hint {
   margin-left: auto;
-  font: 400 11px/16px var(--font-mono);
+  font: var(--text-hint);
   color: var(--c-muted-2);
 }
 

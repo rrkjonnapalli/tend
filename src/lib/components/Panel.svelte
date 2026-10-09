@@ -48,7 +48,7 @@
   }
 
   .head :global(.k) {
-    font: 400 11px/16px var(--font-mono);
+    font: var(--text-hint);
     color: var(--c-muted-2);
   }
 

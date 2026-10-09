@@ -114,7 +114,7 @@
     margin: 0;
     padding: 0 0 0 16px;
     list-style: none;
-    font: 400 12px/20px var(--font-mono);
+    font: var(--text-path);
     color: var(--text-muted);
   }
 
