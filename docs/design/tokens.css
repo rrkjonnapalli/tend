@@ -53,7 +53,6 @@
   --primary-hover: #113eb0;
   --on-primary: #ffffff;
   --primary-soft: #dbfaff;
-  --focus-ring: #1070e3;
   --accent: #6f5ee4;            /* the brand violet: the wordmark dot, avatars, birthdays soon; for "you are here" use --c-current */
   --accent-soft: #b1b2ff;
   --danger: #da0037;
@@ -167,7 +166,6 @@
   --primary-hover: #3b78e7;
   --on-primary: #ffffff;
   --primary-soft: #172a4a;
-  --focus-ring: #5b9bff;
   --accent: #8f80f2;
   --accent-soft: #4a4390;
   --danger: #ff6b86;

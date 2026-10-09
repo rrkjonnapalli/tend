@@ -61,9 +61,15 @@ textarea,
   caret-color: var(--c-current);
 }
 
+/* Keyboard focus never draws an outline. A control with focus gets the hover fill (the
+   specificity beats components' own `background: transparent`); fields show it with their
+   border, list rows with the cursor bar, filled buttons with their hover colour. */
 :focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
+  outline: none;
+}
+
+html :is(button, a, [role='button']):focus-visible:not(.btn-primary, .btn-danger, [data-row]) {
+  background-color: var(--c-hover);
 }
 
 .heading {
@@ -157,8 +163,13 @@ textarea,
   color: var(--on-primary);
 }
 
-.btn-primary:hover:not(:disabled) {
+.btn-primary:hover:not(:disabled),
+.btn-primary:focus-visible {
   background: var(--primary-hover);
+}
+
+.btn-danger:focus-visible {
+  background: color-mix(in srgb, var(--danger-fill) 85%, black);
 }
 
 .btn-danger {

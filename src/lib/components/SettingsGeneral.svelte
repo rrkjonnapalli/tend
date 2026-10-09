@@ -170,8 +170,8 @@
   }
 
   .choice:has(input:focus-visible) {
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 1px;
+    background: var(--c-hover);
+    color: var(--text);
   }
 
   .choice input {

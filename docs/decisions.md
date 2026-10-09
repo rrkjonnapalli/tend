@@ -295,6 +295,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - Minutes ≥ 0 with no upper limit; seconds 0–59; total > 0.
   - A bare number means minutes.
 - **Shortcuts:** ⌘1 Notes · ⌘2 Tasks · ⌘3 People · ⌘, Settings · ⌘K palette · ⌘D toggle the dock (bottom bar).
+- **Keyboard focus** is never an outline or ring. A focused button or link gets the hover fill, a list row the cursor fill with the violet bar, a field its border colour, a filled button its hover colour.
 - **Lists and the explorer:** ↓ from the search or add field enters the list · ↑↓ Home End move the cursor (a grey row with a blue bar at the left) · ↵ opens · F2 renames · → / ← open and close a folder in the explorer. The explorer's F2, ⌘⇧M and ⌫ act on the row with the cursor, else on the open item. On the task board: ↑↓ within a column, ←→ across columns (skipping empty ones), ⇧← ⇧→ move the card to the previous or next status (to the end of that column), ↵ opens. The Settings sections, a task's subtasks and a person's tasks take ↑↓ too.
 
 ## 13. Settings
