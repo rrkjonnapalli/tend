@@ -13,6 +13,7 @@ export const settingKeys = {
   /** The task list's "hide done" toggle. */
   tasksHideDone: 'tasks.hide_done',
   timersSound: 'timers.sound',
-  /** The folder Quick create last used for each kind. */
-  quickLastPath: (kind: QuickKind) => `quick.last_path.${kind}`,
+  /** The folder Quick create last used for each kind; folders keep one per tree. */
+  quickLastPath: (kind: QuickKind, tree?: 'notes' | 'tasks') =>
+    kind === 'folder' && tree ? `quick.last_path.folder.${tree}` : `quick.last_path.${kind}`,
 };

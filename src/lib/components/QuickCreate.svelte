@@ -28,7 +28,7 @@
 
   // Folder: Notes or Tasks, defaulting to the section you're in.
   let tree = $state<'notes' | 'tasks'>(page.url.pathname.startsWith(routes.tasks) ? 'tasks' : 'notes');
-  const settingKey = $derived(settingKeys.quickLastPath(kind));
+  const settingKey = $derived(settingKeys.quickLastPath(kind, tree));
   let path = $state('');
   let name = $state('');
   let duration = $state('01:00');

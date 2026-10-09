@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Settings → General: the vault folder, and notes or folders skipped for breaking the name rule
+  // Settings → General: the timer sound, the vault folder, and notes or folders skipped for breaking the name rule
   // (with the name each can be renamed to, and one button to rename them all).
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -9,6 +9,8 @@
   import type { Skipped } from '#lib/types/note.type.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { plural } from '#lib/util/plural.ts';
+  import { settings } from '#lib/stores/settings.svelte.ts';
+  import { settingKeys } from '#lib/config/settings.config.ts';
   import { routes } from '#lib/util/routes.ts';
 
   let skipped = $state<Skipped[]>([]);
@@ -54,6 +56,17 @@
       {/if}
     {/if}
   {/if}
+</section>
+
+<section class="group">
+  <h2 class="h2">Timers</h2>
+  <label class="check">
+    <input
+      type="checkbox"
+      checked={settings.get(settingKeys.timersSound, true)}
+      onchange={(e) => settings.set(settingKeys.timersSound, e.currentTarget.checked)} />
+    Play a sound when a timer ends
+  </label>
 </section>
 
 <style>
@@ -111,6 +124,18 @@
 
   .to {
     color: var(--c-muted-2);
+  }
+
+  .check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font: 400 14px/20px var(--font-ui);
+    cursor: pointer;
+  }
+
+  .check input {
+    accent-color: var(--primary);
   }
 
   .tlink {
