@@ -8,14 +8,19 @@
   let { minutes, onsave }: { minutes: number; onsave: (minutes: number) => Promise<void> } = $props();
 
   let editing = $state(false);
-  let draft = $state('');
+  /** A number input binds a number, or null while it's empty. */
+  let draft = $state<number | null>(null);
 
-  const value = $derived(Number(draft));
-  const valid = $derived(draft.trim() !== '' && Number.isInteger(value) && value >= intervalLimits.min && value <= intervalLimits.max);
+  const valid = $derived(isValid(draft));
   const shown = $derived(minutes === 0 ? 'Off' : `Every ${plural(minutes, 'minute')}`);
 
+  function isValid(n: number | null): n is number {
+    if (n === null || !Number.isInteger(n)) return false;
+    return n >= intervalLimits.min && n <= intervalLimits.max;
+  }
+
   function start() {
-    draft = String(minutes);
+    draft = minutes;
     editing = true;
   }
 
@@ -24,8 +29,8 @@
   }
 
   async function save() {
-    if (!valid) return;
-    await onsave(value);
+    if (!isValid(draft)) return;
+    await onsave(draft);
     editing = false;
   }
 
