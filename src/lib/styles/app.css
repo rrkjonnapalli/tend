@@ -68,7 +68,8 @@ textarea,
   outline: none;
 }
 
-html :is(button, a, [role='button']):focus-visible:not(.btn-primary, .btn-danger, [data-row], .link-btn, .text-btn, .crumb, a:not([class])) {
+/* A `data-pick` control (a task view) is selected as it takes focus; its own mark is enough. */
+html :is(button, a, [role='button']):focus-visible:not(.btn-primary, .btn-danger, [data-row], [data-pick], .link-btn, .text-btn, .crumb, a:not([class])) {
   background-color: var(--c-hover);
 }
 

@@ -2,7 +2,7 @@
   // The "+ new …" line at the top of a list page (notes, tasks, people). Enter adds; the page
   // decides what adding means. An error shows right under it.
   import { plainText } from '#lib/actions/plain-text.action.ts';
-  import { focusWhen } from '#lib/actions/focus.action.ts';
+  import { focusIfIdle } from '#lib/actions/focus.action.ts';
 
   let {
     value = $bindable(''),
@@ -34,7 +34,7 @@
 
 <label class="add" data-zone="field">
   <span class="plus" aria-hidden="true">+</span>
-  <input use:plainText use:focusWhen={autofocus} data-row-entry bind:this={input} aria-label={label} {placeholder} bind:value {oninput} {onkeydown} />
+  <input use:plainText use:focusIfIdle={autofocus} data-row-entry bind:this={input} aria-label={label} {placeholder} bind:value {oninput} {onkeydown} />
 </label>
 {#if error}<span class="err-line under" role="alert">{error}</span>{/if}
 

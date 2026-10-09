@@ -156,7 +156,7 @@
   <nav class="views" aria-label="Views" data-zone="bar">
     {#each VIEWS as [v, label], i (v)}
       {#if i > 0}<span class="sep" aria-hidden="true">·</span>{/if}
-      <button class="vbtn text-btn" data-pick class:on={view === v} aria-pressed={view === v} onclick={() => setView(v)}>
+      <button class="vbtn" data-pick class:on={view === v} aria-pressed={view === v} onclick={() => setView(v)}>
         {label}<span class="vc">{counts[v]}</span>
       </button>
     {/each}
