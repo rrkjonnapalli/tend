@@ -155,7 +155,7 @@
   <nav class="views" aria-label="Views">
     {#each VIEWS as [v, label], i (v)}
       {#if i > 0}<span class="sep" aria-hidden="true">·</span>{/if}
-      <button class="vbtn" class:on={view === v} aria-pressed={view === v} onclick={() => setView(v)}>
+      <button class="vbtn text-btn" class:on={view === v} aria-pressed={view === v} onclick={() => setView(v)}>
         {label}<span class="vc">{counts[v]}</span>
       </button>
     {/each}

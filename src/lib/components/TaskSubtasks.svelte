@@ -67,7 +67,7 @@
     {/each}
   </div>
   {#if doneSubs.length}
-    <button class="donehead" aria-expanded={showDone} onclick={() => (showDone = !showDone)}>
+    <button class="donehead text-btn" aria-expanded={showDone} onclick={() => (showDone = !showDone)}>
       <Icon name={showDone ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />Done<span class="cnt">{doneSubs.length}</span>
     </button>
     {#if showDone}

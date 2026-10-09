@@ -68,8 +68,15 @@ textarea,
   outline: none;
 }
 
-html :is(button, a, [role='button']):focus-visible:not(.btn-primary, .btn-danger, [data-row]) {
+html :is(button, a, [role='button']):focus-visible:not(.btn-primary, .btn-danger, [data-row], .link-btn, .text-btn, .crumb, a:not([class])) {
   background-color: var(--c-hover);
+}
+
+/* Text links and text-only buttons show focus as they show hover: underlined, no fill. */
+html :is(.link-btn, .text-btn, .crumb, a:not([class])):focus-visible {
+  background-color: transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .heading {

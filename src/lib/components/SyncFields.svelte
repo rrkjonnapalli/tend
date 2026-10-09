@@ -20,7 +20,7 @@
     <span class="lbl">Token</span>
     <input class="text-field mono grow" type="password" autocomplete="off" placeholder="saved in the Keychain only" bind:value={setup.token} />
   </label>
-  <button class="more" aria-expanded={more} onclick={() => (more = !more)}>
+  <button class="more text-btn" aria-expanded={more} onclick={() => (more = !more)}>
     <Icon name={more ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />More
   </button>
   {#if more}
