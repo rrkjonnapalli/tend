@@ -76,7 +76,8 @@
 
   function setView(v: View, extra: Record<string, string> = {}) {
     settings.set(settingKeys.tasksLastView, { view: v, day: tasks.day } satisfies LastView);
-    nav.replace(tasksURL({ ...folderParam(folder), [TASK_PARAMS.view]: v, ...extra }));
+    // Same page, another view: focus stays on the view (so ← → keep switching).
+    nav.replace(tasksURL({ ...folderParam(folder), [TASK_PARAMS.view]: v, ...extra }), { keepFocus: true });
   }
 
   function setRange([from, to]: DayRange) {

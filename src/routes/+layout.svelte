@@ -106,7 +106,19 @@
     return true;
   }
 
+  /** An arrow key while nothing in the page has focus (after a page change) enters the page. */
+  function enterPage(e: KeyboardEvent): boolean {
+    const isArrow = e.key.startsWith('Arrow');
+    const hasModifier = e.metaKey || e.ctrlKey || e.altKey || e.shiftKey;
+    const target = e.target as HTMLElement;
+    const nothingFocused = target === document.body || target === pageEl;
+    if (!inVault || !pageEl || !isArrow || hasModifier || !nothingFocused) return false;
+    e.preventDefault();
+    return focusMain(pageEl, lastInMain);
+  }
+
   function onkeydown(e: KeyboardEvent) {
+    if (enterPage(e)) return;
     if (isPaneChord(e)) {
       paneKey(e);
       return;
