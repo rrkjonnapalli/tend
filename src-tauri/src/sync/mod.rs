@@ -2,5 +2,6 @@
 // The pieces are used by the sync run, which is wired in step S4.
 #![cfg_attr(not(test), expect(dead_code, reason = "used by the sync run (S4)"))]
 
+pub mod apply;
 pub mod reconcile;
 pub mod shards;

@@ -93,3 +93,4 @@ pub const SNAPSHOT_TOO_NEW: ErrorDef = def(
     "SNAPSHOT_TOO_NEW",
     "This vault was synced by a newer Tend. Update Tend to keep syncing.",
 );
+pub const SYNC_APPLY_FAILED: ErrorDef = def("SYNC_APPLY_FAILED", "Sync couldn’t apply the changes");

@@ -310,12 +310,12 @@ CREATE TABLE sync_state (
 ) STRICT;
 INSERT INTO sync_state (id) VALUES (1);
 
--- Every rename or move of a folder or note file, by Tend or by a scan fixing a name, so an
+-- Every rename or move of a folder or note file, by Tend, a scan fixing a name or a sync, so an
 -- earlier layout can be restored. Local; never synced; never trimmed.
 CREATE TABLE path_log (
   id       INTEGER PRIMARY KEY,
   kind     TEXT NOT NULL CHECK (kind IN ('folder', 'note')),
-  reason   TEXT NOT NULL CHECK (reason IN ('fix', 'rename', 'move')),
+  reason   TEXT NOT NULL CHECK (reason IN ('fix', 'rename', 'move', 'sync')),
   old_path TEXT NOT NULL,                -- relative to the vault, as it was
   new_path TEXT NOT NULL,
   at       INTEGER NOT NULL

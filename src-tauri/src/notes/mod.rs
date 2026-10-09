@@ -69,6 +69,8 @@ pub(crate) enum Reason {
     Fix,
     Rename,
     Move,
+    /// A sync brought in another device's rename or move.
+    Sync,
 }
 
 impl Reason {
@@ -77,6 +79,7 @@ impl Reason {
             Reason::Fix => "fix",
             Reason::Rename => "rename",
             Reason::Move => "move",
+            Reason::Sync => "sync",
         }
     }
 }
