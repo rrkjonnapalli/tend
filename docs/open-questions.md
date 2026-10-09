@@ -10,7 +10,7 @@ status).
 | 1 | M1 | `docs/design/icon/mark.svg` is the favicon (`static/favicon.svg`). |
 | 2 | M3 | Watcher tests: an edit to an existing note reaches the index; a write under `.tend/` never triggers a rescan. |
 | 3 | M4 | The dev-only `/playground` route is removed. |
-| 4 | M5 | A note deleted outside Tend while open goes back to its folder with a toast. |
+| 4 | M5 | A note deleted elsewhere while open keeps its text and asks: **Keep** recreates it as a new note (new id, same folder, name, text, tags); **Discard** goes back to the folder. Sync will use the same path. |
 | 5 | M10 | Settings → General → Timers: "Play a sound when a timer ends". |
 | 6 | M10 | Quick create remembers a folder path per tree (Notes, Tasks). |
 | 7 | M6 | "All" stays top-level only (decided). |

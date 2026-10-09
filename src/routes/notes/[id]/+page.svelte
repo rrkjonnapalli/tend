@@ -10,6 +10,7 @@
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
   import TagEditor from '#lib/components/TagEditor.svelte';
+  import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
   import MarkdownView from '#lib/components/MarkdownView.svelte';
   import MarkdownEditor from '#lib/components/MarkdownEditor.svelte';
   import { notesAPI } from '#lib/api/notes.ts';
@@ -29,11 +30,13 @@
 
   const id = $derived(page.params.id!);
   const row = $derived(notes.byId(id));
-  /** The open note's folder, kept after the note leaves the tree (deleted outside Tend). */
-  let lastFolder = $state('');
+  /** Where the open note lives, kept after it leaves the tree (deleted outside Tend or by sync). */
+  let last = $state({ folder: '', name: '' });
   $effect(() => {
-    if (row) lastFolder = row.folder;
+    if (row) last = { folder: row.folder, name: row.name };
   });
+  /** The open note was deleted elsewhere; its text stays here until the user keeps or drops it. */
+  let gone = $state(false);
 
   let text = $state('');
   let saved = $state('');
@@ -77,27 +80,47 @@
     saved = doc.text;
   }
 
-  /** The open note was deleted outside Tend: go back to its folder. */
-  function leaveIfGone(e: unknown) {
+  /** A read or save found the note deleted: hold on to the text and ask (see `keepDeleted`). */
+  function markGone(e: unknown) {
     if (!toAppError(e).is('NOT_FOUND')) throw e;
-    toast.show('This note was deleted outside Tend');
-    nav.replace(routes.notesFolder(lastFolder));
+    clearTimeout(timer);
+    gone = true;
   }
 
-  // Outside changes reach an open note that isn't being edited.
+  /** Recreates the deleted note as a new one: same folder, name, text (with unsaved edits) and tags. */
+  async function keepDeleted() {
+    const body = text;
+    const kept = await notes.create({ folder: last.folder, title: last.name });
+    await notesAPI.write({ id: kept.id, text: body });
+    if (tags.length) await tagsAPI.setForNote({ id: kept.id, tags });
+    gone = false;
+    toast.show('Kept as a new note');
+    nav.replace(routes.note(kept.id, { edit: editing }));
+  }
+
+  function dropDeleted() {
+    gone = false;
+    nav.replace(routes.notesFolder(last.folder));
+  }
+
+  // After outside changes: a note that isn't being edited takes the new text, and a note deleted
+  // elsewhere is noticed even while it is being edited.
   $effect(() => {
     void notes.version;
-    if (loadedId === id && isUntouched()) {
-      notesAPI.read(id).then(takeOutsideText, leaveIfGone);
-    }
+    if (loadedId === id) notesAPI.read(id).then(takeOutsideText, markGone);
   });
 
   async function flush() {
     clearTimeout(timer);
-    if (loadedId === null || text === saved) return;
+    if (gone || loadedId === null || text === saved) return;
     const noteId = loadedId;
     const body = text;
-    await notesAPI.write({ id: noteId, text: body });
+    try {
+      await notesAPI.write({ id: noteId, text: body });
+    } catch (e) {
+      markGone(e);
+      return;
+    }
     if (loadedId === noteId) saved = body;
   }
 
@@ -186,6 +209,16 @@
     </article>
   {/if}
 </main>
+
+{#if gone}
+  <ConfirmDialog
+    title="This note was deleted"
+    body="It was deleted outside Tend or on another device. Keep it as a new note, with the text you have open?"
+    confirm="Keep"
+    cancel="Discard"
+    onconfirm={keepDeleted}
+    onclose={dropDeleted} />
+{/if}
 
 <style>
   .main {
