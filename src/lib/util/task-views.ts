@@ -16,13 +16,16 @@ export function inMyDay(t: Task, { today, myDay }: MyDayContext): boolean {
 
 const inRange = (day: string, [from, to]: DayRange) => day >= from && day <= to;
 
+// Overdue never shows Done tasks; every other view does, unless the list hides them.
 const filters: Record<View, (t: Task, c: ViewContext) => boolean> = {
   all: (t) => t.parentId === null,
   overdue: (t, c) => isOverdue(t, c.today),
   myday: (t, c) => inMyDay(t, c),
-  upcoming: (t, c) => !isDone(t) && !!t.dueDate && t.dueDate >= c.today,
+  upcoming: (t, c) => !!t.dueDate && t.dueDate >= c.today,
   range: (t, c) => !!t.dueDate && inRange(t.dueDate, c.range),
 };
+
+const inView = (view: View) => (t: Task, c: ViewContext) => !(c.hideDone && isDone(t)) && filters[view](t, c);
 
 /** The view to open without one in the URL: My day on the first visit of a day, after that
  * whichever view was picked last today. */
@@ -47,12 +50,12 @@ const manualOrder = (a: Task, b: Task) => doneLast(a, b) || byOrderKey(a, b);
 const dueOrder = (a: Task, b: Task) => doneLast(a, b) || byDueDate(a, b) || byOrderKey(a, b);
 
 export function viewTasks({ tasks, folder, view, ctx }: ViewScope & { view: View }): Task[] {
-  const shown = tasks.filter((t) => isUnder(t.path, folder) && filters[view](t, ctx));
+  const shown = tasks.filter((t) => isUnder(t.path, folder) && inView(view)(t, ctx));
   return shown.sort(isManual(view) ? manualOrder : dueOrder);
 }
 
 export function viewCounts({ tasks, folder, ctx }: ViewScope): Record<View, number> {
   const scoped = tasks.filter((t) => isUnder(t.path, folder));
-  const count = (v: View) => scoped.filter((t) => filters[v](t, ctx)).length;
+  const count = (v: View) => scoped.filter((t) => inView(v)(t, ctx)).length;
   return { all: count('all'), overdue: count('overdue'), myday: count('myday'), upcoming: count('upcoming'), range: count('range') };
 }

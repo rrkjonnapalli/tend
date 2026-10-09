@@ -10,6 +10,8 @@ export const settingKeys = {
   /** `{ view, day }`: the task list view picked last and when (see `defaultView`). */
   tasksLastView: 'tasks.last_view',
   tasksRootName: 'tasks.root_name',
+  /** The task list's "hide done" toggle. */
+  tasksHideDone: 'tasks.hide_done',
   timersSound: 'timers.sound',
   /** The folder Quick create last used for each kind. */
   quickLastPath: (kind: QuickKind) => `quick.last_path.${kind}`,

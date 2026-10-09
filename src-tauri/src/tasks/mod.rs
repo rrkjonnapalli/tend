@@ -54,6 +54,8 @@ pub struct NewTask {
     pub parent_id: Option<String>,
     pub status: Option<String>,
     pub order_key: Option<String>,
+    /// `YYYY-MM-DD`; a task added in My day is due today.
+    pub due_date: Option<String>,
 }
 
 /// Fields a task page edit can change. Absent fields stay as they are; for the optional
@@ -173,9 +175,9 @@ pub fn create(conn: &mut Connection, new: &NewTask) -> AppResult<Task> {
     let tx = conn.transaction()?;
     folders::ensure(&tx, &path)?;
     tx.execute(
-        "INSERT INTO tasks (id, path, parent_id, title, status, order_key, created_at, updated_at, completed_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7, ?8)",
-        params![id, path, new.parent_id, title, status, key, now, completed_at],
+        "INSERT INTO tasks (id, path, parent_id, title, status, order_key, due_date, created_at, updated_at, completed_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, ?9)",
+        params![id, path, new.parent_id, title, status, key, new.due_date, now, completed_at],
     )?;
     tx.commit()?;
     get(conn, &id)

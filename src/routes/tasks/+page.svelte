@@ -37,7 +37,7 @@
     ['overdue', 'Overdue'],
     ['upcoming', 'Upcoming'],
   ];
-  /** Views with an "add task" field; a task added in My day joins today's My day. */
+  /** Views with an "add task" field; a task added in My day is due today and joins today's My day. */
   const ADD_VIEWS: View[] = ['myday', 'all'];
   /** Titles over the list columns: dot · title | edit · My day · count · due · assignee · folder. */
   const COLUMNS = ['', 'Title', '', 'My day', 'Subs', 'Due', 'Who', 'Folder'];
@@ -61,7 +61,8 @@
   const rootName = $derived(settings.get(settingKeys.tasksRootName, 'tasks'));
   const board = $derived(settings.get<string>(settingKeys.tasksLayout, 'list') === 'board');
 
-  const ctx = $derived({ today: tasks.day, myDay: tasks.myDay, range });
+  const hideDone = $derived(settings.get<boolean>(settingKeys.tasksHideDone, false));
+  const ctx = $derived({ today: tasks.day, myDay: tasks.myDay, range, hideDone });
   let query = $state('');
   const needle = $derived(searchNeedle(query));
   const inView = $derived(viewTasks({ tasks: tasks.tasks, folder, view, ctx }));
@@ -136,9 +137,10 @@
   async function add() {
     const title = draft.trim();
     if (!title) return;
-    const created = await tasks.create({ path: folder, title });
+    const inMyDay = view === 'myday';
+    const created = await tasks.create({ path: folder, title, ...(inMyDay && { dueDate: tasks.day }) });
     draft = '';
-    if (view === 'myday') await tasks.setMyDay(created.id, true);
+    if (inMyDay) await tasks.setMyDay(created.id, true);
   }
 
   function addKeys(e: KeyboardEvent) {
@@ -151,6 +153,15 @@
   <SearchLine bind:value={query} label="Search tasks" placeholder="Search tasks" />
 
   <nav class="views" aria-label="Views">
+    <button
+      class="lbtn hide"
+      class:on={hideDone}
+      aria-label="Hide done tasks"
+      aria-pressed={hideDone}
+      title={hideDone ? 'Show done tasks' : 'Hide done tasks'}
+      onclick={() => settings.set(settingKeys.tasksHideDone, !hideDone)}>
+      <Icon name="doneHidden" size={14} />
+    </button>
     {#each VIEWS as [v, label], i (v)}
       {#if i > 0}<span class="sep" aria-hidden="true">·</span>{/if}
       <button class="vbtn" class:on={view === v} aria-pressed={view === v} onclick={() => setView(v)}>

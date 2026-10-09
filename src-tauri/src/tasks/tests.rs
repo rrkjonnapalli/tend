@@ -298,3 +298,18 @@ fn folder_names_are_slugged_and_clashes_get_a_suffix() {
     .unwrap();
     assert_eq!(t.path, "client_work/x");
 }
+
+#[test]
+fn a_new_task_can_be_due_on_creation() {
+    let mut conn = open_memory();
+    let t = create(
+        &mut conn,
+        &NewTask {
+            title: "Today".into(),
+            due_date: Some("2026-10-09".into()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(t.due_date.as_deref(), Some("2026-10-09"));
+}

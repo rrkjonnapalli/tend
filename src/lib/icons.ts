@@ -22,6 +22,7 @@ export const icons = {
   feedback: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/>',
   close: '<path d="M6 6l12 12M18 6L6 18"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+  doneHidden: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8"/><path d="M4 20L20 4"/>',
   back: '<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>',
   widen: '<path d="M3 12h18"/><path d="M7 8l-4 4 4 4"/><path d="M17 8l4 4-4 4"/>',
   narrow: '<path d="M3 12h6M15 12h6"/><path d="M6 8l4 4-4 4"/><path d="M18 8l-4 4 4 4"/>',

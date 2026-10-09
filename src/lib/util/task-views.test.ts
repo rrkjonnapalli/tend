@@ -26,6 +26,7 @@ const tasks = [
   t({ id: 'e', orderKey: 'e', dueDate: '2026-10-10', parentId: 'a' }),
   t({ id: 'f', orderKey: 'f', path: 'home', dueDate: '2026-10-04' }),
   t({ id: 'g', orderKey: 'g', dueDate: '2026-09-01', status: 'DONE' }),
+  t({ id: 'h', orderKey: 'h', path: 'home', dueDate: '2026-10-05', status: 'DONE' }),
 ];
 const ctx: ViewContext = { today: '2026-10-04', myDay: new Map(), range: ['2026-10-01', '2026-10-04'] };
 const titles = (xs: Task[]) => xs.map((x) => x.id);
@@ -40,7 +41,7 @@ describe('views', () => {
   });
 
   it('Upcoming sorts by due date and includes subtasks', () => {
-    expect(titles(viewTasks({ tasks, folder: '', view: 'upcoming', ctx }))).toEqual(['d', 'f', 'e']);
+    expect(titles(viewTasks({ tasks, folder: '', view: 'upcoming', ctx }))).toEqual(['d', 'f', 'e', 'h']);
   });
 
   it('Range filters due_date between the two days', () => {
@@ -66,5 +67,12 @@ describe('defaultView', () => {
 
   it('keeps the view picked earlier today', () => {
     expect(defaultView({ last: { view: 'all', day: '2026-10-04' }, today: '2026-10-04' })).toBe('all');
+  });
+
+  it('upcoming keeps Done tasks; overdue never shows them; hide done drops them everywhere', () => {
+    const hidden = { ...ctx, hideDone: true };
+    expect(titles(viewTasks({ tasks, folder: '', view: 'upcoming', ctx: hidden }))).toEqual(['d', 'f', 'e']);
+    expect(titles(viewTasks({ tasks, folder: 'work', view: 'all', ctx: hidden }))).toEqual(['a', 'c', 'd']);
+    expect(viewCounts({ tasks, folder: 'work', ctx: hidden }).all).toBe(3);
   });
 });
