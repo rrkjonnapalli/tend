@@ -63,7 +63,7 @@ textarea,
 
 /* Keyboard focus never draws an outline. A control with focus gets the hover fill (the
    specificity beats components' own `background: transparent`); fields show it with their
-   border, list rows with the cursor bar, filled buttons with their hover colour. */
+   border, list rows with the cursor fill, filled buttons with their hover colour. */
 :focus-visible {
   outline: none;
 }
