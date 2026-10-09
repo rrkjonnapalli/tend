@@ -28,6 +28,13 @@ function openPalette() {
   ui.palette = true;
 }
 
+/** ⌘[: the page's own Back (it knows where to go when there is no history), else history. */
+function goBack() {
+  const back = document.querySelector<HTMLElement>('.pbar .back');
+  if (back) back.click();
+  else history.back();
+}
+
 function toggleTaskLayout() {
   const isBoard = settings.get<string>(settingKeys.tasksLayout, settingDefaults.tasksLayout) === 'board';
   settings.set(settingKeys.tasksLayout, isBoard ? 'list' : 'board');
@@ -38,6 +45,8 @@ export const commands: Command[] = [
   { id: 'go.tasks', group: 'Go to', label: 'Go to Tasks', keys: 'mod+2', run: () => goto(routes.tasks) },
   { id: 'go.people', group: 'Go to', label: 'Go to People', keys: 'mod+3', run: () => goto(routes.people) },
   { id: 'go.settings', group: 'Go to', label: 'Open Settings', keys: 'mod+,', run: () => goto(routes.settings) },
+  { id: 'go.back', group: 'Go to', label: 'Back', keys: 'mod+[', run: goBack },
+  { id: 'go.forward', group: 'Go to', label: 'Forward', keys: 'mod+]', run: () => history.forward() },
 
   { id: 'new.note', group: 'Create', label: 'New note', keys: 'mod+n', example: 'note: Meeting notes', run: openQuick('note') },
   { id: 'new.task', group: 'Create', label: 'New task', keys: 'mod+shift+t', example: 'task: Write README', run: openQuick('task') },

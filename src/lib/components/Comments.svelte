@@ -41,7 +41,7 @@
   }
 </script>
 
-<div class="composer">
+<div class="composer" data-zone="field">
   {#key composerKey}
     <MarkdownEditor value={draft} onchange={(t) => (draft = t)} onsave={post} placeholder="Write a comment…" minHeight={72} label="Write a comment" />
   {/key}
@@ -51,27 +51,29 @@
   </div>
 </div>
 
-{#each list as c (c.id)}
-  <div class="cm reveal-on-hover">
-    <div class="meta">
-      <span class="caption muted who">You · {ago(c.createdAt)}{c.editedAt ? ' · edited' : ''}</span>
-      <EditControls
-        editing={!!editing[c.id]}
-        hover
-        what="comment"
-        onedit={() => fields[c.id]?.edit()}
-        oncancel={() => fields[c.id]?.cancel()}
-        onsave={() => fields[c.id]?.save()} />
+<div data-zone="rows">
+  {#each list as c (c.id)}
+    <div class="cm reveal-on-hover" data-row tabindex="-1">
+      <div class="meta">
+        <span class="caption muted who">You · {ago(c.createdAt)}{c.editedAt ? ' · edited' : ''}</span>
+        <EditControls
+          editing={!!editing[c.id]}
+          hover
+          what="comment"
+          onedit={() => fields[c.id]?.edit()}
+          oncancel={() => fields[c.id]?.cancel()}
+          onsave={() => fields[c.id]?.save()} />
+      </div>
+      <MarkdownField
+        bind:this={fields[c.id]}
+        bind:editing={editing[c.id]}
+        value={c.body}
+        onsave={(body) => save(c, body)}
+        minHeight={0}
+        label="Edit comment" />
     </div>
-    <MarkdownField
-      bind:this={fields[c.id]}
-      bind:editing={editing[c.id]}
-      value={c.body}
-      onsave={(body) => save(c, body)}
-      minHeight={0}
-      label="Edit comment" />
-  </div>
-{/each}
+  {/each}
+</div>
 
 <style>
   .composer {

@@ -36,4 +36,10 @@ describe('keyParts', () => {
     expect(keyParts('mod+shift+t', true)).toEqual(['⌘', '⇧', 'T']);
     expect(keyParts('mod+,', false)).toEqual(['Ctrl', ',']);
   });
+
+  it('matches ⌘[ and ⌘] by key position, whatever the layout types', () => {
+    const at = (code: string, key: string) => ({ key, code, metaKey: true, ctrlKey: false, shiftKey: false, altKey: false });
+    expect(matches(at('BracketLeft', '['), 'mod+[', true)).toBe(true);
+    expect(matches(at('BracketRight', 'ü'), 'mod+]', true)).toBe(true);
+  });
 });

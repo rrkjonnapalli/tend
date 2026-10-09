@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { rowNav } from '#lib/actions/row-nav.action.ts';
   import AddLine from './AddLine.svelte';
   // A task's subtasks: an add field, the open ones (drag to reorder), then the done ones folded away.
   import type { DroppedOrder } from '#lib/types/reorder.type.ts';
@@ -59,30 +58,26 @@
   }
 </script>
 
-<div class="nav" use:rowNav>
-  <AddLine bind:value={draft} label="Add subtask" placeholder="add subtask" autofocus={false} onadd={add} />
-  <div class="subs">
-    {#each shown as s (s.id)}
-      <TaskRow task={s} compact sortable lifted={preview !== null && lifted === s.id} onpointerdown={(e) => grab(e, s.id)} />
-    {/each}
-  </div>
-  {#if doneSubs.length}
-    <button class="donehead text-btn" aria-expanded={showDone} onclick={() => (showDone = !showDone)}>
-      <Icon name={showDone ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />Done<span class="cnt">{doneSubs.length}</span>
-    </button>
-    {#if showDone}
+<AddLine bind:value={draft} label="Add subtask" placeholder="add subtask" autofocus={false} onadd={add} />
+<div class="subs" data-zone="rows">
+  {#each shown as s (s.id)}
+    <TaskRow task={s} compact sortable lifted={preview !== null && lifted === s.id} onpointerdown={(e) => grab(e, s.id)} />
+  {/each}
+</div>
+{#if doneSubs.length}
+  <button class="donehead text-btn" data-zone="bar" aria-expanded={showDone} onclick={() => (showDone = !showDone)}>
+    <Icon name={showDone ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />Done<span class="cnt">{doneSubs.length}</span>
+  </button>
+  {#if showDone}
+    <div data-zone="rows">
       {#each doneSubs as s (s.id)}
         <TaskRow task={s} compact />
       {/each}
-    {/if}
+    </div>
   {/if}
-</div>
+{/if}
 
 <style>
-  /* Only groups the rows for the keyboard. */
-  .nav {
-    display: contents;
-  }
 
   .subs {
     display: flex;

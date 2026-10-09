@@ -23,7 +23,7 @@
 </script>
 
 <section class="sec">
-  <div class="head">
+  <div class="head" data-zone="bar">
     <button class="sh" aria-expanded={open} onclick={() => (open = !open)}>
       <span class="chev"><Icon name={open ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} /></span>
       <span>{title}</span>

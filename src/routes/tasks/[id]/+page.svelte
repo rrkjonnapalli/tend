@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { zoneNav } from '#lib/actions/zone-nav.action.ts';
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   // Task page: breadcrumb (folders → parent tasks), title, fields, then the collapsible sections.
   import type { Crumb } from '#lib/types/breadcrumb.type.ts';
@@ -197,7 +198,7 @@
 
 <svelte:window {onkeydown} />
 
-<main class="detail-page">
+<main class="detail-page" use:zoneNav>
   {#if task}
     <article class="detail-stack">
       <PageBar onback={back}>

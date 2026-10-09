@@ -40,7 +40,7 @@
   }
 </script>
 
-<textarea use:plainText class="title" aria-label="Title" rows="1" bind:value={title} use:autogrow={title} oninput={joinLines} onblur={save} {onkeydown}></textarea>
+<textarea use:plainText class="title" data-zone="field" aria-label="Title" rows="1" bind:value={title} use:autogrow={title} oninput={joinLines} onblur={save} {onkeydown}></textarea>
 
 <style>
   .title {

@@ -45,15 +45,17 @@
 </script>
 
 {#if editing}
-  <MarkdownEditor
-    value={draft}
-    onchange={(text) => (draft = text)}
-    onsave={save}
-    oncancel={cancel}
-    {placeholder}
-    {minHeight}
-    {label}
-    autofocus />
+  <div data-zone="field">
+    <MarkdownEditor
+      value={draft}
+      onchange={(text) => (draft = text)}
+      onsave={save}
+      oncancel={cancel}
+      {placeholder}
+      {minHeight}
+      {label}
+      autofocus />
+  </div>
 {:else}
   <div class="view">
     <MarkdownView text={value} {empty} ondblclick={edit} />

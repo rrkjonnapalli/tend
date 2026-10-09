@@ -20,6 +20,8 @@ function keyOf(e: Pick<KeyboardEvent, 'key' | 'code'>): string {
   if (/^Digit\d$/.test(e.code)) return e.code.slice(5);
   if (/^Key[A-Z]$/.test(e.code)) return e.code.slice(3).toLowerCase();
   if (e.code === 'Comma') return ',';
+  if (e.code === 'BracketLeft') return '[';
+  if (e.code === 'BracketRight') return ']';
   return e.key.toLowerCase();
 }
 

@@ -28,7 +28,7 @@
     <button class="icon-btn sm danger" aria-label="Cancel" title="Cancel" onclick={oncancel}><Icon name="close" size={13} stroke={2.25} /></button>
     <button class="icon-btn sm ok" aria-label="Save" title="Save" onclick={onsave}><Icon name="check" size={13} stroke={2.25} /></button>
   {:else}
-    <button class="icon-btn sm edit" class:on-hover={hover} aria-label={editLabel} title="Edit" onclick={onedit}>
+    <button class="icon-btn sm edit" data-open class:on-hover={hover} aria-label={editLabel} title="Edit" onclick={onedit}>
       <Icon name="edit" size={13} />
     </button>
   {/if}

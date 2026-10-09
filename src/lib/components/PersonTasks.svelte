@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { rowNav } from '#lib/actions/row-nav.action.ts';
   // The person page's "Assigned tasks": open tasks first, then done ones.
   import Section from './Section.svelte';
   import StatusDot from './StatusDot.svelte';
@@ -15,7 +14,7 @@
 </script>
 
 <Section title="Assigned tasks">
-  <div class="nav" use:rowNav>
+  <div data-zone="rows">
     {#each assigned as t (t.id)}
       <a class="trow" data-row href={routes.task(t.id)}>
         <StatusDot value={t.status} />
@@ -48,7 +47,4 @@
     color: var(--c-muted-2);
   }
 
-  .nav {
-    display: contents;
-  }
 </style>

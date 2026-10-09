@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { zoneNav } from '#lib/actions/zone-nav.action.ts';
   // Person page: name fields, birthday, contact sections, notes and assigned tasks.
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
@@ -60,7 +61,7 @@
   }
 </script>
 
-<main class="detail-page">
+<main class="detail-page" use:zoneNav>
   {#if person}
     <div class="detail-stack">
       <PageBar onback={() => nav.back(routes.people)}>

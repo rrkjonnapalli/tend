@@ -71,4 +71,40 @@ describe('zoneNav', () => {
     key(el('search'), 'ArrowLeft');
     expect(document.activeElement).toBe(el('search'));
   });
+
+  it('walks a field grid line by line, and ← → along a line', () => {
+    document.body.innerHTML = `
+      <main>
+        <textarea data-zone="field" id="title">Ship it</textarea>
+        <div data-zone="props">
+          <div data-prop><button id="status">Not started</button></div>
+          <div data-prop><button id="due">Today</button><button id="time">9:00</button></div>
+          <div data-prop><input id="name" value="Ann" /></div>
+        </div>
+        <div data-zone="rows"><div data-row tabindex="-1" id="sub"><button id="sub-edit">edit</button></div></div>
+      </main>`;
+    zoneNav(document.querySelector('main')!);
+    const el = (id: string) => document.getElementById(id)! as HTMLElement;
+    const title = el('title') as HTMLTextAreaElement;
+    title.focus();
+    title.setSelectionRange(0, 0);
+    key(title, 'ArrowDown');
+    // The caret isn't at the end of the title, so ↓ stays in it.
+    expect(document.activeElement).toBe(title);
+    title.setSelectionRange(7, 7);
+    key(title, 'ArrowDown');
+    expect(document.activeElement).toBe(el('status'));
+    key(el('status'), 'ArrowDown');
+    expect(document.activeElement).toBe(el('due'));
+    key(el('due'), 'ArrowRight');
+    expect(document.activeElement).toBe(el('time'));
+    key(el('time'), 'ArrowDown');
+    expect(document.activeElement).toBe(el('name'));
+    key(el('name'), 'ArrowDown');
+    expect(document.activeElement).toBe(el('sub'));
+    key(el('sub'), 'ArrowRight');
+    expect(document.activeElement).toBe(el('sub-edit'));
+    key(el('sub-edit'), 'ArrowLeft');
+    expect(document.activeElement).toBe(el('sub'));
+  });
 });

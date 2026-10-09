@@ -106,25 +106,28 @@
   }
 </script>
 
-<div class="drop" class:over bind:this={zone} role="button" tabindex="0" onclick={choose} onkeydown={zoneKeys}>
-  <span class="ic"><Icon name="upload" size={14} /></span>
-  <span>Drop files here or click to choose</span>
-  <span class="grow"></span>
-  <span class="or">or <button bind:this={linkBtn} class="lnk" onclick={startLink}>link a note</button></span>
+<div data-zone="bar">
+  <div class="drop" class:over bind:this={zone} role="button" tabindex="0" onclick={choose} onkeydown={zoneKeys}>
+    <span class="ic"><Icon name="upload" size={14} /></span>
+    <span>Drop files here or click to choose</span>
+    <span class="grow"></span>
+    <span class="or">or <button bind:this={linkBtn} class="lnk" onclick={startLink}>link a note</button></span>
+  </div>
+  {#if picking}
+    <Popover anchor={linkBtn} placement="bottom-end" onclose={() => (picking = false)}>
+      <SearchPicker items={notes.notes} match={matchNote} onpick={linkNote} placeholder="Search notes…" label="Notes" empty="No notes found">
+        {#snippet row(n)}
+          <span class="note-ic"><Icon name="note" size={14} /></span>{n.name}<span class="sub">{n.folder}</span>
+        {/snippet}
+      </SearchPicker>
+    </Popover>
+  {/if}
 </div>
-{#if picking}
-  <Popover anchor={linkBtn} placement="bottom-end" onclose={() => (picking = false)}>
-    <SearchPicker items={notes.notes} match={matchNote} onpick={linkNote} placeholder="Search notes…" label="Notes" empty="No notes found">
-      {#snippet row(n)}
-        <span class="note-ic"><Icon name="note" size={14} /></span>{n.name}<span class="sub">{n.folder}</span>
-      {/snippet}
-    </SearchPicker>
-  </Popover>
-{/if}
-
-{#each links as l (l.id)}
-  <AttachmentRow link={l} onremove={() => unlink(l)} />
-{/each}
+<div data-zone="rows">
+  {#each links as l (l.id)}
+    <AttachmentRow link={l} onremove={() => unlink(l)} />
+  {/each}
+</div>
 
 <style>
   .drop {

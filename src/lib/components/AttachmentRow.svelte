@@ -20,14 +20,14 @@
 
 </script>
 
-<div class="arow reveal-on-hover">
+<div class="arow reveal-on-hover" data-row tabindex="-1">
   <span class="ic" class:note={link.kind === 'note'}>
     <Icon name={attachmentIcon(link)} size={14} />
   </span>
   <span class="an">{link.name}</span>
   <span class="am">{attachmentMeta(link)}</span>
   <span class="acts on-hover">
-    <button class="aib" aria-label="Open" title="Open" onclick={openLink}><Icon name="open" size={14} /></button>
+    <button class="aib" data-open aria-label="Open" title="Open" onclick={openLink}><Icon name="open" size={14} /></button>
     {#if link.kind === 'file' && link.attachmentId}
       {@const attachmentId = link.attachmentId}
       <button class="aib" aria-label="Show in folder" title="Show in folder" onclick={() => attachmentsAPI.reveal(attachmentId)}>

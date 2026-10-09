@@ -60,32 +60,32 @@
   }
 </script>
 
-<div class="props">
+<div class="props" data-zone="props">
   {#if hasLocation}
     <span class="pl">Location</span>
-    <div class="pv">
+    <div class="pv" data-prop>
       <button class="loc" title="Move to…" onclick={onmove}><Icon name="folder" size={14} />{location}</button>
     </div>
   {/if}
   <span class="pl">Status</span>
-  <div class="pv"><StatusSelect bind:this={statusSelect} value={task.status} onchange={(status) => onpatch({ status })} /></div>
+  <div class="pv" data-prop><StatusSelect bind:this={statusSelect} value={task.status} onchange={(status) => onpatch({ status })} /></div>
   <span class="pl">Due</span>
-  <div class="pv">
+  <div class="pv" data-prop>
     <DateField bind:this={dueField} value={task.dueDate} warn={isOverdue(task, tasks.day)} onchange={setDue} />
     <TimeField value={task.dueTime} onchange={(dueTime) => onpatch({ dueTime })} />
   </div>
   <span class="pl">My day</span>
-  <div class="pv">
+  <div class="pv" data-prop>
     <button class="toggle" class:add={!mine} class:rem={mine} aria-pressed={mine} onclick={() => tasks.setMyDay(task.id, !mine)}>
       {mine ? '− My day' : '+ My day'}
     </button>
   </div>
   <span class="pl">Assignee</span>
-  <div class="pv"><AssigneeField value={task.assigneeId} onchange={(assigneeId) => onpatch({ assigneeId })} /></div>
+  <div class="pv" data-prop><AssigneeField value={task.assigneeId} onchange={(assigneeId) => onpatch({ assigneeId })} /></div>
   <span class="pl">Tags</span>
-  <div class="pv">{#if tagsLoaded}<TagEditor {tags} onchange={ontags} addLabel="+" />{/if}</div>
+  <div class="pv" data-prop>{#if tagsLoaded}<TagEditor {tags} onchange={ontags} addLabel="+" />{/if}</div>
   <span class="pl">Labels</span>
-  <div class="pv"><LabelField taskId={task.id} /></div>
+  <div class="pv" data-prop><LabelField taskId={task.id} /></div>
 </div>
 
 <style>

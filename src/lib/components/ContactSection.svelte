@@ -86,30 +86,32 @@
 </script>
 
 <Section {title}>
-  {#each rows as c (c.id)}
-    {@const isEditing = editing === c.id}
-    <div class="crow reveal-on-hover" class:editing={isEditing}>
-      {#if isEditing}
-        <input use:plainText class="ein" aria-label="{title} value" bind:value={edValue} use:focusOnMount onkeydown={editKeys} />
-        <input use:plainText class="ein lab" aria-label="Label" placeholder="label" bind:value={edLabel} onkeydown={editKeys} />
-      {:else}
-        <span class="cv">{c.value}</span>
-        <span class="cl">{c.label}</span>
-      {/if}
-      <span class="acts" class:on-hover={!isEditing}>
-        <button class="icon-btn sm danger" aria-label="Delete" title="Delete" onclick={() => remove(c)}>
-          <Icon name="trash" size={13} />
-        </button>
+  <div data-zone="rows">
+    {#each rows as c (c.id)}
+      {@const isEditing = editing === c.id}
+      <div class="crow reveal-on-hover" class:editing={isEditing} data-row={isEditing ? undefined : ''} tabindex="-1">
         {#if isEditing}
-          <button class="icon-btn sm ok" aria-label="Save" title="Save" onclick={save}><Icon name="check" size={13} stroke={2.25} /></button>
-          <button class="icon-btn sm danger" aria-label="Cancel" title="Cancel" onclick={stopEditing}><Icon name="close" size={13} stroke={2.25} /></button>
+          <input use:plainText class="ein" aria-label="{title} value" bind:value={edValue} use:focusOnMount onkeydown={editKeys} />
+          <input use:plainText class="ein lab" aria-label="Label" placeholder="label" bind:value={edLabel} onkeydown={editKeys} />
         {:else}
-          <button class="icon-btn sm edit" aria-label="Edit" title="Edit" onclick={() => edit(c)}><Icon name="edit" size={13} /></button>
+          <span class="cv">{c.value}</span>
+          <span class="cl">{c.label}</span>
         {/if}
-      </span>
-    </div>
-  {/each}
-  <div class="crow add">
+        <span class="acts" class:on-hover={!isEditing}>
+          <button class="icon-btn sm danger" aria-label="Delete" title="Delete" onclick={() => remove(c)}>
+            <Icon name="trash" size={13} />
+          </button>
+          {#if isEditing}
+            <button class="icon-btn sm ok" aria-label="Save" title="Save" onclick={save}><Icon name="check" size={13} stroke={2.25} /></button>
+            <button class="icon-btn sm danger" aria-label="Cancel" title="Cancel" onclick={stopEditing}><Icon name="close" size={13} stroke={2.25} /></button>
+          {:else}
+            <button class="icon-btn sm edit" data-open aria-label="Edit" title="Edit" onclick={() => edit(c)}><Icon name="edit" size={13} /></button>
+          {/if}
+        </span>
+      </div>
+    {/each}
+  </div>
+  <div class="crow add" data-zone="field">
     <span class="plus">+</span>
     <input use:plainText class="ain" aria-label="New {title}" {placeholder} bind:value={newValue} onkeydown={addKeys} />
     <input use:plainText class="ain lab" aria-label="Label" placeholder="label" bind:value={newLabel} onkeydown={addKeys} />
