@@ -1,12 +1,12 @@
 # Tend v1: build plan
 
-Do one milestone per session: *"Do M<n> from docs/build-plan.md"*. Each milestone lists what to read, what to build and how to tell it's done. Tick it off here when you finish, and add a short note if you changed or deferred something.
+Do one milestone per session: *"Do M<n> from docs/build-plan.md"*. M1–M10 were built and checked against the code on 2026-10-09; the *Status* line under each says what changed. The **Build** and **Done when** text is the original plan, kept for reference: where it disagrees with `decisions.md`, the decisions win. Each milestone lists what to read, what to build and how to tell it's done. Tick it off here when you finish, and add a short note if you changed or deferred something.
 
 Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql` · Look: `docs/design/`.
 
 ---
 
-## M1 · Project setup and app shell  ☐
+## M1 · Project setup and app shell  ☑
 
 **Read:** CLAUDE.md, decisions §1, §4 · `design/tokens.css` · `screens/notes.html`, `png/notes.png`
 
@@ -27,9 +27,11 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - The Tend icon shows in the Dock / taskbar.
 - `npm run check` and `npm test` pass (one trivial test is fine).
 
+**Status (2026-10-09):** done. Changed: tooling runs on Bun; the adapter is set in `vite.config.js`; the window is frameless with a 1280×800 default and remembers its size and position (`tauri-plugin-window-state`). Gap: the favicon is the 32px app icon, not `design/icon/mark.svg` (see `open-questions.md`).
+
 ---
 
-## M2 · Vault: start page, setup and database  ☐
+## M2 · Vault: start page, setup and database  ☑
 
 **Read:** decisions §2, §3 · `schema.sql` (header and `meta`) · `screens/start.html`, `png/start.png`, `png/start-checking.png`
 
@@ -57,9 +59,11 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - Restarting the app reopens the last vault.
 - `cargo test` covers: new vault, existing vault, incompatible DB (wrong app_id, higher version, missing meta).
 
+**Status (2026-10-09):** done. Changed: the chosen folder is the notes root (no `notes/`); Tend's files live in `.tend/` (`.tend/attachments/`, `.tend/tend.db`); migrations run through `rusqlite_migration` with the version in `PRAGMA user_version` (`meta` keeps only `app_id`); a non-empty folder that isn't a vault asks first (*Use this folder* / *Choose another folder*). The checklist steps are `notes` (count), `.tend/attachments/`, `.tend/tend.db`.
+
 ---
 
-## M3 · Notes index: scan, watcher, sync  ☐
+## M3 · Notes index: scan, watcher, sync  ☑
 
 **Read:** decisions §5 (Sync), §5a (Names) · `schema.sql` §2
 
@@ -80,9 +84,11 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
   - delete; skipped invalid names; DB matches disk after a forced rescan
 - Editing a note in another editor updates its title in Tend within ~1 s.
 
+**Status (2026-10-09):** done. Changed: notes are `notes(id, attachment_id, …)` with the body as an `attachments` row (`path` relative to the vault); the name rule is `^[a-z0-9]+(_[a-z0-9]+)*$` and bad names found on disk get their slug only with the vault's consent (`notes.fix_names`), logged in `path_log`; otherwise they are listed as skipped with their fix. There is no indexed title: the title is the `# heading` in the file. The watcher watches the vault root, ignores hidden paths and rescans. Outside renames are matched by sha256. Gap: no watcher test edits an existing note (only a new file).
+
 ---
 
-## M4 · Shared components  ☐
+## M4 · Shared components  ☑
 
 **Read:** decisions §4, §5a · `screens/folders.html` + `png/folders-*.png` · task page in `screens/tasks.html` (description, tags, due) · `design/README.md` (logic to reuse)
 
@@ -106,9 +112,11 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - A dev-only `/playground` route shows each component working, matching the mockup states. Remove the route or hide it behind a dev flag afterwards.
 - vitest covers `keyBetween` (ordering, many inserts between neighbours) and the name rule.
 
+**Status (2026-10-09):** done. Changed: rename makes slugs and clashes get `_1` (never an error); MarkdownField uses CodeMirror 6 rather than a textarea. Gap: `/playground` still ships (it redirects outside dev); delete it.
+
 ---
 
-## M5 · Notes screens  ☐
+## M5 · Notes screens  ☑
 
 **Read:** decisions §5 · `screens/notes.html`, `png/notes.png`, `png/notes-list.png`
 
@@ -126,9 +134,11 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - Changes made in Finder or another editor show up.
 - Tags persist (`note_tags`). The screens match the PNGs.
 
+**Status (2026-10-09):** done. Changed: notes are shown by file name; PageBar (40px, breadcrumb + count) instead of a big title, a search line and a sticky column header; Read/Edit is ⌘R (⌘E toggles the explorer); autosave also runs on leaving Edit and before navigating. Gap: a note deleted outside Tend while it is open leaves the page on stale text.
+
 ---
 
-## M6 · Tasks: list, views, ordering  ☐
+## M6 · Tasks: list, views, ordering  ☑
 
 **Read:** decisions §6 (Structure, Views) · `schema.sql` §4–5 · `screens/tasks.html`, `png/tasks.png`
 
@@ -147,9 +157,11 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - All views filter correctly. Drag order survives a restart and stays consistent between All and My day.
 - The range picker filters by `due_date BETWEEN`. The screens match the PNGs.
 
+**Status (2026-10-09):** done. Changed: My day comes first and is the default view; rows have a status dropdown, an inline edit pencil and fixed-width columns (edit · My day · count · due · assignee · path); subtasks are one level deep; the range filter runs in TypeScript (inclusive). Open: "All" shows top-level tasks only and "Upcoming" includes today — confirm both. Risk: equal `order_key`s (possible after a sync merge) make `keyBetween` throw.
+
 ---
 
-## M7 · Tasks: task page and board  ☐
+## M7 · Tasks: task page and board  ☑
 
 **Read:** decisions §6 (Statuses, Task page, Board), §8 · `png/task-page.png`, `png/tasks-board.png`
 
@@ -173,9 +185,11 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - Board drag changes the status and keeps the order. Attachments land in `.attachments/` and open with the OS default app.
 - The screens match the PNGs.
 
+**Status (2026-10-09):** done. Changed: Location row and *Move task to* (top-level tasks), Labels row and board label dots, assignee badge instead of initials, a subtask has no Subtasks section; attachments are copied to `.tend/attachments/<id>.<ext>`; board columns share the width up to five, then scroll.
+
 ---
 
-## M8 · People  ☐
+## M8 · People  ☑
 
 **Read:** decisions §10 · `screens/people.html`, `png/people.png`, `png/person-page.png`
 
@@ -190,9 +204,11 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - CRUD works and persists; invalid DOB or time turns red and doesn't save.
 - Assigned tasks link to the task page. The screens match the PNGs.
 
+**Status (2026-10-09):** done. The Birthday column also shows the date ("9 Oct · in 6 days · turns 31").
+
 ---
 
-## M9 · Settings and feedback  ☐
+## M9 · Settings and feedback  ☑
 
 **Read:** decisions §6 (Statuses), §13, §4 (Feedback) · `screens/settings.html`, `png/settings.png`, `png/settings-palette.png`
 
@@ -210,9 +226,11 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - Status changes show up immediately in task rows, the dropdown and board columns.
 - Rust tests cover the status rules. Feedback rows are saved.
 
+**Status (2026-10-09):** done. Added: Settings → Tasks → Labels (label id = slug of its first name); colors are 20 swatches plus the system picker and a hex field; custom status ids equal their values.
+
 ---
 
-## M10 · ⌘K, quick create and timers  ☐
+## M10 · ⌘K, quick create and timers  ☑
 
 **Read:** decisions §9, §11, §12 · `screens/command-palette.html`, `screens/quick-create.html`, `png/command-palette*.png`, `png/quick-create-*.png`, timer chip in `png/tasks.png`
 
@@ -232,10 +250,14 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - Every shortcut works without triggering webview defaults. The palette runs every command.
 - A 10 s timer notifies on time, even after the laptop sleeps mid-countdown (it fires right after wake).
 
+**Status (2026-10-09):** done. Added: ⌘E explorer, ⌘R read/edit or list/board, ⌘L search, ⌘D dock. Gap: the timer sound can't be switched off (`timers.sound` has no control). Note: quick-create folder shares one last path between Notes and Tasks.
+
 ---
 
 ## After v1
 
-- Polish pass: empty states, error toasts, loading states, window state restore.
+- Polish pass: empty states, error toasts, loading states. (Window state restore is done.)
+- Gaps and open questions from the 2026-10-09 check: `docs/open-questions.md`.
+- Git sync: `docs/v1-sync-spec.md`.
 - Packaging: macOS / Windows / Linux builds, code signing, auto-update.
-- v2: calendar, events and reminders, see `docs/later/calendar-design-spec-doc.md` (adds `schema_version` 2).
+- v2: calendar, events and reminders, see `docs/later/calendar-design-spec-doc.md` (a later migration step).
