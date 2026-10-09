@@ -155,15 +155,6 @@
   <SearchLine bind:value={query} label="Search tasks" placeholder="Search tasks" />
 
   <nav class="views" aria-label="Views">
-    <button
-      class="lbtn"
-      class:on={hideDone}
-      aria-label="Hide done tasks"
-      aria-pressed={hideDone}
-      title={hideDone ? 'Show done tasks' : 'Hide done tasks'}
-      onclick={() => settings.set(settingKeys.tasksHideDone, !hideDone)}>
-      <Icon name="doneHidden" size={14} />
-    </button>
     {#each VIEWS as [v, label], i (v)}
       {#if i > 0}<span class="sep" aria-hidden="true">·</span>{/if}
       <button class="vbtn" class:on={view === v} aria-pressed={view === v} onclick={() => setView(v)}>
@@ -172,6 +163,15 @@
     {/each}
     <span class="sep" aria-hidden="true">·</span>
     <DateField mode="range" {range} active={view === 'range'} marked={dueDays} onrange={setRange} />
+    <button
+      class="lbtn hide"
+      class:on={hideDone}
+      aria-label="Hide done tasks"
+      aria-pressed={hideDone}
+      title={hideDone ? 'Show done tasks' : 'Hide done tasks'}
+      onclick={() => settings.set(settingKeys.tasksHideDone, !hideDone)}>
+      <Icon name="doneHidden" size={14} />
+    </button>
     <span class="lay" role="group" aria-label="Layout">
       <button class="lbtn" class:on={!board} aria-label="List" aria-pressed={!board} title="List" onclick={() => settings.set(settingKeys.tasksLayout, 'list')}>
         <Icon name="list" size={14} />
@@ -225,11 +225,16 @@
     padding-bottom: 12px;
   }
 
+  /* Hide done, then the layout switch, at the right end of the views line. */
+  .hide {
+    margin-left: auto;
+    margin-right: var(--space-2);
+  }
+
   .lay {
     display: inline-flex;
     align-items: center;
     gap: 2px;
-    margin-left: auto;
   }
 
   .lbtn {

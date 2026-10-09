@@ -181,7 +181,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - The Statuses section is collapsible.
 
 ### Views
-- **Nav:** [hide done] · My day · All · Overdue · Upcoming · [date or range picker], each with a count. With no view in the URL the list opens My day on the first visit of a day, then the view picked last that day.
+- **Nav:** My day · All · Overdue · Upcoming · [date or range picker], each with a count; at the right end, [hide done] then the List/Board switch. With no view in the URL the list opens My day on the first visit of a day, then the view picked last that day.
 - **Views** (all limited to the open folder and below; done tasks sink):
   - **My day:** added by hand, or due today and not removed by hand.
   - **All:** top-level tasks (subtasks show on their parent).
@@ -189,7 +189,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - **Upcoming:** due today or later.
   - **Date range:** due within the range, both ends included.
   - Tasks without a due date show only in All (or in My day when added by hand).
-- **Hide done** (icon at the left of the views line, `tasks.hide_done`): leaves Done tasks out of every view, the counts and the board.
+- **Hide done** (icon at the right end of the views line, before List/Board; `tasks.hide_done`): leaves Done tasks out of every view, the counts and the board.
 - **List / Board** toggle at the right end of the nav.
 - **My day:** tasks due today are included by default. +/− my day (blue/red) stores manual overrides per day. My day has an "add task" field like All; a task added there is due today and added to today's My day.
 - **Subtasks are one level deep:** a subtask's page has no Subtasks section, and Rust refuses a subtask under a subtask (SUBTASK_DEPTH).
