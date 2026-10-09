@@ -16,6 +16,8 @@ export type SyncLive = {
   running: boolean;
   /** Why the last run in this session failed; null after a success. */
   error: ErrorDef | null;
+  /** When that run failed. */
+  failedAt: number | null;
 };
 
 export type SyncStatus = SyncLive & {

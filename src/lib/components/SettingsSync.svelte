@@ -26,9 +26,10 @@
 
   /** When the last run failed and why; only shown while that failure is the latest run. */
   function failedText() {
-    if (!status?.lastRunAt) return '';
-    const why = status.error?.message ?? `failed (${status.lastResult})`;
-    return `${timestamp(status.lastRunAt)} · ${why}`;
+    const at = status?.failedAt ?? status?.lastRunAt;
+    if (!at) return '';
+    const why = status?.error?.message ?? `failed (${status?.lastResult})`;
+    return `${timestamp(at)} · ${why}`;
   }
 
   async function connect() {

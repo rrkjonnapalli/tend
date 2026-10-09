@@ -7,6 +7,7 @@ mod tests;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, MutexGuard};
 
 use serde::{Deserialize, Serialize};
 
@@ -40,6 +41,21 @@ fn file(dir: &Path) -> PathBuf {
     dir.join("config.json")
 }
 
+/// Every change is read-modify-write, and the sync runner reads while commands write; one lock
+/// keeps a change from losing another's.
+fn lock() -> MutexGuard<'static, ()> {
+    static LOCK: Mutex<()> = Mutex::new(());
+    LOCK.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// Applies `change` to the saved config as one step.
+fn update(dir: &Path, change: impl FnOnce(&mut Config)) -> AppResult<()> {
+    let _held = lock();
+    let mut cfg = load(dir);
+    change(&mut cfg);
+    save(dir, &cfg)
+}
+
 fn load(dir: &Path) -> Config {
     let Ok(text) = fs::read_to_string(file(dir)) else {
         return Config::default();
@@ -47,9 +63,12 @@ fn load(dir: &Path) -> Config {
     serde_json::from_str(&text).unwrap_or_default()
 }
 
+/// Writes a temp file and renames it over the config, so a reader never sees half a file.
 fn save(dir: &Path, cfg: &Config) -> AppResult<()> {
     fs::create_dir_all(dir)?;
-    fs::write(file(dir), serde_json::to_string_pretty(cfg)?)?;
+    let temp = dir.join("config.json.tmp");
+    fs::write(&temp, serde_json::to_string_pretty(cfg)?)?;
+    fs::rename(&temp, file(dir))?;
     Ok(())
 }
 
@@ -58,9 +77,7 @@ pub fn last_vault(dir: &Path) -> Option<PathBuf> {
 }
 
 pub fn remember_vault(dir: &Path, vault: &Path) -> AppResult<()> {
-    let mut cfg = load(dir);
-    cfg.vault = Some(vault.to_path_buf());
-    save(dir, &cfg)
+    update(dir, |cfg| cfg.vault = Some(vault.to_path_buf()))
 }
 
 fn key(vault: &Path) -> String {
@@ -73,10 +90,10 @@ pub fn sync_config(dir: &Path, vault: &Path) -> Option<SyncConfig> {
 
 /// Saves or (with `None`) forgets how `vault` syncs.
 pub fn set_sync_config(dir: &Path, vault: &Path, sync: Option<SyncConfig>) -> AppResult<()> {
-    let mut cfg = load(dir);
-    match sync {
-        Some(sync) => cfg.sync.insert(key(vault), sync),
-        None => cfg.sync.remove(&key(vault)),
-    };
-    save(dir, &cfg)
+    update(dir, |cfg| {
+        match sync {
+            Some(sync) => cfg.sync.insert(key(vault), sync),
+            None => cfg.sync.remove(&key(vault)),
+        };
+    })
 }

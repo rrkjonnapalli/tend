@@ -18,6 +18,7 @@ use super::token;
 use crate::config::{self, SyncConfig};
 use crate::db;
 use crate::error::{errors, AppError, AppResult};
+use crate::util::now_ms;
 use crate::vault;
 
 /// The UI listens for these.
@@ -45,6 +46,8 @@ pub struct Status {
     pub running: bool,
     /// Why the last run failed; `None` after a success or before the first run.
     pub error: Option<AppError>,
+    /// When that run failed (ms). A run that fails before it starts isn't in `sync_state`.
+    pub failed_at: Option<i64>,
 }
 
 /// Where the runner works: the vault, and the folder holding its sync settings.
@@ -182,6 +185,7 @@ fn run_reported<R: Runtime>(
     report(app, status, |s| {
         s.running = false;
         s.error = result.as_ref().err().cloned();
+        s.failed_at = s.error.as_ref().map(|_| now_ms());
     });
     let changed = matches!(result, Ok(Outcome::Pulled | Outcome::Pushed));
     if changed {
