@@ -4,7 +4,8 @@
   import type { DragGhost, Point } from '#lib/types/drag.type.ts';
   import type { BoardSpot } from '#lib/types/task-board.type.ts';
   import type { Task, TaskPatch } from '#lib/types/task.type.ts';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
+  import { cardTarget, statusTarget } from '#lib/util/board-nav.ts';
   import TaskBoardColumn from './TaskBoardColumn.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { people } from '#lib/stores/people.svelte.ts';
@@ -98,6 +99,45 @@
     stopDrag = trackPointer({ move, end, cleanup });
   }
 
+  // ---- keyboard: ↑↓ ←→ move between cards, ⇧← ⇧→ move a card to the next status
+
+  const columnsOnScreen = (board: HTMLElement) => [...board.querySelectorAll<HTMLElement>('[data-col]')];
+  const cardsIn = (col: HTMLElement) => [...col.querySelectorAll<HTMLElement>('[data-card]')];
+
+  function focusCard(id: string) {
+    document.querySelector<HTMLElement>(`[data-card="${CSS.escape(id)}"]`)?.focus();
+  }
+
+  async function moveToStatus(task: Task, status: string) {
+    const end = columnTasks(status, task.id).length;
+    await drop(task, { id: task.id, col: status, idx: end });
+    await tick();
+    focusCard(task.id);
+  }
+
+  function onkeydown(e: KeyboardEvent) {
+    const card = (e.target as HTMLElement).closest<HTMLElement>('[data-card]');
+    const hasOtherModifier = e.metaKey || e.ctrlKey || e.altKey;
+    if (!card || hasOtherModifier || card !== e.target) return;
+    const cols = columnsOnScreen(e.currentTarget as HTMLElement);
+    const col = cols.findIndex((c) => c.contains(card));
+    const task = items.find((t) => t.id === card.dataset.card);
+    if (col < 0 || !task) return;
+    if (e.shiftKey) {
+      const to = statusTarget(e.key, col, cols.length);
+      if (to === null) return;
+      e.preventDefault();
+      moveToStatus(task, tasks.statuses[to].value);
+      return;
+    }
+    const counts = cols.map((c) => cardsIn(c).length);
+    const at = { col, idx: cardsIn(cols[col]).indexOf(card) };
+    const next = cardTarget(e.key, at, counts);
+    if (!next) return;
+    e.preventDefault();
+    cardsIn(cols[next.col])[next.idx]?.focus();
+  }
+
   async function drop(task: Task, spot: BoardSpot) {
     const others = columnTasks(spot.col, task.id);
     const orderKey = keyAt(others.map((t) => t.orderKey), spot.idx);
@@ -106,7 +146,8 @@
   }
 </script>
 
-<div class="board">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="board" {onkeydown}>
   {#each tasks.statuses as s (s.value)}
     <TaskBoardColumn
       status={s}

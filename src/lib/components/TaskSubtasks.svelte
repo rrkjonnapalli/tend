@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { plainText } from '#lib/actions/plain-text.action.ts';
+  import { rowNav } from '#lib/actions/row-nav.action.ts';
+  import AddLine from './AddLine.svelte';
   // A task's subtasks: an add field, the open ones (drag to reorder), then the done ones folded away.
   import type { DroppedOrder } from '#lib/types/reorder.type.ts';
   import type { Task } from '#lib/types/task.type.ts';
@@ -24,10 +25,6 @@
     if (!title) return;
     await tasks.create({ path: task.path, title, parentId: task.id, orderKey: keyAfterLast(openSubs) });
     draft = '';
-  }
-
-  function addKeys(e: KeyboardEvent) {
-    if (e.key === 'Enter') add();
   }
 
   // ---- reorder
@@ -62,59 +59,35 @@
   }
 </script>
 
-<label class="add">
-  <span class="plus">+</span>
-  <input use:plainText placeholder="add subtask" aria-label="Add subtask" bind:value={draft} onkeydown={addKeys} />
-</label>
-<div class="subs">
-  {#each shown as s (s.id)}
-    <TaskRow task={s} compact sortable lifted={preview !== null && lifted === s.id} onpointerdown={(e) => grab(e, s.id)} />
-  {/each}
-</div>
-{#if doneSubs.length}
-  <button class="donehead" aria-expanded={showDone} onclick={() => (showDone = !showDone)}>
-    <Icon name={showDone ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />Done<span class="cnt">{doneSubs.length}</span>
-  </button>
-  {#if showDone}
-    {#each doneSubs as s (s.id)}
-      <TaskRow task={s} compact />
+<div class="nav" use:rowNav>
+  <AddLine bind:value={draft} label="Add subtask" placeholder="add subtask" autofocus={false} onadd={add} />
+  <div class="subs">
+    {#each shown as s (s.id)}
+      <TaskRow task={s} compact sortable lifted={preview !== null && lifted === s.id} onpointerdown={(e) => grab(e, s.id)} />
     {/each}
+  </div>
+  {#if doneSubs.length}
+    <button class="donehead" aria-expanded={showDone} onclick={() => (showDone = !showDone)}>
+      <Icon name={showDone ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />Done<span class="cnt">{doneSubs.length}</span>
+    </button>
+    {#if showDone}
+      {#each doneSubs as s (s.id)}
+        <TaskRow task={s} compact />
+      {/each}
+    {/if}
   {/if}
-{/if}
+</div>
 
 <style>
-  .add {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 32px;
-    font: var(--text-ui);
-    color: var(--c-muted-2);
-  }
-
-  .plus {
-    width: 8px;
-    text-align: center;
-  }
-
-  .add input {
-    flex: 1;
-    border: 0;
-    outline: none;
-    background: transparent;
-    font: var(--text-ui);
-    color: var(--text);
-  }
-
-  .add input::placeholder {
-    color: var(--c-muted-2);
+  /* Only groups the rows for the keyboard. */
+  .nav {
+    display: contents;
   }
 
   .subs {
     display: flex;
     flex-direction: column;
   }
-
 
   .donehead {
     display: flex;

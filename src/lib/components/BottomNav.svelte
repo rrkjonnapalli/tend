@@ -49,6 +49,7 @@
         <a
           class="ico"
           class:cur={isCurrent(routes.settings)}
+          aria-current={isCurrent(routes.settings) ? 'page' : undefined}
           href={routes.settings}
           aria-label="Settings"
           title="Settings">

@@ -6,6 +6,7 @@
   import SettingsPalette from '#lib/components/SettingsPalette.svelte';
   import SettingsSync from '#lib/components/SettingsSync.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
+  import { rowNav } from '#lib/actions/row-nav.action.ts';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageTitle from '#lib/components/PageTitle.svelte';
   import { nav } from '#lib/stores/history.svelte.ts';
@@ -34,9 +35,9 @@
 
 <aside class="side" aria-label="Settings sections">
   <div class="top"><span class="caption muted">Settings</span></div>
-  <nav class="secs">
+  <nav class="secs" use:rowNav>
     {#each sections as s (s.id)}
-      <button class="sec" class:on={s.id === current.id} aria-current={s.id === current.id ? 'page' : undefined} onclick={() => show(s.id)}>
+      <button class="sec" data-row class:on={s.id === current.id} aria-current={s.id === current.id ? 'page' : undefined} onclick={() => show(s.id)}>
         {s.label}
       </button>
     {/each}
