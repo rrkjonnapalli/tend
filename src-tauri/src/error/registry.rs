@@ -24,6 +24,7 @@ pub const WATCH: ErrorDef = def("WATCH", "The notes folder can’t be watched");
 pub const JSON: ErrorDef = def("JSON", "That data couldn’t be read");
 pub const COLOR_INVALID: ErrorDef = def("COLOR_INVALID", "Colors are #rrggbb.");
 pub const OPEN_FAILED: ErrorDef = def("OPEN_FAILED", "The file couldn’t be opened");
+pub const FILE_TOO_BIG: ErrorDef = def("FILE_TOO_BIG", "Files of 30 MB or more can’t be attached.");
 
 // ---- names and folders
 pub const NAME_EMPTY: ErrorDef = def("NAME_EMPTY", "Name can’t be empty");

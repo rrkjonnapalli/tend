@@ -52,16 +52,9 @@ fn paths(s: &Snapshot, table: &str) -> BTreeSet<String> {
         .unwrap_or_default()
 }
 
-/// A path from a row may only point inside the vault: relative, no `..`, and under `.tend/` only
-/// in the attachment store. A row from the remote is not trusted to say otherwise.
+/// A path from a row may only point inside the vault; a row from the remote is not trusted.
 pub fn check_path(path: &str) -> AppResult<()> {
-    use std::path::Component;
-    let p = Path::new(path);
-    // The empty path is the root folder itself.
-    let plain = p.components().all(|c| matches!(c, Component::Normal(_)));
-    let in_tend = p.starts_with(crate::vault::TEND_DIR);
-    let in_store = p.starts_with(crate::vault::ATTACHMENTS_DIR);
-    if plain && (!in_tend || in_store) {
+    if crate::files::stays_in_vault(path) {
         return Ok(());
     }
     Err(errors::SYNC_APPLY_FAILED.with(format!("Refused a path outside the vault: {path}")))

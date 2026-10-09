@@ -61,8 +61,8 @@ struct Walk<'a> {
     dir: &'a Path,
     rel: &'a str,
     depth: usize,
-    /// Every entry name in `dir`, lowercased (the disk may ignore case).
-    taken: HashSet<String>,
+    /// How many entries in `dir` have each name, lowercased (the disk may ignore case).
+    taken: HashMap<String, usize>,
 }
 
 /// An item found on disk: its name as found and what it is.
@@ -146,10 +146,10 @@ fn walk(scope: &Scope, dir: &Path, rel: &str, depth: usize, out: &mut Disk) -> b
         })
         .filter(|(name, kind)| !names::is_hidden(name) && !kind.is_symlink())
         .collect();
-    let taken = entries
-        .iter()
-        .map(|(name, _)| name.to_lowercase())
-        .collect();
+    let mut taken = HashMap::new();
+    for (name, _) in &entries {
+        *taken.entry(name.to_lowercase()).or_insert(0) += 1;
+    }
     let mut here = Walk {
         scope,
         dir,
@@ -232,6 +232,11 @@ fn has_notes(dir: &Path, depth: usize) -> bool {
 }
 
 fn add_disk_note(here: &mut Walk, raw: &str, out: &mut Disk) -> bool {
+    // A note this big is never indexed (`files::MAX_FILE_BYTES`).
+    let size = fs::metadata(here.dir.join(format!("{raw}{EXT}"))).map_or(0, |m| m.len());
+    if !files::within_limit(size) {
+        return false;
+    }
     let found = Found {
         raw,
         kind: PathKind::Note,
@@ -265,7 +270,7 @@ fn settle(here: &mut Walk, found: &Found, out: &mut Disk) -> Option<String> {
         record_skip(out, found.kind, &old, Some(&new));
         return None;
     }
-    here.taken.insert(file);
+    *here.taken.entry(file).or_insert(0) += 1;
     out.renamed.push(Moved {
         kind: found.kind,
         reason: Reason::Fix,
@@ -280,7 +285,18 @@ fn settle(here: &mut Walk, found: &Found, out: &mut Disk) -> Option<String> {
 fn fixed_name(here: &Walk, found: &Found) -> Option<String> {
     let ext = found.ext();
     let base = names::slug(found.raw).unwrap_or_else(|| found.kind.as_str().to_string());
-    let taken = |n: &str| Ok(here.taken.contains(&format!("{n}{ext}")));
+    // The item's own name, in another case, is free: `Ideas.md` becomes `ideas.md`, not `ideas_1.md`.
+    let own = format!("{}{ext}", found.raw).to_lowercase();
+    let taken = |n: &str| {
+        let name = format!("{n}{ext}");
+        let others = here
+            .taken
+            .get(&name)
+            .copied()
+            .unwrap_or(0)
+            .saturating_sub(usize::from(name == own));
+        Ok(others > 0)
+    };
     names::free(&base, taken).ok()
 }
 

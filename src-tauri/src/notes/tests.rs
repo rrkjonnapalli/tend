@@ -419,6 +419,32 @@ fn fixing_slugs_bad_names_keeps_titles_and_logs_old_paths() {
     assert_eq!(logged.len(), 4);
 }
 
+#[test]
+fn a_capitalised_name_keeps_its_word_and_loses_only_its_case() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().to_path_buf();
+    fs::write(dir.join("Ideas.md"), "x").unwrap();
+    fs::create_dir_all(dir.join("Inbox")).unwrap();
+    fs::write(dir.join("Inbox/a.md"), "x").unwrap();
+    let mut conn = open_memory();
+    scan(&mut conn, &dir, true).unwrap();
+    let t = tree(&conn).unwrap();
+    assert_eq!(t.folders, vec!["inbox"]);
+    assert_eq!(names_in(&t), vec!["ideas", "inbox/a"]);
+}
+
+#[test]
+fn a_note_of_30_mb_or_more_is_never_indexed() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().to_path_buf();
+    fs::write(dir.join("small.md"), "x").unwrap();
+    let big = fs::File::create(dir.join("big.md")).unwrap();
+    big.set_len(crate::files::MAX_FILE_BYTES).unwrap();
+    let mut conn = open_memory();
+    scan(&mut conn, &dir, true).unwrap();
+    assert_eq!(names_in(&tree(&conn).unwrap()), vec!["small"]);
+}
+
 #[cfg(unix)]
 #[test]
 fn symlinks_are_skipped_so_a_loop_cannot_hang_the_scan() {

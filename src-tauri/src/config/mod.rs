@@ -48,10 +48,14 @@ fn lock() -> MutexGuard<'static, ()> {
     LOCK.lock().unwrap_or_else(|e| e.into_inner())
 }
 
-/// Applies `change` to the saved config as one step.
+/// Applies `change` to the saved config as one step. A config that exists but doesn't parse is
+/// left alone (an error), so one bad byte can't make a save wipe every vault's sync settings.
 fn update(dir: &Path, change: impl FnOnce(&mut Config)) -> AppResult<()> {
     let _held = lock();
-    let mut cfg = load(dir);
+    let mut cfg = match fs::read_to_string(file(dir)) {
+        Ok(text) => serde_json::from_str(&text)?,
+        Err(_) => Config::default(),
+    };
     change(&mut cfg);
     save(dir, &cfg)
 }

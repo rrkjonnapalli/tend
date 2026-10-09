@@ -15,7 +15,9 @@ pub fn attachments_list(
     state.with(|db, _| attachments::list(db, &owner, &id))
 }
 
-/// Copies each file into the vault and links it. Stops at the first file that fails.
+/// Copies each file into the vault and links it. Every file is checked before any is copied, so
+/// a folder or a too-big file in the drop adds nothing; the copying runs without the database
+/// lock, so the app stays usable while a big file copies.
 #[tauri::command(async)]
 pub fn attachments_add(
     state: State<AppState>,
@@ -23,11 +25,16 @@ pub fn attachments_add(
     id: String,
     paths: Vec<String>,
 ) -> AppResult<()> {
-    state.with(|db, v| {
-        paths.iter().try_for_each(|p| {
-            attachments::add_file(db, &v.root, &owner, &id, std::path::Path::new(p))
-        })
-    })
+    let sources: Vec<&std::path::Path> = paths.iter().map(std::path::Path::new).collect();
+    sources
+        .iter()
+        .try_for_each(|src| attachments::check_file(src))?;
+    let root = state.vault()?.root.clone();
+    for src in sources {
+        let file = attachments::copy_in(&root, src)?;
+        state.with(|db, v| attachments::link_copy(db, &v.root, &file, &owner, &id))?;
+    }
+    Ok(())
 }
 
 #[tauri::command(async)]
@@ -50,13 +57,13 @@ fn opener_error(e: tauri_plugin_opener::Error) -> crate::error::AppError {
 }
 
 /// Opens the file with the OS default app.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn attachment_open(state: State<AppState>, attachment: String) -> AppResult<()> {
     let path = state.with(|db, v| attachments::file_path(db, &v.root, &attachment))?;
     tauri_plugin_opener::open_path(path, None::<&str>).map_err(opener_error)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn attachment_reveal(state: State<AppState>, attachment: String) -> AppResult<()> {
     let path = state.with(|db, v| attachments::file_path(db, &v.root, &attachment))?;
     tauri_plugin_opener::reveal_item_in_dir(path).map_err(opener_error)

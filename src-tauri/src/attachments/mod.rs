@@ -46,7 +46,7 @@ fn check_owner(owner: &str) -> AppResult<()> {
 }
 
 /// A file copied into the store, ready to be recorded.
-struct Stored {
+pub struct Stored {
     id: String,
     path: String,
     name: String,
@@ -54,16 +54,22 @@ struct Stored {
     facts: FileFacts,
 }
 
-/// Copies `src` into the store and links it to the owner. The copy is removed if a later step
-/// fails, so the store never keeps a file the database doesn't know.
-pub fn add_file(
-    conn: &mut Connection,
-    root: &Path,
-    owner: &str,
-    owner_id: &str,
-    src: &Path,
-) -> AppResult<()> {
-    check_owner(owner)?;
+/// A file that can be attached: a plain file under the size limit (`files::MAX_FILE_BYTES`).
+pub fn check_file(src: &Path) -> AppResult<()> {
+    let meta = fs::metadata(src).map_err(|_| errors::NOT_FOUND.with("File was not found"))?;
+    if !meta.is_file() {
+        return Err(errors::NOT_FOUND.with("Only files can be attached"));
+    }
+    if !files::within_limit(meta.len()) {
+        return Err(errors::FILE_TOO_BIG.err());
+    }
+    Ok(())
+}
+
+/// Copies `src` into the store and hashes it, without the database (this is the slow part). A
+/// failed copy leaves nothing behind. Link it with `link_copy`.
+pub fn copy_in(root: &Path, src: &Path) -> AppResult<Stored> {
+    check_file(src)?;
     let name = src
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
@@ -72,25 +78,39 @@ pub fn add_file(
     let path = format!("{STORE}/{id}{}", extension(src));
     let dest = root.join(&path);
     fs::create_dir_all(root.join(STORE))?;
-    fs::copy(src, &dest)?;
+    let facts = fs::copy(src, &dest)
+        .map_err(Into::into)
+        .and_then(|_| files::facts(&dest));
+    match facts {
+        Ok(facts) => Ok(Stored {
+            id,
+            path,
+            name,
+            mime_type: mime_of(src),
+            facts,
+        }),
+        Err(e) => {
+            let _ = fs::remove_file(&dest);
+            Err(e)
+        }
+    }
+}
+
+/// Records a copied file and links it to the owner; the copy is removed if that fails, so the
+/// store never keeps a file the database doesn't know.
+pub fn link_copy(
+    conn: &mut Connection,
+    root: &Path,
+    file: &Stored,
+    owner: &str,
+    owner_id: &str,
+) -> AppResult<()> {
+    check_owner(owner)?;
+    let dest = root.join(&file.path);
     let remove_copy = || {
         let _ = fs::remove_file(&dest);
     };
-    let facts = match files::facts(&dest) {
-        Ok(facts) => facts,
-        Err(e) => {
-            remove_copy();
-            return Err(e);
-        }
-    };
-    let file = Stored {
-        id,
-        path,
-        name,
-        mime_type: mime_of(src),
-        facts,
-    };
-    commit_or_undo(conn, remove_copy, |tx| record(tx, &file, owner, owner_id))
+    commit_or_undo(conn, remove_copy, |tx| record(tx, file, owner, owner_id))
 }
 
 /// `.pdf` for `Invoice.PDF`; empty when the file has no extension.
@@ -209,5 +229,9 @@ pub fn file_path(conn: &Connection, root: &Path, attachment_id: &str) -> AppResu
         )
         .optional()?
         .ok_or_else(|| errors::NOT_FOUND.with("Attachment was not found"))?;
+    // A row that came by sync could point anywhere; only open what is inside the vault.
+    if !files::stays_in_vault(&path) {
+        return Err(errors::OPEN_FAILED.with("This attachment's path is outside the vault"));
+    }
     Ok(root.join(path))
 }

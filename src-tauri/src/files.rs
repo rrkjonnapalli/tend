@@ -15,6 +15,18 @@ const READ_CHUNK: usize = 64 * 1024;
 /// big can't be attached, and sync never commits one.
 pub const MAX_FILE_BYTES: u64 = 30 * 1024 * 1024;
 
+/// A vault-relative path that stays inside the vault: relative, no `..`, and under `.tend/` only in
+/// the attachment store. The empty path is the vault root. Rows that came by sync are checked
+/// with this before Tend writes or opens what they point at.
+pub fn stays_in_vault(path: &str) -> bool {
+    use std::path::Component;
+    let p = Path::new(path);
+    let plain = p.components().all(|c| matches!(c, Component::Normal(_)));
+    let in_tend = p.starts_with(crate::vault::TEND_DIR);
+    let in_store = p.starts_with(crate::vault::ATTACHMENTS_DIR);
+    plain && (!in_tend || in_store)
+}
+
 /// True for a file Tend works with (under `MAX_FILE_BYTES`).
 pub fn within_limit(size: u64) -> bool {
     size < MAX_FILE_BYTES

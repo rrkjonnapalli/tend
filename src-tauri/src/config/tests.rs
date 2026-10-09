@@ -55,3 +55,14 @@ fn readers_never_see_a_half_written_config() {
     }
     writer.join().unwrap();
 }
+
+#[test]
+fn a_config_that_does_not_parse_is_never_saved_over() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::write(dir.path().join("config.json"), "{ not json").unwrap();
+    assert!(remember_vault(dir.path(), Path::new("/tmp/v")).is_err());
+    assert_eq!(
+        fs::read_to_string(dir.path().join("config.json")).unwrap(),
+        "{ not json"
+    );
+}
