@@ -37,11 +37,12 @@ export function defaultView({ last, today }: { last: LastView | null; today: str
 /** All and My day follow the manual order; the date views sort by due date. Done tasks sink. */
 export const isManual = (v: View) => v === 'all' || v === 'myday';
 
-/** Sorts tasks by their order key (plain string order, not locale order). */
+/** Sorts tasks by their order key (plain string order, not locale order), then by id, so tied keys
+ *  sort the same way on every device. */
 export function byOrderKey(a: Task, b: Task): number {
-  if (a.orderKey < b.orderKey) return -1;
-  if (a.orderKey > b.orderKey) return 1;
-  return 0;
+  if (a.orderKey !== b.orderKey) return a.orderKey < b.orderKey ? -1 : 1;
+  if (a.id === b.id) return 0;
+  return a.id < b.id ? -1 : 1;
 }
 
 const doneLast = (a: Task, b: Task) => Number(isDone(a)) - Number(isDone(b));

@@ -75,4 +75,9 @@ describe('defaultView', () => {
     expect(titles(viewTasks({ tasks, folder: 'work', view: 'all', ctx: hidden }))).toEqual(['a', 'c', 'd']);
     expect(viewCounts({ tasks, folder: 'work', ctx: hidden }).all).toBe(3);
   });
+
+  it('sorts tied order keys by id, the same on every device', () => {
+    const tied = [t({ id: 'y', orderKey: 'k' }), t({ id: 'x', orderKey: 'k' })];
+    expect(titles(viewTasks({ tasks: tied, folder: 'work', view: 'all', ctx }))).toEqual(['x', 'y']);
+  });
 });

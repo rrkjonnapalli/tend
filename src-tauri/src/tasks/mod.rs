@@ -117,7 +117,7 @@ pub fn data(conn: &Connection, day: &str) -> AppResult<TaskData> {
         .query_map([], |r| r.get(0))?
         .collect::<Result<_, _>>()?;
     let tasks = conn
-        .prepare(&format!("SELECT {COLS} FROM tasks ORDER BY order_key"))?
+        .prepare(&format!("SELECT {COLS} FROM tasks ORDER BY order_key, id"))?
         .query_map([], to_task)?
         .collect::<Result<_, _>>()?;
     let my_day = conn

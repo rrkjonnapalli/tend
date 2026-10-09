@@ -36,7 +36,15 @@ export function keyBetween(a: string | null, b: string | null): string {
   }
 }
 
+/** A key after `prev` and before the first of `next` (in list order) that sorts above it. Keys can
+ *  tie (two devices inserting at the same spot, then syncing); skipping the ties keeps a drop
+ *  between equal keys from failing, and lands it right after them. */
+export function keyBefore(prev: string | null, next: string[]): string {
+  const above = next.find((k) => prev === null || k > prev) ?? null;
+  return keyBetween(prev, above);
+}
+
 /** Key for moving an item to `index` in `keys` (sorted, the item itself left out). */
 export function keyAt(keys: string[], index: number): string {
-  return keyBetween(keys[index - 1] ?? null, keys[index] ?? null);
+  return keyBefore(keys[index - 1] ?? null, keys.slice(index));
 }
