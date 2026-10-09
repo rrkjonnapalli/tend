@@ -17,6 +17,7 @@
   import Comments from '#lib/components/Comments.svelte';
   import MoveToDialog from '#lib/components/MoveToDialog.svelte';
   import DeleteDialog from '#lib/components/DeleteDialog.svelte';
+  import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
   import { tasksAPI } from '#lib/api/tasks.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { people } from '#lib/stores/people.svelte.ts';
@@ -33,7 +34,26 @@
   people.load();
 
   const id = $derived(page.params.id!);
-  const task = $derived(tasks.byId(id));
+  const live = $derived(tasks.byId(id));
+
+  // ---- deleted elsewhere: after a reload (sync) the open task may not come back. The page keeps
+  // showing it from the last snapshot and asks whether to keep it as a new task.
+
+  let snapshot = $state<{ task: Task; labels: string[] } | null>(null);
+  let gone = $state(false);
+  /** Set while this page deletes its own task, so that isn't mistaken for a deletion elsewhere. */
+  let leaving = false;
+
+  $effect(() => {
+    if (live) {
+      snapshot = { task: live, labels: tasks.labelIds.get(live.id) ?? [] };
+      gone = false;
+    } else if (snapshot?.task.id === id && !leaving) {
+      gone = true;
+    }
+  });
+
+  const task = $derived(live ?? (gone ? snapshot?.task : undefined));
   const rootName = $derived(settings.get(settingKeys.tasksRootName, 'tasks'));
   const wide = $derived(settings.get(settingKeys.tasksWide, false));
   const widthLabel = $derived(wide ? 'Narrow width' : 'Full width');
@@ -126,11 +146,40 @@
   async function remove() {
     if (!task) return;
     deleting = false;
+    leaving = true;
     const title = task.title;
     const to = upURL;
     await tasks.remove(id);
     toast.show(`Deleted ${title}`);
     nav.back(to);
+  }
+
+  /** Recreates the deleted task as a new one: its fields, description, tags and labels. Subtasks,
+   *  comments and attachment links went with the old task. */
+  async function keepDeleted() {
+    if (!snapshot) return;
+    const { task: t, labels } = snapshot;
+    const parentAlive = t.parentId !== null && tasks.byId(t.parentId) !== undefined;
+    const made = await tasks.create({
+      path: t.path,
+      title: t.title,
+      status: t.status,
+      ...(parentAlive && { parentId: t.parentId! }),
+      ...(t.dueDate && { dueDate: t.dueDate }),
+    });
+    const assigneeId = people.byId(t.assigneeId) ? t.assigneeId : null;
+    await tasks.update(made.id, { description, dueTime: t.dueTime, assigneeId });
+    if (tags.length) await tasksAPI.setTags({ id: made.id, tags });
+    const known = labels.filter((l) => tasks.labels.some((x) => x.id === l));
+    if (known.length) await tasks.setLabels(made.id, known);
+    gone = false;
+    toast.show('Kept as a new task');
+    nav.replace(routes.task(made.id));
+  }
+
+  function dropDeleted() {
+    gone = false;
+    nav.replace(snapshot ? routes.tasksFolder(snapshot.task.path) : routes.tasks);
   }
 
   // ---- commands and shortcuts
@@ -234,6 +283,16 @@
     {rootName}
     onmove={moveTo}
     onclose={() => (moving = false)} />
+{/if}
+
+{#if gone}
+  <ConfirmDialog
+    title="This task was deleted"
+    body="It was deleted on another device. Keep it as a new task, with its fields, description, tags and labels? Its subtasks, comments and attachments are gone."
+    confirm="Keep"
+    cancel="Discard"
+    onconfirm={keepDeleted}
+    onclose={dropDeleted} />
 {/if}
 
 {#if deleting && task}

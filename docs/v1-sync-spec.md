@@ -321,9 +321,9 @@ implemented.
    affected files are restored from the last commit's tree.
 6. Scan the vault, matching files to note rows by `attachments.path` (§11.3). Applied files hash the
    same as their rows, so the scan changes nothing.
-   A note deleted by this sync while it is open on this device keeps its text on screen and asks
-   whether to keep it; **Keep** makes a new note (new id) with that text, so the deletion still wins
-   for the old id (see `decisions.md`, Notes).
+   A note or task deleted by this sync while it is open on this device stays on screen and asks
+   whether to keep it; **Keep** makes a new one (new id), so the deletion still wins for the old id
+   (see `decisions.md`, Notes).
 7. Resume the watcher; reload stores and reopen the open note if it changed.
 
 Every app command waits for the DB while step 4 runs; it must stay short, and the UI shows

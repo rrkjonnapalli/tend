@@ -119,7 +119,9 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - **Folder list:**
   - Shows every note under that folder path (recursive).
   - Rows show name, relative path and last edited.
-- **An open note deleted elsewhere** (in Finder, another app, or later by sync from another device) is not dropped while it is on screen: its text, unsaved edits included, stays and a dialog asks *"This note was deleted. Keep it as a new note?"* **Keep** recreates it as a new note (new id; same folder, name, text and tags). **Discard** goes back to its folder. The deletion itself stands.
+- **An open note or task deleted elsewhere** is not dropped while it is on screen. Nothing polls for this: whenever data reloads (a sync, or for notes the file watcher), the open page checks that its item came back. If it didn't, the page keeps showing it and asks *"This note/task was deleted. Keep it as a new one?"*
+  - **Keep** recreates it with a new id. A note keeps its folder, name, text (unsaved edits included) and tags. A task keeps its folder, parent (if still there), title, status, due date and time, assignee (if still there), description, tags and labels; its subtasks, comments and attachment links went with the old one.
+  - **Discard** goes back to the folder. The deletion itself stands, so sync's delete-wins rule holds for the old id.
 - **Note page:**
   - Sticky top bar: back · breadcrumb · width toggle · Read/Edit icon toggle (⌘R). ⌘E toggles the explorer. On the task list ⌘R switches list / board. ⌘L focuses the search on the notes, tasks and people lists.
   - Tag row.
