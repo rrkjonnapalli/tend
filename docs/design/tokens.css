@@ -71,7 +71,7 @@
   --c-hover: #f1f5f7;           /* row hover */
   --c-selected: #f3f1fe;        /* the open item or current choice: a violet tint ("you are here") */
   --c-cursor: #eef3f6;          /* the row with the keyboard cursor (a shade darker than hover) */
-  --c-current: #6f5ee4;         /* "you are here": the cursor bar, underlines, today */
+  --c-current: #6f5ee4;         /* "you are here": the view underline, today, drop targets */
   --c-current-ink: #5b4bd0;     /* text on --c-selected or --c-nav-active-soft (5.3:1 and up) */
   --c-chip: #f2f5f7;            /* chips, segmented control track, kbd */
   --c-faint: #b8c4ce;           /* hairlines and quiet borders only; too light for text */

@@ -84,7 +84,6 @@
 
   :global(.card.ghost) {
     border-color: var(--accent) !important;
-    box-shadow: inset 2px 0 0 var(--accent);
     opacity: 0.96;
     will-change: transform;
   }

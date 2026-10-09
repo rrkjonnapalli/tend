@@ -323,7 +323,6 @@ html :is(.link-btn, .text-btn, .crumb, a:not([class])):focus-visible {
 [data-row]:focus-visible {
   outline: none;
   background: var(--c-cursor);
-  box-shadow: inset 2px 0 0 var(--c-current);
 }
 
 /* What a list says when it has no rows. */
@@ -464,7 +463,6 @@ body.reordering .sortable:not(.lifted) .grip {
 
 .sortable.lifted {
   background: var(--c-hover);
-  box-shadow: inset 2px 0 0 var(--border);
 }
 
 /* A title or name being edited in place (list rows, explorer rename): a soft fill, no border,

@@ -51,7 +51,7 @@ src/routes/       start, notes, tasks, people, settings
 - **The name rule** (`^[a-z0-9]+(_[a-z0-9]+)*$`, unique in its folder; a clash gets `_1`, `_2`) applies to note folders, task folders and note file names. Typed folder names and note titles become slugs. A note is shown by its file name; its title is the `# heading` inside the file. Check it in Rust; the UI shows the same rule live.
 - **Notes on disk are the source of truth.** The vault folder is the notes root; Tend's files live in `.tend/`. The DB is an index. A scan renames a folder or `.md` file only to give a bad name its slug, only with the vault's consent, and logs it in `path_log`. It never moves files and never touches hidden or non-`.md` files.
 - **Keyboard:** every popover closes on Esc. Enter confirms. ↑↓ move through lists. Shortcuts are in `decisions.md` §12; override ⌘R/⌘N/⌘T so the webview doesn't reload or open windows.
-- **Accessibility basics:** real `<button>`s, `aria-label` on icon buttons, and visible keyboard focus *without outlines or rings*: a focused control gets the hover fill, a list row the cursor fill and bar, a field its focus border, a filled button its hover colour (see `:focus-visible` in `app.css`). Never draw an outline.
+- **Accessibility basics:** real `<button>`s, `aria-label` on icon buttons, and visible keyboard focus *without outlines or rings*: a focused control gets the hover fill, a list row the cursor fill, a field its focus border, a filled button its hover colour (see `:focus-visible` in `app.css`). Never draw an outline.
 - Keep functions small. No dead code, no TODO stubs in finished milestones.
 
 ## Verify before saying a milestone is done
