@@ -126,12 +126,12 @@ fn tasks_round_trip_through_ipc() {
     let h = Harness::new();
     let parent = h.ok(
         "task_create",
-        json!({ "task": { "path": "work", "title": "Ship" } }),
+        json!({ "task": { "path": "work", "title": "Ship", "orderKey": "a0" } }),
     );
     let pid = parent["id"].as_str().unwrap();
     let sub = h.ok(
         "task_create",
-        json!({ "task": { "path": "", "title": "Sign", "parentId": pid, "orderKey": "z" } }),
+        json!({ "task": { "path": "", "title": "Sign", "parentId": pid, "orderKey": "a1" } }),
     );
     assert_eq!(sub["path"], "work");
 

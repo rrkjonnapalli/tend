@@ -14,7 +14,6 @@ mod labels;
 mod macos;
 mod names;
 mod notes;
-mod order;
 mod people;
 mod settings;
 mod state;

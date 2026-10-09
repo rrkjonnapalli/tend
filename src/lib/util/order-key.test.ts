@@ -2,65 +2,55 @@ import { describe, expect, it } from 'vitest';
 import { keyAt, keyAfter, keyBetween } from './order-key.ts';
 
 describe('keyBetween', () => {
-  it('makes a key between two neighbours', () => {
-    const k = keyBetween('a', 'c');
-    expect(k > 'a' && k < 'c').toBe(true);
-  });
-
-  it('handles open ends', () => {
+  it('makes a key between two neighbours, and at either open end', () => {
     const first = keyBetween(null, null);
+    const next = keyBetween(first, null);
+    const mid = keyBetween(first, next);
+    expect(first < mid && mid < next).toBe(true);
     expect(keyBetween(null, first) < first).toBe(true);
-    expect(keyBetween(first, null) > first).toBe(true);
   });
 
-  it('works between adjacent digits by going deeper', () => {
-    const k = keyBetween('a', 'b');
-    expect(k > 'a' && k < 'b').toBe(true);
+  it('keeps keys short when items are always added at the top or the bottom', () => {
+    let top = keyBetween(null, null);
+    let bottom = top;
+    for (let i = 0; i < 10_000; i++) {
+      top = keyBetween(null, top);
+      bottom = keyBetween(bottom, null);
+    }
+    expect(top.length).toBeLessThan(8);
+    expect(bottom.length).toBeLessThan(8);
   });
 
   it('keeps order over many inserts between the same neighbours', () => {
     let lo = keyBetween(null, null);
     const hi = keyBetween(lo, null);
-    const made: string[] = [];
     for (let i = 0; i < 200; i++) {
       const k = keyBetween(lo, hi);
       expect(k > lo && k < hi).toBe(true);
-      made.push(k);
       lo = k;
-    }
-    expect([...made].sort()).toEqual(made);
-  });
-
-  it('keeps order when always inserting at the front', () => {
-    let hi = keyBetween(null, null);
-    for (let i = 0; i < 200; i++) {
-      const k = keyBetween(null, hi);
-      expect(k < hi).toBe(true);
-      hi = k;
     }
   });
 
   it('rejects neighbours in the wrong order', () => {
-    expect(() => keyBetween('b', 'a')).toThrow();
+    const a = keyBetween(null, null);
+    expect(() => keyBetween(keyBetween(a, null), a)).toThrow();
   });
 });
 
-describe('keyAt', () => {
+describe('keyAt and keyAfter', () => {
+  const [b, d, f] = ['a1', 'a3', 'a5'];
+
   it('places an item at an index', () => {
-    const keys = ['b', 'd', 'f'];
+    const keys = [b, d, f];
     const k = keyAt(keys, 1);
-    expect(k > 'b' && k < 'd').toBe(true);
-    expect(keyAt(keys, 0) < 'b').toBe(true);
-    expect(keyAt(keys, 3) > 'f').toBe(true);
+    expect(k > b && k < d).toBe(true);
+    expect(keyAt(keys, 0) < b).toBe(true);
+    expect(keyAt(keys, 3) > f).toBe(true);
   });
-});
 
-describe('keyAfter', () => {
   it('drops between tied keys without failing, right after the ties', () => {
-    const keys = ['b', 'd', 'd', 'f'];
-    const k = keyAt(keys, 2);
-    expect(k > 'd' && k < 'f').toBe(true);
-    expect(keyAfter('d', ['d', 'd'])).toBeTruthy();
-    expect(keyAfter('d', ['d', 'd']) > 'd').toBe(true);
+    const k = keyAt([b, d, d, f], 2);
+    expect(k > d && k < f).toBe(true);
+    expect(keyAfter(d, [d, d]) > d).toBe(true);
   });
 });

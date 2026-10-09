@@ -45,8 +45,8 @@ pub struct TaskData {
     pub labels: Vec<(String, String)>,
 }
 
-/// A task to create. A subtask takes its parent's folder; `order_key` places it somewhere
-/// other than the top of the list (board columns).
+/// A task to create. A subtask takes its parent's folder. `order_key` places it: the UI makes the
+/// key (src/lib/util/order-key.ts); a new task goes above the first one unless placed elsewhere.
 #[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct NewTask {
@@ -54,7 +54,7 @@ pub struct NewTask {
     pub title: String,
     pub parent_id: Option<String>,
     pub status: Option<String>,
-    pub order_key: Option<String>,
+    pub order_key: String,
     /// `YYYY-MM-DD`; a task added in My day is due today.
     pub due_date: Option<String>,
 }
@@ -142,13 +142,6 @@ fn check_title(title: &str) -> AppResult<&str> {
     Ok(trimmed)
 }
 
-/// A key that sorts before every task, so a new task lands at the top.
-fn top_key(conn: &Connection) -> AppResult<String> {
-    let first: Option<String> =
-        conn.query_row("SELECT min(order_key) FROM tasks", [], |r| r.get(0))?;
-    Ok(crate::order::before(first.as_deref()))
-}
-
 /// The folder a new subtask goes in: its parent's. Subtasks are one level deep, so the parent
 /// must be a top-level task.
 fn parent_path(conn: &Connection, parent_id: &str) -> AppResult<String> {
@@ -165,10 +158,6 @@ pub fn create(conn: &mut Connection, new: &NewTask) -> AppResult<Task> {
         Some(parent) => parent_path(conn, parent)?,
         None => names::accept_path(&new.path)?,
     };
-    let key = match &new.order_key {
-        Some(k) => k.clone(),
-        None => top_key(conn)?,
-    };
     let status = new.status.as_deref().unwrap_or(FIRST);
     let now = now_ms();
     let completed_at = (status == DONE).then_some(now);
@@ -178,7 +167,7 @@ pub fn create(conn: &mut Connection, new: &NewTask) -> AppResult<Task> {
     tx.execute(
         "INSERT INTO tasks (id, path, parent_id, title, status, order_key, due_date, created_at, updated_at, completed_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, ?9)",
-        params![id, path, new.parent_id, title, status, key, new.due_date, now, completed_at],
+        params![id, path, new.parent_id, title, status, new.order_key, new.due_date, now, completed_at],
     )?;
     tx.commit()?;
     get(conn, &id)

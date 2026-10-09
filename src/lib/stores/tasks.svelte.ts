@@ -10,6 +10,7 @@ import type { Label } from '#lib/types/label.type.ts';
 import { today } from '#lib/util/dates.ts';
 import { isUnder } from '#lib/util/names.ts';
 import { byOrderKey, isDone } from '#lib/util/task-views.ts';
+import { keyBetween } from '#lib/util/order-key.ts';
 
 /** (task id, label id) pairs → task id → label ids. */
 function groupLinks(links: [string, string][]): Map<string, string[]> {
@@ -67,6 +68,13 @@ class TasksStore {
     return saved;
   };
 
+  /** The smallest order key of any task, or null when there are none. */
+  #firstKey(): string | null {
+    let first: string | null = null;
+    for (const t of this.tasks) if (first === null || t.orderKey < first) first = t.orderKey;
+    return first;
+  }
+
   byId = (id: string) => this.tasks.find((t) => t.id === id);
   subtasksOf = (id: string) => this.tasks.filter((t) => t.parentId === id).sort(byOrderKey);
   status = (value: string) => this.statuses.find((s) => s.value === value);
@@ -86,8 +94,10 @@ class TasksStore {
     else this.tasks.push(task);
   };
 
+  /** A new task goes above every other task unless it brings its own key (board, subtasks). */
   create = async (task: NewTask) => {
-    const created = await tasksAPI.create(task);
+    const orderKey = task.orderKey ?? keyBetween(null, this.#firstKey());
+    const created = await tasksAPI.create({ ...task, orderKey });
     await this.load();
     return created;
   };
@@ -112,7 +122,8 @@ class TasksStore {
   };
 
   #restoredTask(task: Task): NewTask {
-    const input: NewTask = { path: task.path, title: task.title, status: task.status };
+    // Back where it was in the list.
+    const input: NewTask = { path: task.path, title: task.title, status: task.status, orderKey: task.orderKey };
     if (task.parentId !== null && this.byId(task.parentId)) input.parentId = task.parentId;
     if (task.dueDate) input.dueDate = task.dueDate;
     return input;

@@ -15,7 +15,10 @@ pub const APP_ID: &str = "tend";
 const BUSY_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// Migration n is `STEPS[n - 1]`. Each step is checked for broken foreign keys before it commits.
-const STEPS: &[M<'static>] = &[M::up(include_str!("../../../docs/schema.sql")).foreign_key_check()];
+const STEPS: &[M<'static>] = &[
+    M::up(include_str!("../../../docs/schema.sql")).foreign_key_check(),
+    M::up(include_str!("../../../docs/migrations/002_order_keys.sql")).foreign_key_check(),
+];
 const MIGRATIONS: Migrations<'static> = Migrations::from_slice(STEPS);
 
 pub fn schema_version() -> i64 {

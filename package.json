@@ -30,6 +30,7 @@
     "@tauri-apps/plugin-notification": "2.5.1",
     "@tauri-apps/plugin-opener": "2.7.0",
     "dompurify": "3.4.16",
+    "fractional-indexing": "4.0.0",
     "marked": "18.0.14"
   },
   "devDependencies": {

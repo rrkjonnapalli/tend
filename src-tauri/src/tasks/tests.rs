@@ -11,13 +11,14 @@ fn ids(conn: &Connection) -> Vec<String> {
 }
 
 #[test]
-fn new_tasks_go_to_the_top_and_start_not_started() {
+fn new_tasks_sort_by_their_key_and_start_not_started() {
     let mut conn = open_memory();
     create(
         &mut conn,
         &NewTask {
             path: "work".into(),
             title: "A".into(),
+            order_key: "a1".into(),
             ..Default::default()
         },
     )
@@ -27,6 +28,7 @@ fn new_tasks_go_to_the_top_and_start_not_started() {
         &NewTask {
             path: "work".into(),
             title: "B".into(),
+            order_key: "a0".into(),
             ..Default::default()
         },
     )
@@ -43,6 +45,7 @@ fn reorder_writes_only_the_moved_key() {
         &mut conn,
         &NewTask {
             title: "A".into(),
+            order_key: "a1".into(),
             ..Default::default()
         },
     )
@@ -51,11 +54,12 @@ fn reorder_writes_only_the_moved_key() {
         &mut conn,
         &NewTask {
             title: "B".into(),
+            order_key: "a0".into(),
             ..Default::default()
         },
     )
     .unwrap();
-    let after_a = crate::order::between(Some(&a.order_key), None);
+    let after_a = "a2".to_string();
     update(
         &mut conn,
         &b.id,
