@@ -145,8 +145,8 @@
 
   .row.drop,
   :global(.dragging) .row.drop {
-    background: var(--primary-soft);
-    box-shadow: inset 0 0 0 1px var(--primary);
+    background: var(--c-selected);
+    box-shadow: inset 0 0 0 1px var(--c-current);
   }
 
   .row.bad {

@@ -304,7 +304,7 @@ textarea,
 /* The keyboard cursor in a list or the explorer (see the rowNav action). */
 [data-row]:focus-visible {
   outline: none;
-  background: var(--c-hover);
+  background: var(--c-cursor);
   box-shadow: inset 2px 0 0 var(--c-current);
 }
 

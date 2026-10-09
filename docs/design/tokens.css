@@ -54,7 +54,7 @@
   --on-primary: #ffffff;
   --primary-soft: #dbfaff;
   --focus-ring: #1070e3;
-  --accent: #6f5ee4;
+  --accent: #6f5ee4;            /* the brand violet: the wordmark dot, avatars, birthdays soon; for "you are here" use --c-current */
   --accent-soft: #b1b2ff;
   --danger: #da0037;
   --danger-fill: #da0037;
@@ -71,11 +71,12 @@
   --c-page: #ffffff;            /* app background (mockups use white; --bg for hover/soft fills) */
   --c-hover: #f1f5f7;           /* row hover */
   --c-selected: #f3f1fe;        /* the open item or current choice: a violet tint ("you are here") */
+  --c-cursor: #eef3f6;          /* the row with the keyboard cursor (a shade darker than hover) */
   --c-current: #6f5ee4;         /* "you are here": the cursor bar, underlines, today */
   --c-current-ink: #5b4bd0;     /* text on --c-selected or --c-nav-active-soft (5.3:1 and up) */
   --c-chip: #f2f5f7;            /* chips, segmented control track, kbd */
   --c-faint: #b8c4ce;           /* hairlines and quiet borders only; too light for text */
-  --c-muted-2: #687480;         /* secondary text, icons (4.8:1 on white) */
+  --c-muted-2: #616d79;         /* secondary text, icons (4.5:1 or more on white and every row fill) */
   --c-nav-active: #6f5ee4;      /* bottom-nav active icon + dot, timer chip */
   --c-nav-active-soft: #ede9ff; /* timer chip, assignee chip, person chips */
   --c-overdue: #a84f2c;

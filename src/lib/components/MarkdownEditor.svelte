@@ -47,7 +47,7 @@
     { tag: t.url, color: 'var(--c-muted-2)' },
     { tag: t.monospace, color: 'var(--text-muted)' },
     { tag: t.quote, color: 'var(--text-muted)' },
-    { tag: [t.processingInstruction, t.meta], color: 'var(--c-faint)' },
+    { tag: [t.processingInstruction, t.meta], color: 'var(--c-muted-2)' },
   ]);
 
   onMount(() => {
@@ -138,7 +138,7 @@
 
   .editor :global(.cm-selectionBackground),
   .editor :global(.cm-focused .cm-selectionBackground) {
-    background: var(--primary-soft) !important;
+    background: var(--c-nav-active-soft) !important;
   }
 
   .note :global(.cm-scroller) {

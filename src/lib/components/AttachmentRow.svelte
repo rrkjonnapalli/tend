@@ -46,7 +46,7 @@
 
   .ic.note {
     display: grid;
-    color: var(--accent);
+    color: var(--text-muted);
   }
 
   .arow {

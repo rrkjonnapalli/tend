@@ -147,9 +147,9 @@
   }
 
   .drop.over {
-    border-color: var(--primary);
-    background: var(--primary-soft);
-    color: var(--primary);
+    border-color: var(--c-current);
+    background: var(--c-selected);
+    color: var(--c-current-ink);
   }
 
   .grow {
@@ -180,6 +180,6 @@
 
   .note-ic {
     display: grid;
-    color: var(--accent);
+    color: var(--text-muted);
   }
 </style>
