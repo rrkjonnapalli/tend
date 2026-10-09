@@ -45,8 +45,7 @@ The vault is the Git working tree:
     sync/
       manifest.json
       <table>/<YYYY>-<NNN>.jsonl  rows created in year YYYY, in id order, 10,000 per shard (§8)
-      <table>/fixed.jsonl       rows with fixed, non-ULID ids (settings keys, 'root', default statuses)
-      deleted/<YYYY>.jsonl      deletions, by the year they happened
+      <table>/fixed.jsonl       rows with natural, non-ULID ids (settings, statuses, tags, labels, 'root')
   .git/
   .gitignore                    .tend/tend.db*, .tend/staging/, .DS_Store
 ```
@@ -108,12 +107,11 @@ attachments  id · path · name · mime_type · size_bytes · sha256 · updated_
 
 | Table | Purpose |
 |---|---|
-| `deletions (id, table_name, row_id, deleted_at)` | Every delete, including `ON DELETE CASCADE` rows, by trigger. Mirrored into `.tend/sync/deleted/` (§8). Kept **forever**. |
-| `changes (seq INTEGER PRIMARY KEY AUTOINCREMENT, table_name, row_id, UNIQUE(table_name, row_id))` | Which rows changed locally, by trigger on insert, update and delete of every synced table: `INSERT OR REPLACE`, so each row has one entry carrying its latest `seq`. `seq` only grows and never depends on the clock. Used to find dirty years (§8.2). |
-| `sync_state (id = 1, last_synced_seq, last_synced_commit)` | The markers of the last successful sync (§13). |
-| `access (entity_type, entity_id, used_at, UNIQUE(entity_type, entity_id))` | Last read, edit or create of each entity. Drives "recent" lists, ⌘K ranking and what the UI loads first. Never in snapshots, never in `changes`. |
-| `activity (id, action, status, entity_type, entity_id, at)` | Every write plus open, close, pull and push; capped to the newest 10,000 rows by a trigger. |
+| `sync_state (id = 1, last_synced_commit, last_run_at, last_result)` | The base of the next merge (the commit both sides last agreed on) and how the last run went (§13). |
 | `path_log (id, kind, reason, old_path, new_path, at)` | Every rename or move of a folder or note file, by the user, a scan fixing a name, or sync applying a rename, so an earlier layout can be restored. Never trimmed. |
+
+There is no tombstone table and no write log: with a base, a deletion is simply a row the base has
+and one side no longer has (§9.1).
 
 Sync configuration (remote URL, branch, username, author, device name, interval, last result) is
 local too and never lives in the vault (§5).
@@ -141,7 +139,7 @@ file systems refuse.
 
 | Synced | Local to the device |
 |---|---|
-| tasks, task folders, comments, statuses, labels and their links, my_day, people, contacts, tags and their links, notes, note folders, attachments (rows and files), shared settings (`tasks.root_name`, `timers.sound`) | timers, feedback, `deletions` (beyond what `deleted/` carries), `changes`, `sync_state`, `access`, `activity`, UI settings (nav, explorer, widths, last view, quick-create paths), sync configuration, the token |
+| tasks, task folders, comments, statuses, labels and their links, my_day, people, contacts, tags and their links, notes, note folders, attachments (rows and files), shared settings (`tasks.root_name`, `timers.sound`) | timers, feedback, `sync_state`, `path_log`, UI settings (nav, explorer, widths, last view, quick-create paths, hide done), sync configuration, the token |
 
 The shared/local split of settings is defined in one place (`settings.config.ts` and its Rust twin).
 Local columns of synced tables (`attachments.mtime`, `attachments.missing_at`,
@@ -165,10 +163,11 @@ row dirty.
 2. **Read trees directly** from Git objects: the base (`last_synced_commit`), the fetched remote
    commit, and the local working state — no `git merge`, no working-tree merge.
 3. Reconcile in Tend (§9) and write the result into the working tree (§10).
-4. Commit the result. When the remote moved, the commit has **two parents**: the local HEAD and the
-   fetched remote commit. Git never resolves conflicts; every device ends with the same tree.
-5. Push. If rejected as non-fast-forward (another device pushed meanwhile): fetch, reconcile,
-   commit and push again — **once**; a further failure waits for the scheduler.
+4. Commit the result with **one parent: the fetched remote head**. Tend has already merged, so the
+   history stays linear and the push is a fast-forward. Git never resolves conflicts; every device
+   ends with the same tree.
+5. Push. If rejected (another device pushed meanwhile): fetch, reconcile, commit and push again —
+   **once**; a further failure waits for the scheduler.
 
 ---
 
@@ -198,12 +197,12 @@ Accepted for V1; a hybrid logical clock is a later decision.
   in a year's id order shifts every later row of that year by one, so the later shards of that year
   are rewritten. This is accepted: it is bounded by one year, and Git stores a one-line shift as a
   tiny delta.
-- Rows whose id is not a ULID (settings keys, `'root'`, default status values) go in
-  `<table>/fixed.jsonl`.
+- Rows whose id is not a ULID (natural ids, §4.1: settings keys, status values, tags, label ids,
+  `'root'`) go in `<table>/fixed.jsonl`, sorted by id.
+- Only synced columns are written: local columns (`attachments.mtime`, `attachments.missing_at`,
+  `note_folders.missing_at`) are left out, and of `settings` only the shared keys are written.
 - Inside a shard: one row per line, fixed column order, stable JSON (serde structs), no values
   generated while writing. Same data → byte-identical file. An edit changes its line in place.
-- `deleted/<YYYY>.jsonl`: `{"table":"tasks","id":"01…","deleted_at":…}` per line, sorted by
-  `(table, id)`, sharded by the year of `deleted_at`, never truncated (≈8 MB for 100k deletes).
 - `manifest.json`: `{ "app_id": "tend", "format_version": 1, "schema_version": 1, "tables": [...] }`.
   A remote with unrelated files and no valid manifest is refused (`SYNC_NOT_A_VAULT`); a manifest
   whose schema is newer than the app is refused (`SNAPSHOT_TOO_NEW`) and nothing is imported.
@@ -212,25 +211,19 @@ Accepted for V1; a hybrid logical clock is a later decision.
 Old years are rarely touched, so Git neither rewrites nor rereads them: they act as an archive
 without any archive state in the database.
 
-### 8.2 Dirty shards
+### 8.2 Writing shards
 
-A **year** is dirty when a row created in it changed locally since the last sync (rows can move
-between a year's shards, so the year is the unit):
-
-```sql
-SELECT table_name, row_id FROM changes WHERE seq > :last_synced_seq
-```
-
-Each `(table, id)` maps to exactly one year. A dirty year's shards are **rebuilt completely** from
-SQLite, never patched line by line, so shards are always a faithful copy of the database. Files whose
-bytes did not change are left alone, and clean years are not touched.
+Every run **rebuilds every shard** from SQLite, never patching line by line, so shards are always a
+faithful copy of the database. Only files whose bytes changed are written, and shard files no longer
+produced are removed, so Git sees exactly what changed. At today's sizes this takes milliseconds.
 
 Note bodies and attachment files are not in shards; Git sees their changes directly
-(`git status` on the vault, leaving out `.tend/`), which also catches edits made in Finder.
+(`git status` on the vault, leaving out `.tend/` except `.tend/sync/` and `.tend/attachments/`),
+which also catches edits made in Finder.
 
-A **full rebuild** (every shard) runs when there are no markers yet (first sync, restore), after a
-schema upgrade, or when the base commit can no longer be read. It uses the same code with "every
-row" as the change set.
+*Later, if a vault grows large enough that the full rebuild is measurably slow:* a `changes` table
+(trigger-filled, an ever-growing `seq` per changed row) can limit the rebuild to the years with
+changes. The shard layout stays the same.
 
 ---
 
@@ -258,24 +251,15 @@ Rows are compared by their snapshot line (synced columns only).
 | — | — | new | remote added → **kept** |
 | — | X | Y | added on both with the same id (fixed ids only) → newer `updated_at` wins |
 
-Delete beats edit in every case, and a deleted id is never used again.
+Delete beats edit in every case. A deleted ULID is never used again; a natural id (a tag, say) comes
+back only by being created again after the deletion has synced, which the base then shows as an add.
 
-Only rows in **changed years** are read: local dirty years (§8.2) and years with a shard that differs
-between base and remote (`git diff base..remote` over `.tend/sync/`). Rows are matched by `id` across
-all shards of a year. A row outside these years is identical in all three versions and is skipped.
-The merged result is written back only into the shards of those years.
+Rows are matched by `id` across all shards of a table.
 
-**No base** (first connect of a vault that already has data, restore into a non-empty vault, or a
-base commit lost to a force-push): fall back to two-way rules —
-
-| Case | Result |
-|---|---|
-| Row on both sides, different | newer `updated_at` wins |
-| Row on one side, with a tombstone on the other (`deleted/`) | deleted |
-| Row on one side, no tombstone | kept (absence is not deletion) |
-| Natural-id row (§4.1) created after its tombstone | kept: it is a re-creation (delete, then add the same tag again) |
-
-Tombstones exist for this fallback; with a base, deletions are seen by comparing against it.
+**There is always a base.** A vault is connected only to an empty remote (its first push is the
+base), and every other device starts by restoring into an empty folder (the restored commit is its
+base) (§14). If the base commit can no longer be read (the remote was rewritten), sync stops with
+`SYNC_BASE_LOST` and asks for a fresh restore; it never guesses.
 
 ### 9.2 Unique keys after merging
 
@@ -367,21 +351,19 @@ syncs, so other devices show "file not synced". Skipped files are listed in Sett
 lock (one run at a time; triggers during a run coalesce into it)
 → save open note · pause watcher
 → fetch
-→ idle check: no dirty years · git status clean · remote head = last_synced_commit  →  stop
-→ rebuild dirty years' shards (§8.2)
-→ read base, local and remote changed rows · reconcile (§9)
-→ apply (§10) · write changed shards · commit (two parents if the remote moved)
+→ rebuild shards (§8.2)
+→ idle check: git status clean · remote head = last_synced_commit  →  stop
+→ read base, local and remote rows · reconcile (§9)
+→ apply (§10) · rebuild shards · commit on top of the remote head
 → push if ahead (retry once after a rejection)
-→ in one transaction: last_synced_seq = max(changes.seq), last_synced_commit = pushed head
-→ record pull/push in activity · resume watcher · update status
+→ sync_state: last_synced_commit = pushed head, last run and result
+→ resume watcher · reload stores · update status
 ```
 
-- The markers move **only after a successful push**. A failed or cut-short run leaves them, so the
-  next run sees the same changes again.
-- Rows written by the apply step also enter `changes`; recording `last_synced_seq` at the end keeps
-  them from counting as local changes next time.
-- A crash after the push but before the markers are saved is harmless: the next run reconciles the
-  same data, finds nothing new to commit and only moves the markers.
+- The base moves **only after a successful push**. A failed or cut-short run leaves it, so the next
+  run sees the same changes again.
+- A crash after the push but before `sync_state` is saved is harmless: the next run reconciles the
+  same data, finds nothing new to commit and only moves the base.
 - **On app open** the order is always: open the vault → scan → sync. Edits made while Tend
   was closed are indexed (with their `updated_at`) before the merge sees them.
 
@@ -390,15 +372,14 @@ lock (one run at a time; triggers during a run coalesce into it)
 ## 14. Connecting and restoring
 
 **Connect** (Settings → Sync): URL, branch (default `main`), optional username, token, author
-name/email (default "Tend"), device name (default: the Mac's name), interval.
-The remote must be empty or hold a valid manifest. Tend clones into a temporary folder, reconciles
-with the local vault (two-way, §9.1), moves `.git` into the vault, commits and pushes. If any step
-fails, the temporary clone is removed and the vault is untouched.
+name/email (default "Tend"), device name (default: the Mac's name), interval. The remote must be
+**empty**; one that already has commits is refused (`SYNC_REMOTE_NOT_EMPTY`: "This repo already
+has a vault. Restore it into an empty folder instead."). Tend writes the shards, commits, pushes and
+records that commit as the base. If any step fails, nothing in the vault changes except `.git`.
 
-**Restore** (Start page, or Settings → Sync on an empty vault): choose an empty folder, URL, token
-(branch and username under "More") → clone → validate manifest → create the database → **write
-files → import rows → scan** → set the markers → open. On a vault that already has data,
-Settings offers no restore; connecting reconciles instead.
+**Restore** (Start page only): choose an empty folder, URL, token (branch and username under
+"More") → clone → validate manifest → create the database → **write files → import rows → scan**
+→ record the cloned commit as the base → open.
 
 **Disconnect:** clears the remote, token, schedule and markers; `.git` and all data stay.
 
@@ -424,21 +405,22 @@ Settings offers no restore; connecting reconciles instead.
 
 - **Dock icon** next to the timer chip: ✓ synced · ↻ syncing · ! error (red); hover = last sync;
   click → Settings → Sync.
-- **Settings → Sync:** the connection fields, token status, interval, last sync, status, snapshot
-  size, skipped files, recent activity (last ~50), Sync now, Disconnect, the public-repo warning.
+- **Settings → Sync:** the connection fields, token status, interval, last sync and its result,
+  snapshot size, skipped files, Sync now, Disconnect, the public-repo warning.
 
 ## 17. Errors (registry)
 
 `SYNC_AUTH` · `SYNC_OFFLINE` · `SYNC_TIMEOUT` · `SYNC_NOT_A_VAULT` · `SYNC_INVALID_MANIFEST` ·
-`SNAPSHOT_TOO_NEW` · `SYNC_REJECTED` · `SYNC_RECONCILE_FAILED` · `SYNC_APPLY_FAILED`.
+`SNAPSHOT_TOO_NEW` · `SYNC_REMOTE_NOT_EMPTY` · `SYNC_BASE_LOST` · `SYNC_REJECTED` ·
+`SYNC_RECONCILE_FAILED` · `SYNC_APPLY_FAILED`.
 
 ## 18. Code layout
 
 ```text
 src-tauri/src/sync/
-  git.rs         fetch, read trees and diffs, commit (incl. two-parent), push, clone
-  shards.rs      year of a row, dirty years, rebuild a year's shards, read/write deleted/, manifest
-  reconcile.rs   §9: three-way and two-way rules, unique keys, reference fixes (pure functions)
+  git.rs         fetch, read trees, commit on top of the remote head, push, clone
+  shards.rs      export rows to year shards and fixed.jsonl, read them back, manifest
+  reconcile.rs   §9: three-way merge, unique keys, reference fixes (pure functions)
   apply.rs       §10: staging, transaction, file moves, scan, reload
   token.rs       Keychain
   schedule.rs    triggers, lock, backoff, close
@@ -446,7 +428,7 @@ src-tauri/src/sync/
 ```
 
 Commands: `sync_config_get` · `sync_config_set` · `sync_token_set` · `sync_token_clear` ·
-`sync_now` · `sync_status` · `sync_connect` · `sync_restore` · `sync_disconnect` · `activity_recent`.
+`sync_now` · `sync_status` · `sync_connect` · `sync_restore` · `sync_disconnect`.
 
 ---
 
@@ -495,16 +477,16 @@ Failures shrink to the smallest sequence of steps that reproduces them.
 
 ## 20. Open items
 
-- **Code to change before sync:** the `changes`, `sync_state` and `access` tables, and open → scan →
-  sync ordering.
 - **Many files:** at tens of thousands of note files, `git status` and the scan walk every file;
   measure with libgit2 before release.
+- **Large vaults:** the `changes` table (§8.2) if the full shard rebuild gets slow.
 
 ## 21. Risks
 
 - **Clock skew** decides "newest" wrongly when both sides edited the same row (§7).
 - **Outside rename plus edit** gives a note a new id (§11.3).
-- **"Newest wins" discards** the other edit with no copy — by decision.
+- **"Newest wins" discards** the other edit with no copy — by decision. A note or task deleted on
+  another device while it is open here can be kept as a new one (`decisions.md`).
 - **Schema skew** between devices: an older app refuses newer snapshots (`SNAPSHOT_TOO_NEW`).
 - **Long DB apply** makes app commands wait (§10).
 - **Repo size limits** on hosts (GitHub soft 1–5 GB; 100 MB per file).
@@ -514,21 +496,21 @@ Failures shrink to the smallest sequence of steps that reproduces them.
 - **OpenSSL vendored on macOS** (+size, perl at build); **SecureTransport is deprecated** by Apple.
 - **Public repos** publish everything (warning only).
 - **The UI loads every row** (task list, notes tree). Fine at 10k, slow near 100k; paginated lists
-  and SQLite full-text search are a separate project, guided by `access`.
+  and SQLite full-text search are a separate project.
 
 ## 22. Acceptance criteria
 
-**Repository** — connect to an empty remote · connect to an existing Tend remote · unrelated remote
-refused · token works and lives only in the Keychain.
+**Repository** — connect to an empty remote · a non-empty remote refused on connect · restore from a
+Tend remote into an empty folder · unrelated remote refused · token works and lives only in the
+Keychain.
 
 **Data** — every synced table has `id` + `updated_at` · notes/attachments model in place · renaming
-a note renames the file without breaking links · deletions recorded (incl. cascades) and kept ·
-`changes` records every synced write · name rule with `_1` suffixes.
+a note renames the file without breaking links · name rule with `_1` suffixes.
 
 **Sync** — pull always before push · a change on one side always survives · same row edited on both:
 newer wins, older gone · delete beats edit · unique-key collisions merged (§9.2) · no Git merge or
 conflict ever surfaces · non-fast-forward push retried once · repeated syncs change nothing · an
-idle sync writes nothing · only dirty years are rebuilt · failed runs leave a consistent vault and
+idle sync writes nothing · a lost base stops sync and asks for a restore · failed runs leave a consistent vault and
 retry later · simulation test passes.
 
 **Files** — notes and attachments sync as files · WAL/SHM and staging never committed · files over
@@ -538,4 +520,4 @@ retry later · simulation test passes.
 saved before and reloaded after · open / interval / close (10 s) / Sync now all work · status icon
 and Settings section show the state · auth failures stop auto-sync.
 
-**Restore** — Start page and Settings (empty vault) restore a vault completely.
+**Restore** — the Start page restores a vault completely into an empty folder.

@@ -371,16 +371,9 @@ fn underscore_is_not_a_like_wildcard() {
 #[test]
 fn rescan_without_changes_writes_nothing() {
     let mut f = fixture(&[("work/a.md", "# A")]);
-    let before: i64 = f
-        .conn
-        .query_row("SELECT count(*) FROM activity", [], |r| r.get(0))
-        .unwrap();
+    let before = f.conn.total_changes();
     scan(&mut f.conn, &f.dir, false).unwrap();
-    let after: i64 = f
-        .conn
-        .query_row("SELECT count(*) FROM activity", [], |r| r.get(0))
-        .unwrap();
-    assert_eq!(before, after);
+    assert_eq!(f.conn.total_changes(), before);
 }
 
 #[test]
