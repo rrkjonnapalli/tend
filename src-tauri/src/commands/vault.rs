@@ -11,7 +11,7 @@ use crate::state::AppState;
 use crate::{config, vault};
 
 /// Makes `vault` the open vault and starts what runs alongside it.
-fn activate<R: Runtime>(
+pub(crate) fn activate<R: Runtime>(
     app: &AppHandle<R>,
     state: &AppState,
     vault: crate::state::Vault,

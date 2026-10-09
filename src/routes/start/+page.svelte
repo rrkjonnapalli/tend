@@ -3,6 +3,7 @@
   import { open } from '@tauri-apps/plugin-dialog';
   import Icon from '#lib/components/Icon.svelte';
   import StartChecklist from '#lib/components/StartChecklist.svelte';
+  import StartRestore from '#lib/components/StartRestore.svelte';
   import { vaultAPI } from '#lib/api/vault.ts';
   import { notesAPI } from '#lib/api/notes.ts';
   import type { Skipped } from '#lib/types/note.type.ts';
@@ -84,7 +85,11 @@
 
   async function enter() {
     if (!check) return;
-    await vault.opened(check.path);
+    await openVault(check.path);
+  }
+
+  async function openVault(path: string) {
+    await vault.opened(path);
     nav.replace(routes.notes);
   }
 
@@ -117,6 +122,7 @@
             <div><span class="mono">.tend/tend.db</span><span class="cap">everything else, created if missing</span></div>
           </div>
           {#if failure}<div class="err" role="alert">{failure}</div>{/if}
+          <StartRestore onrestored={openVault} />
         {:else}
           <div class="path">
             <span class="folder"><Icon name="folder" size={15} /></span>

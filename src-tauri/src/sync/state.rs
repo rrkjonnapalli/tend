@@ -48,3 +48,12 @@ pub fn record(conn: &Connection, result: &str) -> AppResult<()> {
     )?;
     Ok(())
 }
+
+/// Forgets the base and the pending commit (disconnecting).
+pub fn forget(conn: &Connection) -> AppResult<()> {
+    conn.execute(
+        "UPDATE sync_state SET last_synced_commit = NULL, pending_commit = NULL WHERE id = 1",
+        [],
+    )?;
+    Ok(())
+}

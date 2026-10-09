@@ -4,6 +4,7 @@ import { messageOf } from '#lib/errors/app-error.ts';
 import type { Restore, VaultProblem } from '#lib/types/vault.type.ts';
 import { settings } from './settings.svelte.ts';
 import { tagPool } from './tags.svelte.ts';
+import { sync } from './sync.svelte.ts';
 
 class VaultStore {
   path = $state<string | null>(null);
@@ -49,7 +50,7 @@ class VaultStore {
 
   /** Everything read once per vault. */
   #loadAll = async () => {
-    await Promise.all([settings.load(), tagPool.load()]);
+    await Promise.all([settings.load(), tagPool.load(), sync.load()]);
   };
 }
 

@@ -1,10 +1,11 @@
 <script lang="ts">
-  // The sections bar at the bottom: Notes, Tasks, People, plus timers, settings and feedback.
+  // The sections bar at the bottom: Notes, Tasks, People, plus timers, sync, settings and feedback.
   import type { IconName } from '#lib/types/icon.type.ts';
   import { page } from '$app/state';
   import Icon from './Icon.svelte';
   import FeedbackPopover from './FeedbackPopover.svelte';
   import TimerChip from './TimerChip.svelte';
+  import SyncIcon from './SyncIcon.svelte';
   import { ui } from '#lib/stores/ui.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
 
@@ -44,6 +45,7 @@
       {/each}
       <div class="right">
         <TimerChip />
+        <SyncIcon />
         <a
           class="ico"
           class:cur={isCurrent(routes.settings)}

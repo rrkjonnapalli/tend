@@ -118,3 +118,11 @@ pub const SYNC_BASE_LOST: ErrorDef = def(
 );
 pub const SYNC_NOT_A_VAULT: ErrorDef =
     def("SYNC_NOT_A_VAULT", "This repo doesn’t hold a Tend vault.");
+pub const SYNC_TOKEN: ErrorDef = def(
+    "SYNC_TOKEN",
+    "Couldn’t use the Keychain for the sync token.",
+);
+pub const RESTORE_NOT_EMPTY: ErrorDef = def(
+    "RESTORE_NOT_EMPTY",
+    "Choose an empty folder to restore into.",
+);

@@ -12,6 +12,7 @@ pub mod labels;
 pub mod notes;
 pub mod people;
 pub mod statuses;
+pub mod sync;
 pub mod tags;
 pub mod tasks;
 pub mod timers;

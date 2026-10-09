@@ -1,4 +1,4 @@
-# Review list — sync S1–S4 (built while you were away, 2026-10-09)
+# Review list — sync S1–S5 (2026-10-09)
 
 Things decided or found while building; each needs a look, a yes, or a no.
 
@@ -43,16 +43,30 @@ Things decided or found while building; each needs a look, a yes, or a no.
 11. **Auth:** HTTPS with a token as the password; username defaults to `x-access-token` (works for
     GitHub). At most 3 credential attempts per operation.
 
-## Not done (S5 and later)
+## S5: UI and schedule (worth a look)
 
-12. Tauri commands, Settings → Sync, Start-page restore, the dock icon, the schedule (open,
-    interval, close with 10 s), Keychain for the token, pausing the watcher during an apply and
-    reloading stores afterwards. Until then sync runs only in tests.
-13. An end-to-end simulation through real databases and Git (the snapshot-level one is fast but
+12. **Token** in the macOS Keychain only (`keyring-core` + `apple-native-keyring-store`), service
+    `app.tend.sync`, one entry per remote URL. Never in the vault, the database, the config file or
+    the UI (`sync_status` says only whether one is saved). Other platforms have no store yet: sync
+    there reports `SYNC_TOKEN`.
+13. **Settings** (URL, branch, username, interval) live in the app config file, keyed by vault
+    path. **No device name**, and commits are authored "Tend <tend@localhost>" (no UI for it).
+14. **Runner:** one thread per connected vault, its own DB connection (busy timeout 5 s). Runs on
+    open (after the scan), every 15 min by default (off / 15 / 60 in Settings), on Sync now, and on
+    quit (at most 10 s). Failures back off 1, 2, 4 … 60 min; a bad token, a lost base or a newer
+    vault stop automatic runs until Sync now or a new token. One toast on the first failure, then
+    only the dock icon.
+15. **The watcher is not paused** during an apply: it re-indexes what the apply already wrote, which
+    is harmless. A run that changed rows reloads every store.
+16. **Disconnect** removes the settings, the token and the base; `.git` and all data stay.
+    Connecting again needs a new, empty repo (spec §14).
+17. **Left out for now:** snapshot size and the list of files over 100 MB in Settings (spec §16).
+18. **Not checked by eye:** I couldn't screenshot or click the app from here (no screen-recording
+    or accessibility access). `tauri dev` starts cleanly; please look at Settings → Sync, the
+    dock icon and Start → Restore from Git. There are no mockups for them; they reuse the
+    Settings and Start page styles.
+
+## Not done
+
+19. An end-to-end simulation through real databases and Git (the snapshot-level one is fast but
     missed #7). Worth adding before release.
-
-## To do when you're back
-
-14. **Your `sample` vault's database** still has the old `deletions` / `activity` tables and
-    their triggers, and no `sync_state` / `path_log` reason `sync`: the bundled Tend.app was
-    running, so I didn't touch it. With Tend closed, ask me to update it (backup first, as before).

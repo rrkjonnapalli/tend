@@ -4,10 +4,11 @@
   import LabelsEditor from '#lib/components/LabelsEditor.svelte';
   import SettingsGeneral from '#lib/components/SettingsGeneral.svelte';
   import SettingsPalette from '#lib/components/SettingsPalette.svelte';
+  import SettingsSync from '#lib/components/SettingsSync.svelte';
   import { nav } from '#lib/stores/history.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
 
-  /** The query parameter holding the open section. */
+  /** The query parameter holding the open section (see routes.settingsSection). */
   const SECTION_PARAM = 's';
 
   const sections = [
@@ -15,6 +16,7 @@
     { id: 'notes', label: 'Notes', sub: 'Notes folder and editor.' },
     { id: 'tasks', label: 'Tasks', sub: 'Statuses, board columns and labels.' },
     { id: 'people', label: 'People', sub: 'Contacts and birthdays.' },
+    { id: 'sync', label: 'Sync', sub: 'Keep this vault in a Git repo, and in step with your other devices.' },
     { id: 'palette', label: 'Command palette', sub: 'Every command, with its shortcut. Press ⌘K anywhere to open the palette.' },
   ] as const;
 
@@ -22,7 +24,7 @@
   const current = $derived(sections.find((s) => s.id === requested) ?? sections[0]);
 
   function show(id: string) {
-    nav.replace(`${routes.settings}?${SECTION_PARAM}=${id}`);
+    nav.replace(routes.settingsSection(id));
   }
 </script>
 
@@ -49,6 +51,8 @@
     {:else if current.id === 'tasks'}
       <StatusesEditor />
       <LabelsEditor />
+    {:else if current.id === 'sync'}
+      <SettingsSync />
     {:else if current.id === 'palette'}
       <SettingsPalette />
     {:else}

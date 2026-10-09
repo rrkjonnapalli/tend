@@ -27,6 +27,7 @@ mod util;
 mod vault;
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use tauri::{AppHandle, Builder, Manager, Runtime};
 
@@ -41,13 +42,48 @@ fn on_vault_open<R: Runtime>(
     vault: &Arc<Vault>,
 ) -> AppResult<()> {
     notes::watcher::rescan(vault)?;
-    let app = app.clone();
+    let watcher_app = app.clone();
     let guard = notes::watcher::start(vault.clone(), move |v| {
         // A failed rescan leaves the index as it was; the next event or reload retries.
-        let _ = notes::watcher::rescan_and_emit(&app, v);
+        let _ = notes::watcher::rescan_and_emit(&watcher_app, v);
     })?;
     state.set_guard(guard);
+    start_sync(app, state, vault);
     Ok(())
+}
+
+/// Starts the sync runner when the vault is connected; its first run comes right after the scan.
+pub(crate) fn start_sync<R: Runtime>(app: &AppHandle<R>, state: &AppState, vault: &Vault) {
+    let Some(cfg) = app.try_state::<ConfigDir>() else {
+        return;
+    };
+    if config::sync_config(&cfg.0, &vault.root).is_none() {
+        return;
+    }
+    let place = sync::runner::Place {
+        root: vault.root.clone(),
+        config_dir: cfg.0.clone(),
+    };
+    state.set_runner(Some(sync::runner::Runner::start(app.clone(), place)));
+}
+
+/// How long quitting waits for the last sync.
+const CLOSE_SYNC_LIMIT: Duration = Duration::from_secs(10);
+
+/// On quit, a connected vault syncs once more (at most `CLOSE_SYNC_LIMIT`), then the app exits.
+fn on_exit<R: Runtime>(app: &AppHandle<R>, api: &tauri::ExitRequestApi) {
+    let state = app.state::<AppState>();
+    let connected = state.with_runner(|_| ()).is_some();
+    if !connected || !state.start_closing() {
+        return;
+    }
+    api.prevent_exit();
+    let app = app.clone();
+    std::thread::spawn(move || {
+        app.state::<AppState>()
+            .with_runner(|r| r.close(CLOSE_SYNC_LIMIT));
+        app.exit(0);
+    });
 }
 
 /// App state and every command. Shared by the real app and the IPC tests.
@@ -57,6 +93,13 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
         .invoke_handler(tauri::generate_handler![
             commands::vault::vault_open,
             commands::vault::vault_restore,
+            commands::sync::sync_status,
+            commands::sync::sync_connect,
+            commands::sync::sync_restore,
+            commands::sync::sync_now,
+            commands::sync::sync_set_interval,
+            commands::sync::sync_token_set,
+            commands::sync::sync_disconnect,
             commands::app::settings_all,
             commands::app::settings_set,
             commands::notes::skipped_items,
@@ -139,7 +182,12 @@ pub fn run() {
         });
     #[cfg(desktop)]
     let builder = builder.plugin(tauri_plugin_window_state::Builder::default().build());
-    with_commands(builder)
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+    let app = with_commands(builder)
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+    app.run(|handle, event| {
+        if let tauri::RunEvent::ExitRequested { api, .. } = &event {
+            on_exit(handle, api);
+        }
+    });
 }

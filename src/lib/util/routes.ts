@@ -13,6 +13,8 @@ export const routes = {
   tasks: '/tasks',
   people: '/people',
   settings: '/settings',
+  /** A Settings section, such as `sync`. */
+  settingsSection: (id: string) => `/settings?s=${id}`,
   notesFolder: (path: string) => `/notes${folderQuery(path)}`,
   note: (id: string, { edit = false }: { edit?: boolean } = {}) => `/notes/${id}${edit ? '?edit=1' : ''}`,
   tasksFolder: (path: string) => `/tasks${folderQuery(path)}`,

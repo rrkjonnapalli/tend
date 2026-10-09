@@ -113,8 +113,8 @@ attachments  id · path · name · mime_type · size_bytes · sha256 · updated_
 There is no tombstone table and no write log: with a base, a deletion is simply a row the base has
 and one side no longer has (§9.1).
 
-Sync configuration (remote URL, branch, username, author, device name, interval, last result) is
-local too and never lives in the vault (§5).
+Sync configuration (remote URL, branch, username, author, interval) is local too: it lives in the
+app config folder, keyed by vault path, never in the vault (§5). The last result is in `sync_state`.
 
 ### 4.4 Name rule
 
@@ -378,14 +378,19 @@ lock (one run at a time; triggers during a run coalesce into it)
 
 ## 14. Connecting and restoring
 
-**Connect** (Settings → Sync): URL, branch (default `main`), optional username, token, author
-name/email (default "Tend"), device name (default: the Mac's name), interval. The remote must be
-**empty**; one that already has commits is refused (`SYNC_REMOTE_NOT_EMPTY`: "This repo already
-has a vault. Restore it into an empty folder instead."). Tend writes the shards, commits, pushes and
-records that commit as the base. If any step fails, nothing in the vault changes except `.git`.
+**Connect** (Settings → Sync): URL and token, with branch (default `main`) and username (default
+`x-access-token`) under "More". Commits are authored "Tend <tend@localhost>"; there is no device
+name. New connections sync every 15 min. The remote must be **empty**; one that already has commits
+is refused (`SYNC_REMOTE_NOT_EMPTY`: "This repo already has a vault. Restore it into an empty folder
+instead."). Tend writes the shards, commits, pushes and records that commit as the base. If any step
+fails, nothing in the vault changes except `.git`, and the token is removed again.
 
-**Restore** (Start page only): choose an empty folder, URL, token (branch and username under
-"More") → clone → validate manifest → create the database → **write files → import rows → scan**
+**Token:** kept only in the system credential store (the macOS Keychain, service `app.tend.sync`,
+account = the remote URL). It is never written to the vault, the database or a config file, and
+never sent to the UI. The other sync settings live in the app config folder, keyed by vault path.
+
+**Restore** (Start page only): choose an empty folder (`RESTORE_NOT_EMPTY` otherwise), URL, token
+(branch and username under "More") → clone → validate manifest → create the database → **write files → import rows → scan**
 → record the cloned commit as the base → open.
 
 **Disconnect:** clears the remote, token, schedule and markers; `.git` and all data stay.
@@ -410,10 +415,19 @@ records that commit as the base. If any step fails, nothing in the vault changes
 
 ## 16. Status UI
 
-- **Dock icon** next to the timer chip: ✓ synced · ↻ syncing · ! error (red); hover = last sync;
-  click → Settings → Sync.
-- **Settings → Sync:** the connection fields, token status, interval, last sync and its result,
-  snapshot size, skipped files, Sync now, Disconnect, the public-repo warning.
+- **Dock icon** next to the timer chip: ✓ synced · ↻ syncing · ! error (red); hover = last sync
+  or the error; click → Settings → Sync. Hidden when the vault isn't connected.
+- **Settings → Sync:** not connected: the connect fields and Connect. Connected: URL, branch,
+  token status (Replace / Add), interval (off / 15 min / 1 h), last sync and its result, Sync now,
+  Disconnect (with a confirmation), the public-repo warning.
+- A run that changed rows reloads every store (`sync:applied`); an open note or task that is gone
+  afterwards offers to keep it (decisions: keep-deleted).
+- The runner works on its own database connection (5 s busy timeout), so commands never wait on
+  the network. The file watcher keeps running during an apply; it only re-indexes what the apply
+  already wrote.
+- Later: snapshot size and the list of files left out (over 100 MB).
+
+---
 
 ## 17. Errors (registry)
 
@@ -431,12 +445,12 @@ src-tauri/src/sync/
   git.rs         the libgit2 boundary: fetch, read trees, build a tree, commit, push  (S4)
   state.rs       the sync_state row: base, pending commit, last result               (S4)
   run.rs         connect, restore, one sync run (retried once on a rejected push)     (S4)
-  token.rs       Keychain                                                             (S5)
-  schedule.rs    triggers, lock, backoff, close                                       (S5)
+  token.rs       the token in the Keychain                                            (S5)
+  runner.rs      one thread per connected vault: triggers, backoff, close, UI events  (S5)
 ```
 
-Commands: `sync_config_get` · `sync_config_set` · `sync_token_set` · `sync_token_clear` ·
-`sync_now` · `sync_status` · `sync_connect` · `sync_restore` · `sync_disconnect`.
+Commands (`commands/sync.rs`): `sync_status` · `sync_connect` · `sync_restore` · `sync_now` ·
+`sync_set_interval` · `sync_token_set` · `sync_disconnect`.
 
 ---
 

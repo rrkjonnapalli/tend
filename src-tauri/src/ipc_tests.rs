@@ -255,3 +255,55 @@ fn timers_and_feedback_through_ipc() {
         .unwrap_err();
     assert_eq!(err["key"], "STATUS_DEFAULT");
 }
+
+#[test]
+fn sync_connects_restores_and_disconnects_through_ipc() {
+    let server = tempfile::tempdir().unwrap();
+    git2::Repository::init_bare(server.path()).unwrap();
+    let url = server.path().to_string_lossy().into_owned();
+    let setup = json!({ "url": url, "token": "secret" });
+
+    let h = Harness::new();
+    h.ok("note_create", json!({ "folder": "", "title": "Plan" }));
+    let off = h.ok("sync_status", json!({}));
+    assert_eq!(off["config"], Value::Null);
+    h.ok("sync_connect", json!({ "setup": setup }));
+    let on = h.ok("sync_status", json!({}));
+    assert_eq!(on["config"]["branch"], "main");
+    assert_eq!(on["hasToken"], true);
+    assert!(on.get("token").is_none(), "the token never reaches the UI");
+
+    let refused = h
+        .call("sync_connect", json!({ "setup": setup }))
+        .unwrap_err();
+    assert_eq!(refused["key"], "SYNC_REMOTE_NOT_EMPTY");
+
+    let copy = tempfile::tempdir().unwrap();
+    h.ok(
+        "sync_restore",
+        json!({ "path": copy.path(), "setup": setup }),
+    );
+    assert!(copy.path().join("plan.md").is_file());
+    let restored = h.ok("sync_status", json!({}));
+    assert_eq!(restored["config"]["url"], url);
+
+    h.ok("sync_disconnect", json!({}));
+    let off = h.ok("sync_status", json!({}));
+    assert_eq!(off["config"], Value::Null);
+    assert_eq!(off["hasToken"], false);
+}
+
+#[test]
+fn restore_needs_an_empty_folder() {
+    let h = Harness::new();
+    let full = tempfile::tempdir().unwrap();
+    std::fs::write(full.path().join("a.md"), "# A").unwrap();
+    let setup = json!({ "url": "https://example.com/x.git", "token": "t" });
+    let refused = h
+        .call(
+            "sync_restore",
+            json!({ "path": full.path(), "setup": setup }),
+        )
+        .unwrap_err();
+    assert_eq!(refused["key"], "RESTORE_NOT_EMPTY");
+}

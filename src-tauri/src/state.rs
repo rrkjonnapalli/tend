@@ -1,12 +1,14 @@
 //! The open vault, shared by every command.
 
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, RwLock};
 
 use rusqlite::Connection;
 
 use crate::error::{errors, AppResult};
 use crate::notes::Skipped;
+use crate::sync::runner::Runner;
 
 pub struct Vault {
     pub root: PathBuf,
@@ -53,6 +55,10 @@ pub type Guard = Box<dyn Send + Sync>;
 pub struct AppState {
     vault: RwLock<Option<Arc<Vault>>>,
     guard: Mutex<Option<Guard>>,
+    /// The open vault's sync runner, when it is connected.
+    runner: Mutex<Option<Runner>>,
+    /// Set once the app has started quitting, so the last sync runs only once.
+    closing: AtomicBool,
 }
 
 impl AppState {
@@ -72,12 +78,33 @@ impl AppState {
     }
 
     pub fn set(&self, vault: Arc<Vault>) {
-        // Drop the old watcher before the new vault takes over.
+        // Stop the old vault's watcher and sync runner before the new vault takes over.
         *self.guard.lock().unwrap_or_else(|e| e.into_inner()) = None;
+        self.set_runner(None);
         *self.vault.write().unwrap_or_else(|e| e.into_inner()) = Some(vault);
     }
 
     pub fn set_guard(&self, guard: Guard) {
         *self.guard.lock().unwrap_or_else(|e| e.into_inner()) = Some(guard);
+    }
+
+    /// Replaces the sync runner; the old one stops.
+    pub fn set_runner(&self, runner: Option<Runner>) {
+        let mut slot = self.runner.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(old) = slot.take() {
+            old.stop();
+        }
+        *slot = runner;
+    }
+
+    /// Runs `f` with the sync runner, when the open vault has one.
+    pub fn with_runner<T>(&self, f: impl FnOnce(&Runner) -> T) -> Option<T> {
+        let slot = self.runner.lock().unwrap_or_else(|e| e.into_inner());
+        slot.as_ref().map(f)
+    }
+
+    /// True the first time only: the app is quitting now.
+    pub fn start_closing(&self) -> bool {
+        !self.closing.swap(true, Ordering::SeqCst)
     }
 }

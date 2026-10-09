@@ -55,6 +55,11 @@ pub struct Check {
 pub const TEND_DIR: &str = ".tend";
 /// Attached files, relative to the vault (also the prefix of their `attachments.path`).
 pub const ATTACHMENTS_DIR: &str = ".tend/attachments";
+/// The vault's database file.
+pub fn db_path(root: &Path) -> std::path::PathBuf {
+    root.join(TEND_DIR).join(DB_FILE)
+}
+
 /// Sync snapshots, relative to the vault (see `sync::shards`).
 pub const SYNC_DIR: &str = ".tend/sync";
 const DB_FILE: &str = "tend.db";
@@ -162,7 +167,7 @@ pub fn inspect(root: &Path) -> Option<Confirm> {
 }
 
 /// Entries in `root` that aren't hidden.
-fn visible_entries(root: &Path) -> usize {
+pub fn visible_entries(root: &Path) -> usize {
     let Ok(entries) = fs::read_dir(root) else {
         return 0;
     };

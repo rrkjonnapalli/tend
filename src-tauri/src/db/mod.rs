@@ -12,6 +12,7 @@ use rusqlite_migration::{Migrations, M};
 use crate::error::{errors, AppError, AppResult};
 
 pub const APP_ID: &str = "tend";
+const BUSY_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// Migration n is `STEPS[n - 1]`. Each step is checked for broken foreign keys before it commits.
 const STEPS: &[M<'static>] = &[M::up(include_str!("../../../docs/schema.sql")).foreign_key_check()];
@@ -46,6 +47,8 @@ pub fn open(path: &Path) -> AppResult<(Connection, Opened)> {
     let mut conn = Connection::open(path)?;
     conn.pragma_update(None, "foreign_keys", "ON")?;
     conn.pragma_update(None, "journal_mode", "WAL")?;
+    // The app and the sync runner each hold a connection; a writer waits this long for the other.
+    conn.busy_timeout(BUSY_TIMEOUT)?;
     MIGRATIONS.to_latest(&mut conn)?;
     let opened = match from {
         None => Opened::Created,
