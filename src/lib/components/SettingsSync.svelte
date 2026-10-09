@@ -3,8 +3,9 @@
   // token (kept in the Keychain only), the schedule, the last run, Sync now and Disconnect.
   import ConfirmDialog from './ConfirmDialog.svelte';
   import SyncFields from './SyncFields.svelte';
+  import SyncInterval from './SyncInterval.svelte';
   import { plainText } from '#lib/actions/plain-text.action.ts';
-  import { emptySetup, publicRepoWarning, syncIntervals } from '#lib/config/sync.config.ts';
+  import { emptySetup, publicRepoWarning } from '#lib/config/sync.config.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
   import { sync } from '#lib/stores/sync.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
@@ -87,17 +88,8 @@
 
   <section class="group">
     <h2 class="h2">Schedule</h2>
-    <span class="cap">Tend also syncs when the vault opens and when you quit.</span>
-    {#each syncIntervals as option (option.minutes)}
-      <label class="check">
-        <input
-          type="radio"
-          name="interval"
-          checked={config.intervalMinutes === option.minutes}
-          onchange={() => sync.setInterval(option.minutes)} />
-        {option.label}
-      </label>
-    {/each}
+    <span class="cap">Minutes between automatic syncs. Tend also syncs when the vault opens and when you quit.</span>
+    <SyncInterval minutes={config.intervalMinutes} onsave={sync.setInterval} />
   </section>
 
   <section class="group">
@@ -188,18 +180,6 @@
 
   .fld:focus {
     border-color: var(--primary);
-  }
-
-  .check {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font: 400 14px/20px var(--font-ui);
-    cursor: pointer;
-  }
-
-  .check input {
-    accent-color: var(--primary);
   }
 
   .row {

@@ -66,7 +66,7 @@ Each can come back later; none changes the shard layout.
 13. **Settings** (URL, branch, username, interval) live in the app config file, keyed by vault
     path. **No device name**, and commits are authored "Tend <tend@localhost>" (no UI for it).
 14. **Runner:** one thread per connected vault, its own DB connection (busy timeout 5 s). Runs on
-    open (after the scan), every 15 min by default (off / 15 / 60 in Settings), on Sync now, and on
+    open (after the scan), every 15 min by default (any 0–1440 minutes in Settings, 0 = off), on Sync now, and on
     quit (at most 10 s). Failures back off 1, 2, 4 … 60 min; a bad token, a lost base or a newer
     vault stop automatic runs until Sync now or a new token. One toast on the first failure, then
     only the dock icon.

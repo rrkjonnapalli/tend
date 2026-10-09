@@ -272,8 +272,21 @@ fn sync_connects_restores_and_disconnects_through_ipc() {
     assert_eq!(on["config"]["branch"], "main");
     assert_eq!(on["hasToken"], true);
     assert!(on.get("token").is_none(), "the token never reaches the UI");
+    assert_eq!(on["config"]["intervalMinutes"], 15);
 
-    let refused = h
+    let too_long = h
+        .call("sync_set_interval", json!({ "minutes": 1441 }))
+        .unwrap_err();
+    assert_eq!(too_long["key"], "SYNC_INTERVAL");
+    h.ok("sync_set_interval", json!({ "minutes": 30 }));
+    assert_eq!(
+        h.ok("sync_status", json!({}))["config"]["intervalMinutes"],
+        30
+    );
+
+    // Another vault can't connect to a repo that now holds one.
+    let other = Harness::new();
+    let refused = other
         .call("sync_connect", json!({ "setup": setup }))
         .unwrap_err();
     assert_eq!(refused["key"], "SYNC_REMOTE_NOT_EMPTY");

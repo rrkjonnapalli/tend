@@ -405,7 +405,7 @@ never sent to the UI. The other sync settings live in the app config folder, key
 
 ## 15. Scheduling, close, failures
 
-- **Triggers:** app open (after the scan, §13) · interval (off / 15 min / 1 h) · app close ·
+- **Triggers:** app open (after the scan, §13) · interval (minutes, 0–1440, 0 = off, default 15) · app close ·
   **Sync now**.
 - **Close:** Tauri close is intercepted; "Syncing…" shows; the app quits when pull (and push, if
   needed) succeed or after **10 s**. A cut-short run isn't treated as successful; the next open
@@ -421,7 +421,7 @@ never sent to the UI. The other sync settings live in the app config folder, key
 - **Dock icon** next to the timer chip: ✓ synced · ↻ syncing · ! error (red); hover = last sync
   or the error; click → Settings → Sync. Hidden when the vault isn't connected.
 - **Settings → Sync:** not connected: the connect fields and Connect. Connected: URL, branch,
-  token status (Replace / Add), interval (off / 15 min / 1 h), last sync and its result, Sync now,
+  token status (Replace / Add), interval (minutes, edited in place: pencil, then ✓ / ✕), last sync and its result, Sync now,
   Disconnect (with a confirmation), the public-repo warning.
 - A run that changed rows reloads every store (`sync:applied`); an open note or task that is gone
   afterwards offers to keep it (decisions: keep-deleted).

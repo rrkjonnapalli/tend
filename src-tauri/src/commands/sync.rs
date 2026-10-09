@@ -17,6 +17,8 @@ const DEFAULT_BRANCH: &str = "main";
 const DEFAULT_AUTHOR: &str = "Tend";
 const DEFAULT_EMAIL: &str = "tend@localhost";
 const DEFAULT_INTERVAL_MINUTES: u32 = 15;
+/// The longest wait between automatic syncs: a day.
+const MAX_INTERVAL_MINUTES: u32 = 24 * 60;
 
 /// What Settings → Sync and the dock icon show. Never the token.
 #[derive(Serialize)]
@@ -149,6 +151,9 @@ pub fn sync_set_interval(
     cfg: State<ConfigDir>,
     minutes: u32,
 ) -> AppResult<()> {
+    if minutes > MAX_INTERVAL_MINUTES {
+        return Err(errors::SYNC_INTERVAL.err());
+    }
     let vault = state.vault()?;
     let Some(mut config) = config::sync_config(&cfg.0, &vault.root) else {
         return Err(errors::SYNC_NOT_CONNECTED.err());

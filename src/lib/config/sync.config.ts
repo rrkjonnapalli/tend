@@ -1,12 +1,8 @@
 // Sync choices offered in the UI.
 import type { SyncSetup } from '#lib/types/sync.type.ts';
 
-/** Minutes between automatic syncs; 0 is off (spec §15). */
-export const syncIntervals = [
-  { minutes: 0, label: 'Off' },
-  { minutes: 15, label: 'Every 15 minutes' },
-  { minutes: 60, label: 'Every hour' },
-] as const;
+/** Minutes between automatic syncs: 0 is off, at most a day (matches the backend). */
+export const intervalLimits = { min: 0, max: 24 * 60 } as const;
 
 export const emptySetup = (): SyncSetup => ({ url: '', token: '', branch: '', username: '' });
 
