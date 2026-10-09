@@ -129,6 +129,19 @@ export function timeLabel(hhmm: string): string {
   return `${t.h}:${pad(t.m)} ${t.pm ? 'PM' : 'AM'}`;
 }
 
+/** A moment to the second: 'Today, 5:05:09 PM', 'Yesterday, …', or '10 Oct, …'. */
+export function timestamp(ms: number, now = new Date()): string {
+  const d = new Date(ms);
+  const day = iso(d);
+  const diff = daysBetween(day, today(now));
+  let date = shortDate(day, now);
+  if (diff === 0) date = 'Today';
+  if (diff === 1) date = 'Yesterday';
+  const time = timeLabel(`${pad(d.getHours())}:${pad(d.getMinutes())}`);
+  const [clock, half] = time.split(' ');
+  return `${date}, ${clock}:${pad(d.getSeconds())} ${half}`;
+}
+
 /** 'yyyy-mm-dd' or 'mm-dd' → parts; '' → null; anything else → 'invalid'. */
 export function parseDOB(text: string): DOB | null | 'invalid' {
   const v = text.trim();

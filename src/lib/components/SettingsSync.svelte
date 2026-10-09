@@ -9,7 +9,7 @@
   import { messageOf } from '#lib/errors/app-error.ts';
   import { sync } from '#lib/stores/sync.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
-  import { ago } from '#lib/util/dates.ts';
+  import { timestamp } from '#lib/util/dates.ts';
 
   let setup = $state(emptySetup());
   let busy = $state(false);
@@ -25,7 +25,7 @@
 
   function lastRunText() {
     if (!status?.lastRunAt) return 'Not yet';
-    const when = ago(status.lastRunAt);
+    const when = timestamp(status.lastRunAt);
     if (status.error) return `${when} · ${status.error.message}`;
     if (status.lastResult && status.lastResult !== 'ok') return `${when} · failed (${status.lastResult})`;
     return `${when} · synced`;

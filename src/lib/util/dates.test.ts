@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, ago, dayOfMonth, dueLabel, joinTime, monthBounds, monthGrid, mondayIndex, nextBirthday, parseDOB, parseTime, shortDate, splitTime, timeLabel } from './dates.ts';
+import { addDays, ago, dayOfMonth, dueLabel, joinTime, monthBounds, monthGrid, mondayIndex, nextBirthday, parseDOB, parseTime, shortDate, splitTime, timeLabel, timestamp } from './dates.ts';
 
 const NOW = new Date(2026, 9, 4, 12, 0); // Sun 4 Oct 2026, noon
 
@@ -73,5 +73,14 @@ describe('birthdays', () => {
     expect(nextBirthday({ year: 1995, month: 10, day: 10 }, NOW)).toEqual({ date: '2026-10-10', days: 6, age: 31 });
     expect(nextBirthday({ year: null, month: 10, day: 4 }, NOW)).toEqual({ date: '2026-10-04', days: 0, age: null });
     expect(nextBirthday({ year: 2000, month: 1, day: 1 }, NOW).date).toBe('2027-01-01');
+  });
+});
+
+describe('timestamp', () => {
+  it('shows the day and the time to the second', () => {
+    const at = (day: string, time: string) => new Date(`${day}T${time}`).getTime();
+    expect(timestamp(at('2026-10-04', '17:05:09'), NOW)).toBe('Today, 5:05:09 PM');
+    expect(timestamp(at('2026-10-03', '00:00:00'), NOW)).toBe('Yesterday, 12:00:00 AM');
+    expect(timestamp(at('2026-09-24', '09:30:01'), NOW)).toBe('24 Sep, 9:30:01 AM');
   });
 });
