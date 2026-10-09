@@ -1,5 +1,5 @@
 // The keyboard cursor in a list (notes, tasks, people, the explorer tree). Rows opt in with
-// `data-row`; inside a row, `data-open` is what Enter presses (else the row itself), `data-rename`
+// `data-row`; inside a row, `data-open` is what Enter (or Space) presses (else the row itself), `data-rename`
 // what F2 presses, and `data-toggle` what → and ← press on a folder (`aria-expanded`).
 // ↓ from a field marked `data-row-entry` (the search and add fields above the list) goes to the
 // first row.
@@ -51,7 +51,8 @@ export function rowKey(node: HTMLElement, e: KeyboardEvent): boolean {
     return true;
   }
   if (!row || row !== target) return false;
-  if (e.key === 'Enter') {
+  // Enter or Space opens, like pressing a button.
+  if (e.key === 'Enter' || e.key === ' ') {
     e.preventDefault();
     open(row);
     return true;

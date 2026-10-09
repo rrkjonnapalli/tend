@@ -42,6 +42,10 @@ const glyphs: Record<string, string> = {
   enter: '↵',
   backspace: '⌫',
   escape: 'Esc',
+  arrowup: '↑',
+  arrowdown: '↓',
+  arrowleft: '←',
+  arrowright: '→',
 };
 
 /** "mod+shift+t" → ["⌘", "⇧", "T"] on macOS, ["Ctrl", "Shift", "T"] elsewhere: one key cap each. */

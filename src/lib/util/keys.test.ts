@@ -42,4 +42,8 @@ describe('keyParts', () => {
     expect(matches(at('BracketLeft', '['), 'mod+[', true)).toBe(true);
     expect(matches(at('BracketRight', 'ü'), 'mod+]', true)).toBe(true);
   });
+
+  it('shows arrow keys as arrows', () => {
+    expect(label('mod+shift+arrowdown', true)).toBe('⌘⇧↓');
+  });
 });

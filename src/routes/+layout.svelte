@@ -74,7 +74,9 @@
   });
 
   function commandFor(e: KeyboardEvent) {
-    if (!inVault) return undefined;
+    // In a field, arrow chords (⌘⇧↓ selects to the end) belong to the field.
+    const typingArrow = isTypingTarget(e.target) && e.key.startsWith('Arrow');
+    if (!inVault || typingArrow) return undefined;
     return commands.find((c) => c.keys && matches(e, c.keys) && available(c));
   }
 
@@ -133,8 +135,19 @@
     return focusMain(pageEl, lastInMain);
   }
 
+  /** Space presses a focused link or button-like element, as it does a real button. */
+  function spacePresses(e: KeyboardEvent): boolean {
+    const target = e.target as HTMLElement;
+    const pressable = target.matches('a[href], [role="button"]');
+    const plain = !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey;
+    if (e.key !== ' ' || !plain || !pressable || e.defaultPrevented) return false;
+    e.preventDefault();
+    target.click();
+    return true;
+  }
+
   function onkeydown(e: KeyboardEvent) {
-    if (enterPage(e) || leaveDock(e)) return;
+    if (enterPage(e) || leaveDock(e) || spacePresses(e)) return;
     if (isPaneChord(e)) {
       paneKey(e);
       return;
