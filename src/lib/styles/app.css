@@ -111,7 +111,7 @@ html :is(.link-btn, .text-btn, .crumb, a:not([class])):focus-visible {
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
