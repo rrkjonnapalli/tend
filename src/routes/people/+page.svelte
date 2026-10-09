@@ -112,7 +112,7 @@
 
   .m {
     color: var(--c-muted-2);
-    font-size: 13px;
+    font: var(--text-caption);
   }
 
   .m.soon {

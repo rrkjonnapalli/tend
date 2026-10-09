@@ -10,7 +10,7 @@ describe('hasAllWords', () => {
 
 describe('groupItems', () => {
   it('keeps first-seen group order and the overall index', () => {
-    const item = (key: string, group: string) => ({ key, group, icon: '', label: key, run: () => {} });
+    const item = (key: string, group: string) => ({ key, group, icon: 'note' as const, label: key, run: () => {} });
     const groups = groupItems([item('a', 'Notes'), item('b', 'Tasks'), item('c', 'Notes')]);
     expect(groups.map((g) => [g.name, g.items.map((x) => x.index)])).toEqual([
       ['Notes', [0, 2]],

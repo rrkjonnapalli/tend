@@ -13,9 +13,7 @@
 
   const sections = [
     { id: 'general', label: 'General', sub: 'App-wide preferences.' },
-    { id: 'notes', label: 'Notes', sub: 'Notes folder and editor.' },
     { id: 'tasks', label: 'Tasks', sub: 'Statuses, board columns and labels.' },
-    { id: 'people', label: 'People', sub: 'Contacts and birthdays.' },
     { id: 'sync', label: 'Sync', sub: 'Keep this vault in a Git repo, and in step with your other devices.' },
     { id: 'palette', label: 'Command palette', sub: 'Every command, with its shortcut. Press ⌘K anywhere to open the palette.' },
   ] as const;
@@ -53,10 +51,8 @@
       <LabelsEditor />
     {:else if current.id === 'sync'}
       <SettingsSync />
-    {:else if current.id === 'palette'}
-      <SettingsPalette />
     {:else}
-      <span class="caption muted">Nothing to configure here yet.</span>
+      <SettingsPalette />
     {/if}
   </article>
 </main>

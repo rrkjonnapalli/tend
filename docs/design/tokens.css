@@ -79,6 +79,7 @@
   --c-nav-active: #6f5ee4;      /* bottom-nav active icon + dot, timer chip */
   --c-nav-active-soft: #ede9ff; /* timer chip, assignee chip, person chips */
   --c-overdue: #a84f2c;
+  --c-scrim: rgba(48, 56, 65, 0.08);  /* behind a modal: --text at 8% */
 
   /* color swatches for statuses and labels (their color column stores the hex) */
   --sw-gray: #7d8995; --sw-slate: #475569; --sw-blue: #1259d3; --sw-sky: #429ff5; --sw-indigo: #3f51b5;

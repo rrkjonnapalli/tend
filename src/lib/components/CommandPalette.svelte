@@ -10,6 +10,7 @@
   import type { Phrase } from '#lib/types/quick-parse.type.ts';
   import { goto } from '$app/navigation';
   import Icon from './Icon.svelte';
+  import type { IconName } from '#lib/types/icon.type.ts';
   import Modal from './Modal.svelte';
   import { available, commands } from '#lib/commands.ts';
   import { peopleAPI } from '#lib/api/people.ts';
@@ -27,7 +28,7 @@
 
   let { onclose }: { onclose: () => void } = $props();
 
-  const ICONS: Record<string, string> = { 'Go to': '→', Create: '+', Notes: '¶', Tasks: '☐', App: '⌘' };
+  const ICONS: Record<string, IconName> = { 'Go to': 'open', Create: 'plus', Notes: 'note', Tasks: 'task', App: 'settings' };
   const MAX_CMDS = 8;
   const MAX_HITS = 4;
   const WIDTH = 600;
@@ -47,7 +48,7 @@
   const createItem = (item: Omit<PaletteItem, 'group' | 'icon' | 'isNew'>): PaletteItem => ({
     ...item,
     group: 'Create',
-    icon: '+',
+    icon: 'plus',
     isNew: true,
   });
 
@@ -219,7 +220,7 @@
             onmouseenter={() => (hi = index)}
             onclick={() => run(item)}
             use:scrollIntoView={index === hi}>
-            <span class="gl">{item.icon}</span>
+            <span class="gl"><Icon name={item.icon} size={13} /></span>
             <span class="lb"><span class:new={item.isNew}>{item.label}</span>{#if item.sub}<span class="sub">&nbsp;· {item.sub}</span>{/if}</span>
             {#if item.keys}<span class="keys">{#each keyParts(item.keys) as k, i (i)}<kbd>{k}</kbd>{/each}</span>{/if}
           </button>
@@ -279,9 +280,7 @@
 
   .grp {
     padding: 8px 16px 4px;
-    font: 700 11px/16px var(--font-ui);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 

@@ -38,7 +38,7 @@
   }
 
   .shade {
-    background: rgba(48, 56, 65, 0.08);
+    background: var(--c-scrim);
   }
 
   .box {

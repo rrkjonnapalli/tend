@@ -67,12 +67,13 @@
         onkeydown={onFieldKey} />
     {/if}
     <div class="foot">
-      <button class="btn-ghost" onclick={onclose}>{cancel}</button>
+      <!-- svelte-ignore a11y_autofocus -->
+      <button class="btn-ghost" autofocus={danger && confirmWord === undefined} onclick={onclose}>{cancel}</button>
       <!-- svelte-ignore a11y_autofocus -->
       <button
         class={danger ? 'btn-danger' : 'btn-primary'}
         disabled={blocked || busy}
-        autofocus={confirmWord === undefined}
+        autofocus={!danger && confirmWord === undefined}
         onclick={run}>{confirm}</button>
     </div>
   </div>

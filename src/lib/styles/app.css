@@ -50,6 +50,17 @@ a:hover {
   color: var(--primary);
 }
 
+/* Selected text and the caret in the brand violet, not the browser's blue. */
+::selection {
+  background: var(--c-nav-active-soft);
+}
+
+input,
+textarea,
+[contenteditable] {
+  caret-color: var(--c-current);
+}
+
 :focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
