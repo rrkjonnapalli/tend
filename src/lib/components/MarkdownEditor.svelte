@@ -146,7 +146,7 @@
   }
 
   .field :global(.cm-scroller) {
-    font: 400 14px/22px var(--font-mono);
+    font: var(--text-editor-sm);
     max-height: 360px;
     overflow: auto;
   }

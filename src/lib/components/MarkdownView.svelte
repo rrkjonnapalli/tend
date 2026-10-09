@@ -6,10 +6,10 @@
 
   let {
     text,
-    variant = 'ui',
+    variant = 'field',
     empty = '',
     ondblclick,
-  }: { text: string; variant?: 'note' | 'ui'; empty?: string; ondblclick?: () => void } = $props();
+  }: { text: string; variant?: 'note' | 'field'; empty?: string; ondblclick?: () => void } = $props();
 
   const EXTERNAL_LINK = /^(https?|mailto):/i;
 
@@ -155,29 +155,29 @@
   }
 
   /* Descriptions, person notes, comments */
-  .ui {
-    font: 400 14px/22px var(--font-ui);
+  .field {
+    font: var(--text-editor-sm);
   }
 
-  .ui :global(h1),
-  .ui :global(h2),
-  .ui :global(h3),
-  .ui :global(h4) {
-    font: 500 16px/24px var(--font-heading);
+  .field :global(h1),
+  .field :global(h2),
+  .field :global(h3),
+  .field :global(h4) {
+    font: var(--text-title-sm);
     margin: 2px 0 6px;
   }
 
-  .ui :global(p) {
+  .field :global(p) {
     margin: 0 0 6px;
   }
 
-  .ui :global(ul),
-  .ui :global(ol),
-  .ui :global(blockquote) {
+  .field :global(ul),
+  .field :global(ol),
+  .field :global(blockquote) {
     margin-bottom: 6px;
   }
 
-  .ui :global(pre) {
+  .field :global(pre) {
     margin: 4px 0 8px;
     padding: 8px 10px;
   }

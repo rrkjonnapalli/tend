@@ -103,6 +103,8 @@
   --text-caption-strong: 700 13px/18px var(--font-ui);  /* emphasis at caption size */
   --text-meta:           400 12px/16px var(--font-ui);  /* dates, counts, hints */
   --text-tiny:           400 11px/16px var(--font-ui);  /* badges */
+  --text-editor-sm:      400 14px/22px var(--font-mono);  /* descriptions, person notes, comments: read and edited */
+  --text-title-sm:       500 16px/24px var(--font-heading);  /* headings inside those */
   --text-editor:         400 15px/26px var(--font-mono);  /* the note editor and note body */
   --text-code:           400 13px/20px var(--font-mono);  /* code blocks */
   --text-mono:           400 13px/18px var(--font-mono);  /* paths, values, kbd */
