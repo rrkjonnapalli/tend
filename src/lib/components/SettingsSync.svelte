@@ -61,7 +61,7 @@
 {#if !config}
   <section class="group">
     <h2 class="h2">Connect a repo</h2>
-    <span class="cap">Use a new, empty Git repo. Tend pushes this vault there, then syncs it on its own.</span>
+    <span class="cap">Use a new Git repo (a README in it is fine). Tend pushes this vault there, then syncs it on its own.</span>
     <SyncFields bind:setup />
     {#if failure}<div class="err" role="alert">{failure}</div>{/if}
     <div><button class="pbtn" disabled={!canConnect} onclick={connect}>{busy ? 'Connecting…' : 'Connect'}</button></div>
@@ -113,7 +113,7 @@
 {#if confirmDisconnect}
   <ConfirmDialog
     title="Disconnect sync?"
-    body="This vault stops syncing and its token is removed from the Keychain. Your notes, tasks and the repo stay as they are. Connecting again needs a new, empty repo."
+    body="This vault stops syncing and its token is removed from the Keychain. Your notes, tasks and the repo stay as they are. Connecting again needs a repo with no vault in it."
     confirm="Disconnect"
     danger
     onconfirm={disconnect}

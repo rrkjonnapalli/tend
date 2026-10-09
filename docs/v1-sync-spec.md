@@ -256,8 +256,8 @@ back only by being created again after the deletion has synced, which the base t
 
 Rows are matched by `id` across all shards of a table.
 
-**There is always a base.** A vault is connected only to an empty remote (its first push is the
-base), and every other device starts by restoring into an empty folder (the restored commit is its
+**There is always a base.** A vault is connected only to a remote that holds no vault yet (its first
+push is the base), and every other device starts by restoring into an empty folder (the restored commit is its
 base) (§14). If the base commit can no longer be read (the remote was rewritten), sync stops with
 `SYNC_BASE_LOST` and asks for a fresh restore; it never guesses.
 
@@ -380,9 +380,12 @@ lock (one run at a time; triggers during a run coalesce into it)
 
 **Connect** (Settings → Sync): URL and token, with branch (default `main`) and username (default
 `x-access-token`) under "More". Commits are authored "Tend <tend@localhost>"; there is no device
-name. New connections sync every 15 min. The remote must be **empty**; one that already has commits
+name. New connections sync every 15 min. The remote must **hold no vault**: no branch yet, or a branch
+without `.tend/sync/` (a README or licence made with the repo is fine). A remote that holds a vault
 is refused (`SYNC_REMOTE_NOT_EMPTY`: "This repo already has a vault. Restore it into an empty folder
-instead."). Tend writes the shards, commits, pushes and records that commit as the base. If any step
+instead."). Files Tend doesn't manage (anything outside `.tend/`, `.gitignore` and the files rows
+point at) carry over from the remote's head into every commit, so the README stays; Tend never
+writes them into the vault. Tend writes the shards, commits, pushes and records that commit as the base. If any step
 fails, nothing in the vault changes except `.git`, and the token is removed again.
 
 **Token:** kept only in the system credential store (the macOS Keychain, service `app.tend.sync`,
@@ -523,7 +526,8 @@ steps in the normal test run; 2,000 × 300 also pass). It found the two base-mov
 
 ## 22. Acceptance criteria
 
-**Repository** — connect to an empty remote · a non-empty remote refused on connect · restore from a
+**Repository** — connect to an empty remote, or one with only a README (kept) · a remote holding a
+vault refused on connect · restore from a
 Tend remote into an empty folder · unrelated remote refused · token works and lives only in the
 Keychain.
 

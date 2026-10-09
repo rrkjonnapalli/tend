@@ -180,3 +180,58 @@ fn a_push_that_landed_before_a_crash_becomes_the_base() {
     a.sync(&remote).unwrap();
     assert!(!a.rows()["people"].contains_key(id));
 }
+
+/// Makes the remote's first commit hold only a README, the way a host's "new repo" page does.
+fn add_readme(server: &Path) {
+    let bare = git2::Repository::open_bare(server).unwrap();
+    let blob = bare.blob(b"# notes\n").unwrap();
+    let mut tree = bare.treebuilder(None).unwrap();
+    tree.insert("README.md", blob, 0o100644).unwrap();
+    let tree = bare.find_tree(tree.write().unwrap()).unwrap();
+    let who = git2::Signature::now("Host", "host@example.com").unwrap();
+    bare.commit(
+        Some("refs/heads/main"),
+        &who,
+        &who,
+        "Initial commit",
+        &tree,
+        &[],
+    )
+    .unwrap();
+}
+
+fn remote_has_readme(server: &Path) -> bool {
+    let bare = git2::Repository::open_bare(server).unwrap();
+    let head = bare.refname_to_id("refs/heads/main").unwrap();
+    let tree = bare.find_commit(head).unwrap().tree().unwrap();
+    tree.get_path(Path::new("README.md")).is_ok()
+}
+
+#[test]
+fn a_repo_with_only_a_readme_connects_and_keeps_it() {
+    let server = tempfile::tempdir().unwrap();
+    let remote = remote(server.path());
+    add_readme(server.path());
+    let a = Device::new();
+    a.task("Ship");
+    connect(&a.vault.db(), a.root(), &remote).unwrap();
+    assert!(remote_has_readme(server.path()));
+
+    let b = Device::new();
+    let root = b.root().to_path_buf();
+    restore(&mut b.vault.db(), &root, &remote).unwrap();
+    assert_eq!(b.rows(), a.rows());
+    assert!(
+        !b.root().join("README.md").exists(),
+        "Tend writes only its own files"
+    );
+
+    person(&b, "01HZZZZZZZZZZZZZZZZZZZZZZZ");
+    assert_eq!(b.sync(&remote).unwrap(), Outcome::Pushed);
+    assert!(
+        remote_has_readme(server.path()),
+        "later commits keep it too"
+    );
+    assert_eq!(a.sync(&remote).unwrap(), Outcome::Pulled);
+    assert_eq!(a.sync(&remote).unwrap(), Outcome::Idle);
+}

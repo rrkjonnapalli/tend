@@ -4,6 +4,7 @@
 #[cfg(test)]
 mod tests;
 
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::Path;
 
@@ -11,7 +12,7 @@ use git2::Oid;
 use rusqlite::{Connection, Transaction};
 
 use super::apply::{apply, Change};
-use super::git::{Remote, Repo};
+use super::git::{Kept, Remote, Repo};
 use super::reconcile::reconcile;
 use super::shards::{self, Snapshot};
 use super::state;
@@ -67,6 +68,40 @@ fn collect_files(root: &Path, dir: &Path, out: &mut Vec<String>) -> AppResult<()
     Ok(())
 }
 
+/// The tree to commit on top of `parent`: the vault's synced files, plus the parent's files Tend
+/// doesn't manage (a README made with the repo, say).
+fn tree_now(conn: &Connection, root: &Path, repo: &Repo, parent: Option<Oid>) -> AppResult<Oid> {
+    let paths = synced_paths(conn, root)?;
+    let Some(commit) = parent else {
+        return repo.tree_of_files(&paths, None);
+    };
+    let managed = managed_paths(repo, commit)?;
+    let kept = Kept {
+        commit,
+        managed: &managed,
+    };
+    repo.tree_of_files(&paths, Some(kept))
+}
+
+/// The files Tend manages in a commit: those its `attachments` rows point at. None in a commit
+/// that holds no vault.
+fn managed_paths(repo: &Repo, commit: Oid) -> AppResult<BTreeSet<String>> {
+    if !holds_vault(repo, commit)? {
+        return Ok(BTreeSet::new());
+    }
+    let rows = rows_at(repo, commit)?;
+    let paths = rows["attachments"]
+        .values()
+        .filter_map(|row| row.get("path")?.as_str())
+        .map(String::from)
+        .collect();
+    Ok(paths)
+}
+
+fn holds_vault(repo: &Repo, commit: Oid) -> AppResult<bool> {
+    Ok(!repo.files_under(commit, SYNC_DIR)?.is_empty())
+}
+
 /// The rows a commit holds.
 fn rows_at(repo: &Repo, commit: Oid) -> AppResult<Snapshot> {
     let files = repo.files_under(commit, SYNC_DIR)?;
@@ -78,15 +113,19 @@ fn oid(text: &str) -> AppResult<Oid> {
     Oid::from_str(text).map_err(|_| errors::SYNC_BASE_LOST.err())
 }
 
-/// Starts syncing a vault to an empty remote: its first commit is the base.
+/// Starts syncing a vault to a remote that holds no vault yet (it may be empty, or hold a README
+/// and the like, which stay). The first commit is the base.
 pub fn connect(conn: &Connection, root: &Path, remote: &Remote) -> AppResult<()> {
     let repo = Repo::open(root)?;
-    if !repo.remote_is_empty(remote)? {
-        return Err(errors::SYNC_REMOTE_NOT_EMPTY.err());
+    let head = repo.fetch(remote)?;
+    if let Some(head) = head {
+        if holds_vault(&repo, head)? {
+            return Err(errors::SYNC_REMOTE_NOT_EMPTY.err());
+        }
     }
     shards::export(conn, root)?;
-    let tree = repo.tree_of_files(&synced_paths(conn, root)?)?;
-    let commit = repo.commit(remote, tree, None, "Start syncing")?;
+    let tree = tree_now(conn, root, &repo, head)?;
+    let commit = repo.commit(remote, tree, head, "Start syncing")?;
     state::set_pending(conn, Some(&commit.to_string()))?;
     repo.push(remote)?;
     state::set_base(conn, &commit.to_string())
@@ -155,14 +194,14 @@ fn run_once(conn: &mut Connection, root: &Path, remote: &Remote) -> AppResult<Ou
         .ok_or_else(|| errors::SYNC_BASE_LOST.err())?;
     let base = resolve_base(conn, &repo, head)?;
     shards::export(conn, root)?;
-    let tree = repo.tree_of_files(&synced_paths(conn, root)?)?;
+    let tree = tree_now(conn, root, &repo, Some(head))?;
     let idle = head == base && tree == repo.tree_of(base)?;
     if idle {
         return Ok(Outcome::Idle);
     }
     merge_in(conn, root, &repo, (base, head))?;
     shards::export(conn, root)?;
-    let tree = repo.tree_of_files(&synced_paths(conn, root)?)?;
+    let tree = tree_now(conn, root, &repo, Some(head))?;
     if tree == repo.tree_of(head)? {
         repo.point_branch(remote, head)?;
         return Ok(Outcome::Pulled);

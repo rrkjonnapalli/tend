@@ -3,7 +3,7 @@
 //! fetched head and pushes. The commit holds only what Tend syncs: the snapshot shards, the note
 //! files, the attached files and the `.gitignore`.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::sync::Once;
 
@@ -14,6 +14,7 @@ use git2::{
 
 use super::apply::Blobs;
 use crate::error::{errors, AppError, AppResult};
+use crate::vault::TEND_DIR;
 
 /// How long a connection may take, and how long a network read may stall.
 const CONNECT_TIMEOUT_MS: i32 = 15_000;
@@ -78,6 +79,19 @@ fn callbacks(remote: &Remote) -> RemoteCallbacks<'_> {
     cb
 }
 
+/// A commit whose foreign files carry over, and the files Tend manages in it (the paths its
+/// `attachments` rows point at).
+pub struct Kept<'a> {
+    pub commit: Oid,
+    pub managed: &'a BTreeSet<String>,
+}
+
+/// Tend's own files: `.gitignore`, everything under `.tend/`, and files rows point at.
+fn is_managed(path: &Path, rows: &BTreeSet<String>) -> bool {
+    let own = path == Path::new(GITIGNORE) || path.starts_with(TEND_DIR);
+    own || rows.contains(&*path.to_string_lossy())
+}
+
 pub struct Repo {
     repo: Repository,
 }
@@ -118,18 +132,6 @@ impl Repo {
             Err(e) if e.code() == ErrorCode::NotFound => Ok(None),
             Err(e) => Err(e.into()),
         }
-    }
-
-    /// True when the remote has no branches at all (the only kind a vault may connect to).
-    pub fn remote_is_empty(&self, remote: &Remote) -> AppResult<bool> {
-        let mut origin = self.repo.remote_anonymous(&remote.url)?;
-        let connection =
-            origin.connect_auth(git2::Direction::Fetch, Some(callbacks(remote)), None)?;
-        let empty = connection
-            .list()?
-            .iter()
-            .all(|head| !head.name().starts_with("refs/heads/"));
-        Ok(empty)
     }
 
     pub fn has(&self, commit: Oid) -> bool {
@@ -180,15 +182,33 @@ impl Repo {
     }
 
     /// The tree of the vault's synced files as they are on disk now (written to Git's object store,
-    /// not yet committed).
-    pub fn tree_of_files(&self, paths: &[String]) -> AppResult<Oid> {
+    /// not yet committed). Files of `keep` that Tend doesn't manage (a README, say) stay in it.
+    pub fn tree_of_files(&self, paths: &[String], keep: Option<Kept>) -> AppResult<Oid> {
         let mut index = self.repo.index()?;
         index.clear()?;
+        if let Some(kept) = keep {
+            self.read_foreign(&mut index, &kept)?;
+        }
         index.add_all([GITIGNORE], IndexAddOption::FORCE, None)?;
         for path in paths {
             index.add_path(Path::new(path))?;
         }
         Ok(index.write_tree()?)
+    }
+
+    /// Loads the commit's tree into `index`, minus every file Tend manages there.
+    fn read_foreign(&self, index: &mut git2::Index, kept: &Kept) -> AppResult<()> {
+        let tree = self.repo.find_commit(kept.commit)?.tree()?;
+        index.read_tree(&tree)?;
+        let managed: Vec<PathBuf> = index
+            .iter()
+            .map(|entry| PathBuf::from(String::from_utf8_lossy(&entry.path).into_owned()))
+            .filter(|path| is_managed(path, kept.managed))
+            .collect();
+        for path in managed {
+            index.remove_path(&path)?;
+        }
+        Ok(())
     }
 
     /// Commits `tree` with `parent` (none for the first commit) and points the local branch at it.
