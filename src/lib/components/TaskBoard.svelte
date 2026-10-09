@@ -132,6 +132,9 @@
     }
     const counts = cols.map((c) => cardsIn(c).length);
     const at = { col, idx: cardsIn(cols[col]).indexOf(card) };
+    // ↑ from a column's top card leaves the board for the zone above (see zoneNav).
+    const leaving = e.key === 'ArrowUp' && at.idx === 0;
+    if (leaving) return;
     const next = cardTarget(e.key, at, counts);
     if (!next) return;
     e.preventDefault();

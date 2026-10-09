@@ -12,7 +12,7 @@
   import type { NoteRow } from '#lib/types/note.type.ts';
   import SearchLine from '#lib/components/SearchLine.svelte';
   import AddLine from '#lib/components/AddLine.svelte';
-  import { rowNav } from '#lib/actions/row-nav.action.ts';
+  import { zoneNav } from '#lib/actions/zone-nav.action.ts';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
@@ -61,13 +61,13 @@
   }
 </script>
 
-<main class="list-page" use:rowNav>
+<main class="list-page" use:zoneNav>
   <PageBar><Breadcrumbs {crumbs} /></PageBar>
   <PageTitle title={crumbs[crumbs.length - 1].label} meta={summary} />
   <SearchLine bind:value={query} label="Search notes" placeholder="Search notes" />
   <AddLine bind:value={draft} label="New note" placeholder="new note" {error} onadd={create} oninput={() => (error = '')} />
   <ColumnHeader template="var(--grid-note)" columns={COLUMNS} />
-  <div class="list-scroll">
+  <div class="list-scroll" data-zone="rows">
     <div class="rows">
       {#each rows as n (n.id)}
         {#if editingId === n.id}

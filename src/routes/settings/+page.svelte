@@ -53,7 +53,7 @@
 
 <svelte:window {onkeydown} />
 
-<aside class="side" aria-label="Settings sections">
+<aside class="side" aria-label="Settings sections" data-pane="side">
   <div class="top"><span class="caption muted">Settings</span></div>
   <nav class="secs" bind:this={navEl}>
     {#each sections as s (s.id)}

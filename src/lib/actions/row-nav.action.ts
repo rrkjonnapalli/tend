@@ -32,36 +32,45 @@ function focusRow(row: HTMLElement) {
   row.scrollIntoView({ block: 'nearest' });
 }
 
-export function rowNav(node: HTMLElement) {
-  function onkeydown(e: KeyboardEvent) {
-    const hasModifier = e.metaKey || e.ctrlKey || e.altKey || e.shiftKey;
-    if (e.defaultPrevented || hasModifier) return;
-    const target = e.target as HTMLElement;
-    const row = target.closest<HTMLElement>(ROW);
-    const typing = isTypingTarget(target);
-    // Keys in a field belong to it, except ↓ from an entry field.
-    const isEntry = target.closest('[data-row-entry]') !== null;
-    if (typing && !isEntry) return;
-    const rows = [...node.querySelectorAll<HTMLElement>(ROW)];
-    const at = row ? rows.indexOf(row) : -1;
-    const next = moveTo(e.key, at, rows.length);
-    if (next !== null) {
-      e.preventDefault();
-      focusRow(rows[next]);
-      return;
-    }
-    if (!row || row !== target) return;
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      open(row);
-    } else if (e.key === 'F2') {
-      if (press(row, '[data-rename]')) e.preventDefault();
-    } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-      e.preventDefault();
-      fold(row, e.key);
-    }
+/** Handles a key for the rows inside `node`; true when it did something. */
+export function rowKey(node: HTMLElement, e: KeyboardEvent): boolean {
+  const hasModifier = e.metaKey || e.ctrlKey || e.altKey || e.shiftKey;
+  if (e.defaultPrevented || hasModifier) return false;
+  const target = e.target as HTMLElement;
+  const row = target.closest<HTMLElement>(ROW);
+  const typing = isTypingTarget(target);
+  // Keys in a field belong to it, except ↓ from an entry field.
+  const isEntry = target.closest('[data-row-entry]') !== null;
+  if (typing && !isEntry) return false;
+  const rows = [...node.querySelectorAll<HTMLElement>(ROW)];
+  const at = row ? rows.indexOf(row) : -1;
+  const next = moveTo(e.key, at, rows.length);
+  if (next !== null) {
+    e.preventDefault();
+    focusRow(rows[next]);
+    return true;
   }
+  if (!row || row !== target) return false;
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    open(row);
+    return true;
+  }
+  if (e.key === 'F2') {
+    const renamed = press(row, '[data-rename]');
+    if (renamed) e.preventDefault();
+    return renamed;
+  }
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    fold(row, e.key);
+    return true;
+  }
+  return false;
+}
 
+export function rowNav(node: HTMLElement) {
+  const onkeydown = (e: KeyboardEvent) => rowKey(node, e);
   node.addEventListener('keydown', onkeydown);
   return {
     destroy() {

@@ -32,7 +32,7 @@
   }
 </script>
 
-<label class="add">
+<label class="add" data-zone="field">
   <span class="plus" aria-hidden="true">+</span>
   <input use:plainText use:focusWhen={autofocus} data-row-entry bind:this={input} aria-label={label} {placeholder} bind:value {oninput} {onkeydown} />
 </label>

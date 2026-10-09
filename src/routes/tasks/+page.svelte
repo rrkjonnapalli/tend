@@ -13,7 +13,7 @@
   import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import SearchLine from '#lib/components/SearchLine.svelte';
   import AddLine from '#lib/components/AddLine.svelte';
-  import { rowNav } from '#lib/actions/row-nav.action.ts';
+  import { zoneNav } from '#lib/actions/zone-nav.action.ts';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
   import DateField from '#lib/components/DateField.svelte';
   import TaskRow from '#lib/components/TaskRow.svelte';
@@ -147,15 +147,15 @@
   }
 </script>
 
-<main class="list-page" use:rowNav>
+<main class="list-page" use:zoneNav>
   <PageBar><Breadcrumbs {crumbs} /></PageBar>
   <PageTitle title={crumbs[crumbs.length - 1].label} meta={plural(counts.all, 'task')} />
   <SearchLine bind:value={query} label="Search tasks" placeholder="Search tasks" />
 
-  <nav class="views" aria-label="Views">
+  <nav class="views" aria-label="Views" data-zone="bar">
     {#each VIEWS as [v, label], i (v)}
       {#if i > 0}<span class="sep" aria-hidden="true">·</span>{/if}
-      <button class="vbtn text-btn" class:on={view === v} aria-pressed={view === v} onclick={() => setView(v)}>
+      <button class="vbtn text-btn" data-pick class:on={view === v} aria-pressed={view === v} onclick={() => setView(v)}>
         {label}<span class="vc">{counts[v]}</span>
       </button>
     {/each}
@@ -181,13 +181,13 @@
   </nav>
 
   {#if board}
-    <div class="boardwrap"><TaskBoard items={rows} {folder} /></div>
+    <div class="boardwrap" data-zone="board"><TaskBoard items={rows} {folder} /></div>
   {:else}
     {#if canAdd}
       <AddLine bind:value={draft} bind:input={addInput} label="Add task" placeholder="add task" onadd={add} />
     {/if}
     <ColumnHeader template="var(--grid-task)" columns={COLUMNS} />
-    <div class="list-scroll">
+    <div class="list-scroll" data-zone="rows">
       <div class="rows" role="list">
         {#each shown as task (task.id)}
           <TaskRow

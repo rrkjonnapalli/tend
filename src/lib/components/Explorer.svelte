@@ -336,7 +336,7 @@
 <svelte:window {onkeydown} />
 
 {#if ui.explorerOpen}
-  <aside class="explorer" class:dragging={drag !== null} aria-label="Explorer">
+  <aside class="explorer" class:dragging={drag !== null} aria-label="Explorer" data-pane="side">
     <div class="toolbar" role="toolbar" aria-label="Explorer actions">
       <button class="icon-btn sm" aria-label={newItemLabel} title={newItemLabel} onclick={onNewItem}>
         <Icon name={actions.newItem ? 'taskNew' : 'noteNew'} size={13} stroke={1.75} />

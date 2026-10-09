@@ -26,7 +26,7 @@
   $effect(() => pageActions.provide({ 'page.search': focusSearch }));
 </script>
 
-<div class="line">
+<div class="line" data-zone="field">
   <label class="search">
     <span class="ic"><Icon name="search" size={14} /></span>
     <input use:plainText data-row-entry bind:this={input} aria-label={label} {placeholder} bind:value />

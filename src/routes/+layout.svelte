@@ -12,7 +12,6 @@
   import { ui } from '#lib/stores/ui.svelte.ts';
   import { timers } from '#lib/stores/timers.svelte.ts';
   import { available, blocked, commands } from '#lib/commands.ts';
-  import { matches } from '#lib/util/keys.ts';
   import { routes } from '#lib/util/routes.ts';
   import { inTauri, watchFilled } from '#lib/util/window.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
@@ -23,6 +22,9 @@
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import { applyTheme } from '#lib/util/theme.ts';
   import { startTabbingIn } from '#lib/util/focus-start.ts';
+  import { focusMain, focusSide } from '#lib/util/panes.ts';
+  import { isTypingTarget, matches } from '#lib/util/keys.ts';
+  import { tick } from 'svelte';
   import type { ThemePref } from '#lib/types/theme.type.ts';
 
   let { children }: { children: Snippet } = $props();
@@ -75,7 +77,40 @@
     return commands.find((c) => c.keys && matches(e, c.keys) && available(c));
   }
 
+  /** The last thing focused in the page's main content, for ⌘→ to return to. */
+  let lastInMain: HTMLElement | null = null;
+
+  function onfocusin(e: FocusEvent) {
+    const main = pageEl?.querySelector('main');
+    const target = e.target as HTMLElement;
+    if (main?.contains(target)) lastInMain = target;
+  }
+
+  /** ⌘← or ⌘→ outside a field (in a field they move the caret to the line's start or end). */
+  function isPaneChord(e: KeyboardEvent): boolean {
+    const isPaneKey = e.key === 'ArrowLeft' || e.key === 'ArrowRight';
+    const onlyCmd = e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey;
+    return isPaneKey && onlyCmd && !isTypingTarget(e.target);
+  }
+
+  /** ⌘← to the explorer (opening it if hidden) or the Settings sections, ⌘→ back to the page. */
+  async function paneKey(e: KeyboardEvent): Promise<boolean> {
+    if (!inVault || !pageEl) return false;
+    e.preventDefault();
+    if (e.key === 'ArrowRight') return focusMain(pageEl, lastInMain);
+    if (!focusSide(pageEl) && !ui.explorerOpen) {
+      ui.toggleExplorer();
+      await tick();
+      return focusSide(pageEl);
+    }
+    return true;
+  }
+
   function onkeydown(e: KeyboardEvent) {
+    if (isPaneChord(e)) {
+      paneKey(e);
+      return;
+    }
     const cmd = commandFor(e);
     if (cmd) {
       e.preventDefault();
@@ -87,7 +122,7 @@
   }
 </script>
 
-<svelte:window {onkeydown} />
+<svelte:window {onkeydown} {onfocusin} />
 
 <div class="shell" class:filled>
   <TopBar />

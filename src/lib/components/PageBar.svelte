@@ -17,7 +17,7 @@
   } = $props();
 </script>
 
-<div class="pbar caption">
+<div class="pbar caption" data-zone="bar">
   {#if onback}
     <button class="icon-btn sm back" aria-label="Back" title="Back" onclick={onback}><Icon name="back" size={13} /></button>
   {/if}
