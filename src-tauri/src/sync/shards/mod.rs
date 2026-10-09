@@ -228,6 +228,24 @@ fn manifest() -> AppResult<String> {
     Ok(text)
 }
 
+/// Refuses a set of shard files that isn't a Tend vault, or comes from a newer schema.
+pub fn check_manifest(files: &BTreeMap<PathBuf, String>) -> AppResult<()> {
+    let manifest: Option<Value> = files
+        .get(Path::new(MANIFEST_FILE))
+        .and_then(|text| serde_json::from_str(text).ok());
+    let Some(manifest) = manifest else {
+        return Err(errors::SYNC_NOT_A_VAULT.err());
+    };
+    if manifest["app_id"] != db::APP_ID {
+        return Err(errors::SYNC_NOT_A_VAULT.err());
+    }
+    let version = manifest["schema_version"].as_i64().unwrap_or(i64::MAX);
+    if version > db::schema_version() {
+        return Err(errors::SNAPSHOT_TOO_NEW.err());
+    }
+    Ok(())
+}
+
 /// The rows in a set of shard files (as `render` makes them, e.g. read from a Git tree). Files of a
 /// table this app doesn't know are refused: they come from a newer schema.
 pub fn parse(files: &BTreeMap<PathBuf, String>) -> AppResult<Snapshot> {

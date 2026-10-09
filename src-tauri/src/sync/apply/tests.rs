@@ -208,3 +208,27 @@ fn work_done_inside_the_transaction_commits_with_the_rows() {
         .unwrap();
     assert_eq!(base, "abc");
 }
+
+#[test]
+fn new_tasks_are_written_once() {
+    let mut v = vault();
+    let local = snapshot(&v.conn).unwrap();
+    let mut merged = local.clone();
+    let task = json!({
+        "id": "01HZZZZZZZZZZZZZZZZZZZZZZZ", "path": "", "parent_id": null, "title": "New",
+        "description": "", "status": "NOT_STARTED", "due_date": null, "due_time": null,
+        "assignee_id": null, "order_key": "V", "created_at": 1, "updated_at": 1, "completed_at": null,
+    });
+    merged.get_mut("tasks").unwrap().insert(
+        task["id"].as_str().unwrap().into(),
+        task.as_object().unwrap().clone(),
+    );
+    let change = Change {
+        local: &local,
+        merged: &merged,
+        remote: &merged,
+    };
+    let root = v.root().to_path_buf();
+    apply(&mut v.conn, &root, &change, &Remote(HashMap::new()), no_tx).unwrap();
+    assert_eq!(snapshot(&v.conn).unwrap(), merged);
+}

@@ -49,6 +49,11 @@ impl AppError {
     pub fn is(&self, def: ErrorDef) -> bool {
         self.key == def.key
     }
+
+    /// The registry key (stored as a sync run's result).
+    pub fn key(&self) -> &'static str {
+        self.key
+    }
 }
 
 pub type AppResult<T> = Result<T, AppError>;

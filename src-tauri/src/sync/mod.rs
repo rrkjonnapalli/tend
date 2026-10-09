@@ -3,5 +3,8 @@
 #![cfg_attr(not(test), expect(dead_code, reason = "used by the sync run (S4)"))]
 
 pub mod apply;
+pub mod git;
 pub mod reconcile;
+pub mod run;
 pub mod shards;
+pub mod state;

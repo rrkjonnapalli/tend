@@ -94,3 +94,27 @@ pub const SNAPSHOT_TOO_NEW: ErrorDef = def(
     "This vault was synced by a newer Tend. Update Tend to keep syncing.",
 );
 pub const SYNC_APPLY_FAILED: ErrorDef = def("SYNC_APPLY_FAILED", "Sync couldn’t apply the changes");
+pub const SYNC_AUTH: ErrorDef = def(
+    "SYNC_AUTH",
+    "The sync token was refused. Replace it in Settings → Sync.",
+);
+pub const SYNC_OFFLINE: ErrorDef = def("SYNC_OFFLINE", "Couldn’t reach the sync remote.");
+pub const SYNC_REJECTED: ErrorDef = def(
+    "SYNC_REJECTED",
+    "Another device synced at the same time. Sync again.",
+);
+pub const SYNC_GIT: ErrorDef = def("SYNC_GIT", "Git couldn’t complete the sync.");
+pub const SYNC_NOT_CONNECTED: ErrorDef = def(
+    "SYNC_NOT_CONNECTED",
+    "This vault isn’t connected to a remote.",
+);
+pub const SYNC_REMOTE_NOT_EMPTY: ErrorDef = def(
+    "SYNC_REMOTE_NOT_EMPTY",
+    "This repo already has a vault. Restore it into an empty folder instead.",
+);
+pub const SYNC_BASE_LOST: ErrorDef = def(
+    "SYNC_BASE_LOST",
+    "The remote’s history changed. Restore the vault into an empty folder to keep syncing.",
+);
+pub const SYNC_NOT_A_VAULT: ErrorDef =
+    def("SYNC_NOT_A_VAULT", "This repo doesn’t hold a Tend vault.");

@@ -425,13 +425,14 @@ records that commit as the base. If any step fails, nothing in the vault changes
 
 ```text
 src-tauri/src/sync/
-  git.rs         fetch, read trees, commit on top of the remote head, push, clone
-  shards.rs      export rows to year shards and fixed.jsonl, read them back, manifest
-  reconcile.rs   §9: three-way merge, unique keys, reference fixes (pure functions)
-  apply.rs       §10: staging, transaction, file moves, scan, reload
-  token.rs       Keychain
-  schedule.rs    triggers, lock, backoff, close
-  state.rs       local config, markers and status
+  shards/        export rows to year shards and fixed.jsonl, read them back, manifest   (S1)
+  reconcile/     §9: three-way merge, unique keys, reference fixes; simulation test   (S2)
+  apply/         §10: plan and stage files, write rows in one transaction, install    (S3)
+  git.rs         the libgit2 boundary: fetch, read trees, build a tree, commit, push  (S4)
+  state.rs       the sync_state row: base, pending commit, last result               (S4)
+  run.rs         connect, restore, one sync run (retried once on a rejected push)     (S4)
+  token.rs       Keychain                                                             (S5)
+  schedule.rs    triggers, lock, backoff, close                                       (S5)
 ```
 
 Commands: `sync_config_get` · `sync_config_set` · `sync_token_set` · `sync_token_clear` ·

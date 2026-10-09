@@ -16,6 +16,9 @@ use serde_json::Value;
 use crate::error::AppResult;
 use crate::sync::shards::{table_names, Row, Snapshot};
 
+/// Written before anything is deleted (see step 2 above), and only then.
+const FIRST: &str = "tasks";
+
 /// Columns that must stay unique and can change on an existing row.
 const UNIQUE_COLUMNS: &[(&str, &str)] = &[
     ("task_labels", "name"),
@@ -28,11 +31,11 @@ const UNIQUE_COLUMNS: &[(&str, &str)] = &[
 /// Makes the database's synced rows equal `merged`, given they are `local` now.
 pub fn write(tx: &Transaction, local: &Snapshot, merged: &Snapshot) -> AppResult<()> {
     tx.pragma_update(None, "defer_foreign_keys", "ON")?;
-    upsert(tx, "tasks", local, merged)?;
+    upsert(tx, FIRST, local, merged)?;
     for table in table_names().into_iter().rev() {
         delete_gone(tx, table, local, merged)?;
     }
-    for table in table_names() {
+    for table in table_names().into_iter().filter(|t| *t != FIRST) {
         upsert(tx, table, local, merged)?;
     }
     Ok(())

@@ -22,8 +22,37 @@ Things decided or found while building; each needs a look, a yes, or a no.
    it the base if the remote has it. Otherwise: push, crash before recording → a row created,
    pushed, then deleted locally comes back.
 
+## Found by the end-to-end tests
+
+7. **New tasks were inserted twice on apply** (tasks are written first, before deletes, so a
+   status or folder can be removed; the main pass wrote them again). Fixed, with a test. The
+   snapshot-level simulation couldn't see it — it was caught by the two-device test through real
+   databases and a real (local) Git remote.
+
+## How S4 behaves (worth a look)
+
+8. **What a commit holds:** only `.gitignore`, `.tend/sync/**`, and the files rows point at (note
+   bodies, `.tend/attachments/*`). Other files in the vault (a PDF next to your notes) are never
+   committed, so a sync can't spread or delete files Tend doesn't manage. Files over 100 MB are
+   left out; their rows still sync.
+9. **Connect** refuses a remote that has any branch (`SYNC_REMOTE_NOT_EMPTY`). **Restore** expects
+   a new, empty vault. **A rewritten remote** (base gone from its history) stops sync with
+   `SYNC_BASE_LOST`.
+10. **Network deadlines:** libgit2's connect timeout 15 s and read timeout 60 s, set once per
+    process (constants in `sync/git.rs`).
+11. **Auth:** HTTPS with a token as the password; username defaults to `x-access-token` (works for
+    GitHub). At most 3 credential attempts per operation.
+
+## Not done (S5 and later)
+
+12. Tauri commands, Settings → Sync, Start-page restore, the dock icon, the schedule (open,
+    interval, close with 10 s), Keychain for the token, pausing the watcher during an apply and
+    reloading stores afterwards. Until then sync runs only in tests.
+13. An end-to-end simulation through real databases and Git (the snapshot-level one is fast but
+    missed #7). Worth adding before release.
+
 ## To do when you're back
 
-7. **Your `sample` vault's database** still has the old `deletions` / `activity` tables and
-   their triggers, and no `sync_state`: the bundled Tend.app was running, so I didn't touch it.
-   With Tend closed, ask me to update it (backup first, as before).
+14. **Your `sample` vault's database** still has the old `deletions` / `activity` tables and
+    their triggers, and no `sync_state` / `path_log` reason `sync`: the bundled Tend.app was
+    running, so I didn't touch it. With Tend closed, ask me to update it (backup first, as before).

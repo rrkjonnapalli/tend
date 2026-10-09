@@ -29,6 +29,7 @@ sha2 = "0.11.0"
 mime_guess = "2.0.5"
 unicode-normalization = "0.1.25"
 rusqlite_migration = "2.6.0"
+git2 = { version = "0.21.0", default-features = false, features = ["https", "vendored-libgit2", "vendored-openssl"] }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6.4"
