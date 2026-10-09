@@ -1,4 +1,5 @@
-//! SQLite connection and migrations. `docs/schema.sql` is migration 1, unchanged.
+//! SQLite connection and migrations, run by `rusqlite_migration`. `docs/schema.sql` is migration 1;
+//! later changes are new entries in `STEPS`. The schema version lives in `PRAGMA user_version`.
 
 #[cfg(test)]
 mod tests;
@@ -6,16 +7,24 @@ mod tests;
 use std::path::Path;
 
 use rusqlite::{Connection, OpenFlags, OptionalExtension, Transaction};
+use rusqlite_migration::{Migrations, M};
 
-use crate::error::{errors, AppResult};
+use crate::error::{errors, AppError, AppResult};
 
 pub const APP_ID: &str = "tend";
 
-/// Migration n is `MIGRATIONS[n - 1]`. The app's schema version is the length of this list.
-const MIGRATIONS: &[&str] = &[include_str!("../../../docs/schema.sql")];
+/// Migration n is `STEPS[n - 1]`. Each step is checked for broken foreign keys before it commits.
+const STEPS: &[M<'static>] = &[M::up(include_str!("../../../docs/schema.sql")).foreign_key_check()];
+const MIGRATIONS: Migrations<'static> = Migrations::from_slice(STEPS);
 
 pub fn schema_version() -> i64 {
-    MIGRATIONS.len() as i64
+    STEPS.len() as i64
+}
+
+impl From<rusqlite_migration::Error> for AppError {
+    fn from(e: rusqlite_migration::Error) -> Self {
+        errors::DB.with(e.to_string())
+    }
 }
 
 /// What happened to the database while opening it.
@@ -29,16 +38,15 @@ pub enum Opened {
 /// Opens or creates the database. An existing file is checked read-only first, so an
 /// incompatible file is never modified.
 pub fn open(path: &Path) -> AppResult<(Connection, Opened)> {
-    let existed = path.exists();
-    let from = if existed { Some(check(path)?) } else { None };
-
+    let from = if path.exists() {
+        Some(check(path)?)
+    } else {
+        None
+    };
     let mut conn = Connection::open(path)?;
     conn.pragma_update(None, "foreign_keys", "ON")?;
     conn.pragma_update(None, "journal_mode", "WAL")?;
-
-    let current = from.unwrap_or(0);
-    migrate(&mut conn, current)?;
-
+    MIGRATIONS.to_latest(&mut conn)?;
     let opened = match from {
         None => Opened::Created,
         Some(v) if v == schema_version() => Opened::Current,
@@ -50,38 +58,23 @@ pub fn open(path: &Path) -> AppResult<(Connection, Opened)> {
     Ok((conn, opened))
 }
 
-/// Reads `meta` without writing. Returns the stored schema version when the file belongs to
-/// Tend and is not newer than this app.
+/// Reads the file without writing. Returns its schema version when it belongs to Tend and is not
+/// newer than this app.
 pub fn check(path: &Path) -> AppResult<i64> {
     let conn = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)
         .map_err(|_| errors::INCOMPATIBLE_DB.err())?;
-    let meta = |key: &str| -> Option<String> {
-        conn.query_row("SELECT value FROM meta WHERE key = ?1", [key], |r| r.get(0))
-            .optional()
-            .ok()
-            .flatten()
-    };
-    let app_id = meta("app_id");
-    let version = meta("schema_version").and_then(|v| v.parse::<i64>().ok());
+    let app_id: Option<String> = conn
+        .query_row("SELECT value FROM meta WHERE key = 'app_id'", [], |r| {
+            r.get(0)
+        })
+        .optional()
+        .ok()
+        .flatten();
+    let version: Option<i64> = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).ok();
     match (app_id.as_deref(), version) {
         (Some(APP_ID), Some(v)) if v >= 1 && v <= schema_version() => Ok(v),
         _ => Err(errors::INCOMPATIBLE_DB.err()),
     }
-}
-
-fn migrate(conn: &mut Connection, current: i64) -> AppResult<()> {
-    for (i, sql) in MIGRATIONS.iter().enumerate().skip(current as usize) {
-        let version = i as i64 + 1;
-        let tx = conn.transaction()?;
-        tx.execute_batch(sql)?;
-        tx.execute(
-            "INSERT INTO meta (key, value) VALUES ('schema_version', ?1)
-             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
-            [version.to_string()],
-        )?;
-        tx.commit()?;
-    }
-    Ok(())
 }
 
 /// For changes that touch disk first: runs `step` in one transaction and, if it fails, calls
@@ -114,6 +107,6 @@ pub fn in_transaction<T>(
 pub fn open_memory() -> Connection {
     let mut conn = Connection::open_in_memory().unwrap();
     conn.pragma_update(None, "foreign_keys", "ON").unwrap();
-    migrate(&mut conn, 0).unwrap();
+    MIGRATIONS.to_latest(&mut conn).unwrap();
     conn
 }

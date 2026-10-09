@@ -63,7 +63,8 @@ fn incompatible(setup: &str) {
 fn wrong_app_id_is_incompatible() {
     incompatible(
         "CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-         INSERT INTO meta VALUES ('app_id','other'),('schema_version','1');",
+         INSERT INTO meta VALUES ('app_id','other');
+         PRAGMA user_version = 1;",
     );
 }
 
@@ -71,7 +72,8 @@ fn wrong_app_id_is_incompatible() {
 fn higher_version_is_incompatible() {
     incompatible(
         "CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-         INSERT INTO meta VALUES ('app_id','tend'),('schema_version','99');",
+         INSERT INTO meta VALUES ('app_id','tend');
+         PRAGMA user_version = 99;",
     );
 }
 

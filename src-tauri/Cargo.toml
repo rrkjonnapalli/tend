@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Notes, tasks and people"
 authors = ["sage"]
 edition = "2021"
+rust-version = "1.95"
 
 [lib]
 # The `_lib` suffix keeps the lib name distinct from the bin name (cargo#8519 on Windows).
@@ -27,6 +28,7 @@ notify-debouncer-full = "0.7.0"
 sha2 = "0.11.0"
 mime_guess = "2.0.5"
 unicode-normalization = "0.1.25"
+rusqlite_migration = "2.6.0"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6.4"

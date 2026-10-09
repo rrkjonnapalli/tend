@@ -14,18 +14,17 @@
 --   * other moments are INTEGER milliseconds since the Unix epoch, UTC (*_at columns)
 --   * local calendar values stay TEXT: dates 'YYYY-MM-DD', times 'HH:MM' (24h)
 --   * booleans are INTEGER 0/1; colors are '#rrggbb'
---   * every table is STRICT (SQLite >= 3.37); open with PRAGMA foreign_keys = ON
+--   * every table is STRICT (SQLite >= 3.37); the app opens with foreign_keys = ON and WAL
+--   * this file is migration 1 (rusqlite_migration); the schema version is PRAGMA user_version
 --   * the vault folder is the notes root; Tend's own files live in .tend/. Paths are relative to
 --     the vault: note bodies 'work/q4_plan.md', attached files '.tend/attachments/<id>.pdf';
 --     folder paths '' (root), 'work', 'work/infra'. Folder and note file names follow the name
 --     rule ^[a-z0-9]+(_[a-z0-9]+)*$
 --   * deletes are recorded in `deletions` and every write in `activity`, by the triggers at the end
 
-PRAGMA foreign_keys = ON;
-PRAGMA journal_mode = WAL;
 
 -------------------------------------------------------------------------------
--- 0. App identity and version (the "incompatible db" check reads this). Local.
+-- 0. App identity (the "incompatible db" check reads app_id; the version is PRAGMA user_version). Local.
 -------------------------------------------------------------------------------
 CREATE TABLE meta (
   key   TEXT PRIMARY KEY,
@@ -33,7 +32,6 @@ CREATE TABLE meta (
 ) STRICT;
 INSERT INTO meta (key, value) VALUES
   ('app_id', 'tend'),
-  ('schema_version', '1'),
   ('created_at', CAST(unixepoch('subsec') * 1000 AS INTEGER));
 
 -- Key/value settings (value is JSON). id = key. Which keys sync is decided by the app.
