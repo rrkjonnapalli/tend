@@ -94,9 +94,9 @@
 
   <section class="group">
     <h2 class="h2">Last sync</h2>
-    <div class="kv"><span class="v" class:bad={sync.state === 'failed'}>{status?.running ? 'Syncing…' : lastRun}</span></div>
+    <div class="kv"><span class="v" class:bad={sync.state === 'failed'}>{sync.state === 'running' ? 'Syncing…' : lastRun}</span></div>
     <div class="row">
-      <button class="gbtn" disabled={status?.running} onclick={sync.now}>Sync now</button>
+      <button class="gbtn" disabled={sync.state === 'running'} onclick={sync.now}>Sync now</button>
       <button class="gbtn" onclick={() => (confirmDisconnect = true)}>Disconnect…</button>
     </div>
   </section>

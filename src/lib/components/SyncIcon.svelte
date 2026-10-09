@@ -26,16 +26,28 @@
 {#if state !== 'off'}
   <a class="ico" class:failed={state === 'failed'} class:spin={state === 'running'} href={routes.settingsSection('sync')} aria-label={title} {title}>
     <Icon name={ICONS[state]} size={14} stroke={2.25} />
+    {#if state === 'running'}<span class="txt">Syncing…</span>{/if}
   </a>
 {/if}
 
 <style>
   .ico {
-    display: grid;
-    place-items: center;
-    width: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 28px;
     height: 26px;
     color: var(--c-muted-2);
+    text-decoration: none;
+  }
+
+  .ico.spin {
+    padding: 0 8px;
+  }
+
+  .txt {
+    font: 400 12px/16px var(--font-ui);
   }
 
   .ico:hover {
@@ -46,6 +58,7 @@
     color: var(--danger);
   }
 
+  /* Only the icon turns, not the text. */
   .spin :global(svg) {
     animation: spin 1s linear infinite;
   }

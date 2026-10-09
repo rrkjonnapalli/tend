@@ -10,15 +10,21 @@ import { tasks } from './tasks.svelte.ts';
 import { toast } from './toast.svelte.ts';
 
 const OK = 'ok';
+/** Most runs take under a second; "Syncing…" stays at least this long so it can be read. */
+const MIN_SHOWN_MS = 1500;
 
 class SyncStore {
   status = $state<SyncStatus | null>(null);
+  /** True while a run is going, and a little after a short one (MIN_SHOWN_MS). */
+  showRunning = $state(false);
   #listening = false;
+  #startedAt = 0;
+  #hide: ReturnType<typeof setTimeout> | undefined;
 
   state = $derived.by((): SyncState => {
     const s = this.status;
     if (!s?.config) return 'off';
-    if (s.running) return 'running';
+    if (this.showRunning) return 'running';
     const failed = s.error !== null || (s.lastResult !== null && s.lastResult !== OK);
     if (failed) return 'failed';
     return 'synced';
@@ -64,6 +70,7 @@ class SyncStore {
   #onLive = async (live: SyncLive) => {
     const firstFailure = live.error !== null && !this.status?.error;
     if (firstFailure) toast.show(`Sync: ${live.error?.message}`);
+    this.#showFor(live.running);
     if (live.running) {
       if (this.status) this.status = { ...this.status, ...live };
       return;
@@ -71,6 +78,17 @@ class SyncStore {
     // Finished: read the run's time and result back.
     this.status = await syncAPI.status();
   };
+
+  #showFor(running: boolean) {
+    clearTimeout(this.#hide);
+    if (running) {
+      this.#startedAt = Date.now();
+      this.showRunning = true;
+      return;
+    }
+    const left = MIN_SHOWN_MS - (Date.now() - this.#startedAt);
+    this.#hide = setTimeout(() => (this.showRunning = false), Math.max(0, left));
+  }
 }
 
 /** Every store that shows synced rows. */
