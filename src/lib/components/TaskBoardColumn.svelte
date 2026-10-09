@@ -46,8 +46,14 @@
   async function add() {
     const title = draft.trim();
     if (!title) return;
-    await tasks.create({ path: folder, title, status: status.value, orderKey: keyAfterLast(cards) });
+    // Cleared first, so a second Enter while this one saves adds nothing; put back if it fails.
     draft = '';
+    try {
+      await tasks.create({ path: folder, title, status: status.value, orderKey: keyAfterLast(cards) });
+    } catch (e) {
+      draft = title;
+      throw e;
+    }
   }
 
   function addKeys(e: KeyboardEvent) {

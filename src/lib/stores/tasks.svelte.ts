@@ -81,11 +81,22 @@ class TasksStore {
   topLevelUnder = (folder: string) => this.tasks.filter((t) => t.parentId === null && isUnder(t.path, folder));
 
   /** "1/3" done subtasks, or '' when there are none. */
+  /** Each parent's subtasks, counted in one pass (not once per row). */
+  #subCounts = $derived.by(() => {
+    const counts = new Map<string, { done: number; total: number }>();
+    for (const t of this.tasks) {
+      if (t.parentId === null) continue;
+      const c = counts.get(t.parentId) ?? { done: 0, total: 0 };
+      c.total += 1;
+      if (isDone(t)) c.done += 1;
+      counts.set(t.parentId, c);
+    }
+    return counts;
+  });
+
   subtaskCount = (id: string) => {
-    const subs = this.subtasksOf(id);
-    if (!subs.length) return '';
-    const done = subs.filter(isDone).length;
-    return `${done}/${subs.length}`;
+    const c = this.#subCounts.get(id);
+    return c ? `${c.done}/${c.total}` : '';
   };
 
   #replace = (task: Task) => {
@@ -139,7 +150,13 @@ class TasksStore {
     await this.load();
   };
 
+  /** Reloads when the day has changed since the last load (the app stayed open overnight). */
+  ensureToday = async () => {
+    if (today() !== this.day) await this.load();
+  };
+
   setMyDay = async (id: string, included: boolean | null) => {
+    await this.ensureToday();
     await tasksAPI.setMyDay({ id, day: this.day, included });
     const next = new Map(this.myDay);
     if (included === null) next.delete(id);

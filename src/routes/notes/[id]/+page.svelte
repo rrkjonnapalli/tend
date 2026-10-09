@@ -5,6 +5,7 @@
   import type { Crumb } from '#lib/types/breadcrumb.type.ts';
   import type { NoteDoc } from '#lib/types/note.type.ts';
   import { beforeNavigate } from '$app/navigation';
+  import { onBeforeQuit } from '#lib/util/before-quit.ts';
   import { untrack } from 'svelte';
   import { page } from '$app/state';
   import Icon from '#lib/components/Icon.svelte';
@@ -68,6 +69,7 @@
   const widthLabel = $derived(wide ? 'Narrow width' : 'Full width');
 
   function show({ noteId, doc, edit }: { noteId: string; doc: NoteDoc; edit: boolean }) {
+    failed = false;
     text = doc.text;
     saved = doc.text;
     tags = doc.tags;
@@ -140,7 +142,8 @@
     try {
       await notesAPI.write({ id: noteId, text: body });
     } catch (e) {
-      failed = !toAppError(e).is(errors.NOT_FOUND);
+      // Only the note still open shows the failure; a late answer for one that was left doesn't.
+      failed = noteId === loadedId && !toAppError(e).is(errors.NOT_FOUND);
       ignoreMissing(e);
       return;
     } finally {
@@ -184,9 +187,13 @@
     tags = await tagsAPI.setForNote({ id, tags: next });
   }
 
-  beforeNavigate(() => {
+  // While the last write failed, leaving would drop the text: stay, with "Not saved · Retry" showing.
+  beforeNavigate(({ cancel }) => {
+    if (failed) cancel();
     flush();
   });
+
+  $effect(() => onBeforeQuit(flush));
 
   let tagEditor = $state<TagEditor>();
 

@@ -86,6 +86,12 @@
 
   let descField = $state<MarkdownField>();
   let descEditing = $state(false);
+  // Another task (a subtask clicked mid-edit) opens with its description closed, never with an
+  // empty editor that ✓ would save over its text.
+  $effect(() => {
+    void id;
+    descEditing = false;
+  });
 
   async function saveDescription(text: string) {
     description = text;

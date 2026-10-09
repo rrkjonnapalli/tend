@@ -32,11 +32,11 @@
     editing = true;
   }
 
+  /** Closes the editor once the text is saved; a failed save keeps it open with the draft. */
   export async function save() {
     if (!editing) return;
+    if (draft !== value) await onsave(draft);
     editing = false;
-    if (draft === value) return;
-    await onsave(draft);
   }
 
   export function cancel() {

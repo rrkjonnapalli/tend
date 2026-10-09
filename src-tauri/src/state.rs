@@ -59,6 +59,8 @@ pub struct AppState {
     runner: Mutex<Option<Runner>>,
     /// Set once the app has started quitting, so the last sync runs only once.
     closing: AtomicBool,
+    /// Set by the UI once it has saved what it holds (an open note) after being told the app quits.
+    flushed: AtomicBool,
 }
 
 impl AppState {
@@ -106,5 +108,13 @@ impl AppState {
     /// True the first time only: the app is quitting now.
     pub fn start_closing(&self) -> bool {
         !self.closing.swap(true, Ordering::SeqCst)
+    }
+
+    pub fn set_flushed(&self) {
+        self.flushed.store(true, Ordering::SeqCst);
+    }
+
+    pub fn is_flushed(&self) -> bool {
+        self.flushed.load(Ordering::SeqCst)
     }
 }

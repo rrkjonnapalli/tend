@@ -9,6 +9,12 @@ use crate::error::AppResult;
 use crate::state::AppState;
 use crate::{feedback, settings};
 
+/// The UI has saved everything it held after `QUIT_EVENT`; quitting can go on.
+#[tauri::command]
+pub fn app_flushed(state: State<AppState>) {
+    state.set_flushed();
+}
+
 #[tauri::command(async)]
 pub fn settings_all(state: State<AppState>) -> AppResult<HashMap<String, Value>> {
     state.with(|db, _| settings::all(db))

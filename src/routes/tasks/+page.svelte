@@ -139,6 +139,7 @@
   async function add() {
     const title = draft.trim();
     if (!title) return;
+    await tasks.ensureToday();
     const inMyDay = view === 'myday';
     const input: NewTask = { path: folder, title };
     if (inMyDay) input.dueDate = tasks.day;

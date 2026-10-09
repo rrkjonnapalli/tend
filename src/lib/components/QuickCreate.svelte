@@ -64,8 +64,20 @@
   });
   const message = $derived(error || problem);
 
+  /** True while a create is saving: a second Enter then creates nothing. */
+  let busy = false;
+
   async function create() {
-    if (problem) return;
+    if (problem || busy) return;
+    busy = true;
+    try {
+      await createOnce();
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function createOnce() {
     if (kind === 'timer') return createTimer();
     if (!title) return;
     error = '';

@@ -91,8 +91,8 @@ class SyncStore {
   }
 }
 
-/** Every store that shows synced rows. */
-async function reloadAll() {
+/** Every store that shows a vault's rows (after a sync brought changes, or another vault opened). */
+export async function reloadAll() {
   await Promise.all([notes.load(), tasks.load(), people.load(), settings.load(), tagPool.load()]);
 }
 

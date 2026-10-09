@@ -28,7 +28,7 @@ mod vault;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tauri::{AppHandle, Builder, Manager, Runtime};
+use tauri::{AppHandle, Builder, Emitter, Manager, Runtime};
 
 use crate::config::ConfigDir;
 use crate::error::AppResult;
@@ -69,18 +69,29 @@ pub(crate) fn start_sync<R: Runtime>(app: &AppHandle<R>, state: &AppState, vault
 /// How long quitting waits for the last sync.
 const CLOSE_SYNC_LIMIT: Duration = Duration::from_secs(10);
 
-/// On quit, a connected vault syncs once more (at most `CLOSE_SYNC_LIMIT`), then the app exits.
+/// Sent to the UI on quit, so it saves an open note (it answers with `app_flushed`).
+pub const QUIT_EVENT: &str = "app:quitting";
+/// How long quitting waits for that answer.
+const FLUSH_LIMIT: Duration = Duration::from_secs(2);
+const FLUSH_POLL: Duration = Duration::from_millis(20);
+
+/// On quit (⌘Q or the last window closed): the UI saves what it holds (at most `FLUSH_LIMIT`), a
+/// connected vault syncs once more (at most `CLOSE_SYNC_LIMIT`), then the app exits.
 fn on_exit<R: Runtime>(app: &AppHandle<R>, api: &tauri::ExitRequestApi) {
     let state = app.state::<AppState>();
-    let connected = state.with_runner(|_| ()).is_some();
-    if !connected || !state.start_closing() {
+    if !state.start_closing() {
         return;
     }
     api.prevent_exit();
+    let _ = app.emit(QUIT_EVENT, ());
     let app = app.clone();
     std::thread::spawn(move || {
-        app.state::<AppState>()
-            .with_runner(|r| r.close(CLOSE_SYNC_LIMIT));
+        let state = app.state::<AppState>();
+        let waited = std::time::Instant::now();
+        while !state.is_flushed() && waited.elapsed() < FLUSH_LIMIT {
+            std::thread::sleep(FLUSH_POLL);
+        }
+        state.with_runner(|r| r.close(CLOSE_SYNC_LIMIT));
         app.exit(0);
     });
 }
@@ -99,6 +110,7 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
             commands::sync::sync_set_interval,
             commands::sync::sync_token_set,
             commands::sync::sync_disconnect,
+            commands::app::app_flushed,
             commands::app::settings_all,
             commands::app::settings_set,
             commands::notes::skipped_items,

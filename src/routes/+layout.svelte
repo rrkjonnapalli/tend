@@ -11,6 +11,9 @@
   import QuickCreate from '#lib/components/QuickCreate.svelte';
   import { ui } from '#lib/stores/ui.svelte.ts';
   import { timers } from '#lib/stores/timers.svelte.ts';
+  import { tasks } from '#lib/stores/tasks.svelte.ts';
+  import { appAPI } from '#lib/api/app.ts';
+  import { runBeforeQuit } from '#lib/util/before-quit.ts';
   import { available, blocked, commands } from '#lib/commands.ts';
   import { routes } from '#lib/util/routes.ts';
   import { inTauri, watchFilled } from '#lib/util/window.ts';
@@ -58,6 +61,23 @@
 
   // Light or dark, from Settings (System until a vault's settings say otherwise).
   $effect(() => applyTheme(settings.get<ThemePref>(settingKeys.theme, settingDefaults.theme)));
+
+  // On quit, pages save what they hold first (an open note), then Rust may close the app.
+  $effect(() => {
+    if (!inTauri()) return;
+    const stop = appAPI.onQuitting(async () => {
+      await runBeforeQuit();
+      await appAPI.flushed();
+    });
+    return () => void stop.then((unlisten) => unlisten());
+  });
+
+  // Back in the window after midnight: My day, Overdue and Upcoming move to the new day.
+  $effect(() => {
+    if (!vault.path) return;
+    window.addEventListener('focus', tasks.ensureToday);
+    return () => window.removeEventListener('focus', tasks.ensureToday);
+  });
 
   // Timers run as soon as a vault is open, whichever page is showing.
   $effect(() => {
@@ -154,6 +174,8 @@
       paneKey(e);
       return;
     }
+    // The editor already used this key (⌘[ outdents a line): it isn't also an app shortcut.
+    if (e.defaultPrevented) return;
     const cmd = commandFor(e);
     if (cmd) {
       e.preventDefault();

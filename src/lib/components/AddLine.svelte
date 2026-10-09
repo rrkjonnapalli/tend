@@ -23,12 +23,21 @@
     error?: string;
     /** Focus the field when the page opens (list pages); off where it's one part of a page. */
     autofocus?: boolean;
-    onadd: () => void;
+    onadd: () => void | Promise<void>;
     oninput?: () => void;
   } = $props();
 
-  function onkeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter') onadd();
+  /** True while an add is saving: a second Enter then adds nothing. */
+  let busy = false;
+
+  async function onkeydown(e: KeyboardEvent) {
+    if (e.key !== 'Enter' || busy) return;
+    busy = true;
+    try {
+      await onadd();
+    } finally {
+      busy = false;
+    }
   }
 </script>
 
