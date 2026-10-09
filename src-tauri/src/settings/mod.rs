@@ -11,6 +11,10 @@ use serde_json::Value;
 use crate::error::AppResult;
 use crate::util::now_ms;
 
+/// The settings every device shares through sync; the rest belong to one device (layout, last
+/// views, paths). Keys are the ones in `src/lib/config/settings.config.ts`.
+pub const SHARED_KEYS: &[&str] = &["tasks.root_name", "timers.sound"];
+
 pub fn all(conn: &Connection) -> AppResult<HashMap<String, Value>> {
     let mut stmt = conn.prepare("SELECT key, value FROM settings")?;
     let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;

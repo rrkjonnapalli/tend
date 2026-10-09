@@ -55,6 +55,8 @@ pub struct Check {
 pub const TEND_DIR: &str = ".tend";
 /// Attached files, relative to the vault (also the prefix of their `attachments.path`).
 pub const ATTACHMENTS_DIR: &str = ".tend/attachments";
+/// Sync snapshots, relative to the vault (see `sync::shards`).
+pub const SYNC_DIR: &str = ".tend/sync";
 const DB_FILE: &str = "tend.db";
 // Labels of the start page checklist.
 const NOTES_ITEM: &str = "notes";

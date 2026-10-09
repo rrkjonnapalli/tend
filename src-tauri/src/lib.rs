@@ -19,6 +19,7 @@ mod people;
 mod settings;
 mod state;
 mod statuses;
+mod sync;
 mod tags;
 mod tasks;
 mod timers;

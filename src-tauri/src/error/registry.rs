@@ -87,3 +87,9 @@ pub const OWNER_TYPE: ErrorDef = def("OWNER_TYPE", "Unknown owner type");
 pub const TIMER_DURATION: ErrorDef = def("TIMER_DURATION", "A timer must be longer than 0");
 pub const FEEDBACK_KIND: ErrorDef = def("FEEDBACK_KIND", "Feedback is a bug, an idea or other.");
 pub const FEEDBACK_EMPTY: ErrorDef = def("FEEDBACK_EMPTY", "Write something first.");
+
+// ---- sync
+pub const SNAPSHOT_TOO_NEW: ErrorDef = def(
+    "SNAPSHOT_TOO_NEW",
+    "This vault was synced by a newer Tend. Update Tend to keep syncing.",
+);
