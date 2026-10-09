@@ -46,7 +46,7 @@ Each can come back later; none changes the shard layout.
 
 8. **What a commit holds:** only `.gitignore`, `.tend/sync/**`, and the files rows point at (note
    bodies, `.tend/attachments/*`). Other files in the vault (a PDF next to your notes) are never
-   committed, so a sync can't spread or delete files Tend doesn't manage. Files over 100 MB are
+   committed, so a sync can't spread or delete files Tend doesn't manage. Files of 30 MB or more are
    left out; their rows still sync.
 9. **Connect** refuses a remote that already holds a vault (`SYNC_REMOTE_NOT_EMPTY`). Markdown on
    the remote that Tend doesn't manage (the README) becomes a note, slugged, `_1` on a clash; other
@@ -75,7 +75,7 @@ Each can come back later; none changes the shard layout.
     is harmless. A run that changed rows reloads every store.
 16. **Disconnect** removes the settings, the token and the base; `.git` and all data stay.
     Connecting again needs a repo with no vault in it (spec §14).
-17. **Left out for now:** snapshot size and the list of files over 100 MB in Settings (spec §16).
+17. **Left out for now:** snapshot size in Settings (spec §16).
 18. **Not checked by eye:** I couldn't screenshot or click the app from here (no screen-recording
     or accessibility access). `tauri dev` starts cleanly; please look at Settings → Sync, the
     dock icon and Start → Restore from Git. There are no mockups for them; they reuse the
@@ -88,7 +88,7 @@ Each can come back later; none changes the shard layout.
 - `README.md` / `readme.md` pairs that differ only in case on the remote.
 - Hashing remote files by Git's blob id instead of SHA-256.
 - "Syncing…" shown while quitting; a long deadline and progress for a big first push or restore.
-- Snapshot size and files over 100 MB in Settings; a token store off macOS.
+- Snapshot size in Settings; a token store off macOS.
 
 19. An end-to-end simulation through real databases and Git (the snapshot-level one is fast but
     missed #7). Worth adding before release.

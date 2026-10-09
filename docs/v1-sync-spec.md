@@ -340,8 +340,11 @@ logged in `path_log`. Links keep working because they point at ids.
 
 ## 12. Attachments
 
-Files live in `.tend/attachments/<id>.<ext>`. Files over **100 MB** are not committed; their row still
-syncs, so other devices show "file not synced". Skipped files are listed in Settings → Sync.
+Files live in `.tend/attachments/<id>.<ext>`. **30 MB is the limit** (`files::MAX_FILE_BYTES`):
+a file that size or larger can't be attached, a note that size is never indexed, and sync never
+commits one (a big file already in the remote leaves it with the next commit). A row whose file the
+remote lacks still syncs; its file stays missing there instead of failing the apply.
+Paths in rows from the remote must stay inside the vault, and column names must be plain.
 
 ---
 
@@ -436,7 +439,7 @@ never sent to the UI. The other sync settings live in the app config folder, key
 - The runner works on its own database connection (5 s busy timeout), so commands never wait on
   the network. The file watcher keeps running during an apply; it only re-indexes what the apply
   already wrote.
-- Later: snapshot size and the list of files left out (over 100 MB).
+- Later: snapshot size.
 
 ---
 
@@ -548,8 +551,8 @@ conflict ever surfaces · non-fast-forward push retried once · repeated syncs c
 idle sync writes nothing · a lost base stops sync and asks for a restore · failed runs leave a consistent vault and
 retry later · simulation test passes.
 
-**Files** — notes and attachments sync as files · WAL/SHM and staging never committed · files over
-100 MB skipped and listed · renames logged · note index rebuilt by matching paths.
+**Files** — notes and attachments sync as files · WAL/SHM and staging never committed · files of
+30 MB or more never indexed, attached or committed · renames logged · note index rebuilt by matching paths.
 
 **Runtime** — one run at a time · open → scan → sync · watcher paused and rescanned · open note
 saved before and reloaded after · open / interval / close (10 s) / Sync now all work · status icon

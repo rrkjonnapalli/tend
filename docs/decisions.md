@@ -48,6 +48,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
     - Anything else → **"An incompatible database exists in .tend/tend.db"**. The user picks another folder.
   - What sits above the chosen folder is never checked.
 - **Changing vault:** Settings → General → *Change vault folder…*. This reopens the start-up flow.
+- **File size limit:** 30 MB (`files::MAX_FILE_BYTES`). A `.md` that size or larger is never indexed; a file that size can't be attached ("Files of 30 MB or more can’t be attached."); sync never commits one.
 - **Theme:** Settings → General → Appearance: *System* (default, follows macOS and changes with it), *Light* or *Dark*. Kept per device (setting `ui.theme`, never synced). The dark theme remaps the same token roles (`tokens.css`).
 
 ## 3. Start-up page
