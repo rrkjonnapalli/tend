@@ -16,7 +16,7 @@
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { cleanPath, join, nameError, pathError, titleError } from '#lib/util/names.ts';
   import { parseDuration } from '#lib/util/timer-parse.ts';
-  import { timerStartedText } from '#lib/util/timer-text.ts';
+  import { durationWords, timerStartedText } from '#lib/util/timer-text.ts';
   import { label as keyLabel } from '#lib/util/keys.ts';
   import { routes } from '#lib/util/routes.ts';
 
@@ -129,6 +129,8 @@
       <input use:plainText
         class="time"
         class:bad={!dur.ok}
+        size="6"
+        placeholder="mm:ss"
         aria-label="Duration, minutes and seconds"
         bind:value={duration}
         onkeydown={onEnter}
@@ -158,8 +160,8 @@
   {#snippet foot()}
     {#if message}
       <span class="err">{message}</span>
-    {:else if kind === 'timer'}
-      <span class="note">mm:ss · minutes any length</span>
+    {:else if kind === 'timer' && dur.ok}
+      <span class="note">{durationWords(dur.ms)}</span>
     {:else if willCreate}
       <span class="note">will create {target}/</span>
     {/if}
@@ -202,8 +204,10 @@
     color: var(--c-muted-2);
   }
 
+  /* Wide enough for mmm:ss, no more. */
   .time {
-    flex: 0 0 72px;
+    flex: none;
+    width: 7ch;
     height: 28px;
     border: 0;
     outline: none;
