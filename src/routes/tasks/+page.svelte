@@ -9,6 +9,7 @@
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
+  import ListTitle from '#lib/components/ListTitle.svelte';
   import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import SearchLine from '#lib/components/SearchLine.svelte';
   import AddLine from '#lib/components/AddLine.svelte';
@@ -146,7 +147,8 @@
 </script>
 
 <main class="list-page">
-  <PageBar meta={plural(counts.all, 'task')}><Breadcrumbs {crumbs} /></PageBar>
+  <PageBar><Breadcrumbs {crumbs} /></PageBar>
+  <ListTitle title={crumbs[crumbs.length - 1].label} meta={plural(counts.all, 'task')} />
   <SearchLine bind:value={query} label="Search tasks" placeholder="Search tasks" />
 
   <nav class="views" aria-label="Views">

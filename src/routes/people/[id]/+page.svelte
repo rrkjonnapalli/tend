@@ -60,21 +60,21 @@
   }
 </script>
 
-<main class="main">
+<main class="detail-page">
   {#if person}
-    <div class="page">
+    <div class="detail-stack">
       <PageBar onback={() => nav.back(routes.people)}>
         <Breadcrumbs crumbs={[{ label: 'People', href: routes.people }, { label: displayName(person) }]} />
         {#snippet actions()}
-          <button class="icon-btn sm danger" aria-label="Delete person" title="Delete" onclick={() => (deleting = true)}><Icon name="trash" size={13} /></button>
+          <button class="icon-btn" aria-label="Delete person" title="Delete person" onclick={() => (deleting = true)}><Icon name="trash" size={14} /></button>
         {/snippet}
       </PageBar>
 
-      <div class="body">
+      <div class="detail-body">
         <h1 class="heading">{displayName(person)}</h1>
         <PersonFields {person} onsave={save} focusName={isNew} />
 
-        <div class="sections">
+        <div class="detail-sections">
           {#each CONTACT_SECTIONS as c (c.kind)}
             <ContactSection person={id} kind={c.kind} title={c.title} placeholder={c.placeholder} contacts={person.contacts} onchange={load} />
           {/each}
@@ -107,34 +107,3 @@
     onconfirm={remove}
     onclose={() => (deleting = false)} />
 {/if}
-
-<style>
-  .main {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: 0 24px 72px;
-    overflow: auto;
-  }
-
-  .page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-
-  .body {
-    width: 100%;
-    max-width: var(--content-w);
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-  }
-
-  .sections {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-</style>

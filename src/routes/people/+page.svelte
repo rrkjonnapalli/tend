@@ -4,6 +4,7 @@
   import { page } from '$app/state';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
+  import ListTitle from '#lib/components/ListTitle.svelte';
   import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import SearchLine from '#lib/components/SearchLine.svelte';
   import AddLine from '#lib/components/AddLine.svelte';
@@ -52,7 +53,8 @@
 </script>
 
 <main class="list-page">
-  <PageBar meta={summary}><Breadcrumbs crumbs={[{ label: 'People' }]} /></PageBar>
+  <PageBar><Breadcrumbs crumbs={[{ label: 'People' }]} /></PageBar>
+  <ListTitle title="People" meta={summary} />
   <SearchLine bind:value={query} label="Search people" placeholder="Search name, phone or email" />
   <AddLine bind:value={draft} bind:input={addInput} label="Add person" placeholder="add person (first and last name)" onadd={add} />
   <ColumnHeader template="var(--grid-person)" gap="16px" columns={COLUMNS} />

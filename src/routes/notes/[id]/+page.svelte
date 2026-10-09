@@ -167,29 +167,25 @@
   });
 </script>
 
-<main class="main">
+<main class="detail-page detail-stack">
   <PageBar onback={() => nav.back(routes.notesFolder(place?.folder ?? ''))}>
     <Breadcrumbs {crumbs} />
     {#snippet actions()}
-    <button
-      class="icon-btn"
-      aria-label={widthLabel}
-      title={widthLabel}
-      onclick={toggleWidth}>
-      <Icon name={wide ? 'narrow' : 'widen'} size={14} />
-    </button>
-    {#if editing}
-      <button class="icon-btn" aria-label="Read" title="Read ({keyLabel('mod+r')})" onclick={() => setMode(false)}><Icon name="read" size={13} /></button>
-    {:else}
-      <button class="icon-btn" aria-label="Edit" title="Edit ({keyLabel('mod+r')})" onclick={() => setMode(true)}><Icon name="edit" size={13} /></button>
-    {/if}
+      {#if editing}
+        <button class="icon-btn" aria-label="Read" title="Read ({keyLabel('mod+r')})" onclick={() => setMode(false)}><Icon name="read" size={14} /></button>
+      {:else}
+        <button class="icon-btn" aria-label="Edit" title="Edit ({keyLabel('mod+r')})" onclick={() => setMode(true)}><Icon name="edit" size={14} /></button>
+      {/if}
+      <button class="icon-btn" aria-label={widthLabel} title={widthLabel} onclick={toggleWidth}>
+        <Icon name={wide ? 'narrow' : 'widen'} size={14} />
+      </button>
     {/snippet}
   </PageBar>
 
   {#if loadedId === id}
-    <article class="note">
+    <article class="detail-body note" style:max-width={wide ? 'none' : 'var(--content-w)'}>
       <TagEditor bind:this={tagEditor} {tags} onchange={setTags} />
-      <div class="body" style:max-width={wide ? 'none' : 'var(--content-w)'}>
+      <div>
         {#if editing}
           {#key id}
             <MarkdownEditor
@@ -217,24 +213,9 @@
 {/if}
 
 <style>
-  .main {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: 0 24px 48px;
-    overflow: auto;
-  }
-
-
+  /* Tags sit just above the text. */
   .note {
-    padding-top: 8px;
-    display: flex;
-    flex-direction: column;
     gap: 16px;
-  }
-
-  .body {
-    width: 100%;
-    margin: 0 auto;
   }
 
   .view {

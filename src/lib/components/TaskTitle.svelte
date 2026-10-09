@@ -52,7 +52,7 @@
     resize: none;
     overflow: hidden;
     background: transparent;
-    font: 500 22px/30px var(--font-heading);
+    font: var(--text-heading);
     color: var(--text);
   }
 </style>

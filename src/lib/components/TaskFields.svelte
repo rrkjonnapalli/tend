@@ -89,26 +89,6 @@
 </div>
 
 <style>
-  .props {
-    display: grid;
-    grid-template-columns: 96px minmax(0, 1fr);
-    row-gap: 4px;
-    align-items: center;
-  }
-
-  .pl {
-    font: var(--text-caption);
-    color: var(--c-muted-2);
-  }
-
-  .pv {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 32px;
-    font: var(--text-ui);
-  }
-
   .toggle {
     height: 28px;
     padding: 0 8px;

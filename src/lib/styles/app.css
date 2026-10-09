@@ -252,6 +252,19 @@ a:hover {
   min-width: 0;
 }
 
+.text-field.quiet {
+  margin-left: -8px;
+  border-color: transparent;
+}
+
+.text-field.quiet:hover {
+  border-color: var(--border);
+}
+
+.text-field.quiet:focus {
+  border-color: var(--primary);
+}
+
 .text-field.bad {
   border-color: var(--danger);
   color: var(--danger);
@@ -347,6 +360,56 @@ body.reordering .sortable:not(.lifted) .grip {
 
 .inline-field.bad {
   color: var(--danger);
+}
+
+/* A page for one note, task or person: the bar, then a centred column. */
+.detail-page {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 24px 64px;
+  overflow: auto;
+}
+
+.detail-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detail-body {
+  width: 100%;
+  max-width: var(--content-w);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.detail-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* A task's or a person's fields: labels on the left, values (click to edit) on the right. */
+.props {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  row-gap: 4px;
+  align-items: center;
+}
+
+.props .pl {
+  font: var(--text-caption);
+  color: var(--c-muted-2);
+}
+
+.props .pv {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font: var(--text-ui);
 }
 
 /* A list page (notes, tasks, people): the top (bar, search, add field, column header) stays

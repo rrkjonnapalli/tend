@@ -197,9 +197,9 @@
 
 <svelte:window {onkeydown} />
 
-<main class="main">
+<main class="detail-page">
   {#if task}
-    <article class="page">
+    <article class="detail-stack">
       <PageBar onback={back}>
         <Breadcrumbs {crumbs} />
         {#snippet actions()}
@@ -213,7 +213,7 @@
         {/snippet}
       </PageBar>
 
-      <div class="body" style:max-width={wide ? 'none' : 'var(--content-w)'}>
+      <div class="detail-body" style:max-width={wide ? 'none' : 'var(--content-w)'}>
         <TaskTitle value={task.title} onsave={(title) => patch({ title })} />
 
         <TaskFields
@@ -226,7 +226,7 @@
           ontags={setTags}
           onmove={() => (moving = true)} />
 
-        <div class="sections">
+        <div class="detail-sections">
           <Section title="Description">
             {#snippet actions()}
               <EditControls editing={descEditing} what="description" onedit={() => descField?.edit()} oncancel={() => descField?.cancel()} onsave={() => descField?.save()} />
@@ -280,33 +280,3 @@
 {#if deleting && task}
   <ConfirmDialog title="Delete {task.title}?" body={deleteBody} confirm="Delete" danger onconfirm={remove} onclose={() => (deleting = false)} />
 {/if}
-
-<style>
-  .main {
-    flex: 1 1 auto;
-    min-width: 0;
-    padding: 0 24px 64px;
-    overflow: auto;
-  }
-
-  .page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-
-  .body {
-    width: 100%;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
-  }
-
-  .sections {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-</style>
