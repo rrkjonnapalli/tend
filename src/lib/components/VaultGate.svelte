@@ -31,12 +31,12 @@
     {#if vault.problem}
       <h3 class="h3">Can’t open your vault</h3>
       {#if vault.problem.path}<span class="mono">{vault.problem.path}</span>{/if}
-      <div class="err" role="alert">{vault.problem.message}</div>
+      <div class="banner-err" role="alert">{vault.problem.message}</div>
       {#if permission}
         <span class="cap">Allow Tend in System Settings → Privacy &amp; Security → Files and Folders, then try again.</span>
       {/if}
       <div class="acts">
-        <button class="pbtn" onclick={vault.restore}>Try again</button>
+        <button class="btn-primary" onclick={vault.restore}>Try again</button>
         <button class="btn-ghost" onclick={chooseAnother}>Choose another folder</button>
       </div>
     {:else if slow}
@@ -88,33 +88,10 @@
     color: var(--c-muted-2);
   }
 
-  .err {
-    padding: 10px 12px;
-    border-radius: 6px;
-    background: var(--danger-soft);
-    color: var(--on-danger-soft);
-    font: var(--text-caption);
-  }
-
   .acts {
     display: flex;
     gap: 8px;
     margin-top: 4px;
-  }
-
-  .pbtn {
-    height: 30px;
-    padding: 0 14px;
-    border: 0;
-    border-radius: 6px;
-    background: var(--primary);
-    color: var(--on-primary);
-    font: var(--text-caption-strong);
-    cursor: pointer;
-  }
-
-  .pbtn:hover {
-    background: var(--primary-hover);
   }
 
   .wait {

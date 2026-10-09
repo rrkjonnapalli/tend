@@ -14,7 +14,7 @@
     z-index: 50;
     transform: translateX(-50%);
     padding: 6px 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     background: var(--text);
     color: var(--c-page);
     font: var(--text-caption);

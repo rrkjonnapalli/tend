@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { plainText } from '#lib/actions/plain-text.action.ts';
   // Task folder list: views (My day · All · Overdue · Upcoming · date range), then the rows.
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import type { DayRange } from '#lib/types/date.type.ts';
@@ -12,8 +11,8 @@
   import PageBar from '#lib/components/PageBar.svelte';
   import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import SearchLine from '#lib/components/SearchLine.svelte';
+  import AddLine from '#lib/components/AddLine.svelte';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
-  import { focusOnMount } from '#lib/actions/focus.action.ts';
   import DateField from '#lib/components/DateField.svelte';
   import TaskRow from '#lib/components/TaskRow.svelte';
   import TaskBoard from '#lib/components/TaskBoard.svelte';
@@ -144,10 +143,6 @@
     draft = '';
     if (inMyDay) await tasks.setMyDay(created.id, true);
   }
-
-  function addKeys(e: KeyboardEvent) {
-    if (e.key === 'Enter') add();
-  }
 </script>
 
 <main class="list-page">
@@ -164,7 +159,7 @@
     <span class="sep" aria-hidden="true">·</span>
     <DateField mode="range" {range} active={view === 'range'} marked={dueDays} onrange={setRange} />
     <button
-      class="lbtn hide"
+      class="icon-btn hide"
       class:on={hideDone}
       aria-label="Hide done tasks"
       aria-pressed={hideDone}
@@ -173,10 +168,10 @@
       <Icon name="doneHidden" size={14} />
     </button>
     <span class="lay" role="group" aria-label="Layout">
-      <button class="lbtn" class:on={!board} aria-label="List" aria-pressed={!board} title="List" onclick={() => settings.set(settingKeys.tasksLayout, 'list')}>
+      <button class="icon-btn" class:on={!board} aria-label="List" aria-pressed={!board} title="List" onclick={() => settings.set(settingKeys.tasksLayout, 'list')}>
         <Icon name="list" size={14} />
       </button>
-      <button class="lbtn" class:on={board} aria-label="Board" aria-pressed={board} title="Board" onclick={() => settings.set(settingKeys.tasksLayout, 'board')}>
+      <button class="icon-btn" class:on={board} aria-label="Board" aria-pressed={board} title="Board" onclick={() => settings.set(settingKeys.tasksLayout, 'board')}>
         <Icon name="board" size={14} />
       </button>
     </span>
@@ -186,17 +181,7 @@
     <div class="boardwrap"><TaskBoard items={rows} {folder} /></div>
   {:else}
     {#if canAdd}
-      <label class="add">
-        <span class="plus">+</span>
-        <input
-          use:plainText
-          bind:this={addInput}
-          use:focusOnMount
-          placeholder="add task"
-          aria-label="Add task"
-          bind:value={draft}
-          onkeydown={addKeys} />
-      </label>
+      <AddLine bind:value={draft} bind:input={addInput} label="Add task" placeholder="add task" onadd={add} />
     {/if}
     <ColumnHeader template="var(--grid-task)" columns={COLUMNS} />
     <div class="list-scroll">
@@ -209,7 +194,7 @@
             lifted={lifted === task.id && preview !== null}
             onpointerdown={(e) => grab(e, task.id)} />
         {/each}
-        {#if shown.length === 0}<span class="caption muted empty">{needle ? 'No tasks match' : EMPTY[view]}</span>{/if}
+        {#if shown.length === 0}<span class="list-empty">{needle ? 'No tasks match' : EMPTY[view]}</span>{/if}
       </div>
     </div>
   {/if}
@@ -235,29 +220,6 @@
     display: inline-flex;
     align-items: center;
     gap: 2px;
-  }
-
-  .lbtn {
-    width: 26px;
-    height: 26px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--c-muted-2);
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-  }
-
-  .lbtn:hover {
-    color: var(--text);
-    background: var(--c-hover);
-  }
-
-  .lbtn.on {
-    color: var(--text);
-    background: var(--c-chip);
   }
 
   /* The filter line under the bar. */
@@ -308,37 +270,5 @@
   .rows {
     display: flex;
     flex-direction: column;
-  }
-
-  .add {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 36px;
-    font: var(--text-ui);
-    color: var(--c-muted-2);
-  }
-
-  .plus {
-    width: 8px;
-    text-align: center;
-  }
-
-  .add input {
-    flex: 1;
-    border: 0;
-    outline: none;
-    background: transparent;
-    font: var(--text-ui);
-    color: var(--text);
-  }
-
-  .add input::placeholder {
-    color: var(--c-muted-2);
-  }
-
-  .empty {
-    padding: 8px 0 0 20px;
   }
 </style>

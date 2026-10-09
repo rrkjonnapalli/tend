@@ -120,7 +120,7 @@
     min-height: 96px;
     padding: 8px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     outline: none;
     resize: vertical;
     font: 400 13px/20px var(--font-ui);

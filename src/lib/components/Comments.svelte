@@ -101,7 +101,7 @@
     border-radius: var(--radius-sm);
     background: var(--primary);
     color: var(--on-primary);
-    font: 500 13px/18px var(--font-ui);
+    font: var(--text-caption);
     cursor: pointer;
   }
 

@@ -50,7 +50,7 @@
 <div class="line">
   {#if editing}
     <input
-      class="fld"
+      class="field mono num"
       class:bad={!valid}
       type="number"
       min={intervalLimits.min}
@@ -78,24 +78,8 @@
     font: var(--text-ui);
   }
 
-  .fld {
+  .num {
     width: 72px;
-    height: 28px;
-    padding: 0 8px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    outline: none;
-    background: var(--c-page);
-    color: var(--text);
-    font: var(--text-mono);
-  }
-
-  .fld:focus {
-    border-color: var(--primary);
-  }
-
-  .fld.bad {
-    border-color: var(--danger);
   }
 
   .unit {

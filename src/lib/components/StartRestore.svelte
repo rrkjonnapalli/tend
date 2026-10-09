@@ -47,42 +47,23 @@
 </script>
 
 {#if !shown}
-  <button class="act" onclick={() => (shown = true)}><Icon name="reload" size={15} />Restore from Git…</button>
+  <button class="link-btn lead" onclick={() => (shown = true)}><Icon name="reload" size={15} />Restore from Git…</button>
 {:else}
   <div class="box">
     <div class="pick">
-      <button class="gbtn" onclick={choose}>{path ? 'Change' : 'Choose empty folder…'}</button>
+      <button class="btn-ghost" onclick={choose}>{path ? 'Change' : 'Choose empty folder…'}</button>
       {#if path}<span class="p">{path}</span>{/if}
     </div>
     <SyncFields bind:setup />
-    {#if failure}<div class="err" role="alert">{failure}</div>{/if}
+    {#if failure}<div class="banner-err" role="alert">{failure}</div>{/if}
     <div class="row">
-      <button class="pbtn" disabled={!ready} onclick={restore}>{busy ? 'Restoring…' : 'Restore'}</button>
-      <button class="gbtn" onclick={() => (shown = false)}>Cancel</button>
+      <button class="btn-primary lg" disabled={!ready} onclick={restore}>{busy ? 'Restoring…' : 'Restore'}</button>
+      <button class="btn-ghost lg" onclick={() => (shown = false)}>Cancel</button>
     </div>
   </div>
 {/if}
 
 <style>
-  .act {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 34px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--primary);
-    font: var(--text-ui);
-    cursor: pointer;
-    align-self: flex-start;
-  }
-
-  .act:hover {
-    color: var(--primary-hover);
-    text-decoration: underline;
-  }
-
   .box {
     display: flex;
     flex-direction: column;
@@ -107,48 +88,5 @@
   .row {
     display: flex;
     gap: var(--space-2);
-  }
-
-  .err {
-    padding: 10px 12px;
-    border-radius: 6px;
-    background: var(--danger-soft);
-    color: var(--on-danger-soft);
-    font: var(--text-caption);
-  }
-
-  .gbtn {
-    height: 28px;
-    padding: 0 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--c-page);
-    color: var(--text);
-    font: var(--text-caption);
-    cursor: pointer;
-  }
-
-  .gbtn:hover {
-    border-color: var(--c-muted-2);
-  }
-
-  .pbtn {
-    height: 36px;
-    padding: 0 16px;
-    border: 0;
-    border-radius: var(--radius-md);
-    background: var(--primary);
-    color: var(--on-primary);
-    font: var(--text-ui-strong);
-    cursor: pointer;
-  }
-
-  .pbtn:hover:not(:disabled) {
-    background: var(--primary-hover);
-  }
-
-  .pbtn:disabled {
-    opacity: 0.5;
-    cursor: default;
   }
 </style>

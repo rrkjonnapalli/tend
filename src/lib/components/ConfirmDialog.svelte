@@ -57,8 +57,8 @@
       <!-- svelte-ignore a11y_autofocus -->
       <input
         use:plainText
-        class="fld"
-        class:ok={!blocked}
+        class="field mono"
+        class:armed={!blocked}
         aria-label="Name to confirm"
         autocomplete="off"
         spellcheck="false"
@@ -80,17 +80,17 @@
 
 <style>
   .dlg {
-    padding: 18px;
+    padding: var(--space-4);
     display: flex;
     flex-direction: column;
     gap: 12px;
     font: var(--text-ui);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
   }
 
   h2 {
     margin: 0;
-    font: 500 16px/22px var(--font-heading);
+    font: var(--text-section);
   }
 
   .key {
@@ -100,20 +100,8 @@
     background: var(--c-chip);
   }
 
-  .fld {
-    height: 34px;
-    padding: 0 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    outline: none;
-    font: 400 14px/20px var(--font-mono);
-  }
-
-  .fld:focus {
-    border-color: var(--primary);
-  }
-
-  .fld.ok {
+  /* The word is typed: the next Enter deletes. */
+  .field.armed {
     border-color: var(--danger);
   }
 

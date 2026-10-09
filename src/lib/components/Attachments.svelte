@@ -135,7 +135,7 @@
     margin: 2px 0 6px;
     padding: 0 12px;
     border: 1px dashed var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     font: var(--text-caption);
     color: var(--c-muted-2);
     cursor: pointer;

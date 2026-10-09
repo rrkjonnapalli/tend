@@ -64,8 +64,8 @@
     <h2 class="h2">Connect a repo</h2>
     <span class="cap">Use a new Git repo (a README in it is fine). Tend pushes this vault there, then syncs it on its own.</span>
     <SyncFields bind:setup />
-    {#if failure}<div class="err" role="alert">{failure}</div>{/if}
-    <div><button class="pbtn" disabled={!canConnect} onclick={connect}>{busy ? 'Connecting…' : 'Connect'}</button></div>
+    {#if failure}<div class="banner-err" role="alert">{failure}</div>{/if}
+    <div><button class="btn-primary" disabled={!canConnect} onclick={connect}>{busy ? 'Connecting…' : 'Connect'}</button></div>
   </section>
 {:else}
   <section class="group">
@@ -75,12 +75,12 @@
     <div class="kv">
       <span class="k">Token</span>
       {#if replacing}
-        <input class="fld mono" type="password" autocomplete="off" aria-label="New token" bind:value={token} use:plainText />
-        <button class="tlink" onclick={saveToken}>Save</button>
-        <button class="tlink" onclick={() => (replacing = false)}>Cancel</button>
+        <input class="field mono grow" type="password" autocomplete="off" aria-label="New token" bind:value={token} use:plainText />
+        <button class="link-btn" onclick={saveToken}>Save</button>
+        <button class="link-btn" onclick={() => (replacing = false)}>Cancel</button>
       {:else}
         <span class="v">{status?.hasToken ? 'Saved in the Keychain' : 'None saved'}</span>
-        <button class="tlink" onclick={() => (replacing = true)}>{status?.hasToken ? 'Replace' : 'Add'}</button>
+        <button class="link-btn" onclick={() => (replacing = true)}>{status?.hasToken ? 'Replace' : 'Add'}</button>
       {/if}
     </div>
     <p class="warn">{publicRepoWarning}</p>
@@ -103,8 +103,8 @@
       <div class="kv"><span class="v">{synced}</span></div>
     {/if}
     <div class="row">
-      <button class="gbtn" disabled={sync.state === 'running'} onclick={sync.now}>Sync now</button>
-      <button class="gbtn" onclick={() => (confirmDisconnect = true)}>Disconnect…</button>
+      <button class="btn-ghost" disabled={sync.state === 'running'} onclick={sync.now}>Sync now</button>
+      <button class="btn-ghost" onclick={() => (confirmDisconnect = true)}>Disconnect…</button>
     </div>
   </section>
 {/if}
@@ -139,8 +139,7 @@
   }
 
   .warn {
-    font-size: 12px;
-    line-height: 16px;
+    font: var(--text-meta);
   }
 
   .kv {
@@ -172,83 +171,8 @@
     color: var(--danger);
   }
 
-  .fld {
-    flex: 1;
-    min-width: 0;
-    height: 28px;
-    padding: 0 8px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    outline: none;
-    background: var(--c-page);
-    color: var(--text);
-    font: var(--text-mono);
-  }
-
-  .fld:focus {
-    border-color: var(--primary);
-  }
-
   .row {
     display: flex;
     gap: var(--space-2);
-  }
-
-  .err {
-    padding: 10px 12px;
-    border-radius: 6px;
-    background: var(--danger-soft);
-    color: var(--on-danger-soft);
-    font: var(--text-caption);
-  }
-
-  .tlink {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--link);
-    font: var(--text-ui);
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .tlink:hover {
-    color: var(--primary-hover);
-    text-decoration: underline;
-  }
-
-  .pbtn {
-    height: 32px;
-    padding: 0 16px;
-    border: 0;
-    border-radius: var(--radius-md);
-    background: var(--primary);
-    color: var(--on-primary);
-    font: var(--text-ui-strong);
-    cursor: pointer;
-  }
-
-  .pbtn:hover:not(:disabled) {
-    background: var(--primary-hover);
-  }
-
-  .gbtn {
-    height: 28px;
-    padding: 0 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--c-page);
-    color: var(--text);
-    font: var(--text-caption);
-    cursor: pointer;
-  }
-
-  .gbtn:hover:not(:disabled) {
-    border-color: var(--c-muted-2);
-  }
-
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
   }
 </style>

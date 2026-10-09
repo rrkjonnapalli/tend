@@ -124,7 +124,7 @@
     height: 36px;
     padding: 0 10px;
     border: 1px solid var(--primary);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     outline: none;
     background: var(--c-page);
     font: var(--text-ui);

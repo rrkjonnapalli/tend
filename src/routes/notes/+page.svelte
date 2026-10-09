@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { plainText } from '#lib/actions/plain-text.action.ts';
   // Folder list: every note under the folder (recursive), newest edit first.
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
@@ -11,8 +10,8 @@
   import { overflowTitle } from '#lib/actions/overflow-title.action.ts';
   import type { NoteRow } from '#lib/types/note.type.ts';
   import SearchLine from '#lib/components/SearchLine.svelte';
+  import AddLine from '#lib/components/AddLine.svelte';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
-  import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
   import { nameError, relativeTo } from '#lib/util/names.ts';
@@ -58,27 +57,12 @@
     stopEditing();
     notes.rename({ kind: 'note', id: note.id }, name);
   }
-
-  function onkeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter') create();
-  }
 </script>
 
 <main class="list-page">
   <PageBar meta={summary}><Breadcrumbs {crumbs} /></PageBar>
   <SearchLine bind:value={query} label="Search notes" placeholder="Search notes" />
-  <label class="add">
-    <span>+</span>
-    <input
-      use:plainText
-      use:focusOnMount
-      placeholder="new note"
-      aria-label="New note"
-      bind:value={draft}
-      oninput={() => (error = '')}
-      {onkeydown} />
-  </label>
-  {#if error}<span class="err">{error}</span>{/if}
+  <AddLine bind:value={draft} label="New note" placeholder="new note" {error} onadd={create} oninput={() => (error = '')} />
   <ColumnHeader template="var(--grid-note)" columns={COLUMNS} />
   <div class="list-scroll">
     <div class="rows">
@@ -99,7 +83,7 @@
           </a>
         {/if}
       {/each}
-      {#if rows.length === 0}<span class="caption muted empty">{needle ? 'No notes match' : 'No notes here yet'}</span>{/if}
+      {#if rows.length === 0}<span class="list-empty">{needle ? 'No notes match' : 'No notes here yet'}</span>{/if}
     </div>
   </div>
 </main>
@@ -109,35 +93,6 @@
   .rows {
     display: flex;
     flex-direction: column;
-  }
-
-  .add {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 36px;
-    font: var(--text-ui);
-    color: var(--c-muted-2);
-  }
-
-  .add input {
-    flex: 1;
-    border: 0;
-    outline: none;
-    background: transparent;
-    font: var(--text-ui);
-    color: var(--text);
-  }
-
-  .add input::placeholder {
-    color: var(--c-muted-2);
-  }
-
-  .err {
-    padding: 0 0 8px 22px;
-    font: var(--text-meta);
-    color: var(--danger);
   }
 
   .row {
@@ -178,9 +133,5 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .empty {
-    padding-top: 8px;
   }
 </style>

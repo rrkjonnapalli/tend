@@ -51,7 +51,7 @@
     height: 32px;
     padding: 0 10px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
   }
 
   .search:focus-within {

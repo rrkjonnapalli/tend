@@ -107,7 +107,7 @@
     padding: 4px 0;
     background: var(--c-page);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
   }
 
   .sg {

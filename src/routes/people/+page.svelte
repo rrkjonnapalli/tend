@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { plainText } from '#lib/actions/plain-text.action.ts';
   // People list: search, add (first and last name, ↵ opens the new person), and the table.
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
@@ -7,7 +6,7 @@
   import PageBar from '#lib/components/PageBar.svelte';
   import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import SearchLine from '#lib/components/SearchLine.svelte';
-  import { focusOnMount } from '#lib/actions/focus.action.ts';
+  import AddLine from '#lib/components/AddLine.svelte';
   import { peopleAPI } from '#lib/api/people.ts';
   import { displayName, personMatches, splitName } from '#lib/util/people.ts';
   import type { PersonRow } from '#lib/types/person.type.ts';
@@ -32,7 +31,7 @@
 
   const needle = $derived(searchNeedle(query));
   const shown = $derived(people.people.filter((p) => personMatches(p, needle)));
-  const noMatches = $derived(shown.length === 0 && people.people.length > 0);
+  const emptyText = $derived(people.people.length > 0 ? 'No one matches' : 'No people yet');
 
   function hasUpcomingBirthday(p: PersonRow): boolean {
     const birthday = personBirthday(p);
@@ -50,19 +49,12 @@
     await people.load();
     goto(routes.person(id, { isNew: true }));
   }
-
-  function addKeys(e: KeyboardEvent) {
-    if (e.key === 'Enter') add();
-  }
 </script>
 
 <main class="list-page">
   <PageBar meta={summary}><Breadcrumbs crumbs={[{ label: 'People' }]} /></PageBar>
   <SearchLine bind:value={query} label="Search people" placeholder="Search name, phone or email" />
-  <label class="add">
-    <span class="plus">+</span>
-    <input use:plainText bind:this={addInput} use:focusOnMount aria-label="Add person" placeholder="add person (first and last name)" bind:value={draft} onkeydown={addKeys} />
-  </label>
+  <AddLine bind:value={draft} bind:input={addInput} label="Add person" placeholder="add person (first and last name)" onadd={add} />
   <ColumnHeader template="var(--grid-person)" gap="16px" columns={COLUMNS} />
   <div class="list-scroll">
     <div class="table">
@@ -75,7 +67,7 @@
           <span class="m">{p.email ?? ''}</span>
         </a>
       {/each}
-      {#if noMatches}<span class="caption muted none">No one matches</span>{/if}
+      {#if shown.length === 0}<span class="list-empty">{emptyText}</span>{/if}
     </div>
   </div>
 </main>
@@ -85,34 +77,6 @@
   .table {
     display: flex;
     flex-direction: column;
-  }
-
-  .add {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 36px;
-    font: var(--text-ui);
-    color: var(--c-muted-2);
-  }
-
-  .plus {
-    width: 16px;
-    text-align: center;
-  }
-
-  .add input {
-    flex: 1;
-    border: 0;
-    outline: none;
-    background: transparent;
-    font: var(--text-ui);
-    color: var(--text);
-  }
-
-  .add input::placeholder {
-    color: var(--c-muted-2);
   }
 
   .prow {
@@ -150,9 +114,5 @@
 
   .m.soon {
     color: var(--accent);
-  }
-
-  .none {
-    padding: 10px 0;
   }
 </style>

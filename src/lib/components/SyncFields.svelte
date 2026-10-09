@@ -14,11 +14,11 @@
 <div class="fields">
   <label class="row">
     <span class="lbl">Repo URL</span>
-    <input use:plainText class="fld mono" placeholder="https://github.com/you/notes.git" bind:value={setup.url} />
+    <input use:plainText class="field mono grow" placeholder="https://github.com/you/notes.git" bind:value={setup.url} />
   </label>
   <label class="row">
     <span class="lbl">Token</span>
-    <input class="fld mono" type="password" autocomplete="off" placeholder="saved in the Keychain only" bind:value={setup.token} />
+    <input class="field mono grow" type="password" autocomplete="off" placeholder="saved in the Keychain only" bind:value={setup.token} />
   </label>
   <button class="more" aria-expanded={more} onclick={() => (more = !more)}>
     <Icon name={more ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />More
@@ -26,11 +26,11 @@
   {#if more}
     <label class="row">
       <span class="lbl">Branch</span>
-      <input use:plainText class="fld mono" placeholder="main" bind:value={setup.branch} />
+      <input use:plainText class="field mono grow" placeholder="main" bind:value={setup.branch} />
     </label>
     <label class="row">
       <span class="lbl">Username</span>
-      <input use:plainText class="fld mono" placeholder="x-access-token" bind:value={setup.username} />
+      <input use:plainText class="field mono grow" placeholder="x-access-token" bind:value={setup.username} />
     </label>
   {/if}
   <p class="warn">{publicRepoWarning}</p>
@@ -53,23 +53,6 @@
     flex: 0 0 80px;
     font: var(--text-caption);
     color: var(--text-muted);
-  }
-
-  .fld {
-    flex: 1;
-    min-width: 0;
-    height: 28px;
-    padding: 0 8px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    outline: none;
-    background: var(--c-page);
-    color: var(--text);
-    font: var(--text-mono);
-  }
-
-  .fld:focus {
-    border-color: var(--primary);
   }
 
   .more {

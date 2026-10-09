@@ -63,7 +63,7 @@
     padding: 8px 10px;
     background: var(--c-page);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     font: var(--text-ui);
     cursor: pointer;
     touch-action: none;

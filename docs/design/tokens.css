@@ -89,7 +89,7 @@
   --font-ui: 'Lato', sans-serif;              /* 14/20 body UI; 13/18 captions; 12/16 meta */
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;  /* note editor 15/26, values, paths, kbd */
 
-  /* type roles: use these, not raw font values */
+  /* type roles: use these, not raw font values. Lato ships 400 and 700 only, so no 500 in --font-ui. */
   --text-heading:        500 28px/36px var(--font-heading);  /* page titles */
   --text-brand:          600 32px/40px var(--font-heading);  /* the wordmark */
   --text-title:          500 18px/26px var(--font-heading);  /* headings inside a note */
@@ -97,7 +97,6 @@
   --text-subsection:     500 14px/20px var(--font-heading);  /* small headings */
   --text-ui:             400 14px/20px var(--font-ui);  /* rows, fields, buttons: the default */
   --text-ui-strong:      700 14px/20px var(--font-ui);  /* primary buttons */
-  --text-label:          500 14px/20px var(--font-ui);  /* labels */
   --text-caption:        400 13px/18px var(--font-ui);  /* secondary text, chips, breadcrumbs */
   --text-caption-strong: 700 13px/18px var(--font-ui);  /* emphasis at caption size */
   --text-meta:           400 12px/16px var(--font-ui);  /* dates, counts, hints */
@@ -115,6 +114,7 @@
   --space-6: 24px;
   --radius-xs: 2px;
   --radius-sm: 4px;
+  --radius-control: 6px;  /* buttons, error boxes, the search field */
   --radius-md: 8px;
   --radius-lg: 16px;
 

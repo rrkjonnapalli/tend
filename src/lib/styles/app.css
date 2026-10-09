@@ -112,43 +112,76 @@ a:hover {
   background: var(--success-soft);
 }
 
-/* Primary filled button (Send, Open vault, Create). */
-.btn-primary {
+/* A toggle that is on (List / Board, Hide done). */
+.icon-btn.on {
+  background: var(--c-chip);
+  color: var(--text);
+}
+
+/* Buttons. One height (28px) everywhere; `.lg` (36px) only for the Start page's main steps. */
+.btn-primary,
+.btn-danger,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
   height: 28px;
   padding: 0 12px;
   border: 0;
-  border-radius: 6px;
-  background: var(--primary);
-  color: var(--on-primary);
+  border-radius: var(--radius-control);
   font: var(--text-caption-strong);
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.btn-primary:hover {
+.btn-primary {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
 }
 
-.btn-primary:disabled {
-  background: var(--border);
-  color: var(--c-muted-2);
-  cursor: default;
-}
-
 .btn-danger {
-  height: 28px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 6px;
   background: var(--danger-fill);
   color: var(--on-danger);
-  font: var(--text-caption-strong);
-  cursor: pointer;
 }
 
+.btn-ghost {
+  border: 1px solid var(--border);
+  background: var(--c-page);
+  color: var(--text);
+  font: var(--text-caption);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--c-muted-2);
+}
+
+.btn-primary:disabled,
 .btn-danger:disabled {
   background: var(--border);
   color: var(--c-muted-2);
   cursor: default;
+}
+
+.btn-ghost:disabled {
+  color: var(--c-muted-2);
+  cursor: default;
+}
+
+.btn-primary.lg,
+.btn-danger.lg,
+.btn-ghost.lg {
+  height: 36px;
+  padding: 0 16px;
+  font: var(--text-ui-strong);
+}
+
+.btn-ghost.lg {
+  font: var(--text-ui);
 }
 
 /* Quiet text button (Cancel, Change, links that act). */
@@ -168,11 +201,15 @@ a:hover {
   color: var(--text);
 }
 
+/* A button that reads as a link (Change vault folder…, Replace). `.lead` is the Start page's
+   first step, with an icon. */
 .link-btn {
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--link);
+  font: var(--text-ui);
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -181,97 +218,69 @@ a:hover {
   text-decoration: underline;
 }
 
-/* One key cap: ⌘, K, ⇧ … */
-kbd {
-  display: inline-grid;
-  place-items: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  border: 1px solid var(--border);
-  border-bottom-width: 2px;
-  border-radius: var(--radius-sm);
-  background: var(--c-page);
-  font: 400 11px/14px var(--font-mono);
-  color: var(--text-muted);
-}
-
-/* Thin, quiet scrollbars like an editor. */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border: 3px solid var(--c-page);
-  border-radius: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-/* Option rows inside popovers: menus, suggestions, dropdowns. */
-.opt {
+.link-btn.lead {
   display: flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 28px;
-  padding: 0 12px;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  font: var(--text-caption);
+  gap: 10px;
+  min-height: 34px;
+  align-self: flex-start;
+}
+
+/* A bordered text field. `.mono` for values (paths, dates, tokens); `.bad` when it's invalid. */
+.field {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--c-page);
   color: var(--text);
-  white-space: nowrap;
-  cursor: pointer;
+  font: var(--text-ui);
 }
 
-.opt:hover,
-.opt.on {
-  background: var(--c-hover);
+.field:focus {
+  border-color: var(--primary);
 }
 
-.opt.new {
-  color: var(--primary);
+.field.mono {
+  font: var(--text-mono);
 }
 
-.opt.danger {
+/* Takes the rest of its row. */
+.field.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+.field.bad {
+  border-color: var(--danger);
   color: var(--danger);
 }
 
-.opt.danger:hover {
+/* An error that stops a step (Start, Sync, opening a vault). Small inline errors use `.err-line`. */
+.banner-err {
+  padding: 10px 12px;
+  border-radius: var(--radius-control);
   background: var(--danger-soft);
-}
-
-.opt .hint {
-  margin-left: auto;
-  font: 400 11px/16px var(--font-mono);
-  color: var(--c-faint);
-}
-
-.opt-sep {
-  height: 1px;
-  margin: 4px 0;
-  background: var(--c-chip);
-}
-
-/* Bordered secondary button (Cancel, Change). */
-.btn-ghost {
-  height: 30px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--c-page);
-  color: var(--text);
+  color: var(--on-danger-soft);
   font: var(--text-caption);
-  cursor: pointer;
 }
 
-.btn-ghost:hover {
-  border-color: var(--c-muted-2);
+.banner-err .mono {
+  color: var(--on-danger-soft);
+}
+
+/* What a list says when it has no rows. */
+.list-empty {
+  display: block;
+  padding: 8px 0;
+  font: var(--text-caption);
+  color: var(--c-muted-2);
+}
+
+.err-line {
+  font: var(--text-meta);
+  color: var(--danger);
 }
 
 /* Controls that appear only while their row is hovered or focused. */

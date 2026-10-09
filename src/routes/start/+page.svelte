@@ -115,19 +115,19 @@
       <section class="sec">
         <h3 class="h3">Start</h3>
         {#if !check}
-          <button class="act" onclick={choose}><Icon name="folder" size={15} />Choose vault folder…</button>
+          <button class="link-btn lead" onclick={choose}><Icon name="folder" size={15} />Choose vault folder…</button>
           <div class="vlist">
             <div><span class="mono">the folder</span><span class="cap">your notes: .md files and folders, lowercase names</span></div>
             <div><span class="mono">.tend/attachments/</span><span class="cap">attached files, created if missing</span></div>
             <div><span class="mono">.tend/tend.db</span><span class="cap">everything else, created if missing</span></div>
           </div>
-          {#if failure}<div class="err" role="alert">{failure}</div>{/if}
+          {#if failure}<div class="banner-err" role="alert">{failure}</div>{/if}
           <StartRestore onrestored={openVault} />
         {:else}
           <div class="path">
             <span class="folder"><Icon name="folder" size={15} /></span>
             <span class="p">{check.path}</span>
-            <button class="gbtn sm" onclick={reset}>Change</button>
+            <button class="btn-ghost" onclick={reset}>Change</button>
           </div>
           <StartChecklist steps={check.steps} {shown} />
           {#if check.confirm}
@@ -139,15 +139,15 @@
               logged). Other files are left alone.
             </div>
             <div class="row">
-              <button class="pbtn" onclick={useFolder}>Use this folder</button>
-              <button class="gbtn" onclick={choose}>Choose another folder</button>
+              <button class="btn-primary lg" onclick={useFolder}>Use this folder</button>
+              <button class="btn-ghost lg" onclick={choose}>Choose another folder</button>
             </div>
           {:else if done && !check.ok}
-            <div class="err" role="alert">
+            <div class="banner-err" role="alert">
               An incompatible database exists in <span class="mono">.tend/tend.db</span>. Choose another folder, or
               move that file out of the way and try again.
             </div>
-            <div><button class="pbtn" onclick={choose}>Choose another folder</button></div>
+            <div><button class="btn-primary lg" onclick={choose}>Choose another folder</button></div>
           {/if}
           {#if done && check.ok && toFix.length}
             <div class="note">
@@ -156,11 +156,11 @@
               <span class="mono">{toFix[0].fix}</span>. Other apps’ links to those files will break.
             </div>
             <div class="row">
-              <button class="pbtn" onclick={fixAndEnter}>Rename and open →</button>
-              <button class="gbtn" onclick={enter}>Open without renaming</button>
+              <button class="btn-primary lg" onclick={fixAndEnter}>Rename and open →</button>
+              <button class="btn-ghost lg" onclick={enter}>Open without renaming</button>
             </div>
           {:else if done && check.ok}
-            <div><button class="pbtn" onclick={enter}>Open vault →</button></div>
+            <div><button class="btn-primary lg" onclick={enter}>Open vault →</button></div>
           {/if}
         {/if}
       </section>
@@ -252,25 +252,6 @@
     gap: 12px;
   }
 
-  .act {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-height: 34px;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--primary);
-    font: var(--text-ui);
-    cursor: pointer;
-    align-self: flex-start;
-  }
-
-  .act:hover {
-    color: var(--primary-hover);
-    text-decoration: underline;
-  }
-
   .vlist {
     display: flex;
     flex-direction: column;
@@ -311,35 +292,6 @@
     white-space: nowrap;
   }
 
-  .gbtn {
-    display: inline-flex;
-    align-items: center;
-    height: 28px;
-    padding: 0 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--c-page);
-    color: var(--text);
-    font: var(--text-caption);
-    cursor: pointer;
-  }
-
-  .gbtn:hover {
-    border-color: var(--c-muted-2);
-  }
-
-  .err {
-    padding: 10px 12px;
-    border-radius: 6px;
-    background: var(--danger-soft);
-    color: var(--on-danger-soft);
-    font: var(--text-caption);
-  }
-
-  .err .mono {
-    color: var(--on-danger-soft);
-  }
-
   .note {
     padding: 10px 12px;
     border-radius: var(--radius-sm);
@@ -353,24 +305,6 @@
     gap: var(--space-2);
   }
 
-  .pbtn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 36px;
-    padding: 0 16px;
-    border: 0;
-    border-radius: var(--radius-md);
-    background: var(--primary);
-    color: var(--on-primary);
-    font: var(--text-ui-strong);
-    cursor: pointer;
-  }
-
-  .pbtn:hover {
-    background: var(--primary-hover);
-  }
-
   .cmd {
     display: flex;
     align-items: center;
@@ -378,7 +312,7 @@
     min-height: 34px;
     padding: 0 12px;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     font: var(--text-caption);
     color: var(--text-muted);
   }

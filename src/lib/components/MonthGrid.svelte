@@ -104,7 +104,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font: var(--text-label);
+    font: var(--text-ui);
   }
 
   .nav {

@@ -39,7 +39,7 @@
   <h2 class="h2">Vault</h2>
   <div class="vault">
     <span class="vpath">{vault.path}</span>
-    <button class="tlink" onclick={() => goto(routes.start)}>Change vault folder…</button>
+    <button class="link-btn" onclick={() => goto(routes.start)}>Change vault folder…</button>
   </div>
   {#if skipped.length}
     <button class="skipped" aria-expanded={showSkipped} onclick={toggleSkipped}>
@@ -53,7 +53,7 @@
         {/each}
       </ul>
       {#if toFix}
-        <div><button class="tlink" onclick={fixNames}>Rename {plural(toFix, 'item')} to fit</button></div>
+        <div><button class="link-btn" onclick={fixNames}>Rename {plural(toFix, 'item')} to fit</button></div>
       {/if}
     {/if}
   {/if}
@@ -139,18 +139,4 @@
     accent-color: var(--primary);
   }
 
-  .tlink {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--link);
-    font: var(--text-ui);
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .tlink:hover {
-    color: var(--primary-hover);
-    text-decoration: underline;
-  }
 </style>
