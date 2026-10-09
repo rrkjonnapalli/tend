@@ -9,6 +9,7 @@ export const icons = {
   person: '<circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
   folder: '<path d="M3 6h6l2 2h10v11H3z"/>',
   folderNew: '<path d="M3 6h6l2 2h10v11H3z"/><path d="M12 11v5M9.5 13.5h5"/>',
+  sync: '<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20v-4h-4"/>',
   reload: '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>',
   collapseAll: '<path d="M8 4l4 4 4-4"/><path d="M8 20l4-4 4 4"/><path d="M5 12h14"/>',
   chevronDown: '<path d="M6 9l6 6 6-6"/>',

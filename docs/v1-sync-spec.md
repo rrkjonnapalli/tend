@@ -424,8 +424,9 @@ never sent to the UI. The other sync settings live in the app config folder, key
 
 ## 16. Status UI
 
-- **Dock icon** next to the timer chip: ✓ synced · ↻ syncing · ! error (red); hover = last sync
-  or the error; click → Settings → Sync. Hidden when the vault isn't connected.
+- **Dock sync button** next to the timer chip: a sync icon; click syncs now (ignored while a run
+  is going). It spins with "Syncing…" during a run and turns red after a failure; hover = last
+  successful sync or the error. Hidden when the vault isn't connected.
 - **Settings → Sync:** not connected: the connect fields and Connect. Connected: URL, branch,
   token status (Replace / Add), interval (minutes, edited in place: pencil, then ✓ / ✕), the last sync's time to the second (after
   a failure: last synced and last failed, with the reason), Sync now,

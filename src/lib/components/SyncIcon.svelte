@@ -1,14 +1,10 @@
 <script lang="ts">
-  // The sync mark in the bottom bar, next to the timer chip: ✓ synced, ↻ syncing, ! failed.
-  // Hover shows the last sync; a click opens Settings → Sync. Hidden when the vault isn't connected.
+  // The sync button in the bottom bar, next to the timer chip. A click syncs now (unless a run is
+  // going); it spins with "Syncing…" during a run and turns red after a failure. Hover tells the
+  // last sync. Hidden when the vault isn't connected; Settings → Sync holds the rest.
   import Icon from './Icon.svelte';
-  import type { IconName } from '#lib/types/icon.type.ts';
-  import type { SyncState } from '#lib/types/sync.type.ts';
   import { sync } from '#lib/stores/sync.svelte.ts';
   import { ago } from '#lib/util/dates.ts';
-  import { routes } from '#lib/util/routes.ts';
-
-  const ICONS: Record<Exclude<SyncState, 'off'>, IconName> = { running: 'reload', failed: 'alert', synced: 'check' };
 
   const state = $derived(sync.state);
   const title = $derived(titleOf());
@@ -18,16 +14,21 @@
     if (state === 'running') return 'Syncing…';
     if (s?.error) return `Sync failed: ${s.error.message}`;
     if (state === 'failed') return 'The last sync failed';
-    if (!s?.lastRunAt) return 'Sync';
-    return `Synced ${ago(s.lastRunAt)}`;
+    if (!s?.lastOkAt) return 'Sync now';
+    return `Synced ${ago(s.lastOkAt)} · click to sync now`;
+  }
+
+  function syncNow() {
+    if (state === 'running') return;
+    sync.now();
   }
 </script>
 
 {#if state !== 'off'}
-  <a class="ico" class:failed={state === 'failed'} class:spin={state === 'running'} href={routes.settingsSection('sync')} aria-label={title} {title}>
-    <Icon name={ICONS[state]} size={14} stroke={2.25} />
+  <button class="ico" class:failed={state === 'failed'} class:spin={state === 'running'} aria-label={title} {title} onclick={syncNow}>
+    <Icon name="sync" size={14} stroke={2} />
     {#if state === 'running'}<span class="txt">Syncing…</span>{/if}
-  </a>
+  </button>
 {/if}
 
 <style>
@@ -38,12 +39,17 @@
     gap: 6px;
     min-width: 28px;
     height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
     color: var(--c-muted-2);
-    text-decoration: none;
+    cursor: pointer;
   }
 
   .ico.spin {
     padding: 0 8px;
+    cursor: default;
   }
 
   .txt {
