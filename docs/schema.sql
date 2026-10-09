@@ -304,6 +304,7 @@ CREATE TABLE feedback (
 CREATE TABLE sync_state (
   id                 INTEGER PRIMARY KEY CHECK (id = 1),
   last_synced_commit TEXT,
+  pending_commit     TEXT,               -- made and being pushed; the base once the remote has it
   last_run_at        INTEGER,
   last_result        TEXT                -- 'ok', or an error key from the registry
 ) STRICT;

@@ -107,7 +107,7 @@ attachments  id · path · name · mime_type · size_bytes · sha256 · updated_
 
 | Table | Purpose |
 |---|---|
-| `sync_state (id = 1, last_synced_commit, last_run_at, last_result)` | The base of the next merge (the commit both sides last agreed on) and how the last run went (§13). |
+| `sync_state (id = 1, last_synced_commit, pending_commit, last_run_at, last_result)` | The base of the next merge (the commit both sides last agreed on), the commit being pushed, and how the last run went (§13). |
 | `path_log (id, kind, reason, old_path, new_path, at)` | Every rename or move of a folder or note file, by the user, a scan fixing a name, or sync applying a rename, so an earlier layout can be restored. Never trimmed. |
 
 There is no tombstone table and no write log: with a base, a deletion is simply a row the base has
@@ -354,16 +354,23 @@ lock (one run at a time; triggers during a run coalesce into it)
 → rebuild shards (§8.2)
 → idle check: git status clean · remote head = last_synced_commit  →  stop
 → read base, local and remote rows · reconcile (§9)
-→ apply (§10) · rebuild shards · commit on top of the remote head
+→ apply (§10), and in the same transaction: last_synced_commit = the fetched remote head
+→ rebuild shards · commit on top of the remote head · pending_commit = that commit
 → push if ahead (retry once after a rejection)
-→ sync_state: last_synced_commit = pushed head, last run and result
+→ sync_state: last_synced_commit = the pushed commit, pending_commit cleared, last run and result
 → resume watcher · reload stores · update status
 ```
 
-- The base moves **only after a successful push**. A failed or cut-short run leaves it, so the next
-  run sees the same changes again.
-- A crash after the push but before `sync_state` is saved is harmless: the next run reconciles the
-  same data, finds nothing new to commit and only moves the base.
+- The base moves **with the apply**: once the remote's changes are in the database, the fetched
+  head is what this device and the remote agree on, so it becomes the base in the same
+  transaction. (Found by the simulation: if the base waited for the push, a crash in between and
+  a later delete of a row that just came in would make the next run see it as a remote add and
+  bring it back.) After a successful push the base moves again, to the pushed commit. A run cut
+  short before the apply changes nothing.
+- **A crash after the push** but before the base moves: the next run first checks `pending_commit`.
+  If the fetched remote contains it, it becomes the base; otherwise it is dropped. (Also found by
+  the simulation: without this, a row created and pushed, then deleted locally, would look like a
+  remote add and come back.)
 - **On app open** the order is always: open the vault → scan → sync. Edits made while Tend
   was closed are indexed (with their `updated_at`) before the merge sees them.
 
@@ -473,7 +480,8 @@ middle of a run, random sync order. After every round it asserts:
 - a change made on only one side is never lost;
 - syncing twice in a row produces no new commit.
 
-Failures shrink to the smallest sequence of steps that reproduces them.
+Each seed replays exactly. The simulation lives in `sync/reconcile/sim_tests.rs` (150 seeds × 120
+steps in the normal test run; 2,000 × 300 also pass). It found the two base-moving rules in §13.
 
 ## 20. Open items
 
