@@ -81,7 +81,14 @@ Each can come back later; none changes the shard layout.
     dock icon and Start → Restore from Git. There are no mockups for them; they reuse the
     Settings and Start page styles.
 
-## Not done
+## Not done (sync v1 closed 2026-10-09; these come later)
+
+- C1: connecting two vaults that both hold data (a first merge on an empty base).
+- A lost base: keep stopping, or merge the same way.
+- `README.md` / `readme.md` pairs that differ only in case on the remote.
+- Hashing remote files by Git's blob id instead of SHA-256.
+- "Syncing…" shown while quitting; a long deadline and progress for a big first push or restore.
+- Snapshot size and files over 100 MB in Settings; a token store off macOS.
 
 19. An end-to-end simulation through real databases and Git (the snapshot-level one is fast but
     missed #7). Worth adding before release.
