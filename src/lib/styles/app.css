@@ -227,7 +227,7 @@ a:hover {
 }
 
 /* A bordered text field. `.mono` for values (paths, dates, tokens); `.bad` when it's invalid. */
-.field {
+.text-field {
   height: 28px;
   padding: 0 8px;
   border: 1px solid var(--border);
@@ -238,21 +238,21 @@ a:hover {
   font: var(--text-ui);
 }
 
-.field:focus {
+.text-field:focus {
   border-color: var(--primary);
 }
 
-.field.mono {
+.text-field.mono {
   font: var(--text-mono);
 }
 
 /* Takes the rest of its row. */
-.field.grow {
+.text-field.grow {
   flex: 1;
   min-width: 0;
 }
 
-.field.bad {
+.text-field.bad {
   border-color: var(--danger);
   color: var(--danger);
 }

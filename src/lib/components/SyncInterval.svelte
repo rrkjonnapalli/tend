@@ -50,7 +50,7 @@
 <div class="line">
   {#if editing}
     <input
-      class="field mono num"
+      class="text-field mono num"
       class:bad={!valid}
       type="number"
       min={intervalLimits.min}

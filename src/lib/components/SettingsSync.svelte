@@ -76,7 +76,7 @@
     <div class="kv">
       <span class="k">Token</span>
       {#if replacing}
-        <input class="field mono grow" type="password" autocomplete="off" aria-label="New token" bind:value={token} use:plainText />
+        <input class="text-field mono grow" type="password" autocomplete="off" aria-label="New token" bind:value={token} use:plainText />
         <button class="link-btn" onclick={saveToken}>Save</button>
         <button class="link-btn" onclick={() => (replacing = false)}>Cancel</button>
       {:else}

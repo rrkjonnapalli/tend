@@ -57,7 +57,7 @@
       <!-- svelte-ignore a11y_autofocus -->
       <input
         use:plainText
-        class="field mono"
+        class="text-field mono"
         class:armed={!blocked}
         aria-label="Name to confirm"
         autocomplete="off"
@@ -101,7 +101,7 @@
   }
 
   /* The word is typed: the next Enter deletes. */
-  .field.armed {
+  .text-field.armed {
     border-color: var(--danger);
   }
 
