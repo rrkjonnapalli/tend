@@ -1,11 +1,13 @@
-//! The shared tag pool. Notes and tasks link to tags by id; names are case-insensitive.
+//! The shared tag pool. A tag is its name, a slug under the name rule (`ui_design`), which is also
+//! its id; notes and tasks link to it. Tags are never renamed.
 
 #[cfg(test)]
 mod tests;
 
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{params, Connection};
 
 use crate::error::AppResult;
+use crate::names;
 use crate::util::{new_id, now_ms};
 
 /// Which owner table a tag list belongs to.
@@ -26,7 +28,7 @@ impl Owner {
 
 pub fn all(conn: &Connection) -> AppResult<Vec<String>> {
     let names = conn
-        .prepare("SELECT name FROM tags ORDER BY name COLLATE NOCASE")?
+        .prepare("SELECT id FROM tags ORDER BY id")?
         .query_map([], |r| r.get(0))?
         .collect::<Result<_, _>>()?;
     Ok(names)
@@ -34,9 +36,7 @@ pub fn all(conn: &Connection) -> AppResult<Vec<String>> {
 
 pub fn of(conn: &Connection, owner: Owner, id: &str) -> AppResult<Vec<String>> {
     let (table, col) = owner.table();
-    let sql = format!(
-        "SELECT t.name FROM {table} x JOIN tags t ON t.id = x.tag_id WHERE x.{col} = ?1 ORDER BY t.name COLLATE NOCASE"
-    );
+    let sql = format!("SELECT tag_id FROM {table} WHERE {col} = ?1 ORDER BY tag_id");
     let names = conn
         .prepare(&sql)?
         .query_map([id], |r| r.get(0))?
@@ -44,23 +44,27 @@ pub fn of(conn: &Connection, owner: Owner, id: &str) -> AppResult<Vec<String>> {
     Ok(names)
 }
 
-/// Finds a tag by name (any case) or creates it.
-fn ensure(conn: &Connection, name: &str) -> AppResult<String> {
-    let found: Option<String> = conn
-        .query_row("SELECT id FROM tags WHERE name = ?1", [name], |r| r.get(0))
-        .optional()?;
-    if let Some(id) = found {
-        return Ok(id);
+/// The tags typed text names, as saved: each slugged, blanks and duplicates dropped, in order.
+fn tag_names(typed: &[String]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for name in typed.iter().filter_map(|t| names::slug(t)) {
+        if !out.contains(&name) {
+            out.push(name);
+        }
     }
-    let id = new_id();
-    conn.execute(
-        "INSERT INTO tags (id, name, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)",
-        params![id, name, now_ms()],
-    )?;
-    Ok(id)
+    out
 }
 
-/// Replaces the owner's tags. Blank names are ignored; tags no longer used anywhere stay in the
+fn ensure(conn: &Connection, tag: &str) -> AppResult<()> {
+    conn.execute(
+        "INSERT OR IGNORE INTO tags (id, created_at, updated_at) VALUES (?1, ?2, ?2)",
+        params![tag, now_ms()],
+    )?;
+    Ok(())
+}
+
+/// Replaces the owner's tags with `names`, each saved as its slug. Text with no letter or digit
+/// is ignored; tags no longer used anywhere stay in the
 /// pool. Only links that change are written, so unchanged links keep their ids (and aren't
 /// recorded as deleted).
 pub fn set(
@@ -71,9 +75,9 @@ pub fn set(
 ) -> AppResult<Vec<String>> {
     let (table, col) = owner.table();
     let tx = conn.transaction()?;
-    let mut wanted = Vec::new();
-    for name in names.iter().map(|n| n.trim()).filter(|n| !n.is_empty()) {
-        wanted.push(ensure(&tx, name)?);
+    let wanted = tag_names(names);
+    for tag in &wanted {
+        ensure(&tx, tag)?;
     }
     let current: Vec<String> = tx
         .prepare(&format!("SELECT tag_id FROM {table} WHERE {col} = ?1"))?

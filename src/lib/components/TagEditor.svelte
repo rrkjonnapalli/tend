@@ -4,6 +4,7 @@
   // Tag chips with a red ✕ each, and an inline input that suggests tags from the shared pool.
   import Popover from './Popover.svelte';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
+  import { slug } from '#lib/util/names.ts';
   import { tagPool } from '#lib/stores/tags.svelte.ts';
   import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
 
@@ -20,24 +21,23 @@
   let hi = $state(0);
   let input = $state<HTMLInputElement>();
 
-  const lower = (s: string) => s.toLowerCase();
-  const typed = $derived(draft.trim());
-  const query = $derived(lower(typed));
-  const have = $derived(new Set(tags.map(lower)));
+  // A tag is its slug ("UI Design" → ui_design), the same on every device.
+  const query = $derived(slug(draft));
+  const have = $derived(new Set(tags));
 
   const options = $derived.by(() => {
-    const isSuggestion = (t: string) => !have.has(lower(t)) && (!query || lower(t).includes(query));
+    const isSuggestion = (t: string) => !have.has(t) && (!query || t.includes(query));
     const matches = tagPool.names.filter(isSuggestion).slice(0, MAX);
     const out = matches.map((t) => ({ label: t, value: t, isNew: false }));
-    const exists = tagPool.names.some((t) => lower(t) === query) || have.has(query);
-    if (query && !exists) out.push({ label: `Create “${typed}”`, value: typed, isNew: true });
+    const exists = tagPool.names.includes(query) || have.has(query);
+    if (query && !exists) out.push({ label: `Create “${query}”`, value: query, isNew: true });
     return out;
   });
 
   function add(value: string) {
-    const v = value.trim();
+    const v = slug(value);
     clearDraft();
-    if (!v || have.has(lower(v))) return;
+    if (!v || have.has(v)) return;
     tagPool.learn([v]);
     onchange([...tags, v]);
   }

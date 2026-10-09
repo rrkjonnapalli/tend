@@ -76,7 +76,7 @@ fn notes_round_trip_through_ipc() {
     assert!(doc["modifiedAt"].is_number());
 
     let tags = h.ok("note_tags_set", json!({ "id": id, "tags": ["ops", "Q4"] }));
-    assert_eq!(tags, json!(["ops", "Q4"]));
+    assert_eq!(tags, json!(["ops", "q4"]));
 
     h.ok(
         "item_rename",
@@ -158,7 +158,7 @@ fn tasks_round_trip_through_ipc() {
     h.ok("task_tags_set", json!({ "id": pid, "tags": ["v0.1"] }));
     h.ok("comment_add", json!({ "task": pid, "body": "looks good" }));
     let detail = h.ok("task_get", json!({ "id": pid }));
-    assert_eq!(detail["tags"], json!(["v0.1"]));
+    assert_eq!(detail["tags"], json!(["v0_1"]));
     assert_eq!(
         h.ok("comments_list", json!({ "task": pid }))[0]["body"],
         "looks good"

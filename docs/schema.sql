@@ -45,9 +45,12 @@ CREATE TABLE settings (
 -------------------------------------------------------------------------------
 -- 1. Tags (shared by notes and tasks)
 -------------------------------------------------------------------------------
+-- A tag is its name: id = the typed text's slug under the name rule ("UI Design" → ui_design),
+-- made the same way on every device, so the same tag always has the same id. Tags aren't renamed.
 CREATE TABLE tags (
-  id         TEXT PRIMARY KEY,
-  name       TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  id         TEXT PRIMARY KEY CHECK (
+               id <> '' AND id NOT GLOB '*[^a-z0-9_]*'
+               AND id NOT GLOB '_*' AND id NOT GLOB '*_' AND id NOT GLOB '*__*'),
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 ) STRICT;

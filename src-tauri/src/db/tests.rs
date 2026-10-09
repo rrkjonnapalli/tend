@@ -40,7 +40,7 @@ fn reopens_existing_without_migrating() {
 fn deletes_leave_tombstones_and_activity() {
     let conn = super::open_memory();
     conn.execute(
-        "INSERT INTO tags (id, name, created_at, updated_at) VALUES ('t1', 'ops', 5, 5)",
+        "INSERT INTO tags (id, created_at, updated_at) VALUES ('t1', 5, 5)",
         [],
     )
     .unwrap();
