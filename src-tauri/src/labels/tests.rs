@@ -17,8 +17,8 @@ fn task(conn: &mut Connection) -> String {
 #[test]
 fn add_rename_recolor_and_order() {
     let mut conn = open_memory();
-    let script = add(&conn, "script", "#1259d3").unwrap();
-    let review = add(&conn, " review in progress ", "#d57149").unwrap();
+    let script = add(&conn, "script", "SCRIPT", "#1259d3").unwrap();
+    let review = add(&conn, " review in progress ", "REVIEW", "#d57149").unwrap();
     assert_eq!(review.name, "review in progress");
     assert_eq!(
         list(&conn)
@@ -29,13 +29,13 @@ fn add_rename_recolor_and_order() {
         ["script", "review in progress"]
     );
 
-    assert!(add(&conn, "Script", "#000000")
+    assert!(add(&conn, "Script", "OTHER", "#000000")
         .unwrap_err()
         .is(errors::LABEL_NAME_TAKEN));
-    assert!(add(&conn, "  ", "#000000")
+    assert!(add(&conn, "  ", "BLANK", "#000000")
         .unwrap_err()
         .is(errors::LABEL_NAME_EMPTY));
-    assert!(add(&conn, "x", "blue")
+    assert!(add(&conn, "x", "X", "blue")
         .unwrap_err()
         .is(errors::COLOR_INVALID));
     assert!(rename(&conn, &review.id, "SCRIPT")
@@ -61,8 +61,8 @@ fn add_rename_recolor_and_order() {
 #[test]
 fn tasks_carry_labels_until_the_label_is_deleted() {
     let mut conn = open_memory();
-    let a = add(&conn, "script", "#1259d3").unwrap();
-    let b = add(&conn, "pending approval", "#d57149").unwrap();
+    let a = add(&conn, "script", "SCRIPT", "#1259d3").unwrap();
+    let b = add(&conn, "pending approval", "PENDING_APPROVAL", "#d57149").unwrap();
     let t = task(&mut conn);
 
     let set = set_for_task(&mut conn, &t, &[b.id.clone(), a.id.clone()]).unwrap();
@@ -78,16 +78,23 @@ fn tasks_carry_labels_until_the_label_is_deleted() {
 }
 
 #[test]
-fn a_label_id_is_its_first_names_slug_and_never_changes() {
+fn a_label_value_is_its_id_in_capitals_and_never_changes() {
     let conn = open_memory();
-    let pr = add(&conn, "PR review", "#f67280").unwrap();
+    let pr = add(&conn, "PR review", "PR_REVIEW", "#f67280").unwrap();
     assert_eq!(pr.id, "pr_review");
-    assert!(add(&conn, "pr-review", "#f67280")
+    // Another name, same value: the user is asked to change the value, not given a suffix.
+    assert!(add(&conn, "PR reviews", "PR_REVIEW", "#f67280")
         .unwrap_err()
-        .is(errors::LABEL_NAME_TAKEN));
-    assert!(add(&conn, "!!", "#f67280")
-        .unwrap_err()
-        .is(errors::NAME_CHARS));
+        .is(errors::LABEL_VALUE_TAKEN));
+    assert!(add(&conn, "C#", "C_SHARP", "#f67280").is_ok());
+    for bad in ["db script", "db_script", "_X", "X__Y", ""] {
+        assert!(
+            add(&conn, "Odd", bad, "#f67280")
+                .unwrap_err()
+                .is(errors::LABEL_VALUE),
+            "{bad}"
+        );
+    }
     let renamed = rename(&conn, "pr_review", "Code review").unwrap();
     assert_eq!(
         (renamed.id.as_str(), renamed.name.as_str()),

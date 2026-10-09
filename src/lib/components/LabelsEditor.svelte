@@ -14,6 +14,7 @@
   import { startReorder } from '#lib/util/reorder.ts';
   import { freeSwatch } from '#lib/util/swatches.ts';
   import { plural } from '#lib/util/plural.ts';
+  import { statusValue } from '#lib/util/statuses.ts';
 
   tasks.loadLabels();
 
@@ -52,9 +53,9 @@
     return failure === null;
   }
 
-  function addLabel({ name }: { name: string }) {
+  function addLabel({ name, value }: { name: string; value: string }) {
     const color = freeSwatch(tasks.labels.map((l) => l.color));
-    return apply(() => labelsAPI.add({ name, color }));
+    return apply(() => labelsAPI.add({ name, value, color }));
   }
 
   function startEdit(id: string) {
@@ -127,6 +128,7 @@
         id={l.id}
         name={l.name}
         color={l.color}
+        meta={l.id.toUpperCase()}
         nameLabel="Label name"
         editing={editing === l.id}
         lifted={lifted === l.id && preview !== null}
@@ -139,7 +141,7 @@
         onremove={() => askRemove(l)} />
     {/each}
   </div>
-  <ColorListAddRow what="label" onadd={addLabel} />
+  <ColorListAddRow what="label" toValue={statusValue} onadd={addLabel} />
 </Section>
 
 {#if swatchFor}

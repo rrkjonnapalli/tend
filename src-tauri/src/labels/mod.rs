@@ -65,10 +65,31 @@ fn taken_on_conflict(e: rusqlite::Error) -> AppError {
     }
 }
 
-/// Adds a label at the end of the list. Its id is the slug of its name, fixed from now on.
-pub fn add(conn: &Connection, name: &str, color: &str) -> AppResult<Label> {
+/// A label's value (`DB_SCRIPT`) as its id (`db_script`): the value is the id shown in capitals,
+/// so it follows the name rule. Refuses a value another label already has.
+fn id_of(conn: &Connection, value: &str) -> AppResult<String> {
+    let value = value.trim();
+    let id = value.to_lowercase();
+    let capitals = value == value.to_uppercase();
+    if !capitals || !names::is_valid(&id) {
+        return Err(errors::LABEL_VALUE.err());
+    }
+    let taken = conn
+        .query_row("SELECT 1 FROM task_labels WHERE id = ?1", [&id], |_| Ok(()))
+        .optional()?;
+    if taken.is_some() {
+        return Err(errors::LABEL_VALUE_TAKEN.with(format!(
+            "{value} is already used by another label. Change the value."
+        )));
+    }
+    Ok(id)
+}
+
+/// Adds a label at the end of the list. Its value (shown in capitals, stored as its id) is picked
+/// when it is added and never changes: tasks and other devices refer to the label by it.
+pub fn add(conn: &Connection, name: &str, value: &str, color: &str) -> AppResult<Label> {
     let name = check_name(name)?;
-    let id = names::slug(&name).ok_or_else(|| errors::NAME_CHARS.err())?;
+    let id = id_of(conn, value)?;
     colors::check(color)?;
     let position: i64 = conn.query_row(
         "SELECT coalesce(max(position) + 1, 0) FROM task_labels",

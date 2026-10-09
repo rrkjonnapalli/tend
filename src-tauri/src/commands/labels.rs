@@ -12,8 +12,13 @@ pub fn labels_list(state: State<AppState>) -> AppResult<Vec<labels::Label>> {
 }
 
 #[tauri::command(async)]
-pub fn label_add(state: State<AppState>, name: String, color: String) -> AppResult<labels::Label> {
-    state.with(|db, _| labels::add(db, &name, &color))
+pub fn label_add(
+    state: State<AppState>,
+    name: String,
+    value: String,
+    color: String,
+) -> AppResult<labels::Label> {
+    state.with(|db, _| labels::add(db, &name, &value, &color))
 }
 
 #[tauri::command(async)]

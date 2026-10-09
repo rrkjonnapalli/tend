@@ -74,6 +74,14 @@ pub const STATUS_IN_USE: ErrorDef = def(
 pub const LABEL_NAME_EMPTY: ErrorDef = def("LABEL_NAME_EMPTY", "A label needs a name.");
 pub const LABEL_NAME_TAKEN: ErrorDef =
     def("LABEL_NAME_TAKEN", "Another label already uses this name.");
+pub const LABEL_VALUE: ErrorDef = def(
+    "LABEL_VALUE",
+    "A value is capital letters, digits and single _ (like DB_SCRIPT).",
+);
+pub const LABEL_VALUE_TAKEN: ErrorDef = def(
+    "LABEL_VALUE_TAKEN",
+    "Another label already uses this value. Change the value.",
+);
 pub const LABEL_ORDER: ErrorDef = def("LABEL_ORDER", "The order must list every label once.");
 
 // ---- people
