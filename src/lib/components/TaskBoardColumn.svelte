@@ -131,7 +131,7 @@
   }
 
   .cadd::placeholder {
-    color: var(--c-faint);
+    color: var(--c-muted-2);
   }
 
   .caddb {
@@ -148,13 +148,13 @@
 
   .caddb:hover {
     color: var(--text);
-    background: var(--c-selected);
+    background: var(--c-hover);
   }
 
   .cempty {
     padding: 12px 4px;
     font: var(--text-meta);
-    color: var(--c-faint);
+    color: var(--c-muted-2);
     text-align: center;
   }
 </style>

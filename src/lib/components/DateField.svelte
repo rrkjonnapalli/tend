@@ -178,8 +178,8 @@
   }
 
   .rangebtn.on {
-    color: var(--text);
-    border-color: var(--primary);
+    color: var(--c-current-ink);
+    border-color: var(--c-current);
   }
 
   .pop {

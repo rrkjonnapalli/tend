@@ -185,7 +185,7 @@
   .ql {
     flex: 0 0 40px;
     font: var(--text-meta);
-    color: var(--c-faint);
+    color: var(--c-muted-2);
   }
 
   .qi {
@@ -199,7 +199,7 @@
   }
 
   .qi::placeholder {
-    color: var(--c-faint);
+    color: var(--c-muted-2);
   }
 
   .time {

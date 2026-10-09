@@ -127,7 +127,7 @@
   .l {
     flex: 0 0 28px;
     font: var(--text-meta);
-    color: var(--c-faint);
+    color: var(--c-muted-2);
   }
 
   input {

@@ -301,7 +301,7 @@
   }
 
   .it.on {
-    background: var(--c-chip);
+    background: var(--c-selected);
   }
 
   .gl {

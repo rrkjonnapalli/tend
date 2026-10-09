@@ -95,7 +95,7 @@
     border: 0;
     border-radius: var(--radius-sm);
     background: var(--c-page);
-    color: var(--c-faint);
+    color: var(--c-muted-2);
     display: grid;
     place-items: center;
     cursor: pointer;

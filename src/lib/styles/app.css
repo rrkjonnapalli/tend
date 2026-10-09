@@ -287,8 +287,8 @@ a:hover {
 /* The keyboard cursor in a list or the explorer (see the rowNav action). */
 [data-row]:focus-visible {
   outline: none;
-  background: var(--c-selected);
-  box-shadow: inset 2px 0 0 var(--focus-ring);
+  background: var(--c-hover);
+  box-shadow: inset 2px 0 0 var(--c-current);
 }
 
 .list-empty {

@@ -110,9 +110,9 @@
   }
 
   .kind.on {
-    color: var(--primary);
-    border-color: var(--primary);
-    background: var(--primary-soft);
+    color: var(--c-current-ink);
+    border-color: var(--c-current);
+    background: var(--c-selected);
   }
 
   textarea {

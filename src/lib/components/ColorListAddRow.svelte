@@ -116,7 +116,7 @@
   }
 
   .addrow .vin::placeholder {
-    color: var(--c-faint);
+    color: var(--c-muted-2);
   }
 
   .adderr {

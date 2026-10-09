@@ -171,12 +171,12 @@
 
   .pin {
     font: var(--text-tiny);
-    color: var(--c-faint);
+    color: var(--c-muted-2);
   }
 
   .sval {
     font: var(--text-mono-meta);
-    color: var(--c-faint);
+    color: var(--c-muted-2);
     letter-spacing: 0.02em;
   }
 

@@ -39,7 +39,7 @@
     padding: 0 14px;
     border-top: 1px solid var(--c-chip);
     font: var(--text-meta);
-    color: var(--c-faint);
+    color: var(--c-muted-2);
   }
 
   .head :global(.k),
@@ -49,7 +49,7 @@
 
   .head :global(.k) {
     font: 400 11px/16px var(--font-mono);
-    color: var(--c-faint);
+    color: var(--c-muted-2);
   }
 
   .foot :global(.note) {

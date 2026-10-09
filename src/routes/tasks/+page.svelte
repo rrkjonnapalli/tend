@@ -256,8 +256,8 @@
   }
 
   .vbtn.on {
-    color: var(--text);
-    border-bottom-color: var(--primary);
+    color: var(--c-current-ink);
+    border-bottom-color: var(--c-current);
   }
 
   .vc {

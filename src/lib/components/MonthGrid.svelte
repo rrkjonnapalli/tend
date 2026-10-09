@@ -175,11 +175,11 @@
   }
 
   .dd.past {
-    color: var(--c-faint);
+    color: var(--c-muted-2);
   }
 
   .dd.today {
-    color: var(--primary);
+    color: var(--c-current-ink);
     font-weight: 700;
   }
 

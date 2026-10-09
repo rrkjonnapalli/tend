@@ -27,7 +27,7 @@
     padding: 0 0 6px;
     border-bottom: 1px solid var(--c-chip);
     font: var(--text-meta);
-    color: var(--c-faint);
+    color: var(--c-muted-2);
   }
 
   .col {

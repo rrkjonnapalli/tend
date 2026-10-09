@@ -134,7 +134,7 @@
 
   .row.sel {
     background: var(--c-selected);
-    color: var(--text);
+    color: var(--c-current-ink);
   }
 
   /* The name field carries the fill while renaming. */

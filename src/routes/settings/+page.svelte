@@ -100,8 +100,8 @@
   }
 
   .sec.on {
-    background: var(--c-chip);
-    color: var(--text);
+    background: var(--c-selected);
+    color: var(--c-current-ink);
   }
 
   .main {

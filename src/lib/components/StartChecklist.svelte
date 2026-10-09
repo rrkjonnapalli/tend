@@ -78,7 +78,7 @@
   }
 
   .step.wait .name {
-    color: var(--c-faint);
+    color: var(--c-muted-2);
   }
 
   .step.wait .ic::before {

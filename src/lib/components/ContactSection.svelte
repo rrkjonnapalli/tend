@@ -203,6 +203,6 @@
   }
 
   .ain::placeholder {
-    color: var(--c-faint);
+    color: var(--c-muted-2);
   }
 </style>
