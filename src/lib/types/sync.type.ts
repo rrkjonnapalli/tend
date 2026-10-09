@@ -25,6 +25,8 @@ export type SyncStatus = SyncLive & {
   lastRunAt: number | null;
   /** `ok`, or the error key of the last run (kept across restarts). */
   lastResult: string | null;
+  /** The last run that worked. */
+  lastOkAt: number | null;
 };
 
 /** What the user types to connect or restore. Empty branch or username takes the default. */

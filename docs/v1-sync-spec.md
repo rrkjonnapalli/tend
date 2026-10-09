@@ -107,7 +107,7 @@ attachments  id · path · name · mime_type · size_bytes · sha256 · updated_
 
 | Table | Purpose |
 |---|---|
-| `sync_state (id = 1, last_synced_commit, pending_commit, last_run_at, last_result)` | The base of the next merge (the commit both sides last agreed on), the commit being pushed, and how the last run went (§13). |
+| `sync_state (id = 1, last_synced_commit, pending_commit, last_run_at, last_result, last_ok_at)` | The base of the next merge (the commit both sides last agreed on), the commit being pushed, how the last run went, and when a run last worked (§13). |
 | `path_log (id, kind, reason, old_path, new_path, at)` | Every rename or move of a folder or note file, by the user, a scan fixing a name, or sync applying a rename, so an earlier layout can be restored. Never trimmed. |
 
 There is no tombstone table and no write log: with a base, a deletion is simply a row the base has
@@ -421,7 +421,8 @@ never sent to the UI. The other sync settings live in the app config folder, key
 - **Dock icon** next to the timer chip: ✓ synced · ↻ syncing · ! error (red); hover = last sync
   or the error; click → Settings → Sync. Hidden when the vault isn't connected.
 - **Settings → Sync:** not connected: the connect fields and Connect. Connected: URL, branch,
-  token status (Replace / Add), interval (minutes, edited in place: pencil, then ✓ / ✕), last sync and its result, Sync now,
+  token status (Replace / Add), interval (minutes, edited in place: pencil, then ✓ / ✕), the last sync's time to the second (after
+  a failure: last synced and last failed, with the reason), Sync now,
   Disconnect (with a confirmation), the public-repo warning.
 - A run that changed rows reloads every store (`sync:applied`); an open note or task that is gone
   afterwards offers to keep it (decisions: keep-deleted).

@@ -30,6 +30,7 @@ pub struct SyncStatus {
     now: runner::Status,
     last_run_at: Option<i64>,
     last_result: Option<String>,
+    last_ok_at: Option<i64>,
 }
 
 /// What the user types to connect or restore.
@@ -71,10 +72,10 @@ pub fn sync_status(state: State<AppState>, cfg: State<ConfigDir>) -> AppResult<S
         Some(c) => token::load(&c.url)?.is_some(),
         None => false,
     };
-    let (last_run_at, last_result) = vault.db().query_row(
-        "SELECT last_run_at, last_result FROM sync_state WHERE id = 1",
+    let (last_run_at, last_result, last_ok_at) = vault.db().query_row(
+        "SELECT last_run_at, last_result, last_ok_at FROM sync_state WHERE id = 1",
         [],
-        |r| Ok((r.get(0)?, r.get(1)?)),
+        |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
     )?;
     Ok(SyncStatus {
         config,
@@ -82,6 +83,7 @@ pub fn sync_status(state: State<AppState>, cfg: State<ConfigDir>) -> AppResult<S
         now: state.with_runner(|r| r.status()).unwrap_or_default(),
         last_run_at,
         last_result,
+        last_ok_at,
     })
 }
 

@@ -159,7 +159,7 @@ pub fn sync(conn: &mut Connection, root: &Path, remote: &Remote) -> AppResult<Ou
         result = run_once(conn, root, remote);
     }
     let key = match &result {
-        Ok(_) => "ok".to_string(),
+        Ok(_) => state::OK.to_string(),
         Err(e) => e.key().to_string(),
     };
     state::record(conn, &key)?;

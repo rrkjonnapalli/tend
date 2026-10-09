@@ -306,7 +306,8 @@ CREATE TABLE sync_state (
   last_synced_commit TEXT,
   pending_commit     TEXT,               -- made and being pushed; the base once the remote has it
   last_run_at        INTEGER,
-  last_result        TEXT                -- 'ok', or an error key from the registry
+  last_result        TEXT,               -- 'ok', or an error key from the registry
+  last_ok_at         INTEGER             -- the last run that ended 'ok'
 ) STRICT;
 INSERT INTO sync_state (id) VALUES (1);
 

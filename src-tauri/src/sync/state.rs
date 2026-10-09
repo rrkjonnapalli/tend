@@ -40,11 +40,16 @@ pub fn set_pending(conn: &Connection, commit: Option<&str>) -> AppResult<()> {
     Ok(())
 }
 
-/// How the last run ended: `ok`, or the error key.
+/// What `record` stores for a run that worked.
+pub const OK: &str = "ok";
+
+/// How the last run ended: `OK`, or the error key. A run that worked also moves `last_ok_at`.
 pub fn record(conn: &Connection, result: &str) -> AppResult<()> {
     conn.execute(
-        "UPDATE sync_state SET last_run_at = ?1, last_result = ?2 WHERE id = 1",
-        params![now_ms(), result],
+        "UPDATE sync_state SET last_run_at = ?1, last_result = ?2,
+           last_ok_at = CASE WHEN ?2 = ?3 THEN ?1 ELSE last_ok_at END
+         WHERE id = 1",
+        params![now_ms(), result, OK],
     )?;
     Ok(())
 }
@@ -57,3 +62,6 @@ pub fn forget(conn: &Connection) -> AppResult<()> {
     )?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

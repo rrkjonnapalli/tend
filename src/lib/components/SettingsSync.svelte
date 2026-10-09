@@ -21,14 +21,14 @@
   const status = $derived(sync.status);
   const config = $derived(status?.config ?? null);
   const canConnect = $derived(setup.url.trim() !== '' && setup.token !== '' && !busy);
-  const lastRun = $derived(lastRunText());
+  const synced = $derived(status?.lastOkAt ? `${timestamp(status.lastOkAt)} · synced` : 'Not yet');
+  const failed = $derived(failedText());
 
-  function lastRunText() {
-    if (!status?.lastRunAt) return 'Not yet';
-    const when = timestamp(status.lastRunAt);
-    if (status.error) return `${when} · ${status.error.message}`;
-    if (status.lastResult && status.lastResult !== 'ok') return `${when} · failed (${status.lastResult})`;
-    return `${when} · synced`;
+  /** When the last run failed and why; only shown while that failure is the latest run. */
+  function failedText() {
+    if (!status?.lastRunAt) return '';
+    const why = status.error?.message ?? `failed (${status.lastResult})`;
+    return `${timestamp(status.lastRunAt)} · ${why}`;
   }
 
   async function connect() {
@@ -94,7 +94,14 @@
 
   <section class="group">
     <h2 class="h2">Last sync</h2>
-    <div class="kv"><span class="v" class:bad={sync.state === 'failed'}>{sync.state === 'running' ? 'Syncing…' : lastRun}</span></div>
+    {#if sync.state === 'running'}
+      <div class="kv"><span class="v">Syncing…</span></div>
+    {:else if sync.state === 'failed'}
+      <div class="kv"><span class="k">Last synced</span><span class="v">{synced}</span></div>
+      <div class="kv"><span class="k">Last failed</span><span class="v bad">{failed}</span></div>
+    {:else}
+      <div class="kv"><span class="v">{synced}</span></div>
+    {/if}
     <div class="row">
       <button class="gbtn" disabled={sync.state === 'running'} onclick={sync.now}>Sync now</button>
       <button class="gbtn" onclick={() => (confirmDisconnect = true)}>Disconnect…</button>
@@ -144,7 +151,7 @@
   }
 
   .k {
-    flex: 0 0 80px;
+    flex: 0 0 88px;
     font: 400 13px/18px var(--font-ui);
     color: var(--text-muted);
   }
