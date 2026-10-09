@@ -21,12 +21,19 @@
   import { routes } from '#lib/util/routes.ts';
   import { folderCrumbs } from '#lib/util/note-paths.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
+  import { toast } from '#lib/stores/toast.svelte.ts';
+  import { toAppError } from '#lib/errors/app-error.ts';
 
   const SAVE_MS = 500;
   const EDITOR_MIN_HEIGHT = 600;
 
   const id = $derived(page.params.id!);
   const row = $derived(notes.byId(id));
+  /** The open note's folder, kept after the note leaves the tree (deleted outside Tend). */
+  let lastFolder = $state('');
+  $effect(() => {
+    if (row) lastFolder = row.folder;
+  });
 
   let text = $state('');
   let saved = $state('');
@@ -70,11 +77,18 @@
     saved = doc.text;
   }
 
+  /** The open note was deleted outside Tend: go back to its folder. */
+  function leaveIfGone(e: unknown) {
+    if (!toAppError(e).is('NOT_FOUND')) throw e;
+    toast.show('This note was deleted outside Tend');
+    nav.replace(routes.notesFolder(lastFolder));
+  }
+
   // Outside changes reach an open note that isn't being edited.
   $effect(() => {
     void notes.version;
     if (loadedId === id && isUntouched()) {
-      notesAPI.read(id).then(takeOutsideText);
+      notesAPI.read(id).then(takeOutsideText, leaveIfGone);
     }
   });
 
