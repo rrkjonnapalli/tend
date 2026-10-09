@@ -303,6 +303,87 @@ a:hover {
   color: var(--danger);
 }
 
+/* One key cap: ⌘, K, ⇧ … */
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--c-page);
+  font: 400 11px/14px var(--font-mono);
+  color: var(--text-muted);
+}
+
+/* Thin, quiet scrollbars like an editor. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border: 3px solid var(--c-page);
+  border-radius: var(--radius-control);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Option rows inside popovers: menus, suggestions, dropdowns. */
+.opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: var(--text-caption);
+  color: var(--text);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.opt:hover {
+  background: var(--c-hover);
+}
+
+/* The option ↑↓ is on. */
+.opt.on {
+  background: var(--c-selected);
+}
+
+.opt.new {
+  color: var(--primary);
+}
+
+.opt.danger {
+  color: var(--danger);
+}
+
+.opt.danger:hover {
+  background: var(--danger-soft);
+}
+
+.opt .hint {
+  margin-left: auto;
+  font: 400 11px/16px var(--font-mono);
+  color: var(--c-muted-2);
+}
+
+.opt-sep {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--c-chip);
+}
+
 /* Controls that appear only while their row is hovered or focused. */
 .on-hover {
   visibility: hidden;
