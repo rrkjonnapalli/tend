@@ -8,6 +8,7 @@
   import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import SearchLine from '#lib/components/SearchLine.svelte';
   import AddLine from '#lib/components/AddLine.svelte';
+  import { rowNav } from '#lib/actions/row-nav.action.ts';
   import { peopleAPI } from '#lib/api/people.ts';
   import { displayName, PEOPLE_ROOT_NAME, personMatches, splitName } from '#lib/util/people.ts';
   import type { PersonRow } from '#lib/types/person.type.ts';
@@ -52,7 +53,7 @@
   }
 </script>
 
-<main class="list-page">
+<main class="list-page" use:rowNav>
   <PageBar><Breadcrumbs crumbs={[{ label: PEOPLE_ROOT_NAME }]} /></PageBar>
   <ListTitle title={PEOPLE_ROOT_NAME} meta={summary} />
   <SearchLine bind:value={query} label="Search people" placeholder="Search name, phone or email" />
@@ -62,7 +63,7 @@
     <div class="table">
       {#each shown as p (p.id)}
         {@const bd = personBirthday(p)}
-        <a class="prow" href={routes.person(p.id)}>
+        <a class="prow" data-row href={routes.person(p.id)}>
           <span class="nm">{displayName(p)}</span>
           <span class="m" class:soon={bd?.soon}>{bd?.text ?? ''}</span>
           <span class="m">{p.phone ?? ''}</span>

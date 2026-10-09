@@ -12,6 +12,7 @@
   import type { NoteRow } from '#lib/types/note.type.ts';
   import SearchLine from '#lib/components/SearchLine.svelte';
   import AddLine from '#lib/components/AddLine.svelte';
+  import { rowNav } from '#lib/actions/row-nav.action.ts';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
@@ -60,7 +61,7 @@
   }
 </script>
 
-<main class="list-page">
+<main class="list-page" use:rowNav>
   <PageBar><Breadcrumbs {crumbs} /></PageBar>
   <ListTitle title={crumbs[crumbs.length - 1].label} meta={summary} />
   <SearchLine bind:value={query} label="Search notes" placeholder="Search notes" />
@@ -77,7 +78,7 @@
             <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>
           </div>
         {:else}
-          <a class="row reveal-on-hover" href={routes.note(n.id)}>
+          <a class="row reveal-on-hover" data-row href={routes.note(n.id)}>
             <span class="name">{n.name}</span>
             <EditButton label="Rename note" onedit={() => (editingId = n.id)} />
             <span class="meta">{ago(n.modifiedAt)}</span>

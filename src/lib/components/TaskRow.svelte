@@ -48,13 +48,13 @@
   }
 </script>
 
-<div class="row reveal-on-hover" class:compact class:editing class:sortable class:lifted data-key={task.id} role="listitem" {onpointerdown}>
+<div class="row reveal-on-hover" class:compact class:editing class:sortable class:lifted data-key={task.id} data-row tabindex="-1" role="listitem" {onpointerdown}>
   {#if sortable}<Grip />{/if}
   <StatusSelect compact value={task.status} onchange={(status) => tasks.update(task.id, { status })} />
   {#if editing}
     <InlineTitle value={task.title} label="Task title" check={titleProblem} onsave={saveTitle} oncancel={() => (editing = false)} />
   {:else}
-    <button class="title" onclick={() => goto(routes.task(task.id))}>
+    <button class="title" data-open onclick={() => goto(routes.task(task.id))}>
       {#if !compact}<SubtaskMark {task} />{/if}<span class:done={isDone(task)}>{task.title}</span>
     </button>
   {/if}

@@ -31,7 +31,7 @@
 
 <label class="add">
   <span class="plus" aria-hidden="true">+</span>
-  <input use:plainText use:focusOnMount bind:this={input} aria-label={label} {placeholder} bind:value {oninput} {onkeydown} />
+  <input use:plainText use:focusOnMount data-row-entry bind:this={input} aria-label={label} {placeholder} bind:value {oninput} {onkeydown} />
 </label>
 {#if error}<span class="err-line under" role="alert">{error}</span>{/if}
 

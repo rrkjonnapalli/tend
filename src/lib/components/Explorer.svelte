@@ -29,6 +29,7 @@
   import { dropTargetAt, trackDrag } from '#lib/util/explorer-drag.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { ui } from '#lib/stores/ui.svelte.ts';
+  import { rowNav } from '#lib/actions/row-nav.action.ts';
 
   let {
     id,
@@ -303,18 +304,30 @@
     menu = null;
   }
 
+  /** The row with the keyboard cursor, when focus is in the tree. */
+  function focusedRow(target: EventTarget | null): ExplorerRow | undefined {
+    if (!(target instanceof HTMLElement)) return undefined;
+    const key = target.closest<HTMLElement>('.tree [data-row]')?.dataset.key;
+    return rows.find((r) => r.key === key && !isRoot(r));
+  }
+
+  /** F2, ⌘⇧M and Backspace act on the explorer row with the cursor, else on the open item's row. */
   function onkeydown(e: KeyboardEvent) {
     const busy = hasLayers() || editing !== null || isTypingTarget(e.target);
-    if (!ui.explorerOpen || busy || !selectedRow) return;
+    // A list row with the cursor (notes, tasks, people) handles its own keys.
+    const inList = e.target instanceof HTMLElement && e.target.closest('[data-row]:not(.tree [data-row])') !== null;
+    if (e.defaultPrevented || inList) return;
+    const row = focusedRow(e.target) ?? selectedRow;
+    if (!ui.explorerOpen || busy || !row) return;
     if (e.key === 'F2') {
       e.preventDefault();
-      startRename(selectedRow);
+      startRename(row);
     } else if (matches(e, 'mod+shift+m')) {
       e.preventDefault();
-      moving = selectedRow;
+      moving = row;
     } else if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey) {
       e.preventDefault();
-      deleting = selectedRow;
+      deleting = row;
     }
   }
 </script>
@@ -338,7 +351,7 @@
       </button>
     </div>
 
-    <div class="tree" role="tree">
+    <div class="tree" role="tree" use:rowNav>
       {#each rows as row (row.key)}
         {@const path = folderPath(row.item) ?? ''}
         <ExplorerRowView

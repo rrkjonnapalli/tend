@@ -29,7 +29,7 @@
 <div class="line">
   <label class="search">
     <span class="ic"><Icon name="search" size={14} /></span>
-    <input use:plainText bind:this={input} aria-label={label} {placeholder} bind:value />
+    <input use:plainText data-row-entry bind:this={input} aria-label={label} {placeholder} bind:value />
   </label>
 </div>
 

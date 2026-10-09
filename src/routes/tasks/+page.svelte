@@ -13,6 +13,7 @@
   import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import SearchLine from '#lib/components/SearchLine.svelte';
   import AddLine from '#lib/components/AddLine.svelte';
+  import { rowNav } from '#lib/actions/row-nav.action.ts';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
   import DateField from '#lib/components/DateField.svelte';
   import TaskRow from '#lib/components/TaskRow.svelte';
@@ -146,7 +147,7 @@
   }
 </script>
 
-<main class="list-page">
+<main class="list-page" use:rowNav>
   <PageBar><Breadcrumbs {crumbs} /></PageBar>
   <ListTitle title={crumbs[crumbs.length - 1].label} meta={plural(counts.all, 'task')} />
   <SearchLine bind:value={query} label="Search tasks" placeholder="Search tasks" />

@@ -12,7 +12,7 @@
   }
 </script>
 
-<button class="icon-btn sm edit on-hover" data-no-drag aria-label={label} title={label} {onclick}>
+<button class="icon-btn sm edit on-hover" data-no-drag data-rename aria-label={label} title="{label} (F2)" {onclick}>
   <Icon name="edit" size={12} />
 </button>
 

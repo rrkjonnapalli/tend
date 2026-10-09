@@ -72,13 +72,15 @@
   data-drop={dropPath(row)}
   role="treeitem"
   tabindex="-1"
+  data-row
+  data-key={row.key}
   aria-selected={selected}
   aria-expanded={row.isFolder ? expanded : undefined}
   onpointerdown={onpress}
   oncontextmenu={onmenu}
   {onclick}>
   {#if row.isFolder}
-    <button class="chev" aria-label="Expand or collapse folder" onclick={onChevron}>
+    <button class="chev" data-toggle aria-label="Expand or collapse folder" onclick={onChevron}>
       <Icon name={isOpen ? 'chevronDown' : 'chevronRight'} size={10} stroke={3} />
     </button>
   {/if}
@@ -94,7 +96,7 @@
       onpointerdown={stop}
       use:focusAndSelect />
   {:else if row.isFolder}
-    <button class="nm" onclick={onopen}>{row.name}</button>
+    <button class="nm" data-open onclick={onopen}>{row.name}</button>
   {:else}
     <span class="nm">{row.name}</span>
   {/if}

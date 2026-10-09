@@ -138,7 +138,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - **Names found on disk that break the rule** (folders holding notes, and `.md` files) get their slug, with a suffix when taken. The old path is kept in `path_log`.
   - Fixing needs the vault's consent once (setting `notes.fix_names`): a new empty vault has it, confirming a non-vault folder gives it, and an existing vault asks on the Start page (*Rename and open →* / *Open without renaming*). Until then such items are skipped and listed in Settings → General with the name each would get and a *Rename N items to fit* link.
   - **Every rename or move** of a folder or note file, by the user or by a fix, is written to `path_log` (old path, new path, why, when), so an earlier layout can be restored later.
-- **Explorer actions:** hover a row → `⋯`, or right-click, opens a menu: **Rename** (F2) · **Move to…** (⌘⇧M) · **Delete…** (⌫). The root has no menu.
+- **Explorer actions:** hover a row → `⋯`, or right-click, opens a menu: **Rename** (F2) · **Move to…** (⌘⇧M) · **Delete…** (⌫), on the row with the keyboard cursor or else the open item. The root has no menu.
   - **Rename:** edited in place in the row. Invalid or duplicate names turn red with a hint underneath. Enter saves, Esc cancels.
   - **New note / new folder** (toolbar): an inline row in the selected folder, checked against the same rules.
 - **Move:** both ways are supported.
@@ -294,6 +294,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - Minutes ≥ 0 with no upper limit; seconds 0–59; total > 0.
   - A bare number means minutes.
 - **Shortcuts:** ⌘1 Notes · ⌘2 Tasks · ⌘3 People · ⌘, Settings · ⌘K palette · ⌘D toggle the dock (bottom bar).
+- **Lists and the explorer:** ↓ from the search or add field enters the list · ↑↓ Home End move the cursor (a grey row with a blue bar at the left) · ↵ opens · F2 renames · → / ← open and close a folder in the explorer. The explorer's F2, ⌘⇧M and ⌫ act on the row with the cursor, else on the open item.
 
 ## 13. Settings
 
