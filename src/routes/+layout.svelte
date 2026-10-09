@@ -19,6 +19,10 @@
   import { nav } from '#lib/stores/history.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { installErrorHandler } from '#lib/errors/handler.ts';
+  import { settings } from '#lib/stores/settings.svelte.ts';
+  import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
+  import { applyTheme } from '#lib/util/theme.ts';
+  import type { ThemePref } from '#lib/types/theme.type.ts';
 
   let { children }: { children: Snippet } = $props();
 
@@ -40,6 +44,9 @@
     if (!vault.path && !onStart) nav.replace(routes.start);
     else if (vault.path && path === routes.home) nav.replace(routes.notes);
   });
+
+  // Light or dark, from Settings (System until a vault's settings say otherwise).
+  $effect(() => applyTheme(settings.get<ThemePref>(settingKeys.theme, settingDefaults.theme)));
 
   // Timers run as soon as a vault is open, whichever page is showing.
   $effect(() => {

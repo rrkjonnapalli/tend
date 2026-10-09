@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Settings → General: the timer sound, the vault folder, and notes or folders skipped for breaking the name rule
+  // Settings → General: the theme, the timer sound, the vault folder, and notes or folders skipped for breaking the name rule
   // (with the name each can be renamed to, and one button to rename them all).
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -11,12 +11,15 @@
   import { plural } from '#lib/util/plural.ts';
   import { fixable } from '#lib/util/skipped.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
-  import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
+  import { settingDefaults, settingKeys, themeChoices } from '#lib/config/settings.config.ts';
+  import type { ThemePref } from '#lib/types/theme.type.ts';
   import { routes } from '#lib/util/routes.ts';
 
   let skipped = $state<Skipped[]>([]);
   let showSkipped = $state(false);
   const toFix = $derived(fixable(skipped).length);
+
+  const theme = $derived(settings.get<ThemePref>(settingKeys.theme, settingDefaults.theme));
 
   onMount(loadSkipped);
 
@@ -57,6 +60,19 @@
       {/if}
     {/if}
   {/if}
+</section>
+
+<section class="group">
+  <h2 class="section-title">Appearance</h2>
+  <div class="seg" role="radiogroup" aria-label="Theme">
+    {#each themeChoices as t (t.value)}
+      <label class="choice" class:on={theme === t.value}>
+        <input type="radio" name="theme" value={t.value} checked={theme === t.value} onchange={() => settings.set(settingKeys.theme, t.value)} />
+        {t.label}
+      </label>
+    {/each}
+  </div>
+  <span class="hint">System follows your Mac's light or dark setting.</span>
 </section>
 
 <section class="group">
@@ -119,6 +135,53 @@
   }
 
   .to {
+    color: var(--c-muted-2);
+  }
+
+  /* Theme: a segmented control; the radios stay for the keyboard (←→) and screen readers. */
+  .seg {
+    display: inline-flex;
+    align-self: flex-start;
+    gap: 2px;
+    padding: 2px;
+    border-radius: var(--radius-control);
+    background: var(--c-chip);
+  }
+
+  .choice {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 12px;
+    border-radius: var(--radius-sm);
+    font: var(--text-caption);
+    color: var(--c-muted-2);
+    cursor: pointer;
+  }
+
+  .choice:hover {
+    color: var(--text);
+  }
+
+  .choice.on {
+    background: var(--c-page);
+    color: var(--text);
+  }
+
+  .choice:has(input:focus-visible) {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 1px;
+  }
+
+  .choice input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .hint {
+    font: var(--text-meta);
     color: var(--c-muted-2);
   }
 

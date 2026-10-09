@@ -151,3 +151,47 @@
   --grid-note: minmax(0, 1fr) var(--col-edit) var(--col-date) var(--col-path);
   --grid-person: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr);
 }
+
+/* Dark theme: the same roles, remapped. Applied by `data-theme="dark"` on <html>
+   (Settings → General → Appearance; "System" follows the OS). */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #1f2328;
+  --surface: #1f2328;
+  --surface-raised: #262b31;
+  --border: #30363d;
+  --border-strong: #5b6670;
+  --text: #e3e7eb;
+  --text-muted: #aab3bc;
+  --primary: #2f6bdc;
+  --primary-hover: #3b78e7;
+  --on-primary: #ffffff;
+  --primary-soft: #172a4a;
+  --focus-ring: #5b9bff;
+  --accent: #8f80f2;
+  --accent-soft: #4a4390;
+  --danger: #ff6b86;
+  --danger-fill: #d6204a;
+  --on-danger: #ffffff;
+  --danger-soft: #3a1a22;
+  --on-danger-soft: #ffb3c1;
+  --success: #5cc996;
+  --success-soft: #173328;
+  --warning: #f0a070;
+  --warning-soft: #3a2a20;
+  --link: #7ab0ff;
+
+  --c-page: #1a1d21;
+  --c-hover: #22262b;
+  --c-selected: #28243f;
+  --c-cursor: #272c32;
+  --c-current: #8f80f2;
+  --c-current-ink: #b9afff;
+  --c-chip: #262b31;
+  --c-faint: #3d454d;
+  --c-muted-2: #939da7;
+  --c-nav-active: #8f80f2;
+  --c-nav-active-soft: #2c2752;
+  --c-overdue: #f0a070;
+  --c-scrim: rgba(0, 0, 0, 0.45);
+}

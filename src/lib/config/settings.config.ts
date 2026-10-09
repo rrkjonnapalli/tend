@@ -13,6 +13,8 @@ export const settingKeys = {
   /** The task list's "hide done" toggle. */
   tasksHideDone: 'tasks.hide_done',
   timersSound: 'timers.sound',
+  /** Light, dark or the OS's (`ThemePref`); kept on this device. */
+  theme: 'ui.theme',
   /** The folder Quick create last used for each kind; folders keep one per tree. */
   quickLastPath: (kind: QuickKind, tree?: Tree) =>
     kind === 'folder' && tree ? `quick.last_path.folder.${tree}` : `quick.last_path.${kind}`,
@@ -28,4 +30,12 @@ export const settingDefaults = {
   tasksRootName: 'tasks',
   tasksHideDone: false,
   timersSound: true,
+  theme: 'system',
 } as const;
+
+/** The choices for the theme setting, in Settings → General. */
+export const themeChoices = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+] as const;
