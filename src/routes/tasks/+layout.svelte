@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { settingKeys } from '#lib/config/settings.config.ts';
+  import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import type { ExplorerActions, ExplorerItem } from '#lib/types/explorer.type.ts';
   import type { Snippet } from 'svelte';
   import { goto } from '$app/navigation';
@@ -17,7 +17,7 @@
 
   tasks.load();
 
-  const rootName = $derived(settings.get(settingKeys.tasksRootName, 'tasks'));
+  const rootName = $derived(settings.get(settingKeys.tasksRootName, settingDefaults.tasksRootName));
   const taskId = $derived(page.params.id ?? null);
   const folder = $derived(page.url.searchParams.get(TASK_PARAMS.folder) ?? '');
 

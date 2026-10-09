@@ -8,7 +8,7 @@ import { pageActions } from '#lib/stores/page-actions.svelte.ts';
 import { routes } from '#lib/util/routes.ts';
 import type { Command } from '#lib/types/command.type.ts';
 import type { PageAction, QuickKind } from '#lib/types/ui.type.ts';
-import { settingKeys } from '#lib/config/settings.config.ts';
+import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
 
 const onPage = (id: PageAction) => ({ when: () => pageActions.has(id), run: () => pageActions.run(id) });
 const onTasksList = () => page.url.pathname === routes.tasks;
@@ -29,7 +29,7 @@ function openPalette() {
 }
 
 function toggleTaskLayout() {
-  const isBoard = settings.get<string>(settingKeys.tasksLayout, 'list') === 'board';
+  const isBoard = settings.get<string>(settingKeys.tasksLayout, settingDefaults.tasksLayout) === 'board';
   settings.set(settingKeys.tasksLayout, isBoard ? 'list' : 'board');
 }
 

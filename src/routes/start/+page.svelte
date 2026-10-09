@@ -7,6 +7,7 @@
   import { notesAPI } from '#lib/api/notes.ts';
   import type { Skipped } from '#lib/types/note.type.ts';
   import { plural } from '#lib/util/plural.ts';
+  import { fixable } from '#lib/util/skipped.ts';
   import type { Check } from '#lib/types/vault.type.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
@@ -25,7 +26,7 @@
 
   const done = $derived(check !== null && shown >= check.steps.length);
   /** Names in the vault that break the rule but can be renamed to fit, asked about once. */
-  let fixable = $state<Skipped[]>([]);
+  let toFix = $state<Skipped[]>([]);
 
   onDestroy(stopReveal);
 
@@ -41,13 +42,25 @@
     shown = 0;
     try {
       check = await vaultAPI.open(path, confirmed);
-      fixable = check.ok ? (await notesAPI.skipped()).filter((s) => s.fix) : [];
     } catch (e) {
       check = null;
       failure = messageOf(e);
       return;
     }
     startReveal();
+    if (check.ok) await loadFixable();
+  }
+
+  /** Names in the opened vault that Tend could fix; asked about once, before entering. */
+  async function loadFixable() {
+    const skipped = await notesAPI.skipped();
+    toFix = fixable(skipped);
+  }
+
+  /** The user agreed to use a folder that isn't a vault yet. */
+  async function useFolder() {
+    if (!check) return;
+    await checkFolder(check.path, true);
   }
 
   function startReveal() {
@@ -116,11 +129,11 @@
               This folder isn’t a Tend vault yet. It has {plural(check.confirm.items, 'item')}, with
               {plural(check.confirm.notes, 'note')} inside. Tend will use it as your notes folder, add a hidden
               <span class="mono">.tend/</span>, and rename notes and folders that hold notes to lowercase names (like
-              <span class="mono">Meeting Notes.md</span> → <span class="mono">meeting_notes.md</span>; titles keep the
-              old names, and every rename is logged). Other files are left alone.
+              <span class="mono">Meeting Notes.md</span> → <span class="mono">meeting_notes.md</span>; every rename is
+              logged). Other files are left alone.
             </div>
             <div class="row">
-              <button class="pbtn" onclick={() => check && checkFolder(check.path, true)}>Use this folder</button>
+              <button class="pbtn" onclick={useFolder}>Use this folder</button>
               <button class="gbtn" onclick={choose}>Choose another folder</button>
             </div>
           {:else if done && !check.ok}
@@ -130,11 +143,11 @@
             </div>
             <div><button class="pbtn" onclick={choose}>Choose another folder</button></div>
           {/if}
-          {#if done && check.ok && fixable.length}
+          {#if done && check.ok && toFix.length}
             <div class="note">
-              {plural(fixable.length, 'name')} don’t fit Tend’s rule (lowercase letters, digits and _). Tend can
-              rename them, for example <span class="mono">{fixable[0].path}</span> →
-              <span class="mono">{fixable[0].fix}</span>. Other apps’ links to those files will break.
+              Names that don’t fit Tend’s rule (lowercase letters, digits and _): {toFix.length}. Tend can rename
+              them, for example <span class="mono">{toFix[0].path}</span> →
+              <span class="mono">{toFix[0].fix}</span>. Other apps’ links to those files will break.
             </div>
             <div class="row">
               <button class="pbtn" onclick={fixAndEnter}>Rename and open →</button>
@@ -323,7 +336,7 @@
 
   .note {
     padding: 10px 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     background: var(--c-hover);
     font: 400 13px/18px var(--font-ui);
   }
@@ -331,7 +344,7 @@
   .row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
   }
 
   .pbtn {

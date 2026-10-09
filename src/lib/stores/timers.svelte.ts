@@ -7,7 +7,7 @@ import { allowNotifications, chime, notify } from '#lib/util/notify.ts';
 import { timerName } from '#lib/util/timer-text.ts';
 import { settings } from './settings.svelte.ts';
 import { toast } from './toast.svelte.ts';
-import { settingKeys } from '#lib/config/settings.config.ts';
+import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
 
 const TICK_MS = 1000;
 
@@ -68,7 +68,7 @@ class TimersStore {
   async #ring(t: Timer) {
     this.#remove(t.id);
     await timersAPI.ring(t.id);
-    if (settings.get(settingKeys.timersSound, true)) chime();
+    if (settings.get(settingKeys.timersSound, settingDefaults.timersSound)) chime();
     const name = timerName(t);
     await notify({ title: name, body: 'Time’s up' }).catch(() => toast.show(`${name}: time’s up`));
   }

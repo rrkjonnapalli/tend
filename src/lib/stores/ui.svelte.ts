@@ -1,7 +1,7 @@
 // App-wide UI state that isn't tied to one screen.
 import { settings } from './settings.svelte.ts';
 import type { Popup, QuickKind } from '#lib/types/ui.type.ts';
-import { settingKeys } from '#lib/config/settings.config.ts';
+import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
 
 class Ui {
   popup = $state<Popup>(null);
@@ -9,7 +9,7 @@ class Ui {
   quick = $state<QuickKind | null>(null);
 
   get navOpen(): boolean {
-    return settings.get(settingKeys.navOpen, true);
+    return settings.get(settingKeys.navOpen, settingDefaults.navOpen);
   }
 
   toggleNav = () => {
@@ -17,7 +17,7 @@ class Ui {
   };
 
   get explorerOpen(): boolean {
-    return settings.get(settingKeys.explorerOpen, true);
+    return settings.get(settingKeys.explorerOpen, settingDefaults.explorerOpen);
   }
 
   toggleExplorer = () => {

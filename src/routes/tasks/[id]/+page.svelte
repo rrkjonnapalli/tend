@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { settingKeys } from '#lib/config/settings.config.ts';
+  import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   // Task page: breadcrumb (folders → parent tasks), title, fields, then the collapsible sections.
   import type { Crumb } from '#lib/types/breadcrumb.type.ts';
   import type { Task, TaskPatch } from '#lib/types/task.type.ts';
@@ -51,8 +51,8 @@
     if (deleted.gone && deleted.last) return deleted.last;
     return undefined;
   });
-  const rootName = $derived(settings.get(settingKeys.tasksRootName, 'tasks'));
-  const wide = $derived(settings.get(settingKeys.tasksWide, false));
+  const rootName = $derived(settings.get(settingKeys.tasksRootName, settingDefaults.tasksRootName));
+  const wide = $derived(settings.get(settingKeys.tasksWide, settingDefaults.tasksWide));
   const widthLabel = $derived(wide ? 'Narrow width' : 'Full width');
 
   // ---- detail (description and tags are not in the task list)

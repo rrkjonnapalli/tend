@@ -54,7 +54,6 @@
     editingId = null;
   }
 
-
   function rename(note: NoteRow, name: string) {
     stopEditing();
     notes.rename({ kind: 'note', id: note.id }, name);
@@ -180,7 +179,6 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-
 
   .empty {
     padding-top: 8px;

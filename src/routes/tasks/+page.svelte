@@ -1,10 +1,10 @@
 <script lang="ts">
   import { plainText } from '#lib/actions/plain-text.action.ts';
   // Task folder list: views (My day · All · Overdue · Upcoming · date range), then the rows.
-  import { settingKeys } from '#lib/config/settings.config.ts';
+  import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import type { DayRange } from '#lib/types/date.type.ts';
   import type { DroppedOrder } from '#lib/types/reorder.type.ts';
-  import type { Task } from '#lib/types/task.type.ts';
+  import type { Task, NewTask } from '#lib/types/task.type.ts';
   import type { LastView, View } from '#lib/types/task-view.type.ts';
   import { onDestroy } from 'svelte';
   import { page } from '$app/state';
@@ -58,10 +58,10 @@
     const to = params.get(TASK_PARAMS.to) ?? from;
     return [from, to];
   });
-  const rootName = $derived(settings.get(settingKeys.tasksRootName, 'tasks'));
-  const board = $derived(settings.get<string>(settingKeys.tasksLayout, 'list') === 'board');
+  const rootName = $derived(settings.get(settingKeys.tasksRootName, settingDefaults.tasksRootName));
+  const board = $derived(settings.get<string>(settingKeys.tasksLayout, settingDefaults.tasksLayout) === 'board');
 
-  const hideDone = $derived(settings.get<boolean>(settingKeys.tasksHideDone, false));
+  const hideDone = $derived(settings.get<boolean>(settingKeys.tasksHideDone, settingDefaults.tasksHideDone));
   const ctx = $derived({ today: tasks.day, myDay: tasks.myDay, range, hideDone });
   let query = $state('');
   const needle = $derived(searchNeedle(query));
@@ -138,7 +138,9 @@
     const title = draft.trim();
     if (!title) return;
     const inMyDay = view === 'myday';
-    const created = await tasks.create({ path: folder, title, ...(inMyDay && { dueDate: tasks.day }) });
+    const input: NewTask = { path: folder, title };
+    if (inMyDay) input.dueDate = tasks.day;
+    const created = await tasks.create(input);
     draft = '';
     if (inMyDay) await tasks.setMyDay(created.id, true);
   }
@@ -154,7 +156,7 @@
 
   <nav class="views" aria-label="Views">
     <button
-      class="lbtn hide"
+      class="lbtn"
       class:on={hideDone}
       aria-label="Hide done tasks"
       aria-pressed={hideDone}

@@ -2,7 +2,7 @@
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import { settingKeys } from '#lib/config/settings.config.ts';
   // Quick create: ⌘N note · ⌘⇧T task · ⌘⇧N folder (Notes/Tasks) · ⌘T timer.
-  import type { QuickKind } from '#lib/types/ui.type.ts';
+  import type { QuickKind, Tree } from '#lib/types/ui.type.ts';
   import { goto } from '$app/navigation';
   import { page } from '$app/state';
   import Panel from './Panel.svelte';
@@ -27,7 +27,7 @@
   const PLACEHOLDERS: Record<Exclude<QuickKind, 'timer'>, string> = { note: 'Note title', task: 'Task title', folder: 'folder_name' };
 
   // Folder: Notes or Tasks, defaulting to the section you're in.
-  let tree = $state<'notes' | 'tasks'>(page.url.pathname.startsWith(routes.tasks) ? 'tasks' : 'notes');
+  let tree = $state<Tree>(page.url.pathname.startsWith(routes.tasks) ? 'tasks' : 'notes');
   const settingKey = $derived(settingKeys.quickLastPath(kind, tree));
   let path = $state('');
   let name = $state('');

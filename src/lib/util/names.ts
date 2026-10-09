@@ -7,7 +7,7 @@ const RULE = /^[a-z0-9]+(_[a-z0-9]+)*$/;
 
 export const nameErrors = {
   empty: 'Name can’t be empty',
-  chars: 'Use at least one letter or digit',
+  noLetters: 'Use at least one letter or digit',
   title: 'A note needs a title',
 } as const;
 
@@ -29,25 +29,22 @@ export function slug(text: string): string {
 /** The message to show under a folder or note name field, or '' when it can be saved. */
 export function nameError(typed: string): string {
   if (!typed.trim()) return nameErrors.empty;
-  if (!slug(typed)) return nameErrors.chars;
+  if (!slug(typed)) return nameErrors.noLetters;
   return '';
 }
 
 /** The message to show under a note title field, or ''. */
 export const titleError = (typed: string) => (typed.trim() ? '' : nameErrors.title);
 
+/** `value` without surrounding spaces or slashes. */
+const trimSlashes = (value: string) => value.trim().replace(/^\/+|\/+$/g, '');
+
 /** A typed folder path, each segment as it will be saved. */
-export const cleanPath = (value: string) =>
-  value
-    .trim()
-    .replace(/^\/+|\/+$/g, '')
-    .split('/')
-    .map(slug)
-    .join('/');
+export const cleanPath = (value: string) => trimSlashes(value).split('/').map(slug).join('/');
 
 /** The first problem with any segment of a typed folder path, or '' ('' is the root). */
 export function pathError(typed: string): string {
-  const path = typed.trim().replace(/^\/+|\/+$/g, '');
+  const path = trimSlashes(typed);
   if (path === '') return '';
   for (const segment of path.split('/')) {
     const problem = nameError(segment);

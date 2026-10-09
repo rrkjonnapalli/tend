@@ -9,13 +9,14 @@
   import type { Skipped } from '#lib/types/note.type.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { plural } from '#lib/util/plural.ts';
+  import { fixable } from '#lib/util/skipped.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
-  import { settingKeys } from '#lib/config/settings.config.ts';
+  import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import { routes } from '#lib/util/routes.ts';
 
   let skipped = $state<Skipped[]>([]);
   let showSkipped = $state(false);
-  const fixable = $derived(skipped.length);
+  const toFix = $derived(fixable(skipped).length);
 
   onMount(loadSkipped);
 
@@ -48,11 +49,11 @@
     {#if showSkipped}
       <ul class="skiplist">
         {#each skipped as item (item.path)}
-          <li>{item.path} <span class="to">→ {item.fix}</span></li>
+          <li>{item.path} <span class="to">{item.fix ? `→ ${item.fix}` : '· no free name'}</span></li>
         {/each}
       </ul>
-      {#if fixable}
-        <div><button class="tlink" onclick={fixNames}>Rename {plural(fixable, 'item')} to fit</button></div>
+      {#if toFix}
+        <div><button class="tlink" onclick={fixNames}>Rename {plural(toFix, 'item')} to fit</button></div>
       {/if}
     {/if}
   {/if}
@@ -63,7 +64,7 @@
   <label class="check">
     <input
       type="checkbox"
-      checked={settings.get(settingKeys.timersSound, true)}
+      checked={settings.get(settingKeys.timersSound, settingDefaults.timersSound)}
       onchange={(e) => settings.set(settingKeys.timersSound, e.currentTarget.checked)} />
     Play a sound when a timer ends
   </label>
@@ -129,7 +130,7 @@
   .check {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--space-2);
     font: 400 14px/20px var(--font-ui);
     cursor: pointer;
   }

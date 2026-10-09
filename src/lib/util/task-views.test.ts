@@ -57,17 +57,6 @@ describe('views', () => {
   it('counts every view', () => {
     expect(viewCounts({ tasks, folder: 'work', ctx })).toEqual({ all: 5, overdue: 1, myday: 1, upcoming: 2, range: 2 });
   });
-});
-
-describe('defaultView', () => {
-  it('opens My day on the first visit of a day', () => {
-    expect(defaultView({ last: null, today: '2026-10-04' })).toBe('myday');
-    expect(defaultView({ last: { view: 'all', day: '2026-10-03' }, today: '2026-10-04' })).toBe('myday');
-  });
-
-  it('keeps the view picked earlier today', () => {
-    expect(defaultView({ last: { view: 'all', day: '2026-10-04' }, today: '2026-10-04' })).toBe('all');
-  });
 
   it('upcoming keeps Done tasks; overdue never shows them; hide done drops them everywhere', () => {
     const hidden = { ...ctx, hideDone: true };
@@ -79,5 +68,16 @@ describe('defaultView', () => {
   it('sorts tied order keys by id, the same on every device', () => {
     const tied = [t({ id: 'y', orderKey: 'k' }), t({ id: 'x', orderKey: 'k' })];
     expect(titles(viewTasks({ tasks: tied, folder: 'work', view: 'all', ctx }))).toEqual(['x', 'y']);
+  });
+});
+
+describe('defaultView', () => {
+  it('opens My day on the first visit of a day', () => {
+    expect(defaultView({ last: null, today: '2026-10-04' })).toBe('myday');
+    expect(defaultView({ last: { view: 'all', day: '2026-10-03' }, today: '2026-10-04' })).toBe('myday');
+  });
+
+  it('keeps the view picked earlier today', () => {
+    expect(defaultView({ last: { view: 'all', day: '2026-10-04' }, today: '2026-10-04' })).toBe('all');
   });
 });

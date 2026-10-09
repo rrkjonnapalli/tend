@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { settingKeys } from '#lib/config/settings.config.ts';
+  import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   // Note page: sticky bar (back, breadcrumb, width, read/edit), tags, then the note itself.
   // Edits autosave to disk ~500 ms after typing stops, and on blur or leaving the page.
   import type { Crumb } from '#lib/types/breadcrumb.type.ts';
@@ -45,7 +45,7 @@
   let loadedId = $state<string | null>(null);
   let timer: ReturnType<typeof setTimeout> | undefined;
 
-  const wide = $derived(settings.get(settingKeys.notesWide, false));
+  const wide = $derived(settings.get(settingKeys.notesWide, settingDefaults.notesWide));
   const widthLabel = $derived(wide ? 'Narrow width' : 'Full width');
 
   function show({ noteId, doc, edit }: { noteId: string; doc: NoteDoc; edit: boolean }) {

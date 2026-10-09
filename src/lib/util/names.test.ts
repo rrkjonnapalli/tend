@@ -13,7 +13,7 @@ describe('names', () => {
   it('checks typed folder names and note titles', () => {
     expect(nameError('Client Work')).toBe('');
     expect(nameError('  ')).toBe(nameErrors.empty);
-    expect(nameError('!!')).toBe(nameErrors.chars);
+    expect(nameError('!!')).toBe(nameErrors.noLetters);
     expect(titleError('日本')).toBe('');
     expect(titleError(' ')).toBe(nameErrors.title);
   });
@@ -44,7 +44,7 @@ describe('paths', () => {
   it('validates every segment', () => {
     expect(pathError('')).toBe('');
     expect(pathError('Work/Tend v0.1')).toBe('');
-    expect(pathError('work/!!')).toBe(nameErrors.chars);
+    expect(pathError('work/!!')).toBe(nameErrors.noLetters);
     expect(pathError('work//x')).toBe(nameErrors.empty);
   });
 });

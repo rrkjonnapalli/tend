@@ -1,7 +1,7 @@
 <script lang="ts">
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import type { QuickKind } from '#lib/types/ui.type.ts';
-  import { settingKeys } from '#lib/config/settings.config.ts';
+  import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import { timerStartedText } from '#lib/util/timer-text.ts';
   // ⌘K: commands in groups, title search across notes and tasks, and quick-create phrases
   // ("task: …", "note: …", "person: …", "timer 10m …"). ↑↓ move, ↵ runs, Esc closes.
@@ -40,7 +40,7 @@
   if (!tasks.tasks.length) tasks.load();
 
   const lastPath = (kind: QuickKind) => settings.get<string>(settingKeys.quickLastPath(kind), '');
-  const taskRoot = $derived(settings.get(settingKeys.tasksRootName, 'tasks'));
+  const taskRoot = $derived(settings.get(settingKeys.tasksRootName, settingDefaults.tasksRootName));
 
   // ---- quick-create phrases
 

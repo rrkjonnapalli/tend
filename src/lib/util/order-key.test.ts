@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { keyAt, keyBefore, keyBetween } from './order-key.ts';
+import { keyAt, keyAfter, keyBetween } from './order-key.ts';
 
 describe('keyBetween', () => {
   it('makes a key between two neighbours', () => {
@@ -53,12 +53,14 @@ describe('keyAt', () => {
     expect(keyAt(keys, 0) < 'b').toBe(true);
     expect(keyAt(keys, 3) > 'f').toBe(true);
   });
+});
 
+describe('keyAfter', () => {
   it('drops between tied keys without failing, right after the ties', () => {
     const keys = ['b', 'd', 'd', 'f'];
     const k = keyAt(keys, 2);
     expect(k > 'd' && k < 'f').toBe(true);
-    expect(keyBefore('d', ['d', 'd'])).toBeTruthy();
-    expect(keyBefore('d', ['d', 'd']) > 'd').toBe(true);
+    expect(keyAfter('d', ['d', 'd'])).toBeTruthy();
+    expect(keyAfter('d', ['d', 'd']) > 'd').toBe(true);
   });
 });

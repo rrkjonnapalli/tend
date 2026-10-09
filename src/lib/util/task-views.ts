@@ -25,7 +25,11 @@ const filters: Record<View, (t: Task, c: ViewContext) => boolean> = {
   range: (t, c) => !!t.dueDate && inRange(t.dueDate, c.range),
 };
 
-const inView = (view: View) => (t: Task, c: ViewContext) => !(c.hideDone && isDone(t)) && filters[view](t, c);
+function inView(t: Task, view: View, c: ViewContext): boolean {
+  const hidden = c.hideDone === true && isDone(t);
+  if (hidden) return false;
+  return filters[view](t, c);
+}
 
 /** The view to open without one in the URL: My day on the first visit of a day, after that
  * whichever view was picked last today. */
@@ -51,12 +55,12 @@ const manualOrder = (a: Task, b: Task) => doneLast(a, b) || byOrderKey(a, b);
 const dueOrder = (a: Task, b: Task) => doneLast(a, b) || byDueDate(a, b) || byOrderKey(a, b);
 
 export function viewTasks({ tasks, folder, view, ctx }: ViewScope & { view: View }): Task[] {
-  const shown = tasks.filter((t) => isUnder(t.path, folder) && inView(view)(t, ctx));
+  const shown = tasks.filter((t) => isUnder(t.path, folder) && inView(t, view, ctx));
   return shown.sort(isManual(view) ? manualOrder : dueOrder);
 }
 
 export function viewCounts({ tasks, folder, ctx }: ViewScope): Record<View, number> {
   const scoped = tasks.filter((t) => isUnder(t.path, folder));
-  const count = (v: View) => scoped.filter((t) => inView(v)(t, ctx)).length;
+  const count = (v: View) => scoped.filter((t) => inView(t, v, ctx)).length;
   return { all: count('all'), overdue: count('overdue'), myday: count('myday'), upcoming: count('upcoming'), range: count('range') };
 }
