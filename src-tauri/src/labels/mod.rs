@@ -10,6 +10,7 @@ use serde::Serialize;
 use crate::colors;
 use crate::db::in_transaction;
 use crate::error::{errors, AppResult};
+use crate::names;
 use crate::util::{new_id, now_ms};
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -65,16 +66,22 @@ fn check_name(conn: &Connection, name: &str, except: Option<&str>) -> AppResult<
     Ok(name.to_string())
 }
 
-/// Adds a label at the end of the list.
+/// Adds a label at the end of the list. Its id is the slug of its name, fixed from now on.
 pub fn add(conn: &Connection, name: &str, color: &str) -> AppResult<Label> {
     let name = check_name(conn, name, None)?;
+    let id = names::slug(&name).ok_or_else(|| errors::NAME_CHARS.err())?;
+    let taken = conn
+        .query_row("SELECT 1 FROM task_labels WHERE id = ?1", [&id], |_| Ok(()))
+        .optional()?;
+    if taken.is_some() {
+        return Err(errors::LABEL_NAME_TAKEN.err());
+    }
     colors::check(color)?;
     let position: i64 = conn.query_row(
         "SELECT coalesce(max(position) + 1, 0) FROM task_labels",
         [],
         |r| r.get(0),
     )?;
-    let id = new_id();
     conn.execute(
         "INSERT INTO task_labels (id, name, color, position, created_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?5)",

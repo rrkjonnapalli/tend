@@ -76,3 +76,21 @@ fn tasks_carry_labels_until_the_label_is_deleted() {
     assert_eq!(of_task(&conn, &t).unwrap(), vec![b.id.clone()]);
     assert_eq!(links(&conn).unwrap(), vec![(t, b.id)]);
 }
+
+#[test]
+fn a_label_id_is_its_first_names_slug_and_never_changes() {
+    let conn = open_memory();
+    let pr = add(&conn, "PR review", "#f67280").unwrap();
+    assert_eq!(pr.id, "pr_review");
+    assert!(add(&conn, "pr-review", "#f67280")
+        .unwrap_err()
+        .is(errors::LABEL_NAME_TAKEN));
+    assert!(add(&conn, "!!", "#f67280")
+        .unwrap_err()
+        .is(errors::NAME_CHARS));
+    let renamed = rename(&conn, "pr_review", "Code review").unwrap();
+    assert_eq!(
+        (renamed.id.as_str(), renamed.name.as_str()),
+        ("pr_review", "Code review")
+    );
+}

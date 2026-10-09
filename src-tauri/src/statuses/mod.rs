@@ -9,7 +9,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 
 use crate::error::{errors, AppResult};
-use crate::util::{new_id, now_ms};
+use crate::util::now_ms;
 
 /// Always the first status; new tasks start here.
 pub const FIRST: &str = "NOT_STARTED";
@@ -59,8 +59,8 @@ pub fn add(conn: &Connection, label: &str, value: &str, color: &str) -> AppResul
     )?;
     conn.execute(
         "INSERT INTO statuses (id, value, label, color, position, is_default, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, 0, ?6)",
-        params![new_id(), value, label, color, position, now_ms()],
+         VALUES (?1, ?1, ?2, ?3, ?4, 0, ?5)",
+        params![value, label, color, position, now_ms()],
     )?;
     get(conn, value)
 }

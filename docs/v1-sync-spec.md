@@ -78,8 +78,12 @@ Renaming a folder or a status is an update of one row, not a new row.
 
 Link rows get a fresh ULID each time a link is made, never one derived from the pair, so a removed
 link can always be added again. Two devices can make the same pair under different ids; reconciling
-merges them (§9.2). Ids are fixed only for rows that are never deleted: settings (`id` = key), the
-default statuses (`id` = value) and the root folders (`id` = `'root'`).
+merges them (§9.2).
+
+**Natural ids.** Some rows take an id every device derives the same way, so independent creation of
+"the same thing" gives one row: settings (`id` = key), statuses (`id` = value), tags (`id` = the
+tag, a slug), labels (`id` = slug of the first name, never changed), root folders (`id` =
+`'root'`).
 
 ### 4.2 Notes and attachments
 
@@ -269,6 +273,7 @@ base commit lost to a force-push): fall back to two-way rules —
 | Row on both sides, different | newer `updated_at` wins |
 | Row on one side, with a tombstone on the other (`deleted/`) | deleted |
 | Row on one side, no tombstone | kept (absence is not deletion) |
+| Natural-id row (§4.1) created after its tombstone | kept: it is a re-creation (delete, then add the same tag again) |
 
 Tombstones exist for this fallback; with a base, deletions are seen by comparing against it.
 
@@ -280,8 +285,9 @@ with their content:
 | Collision | Rule |
 |---|---|
 | Two link rows for the same pair (`task_tags`, `note_tags`, `task_label_links`, `my_day`, `attachment_links`) | keep the smaller id; the other is deleted |
-| Two tags or two labels with the same name | keep the smaller id; every link to the other is **moved** to it; then the other is deleted |
-| Two statuses with the same value | keep the smaller id |
+| Two tags with the same name | cannot happen: the name is the id |
+| Two labels or statuses created with the same name or value | cannot happen: the id is derived from it |
+| Two labels renamed to the same name on different devices | keep both; the one with the larger id gets ` 2` appended to its name |
 | Two folders with the same path (notes or tasks) | keep the smaller id (rows point at the path, so nothing moves) |
 | Two notes with the same path | keep both; the note with the larger id gets the next free suffix (`plan_1`) and its file is renamed (logged in `path_log`) |
 
@@ -440,6 +446,30 @@ Commands: `sync_config_get` · `sync_config_set` · `sync_token_set` · `sync_to
 `sync_now` · `sync_status` · `sync_connect` · `sync_restore` · `sync_disconnect` · `activity_recent`.
 
 ---
+
+## 18a. Schema changes
+
+Tend will keep growing, so schema changes must not need sync work. Migrations run through
+`rusqlite_migration` (`src-tauri/src/db`): `docs/schema.sql` is migration 1, edited in place until
+the first release; every later change is a new step, and the version lives in `PRAGMA user_version`.
+
+Rules for every step after release:
+
+1. **Add only.** New tables, and new columns with a constant default (or nullable). No renames or
+   drops in place: add the new column, copy into it, switch to it, and drop the old one in a later
+   release.
+2. **Missing means default.** A snapshot row without a column, or a table with no files, reads as
+   the column's default or as empty, so a base written before an upgrade never looks changed.
+3. **Deterministic.** No `now()` and no random ULIDs in a migration; rows it creates get ids derived
+   from their source, so every device migrating the same data makes the same rows.
+4. **An older app never writes a newer snapshot.** A manifest with a higher schema version stops
+   sync on that device (`SNAPSHOT_TOO_NEW` → "Update Tend to keep syncing"); the app keeps working
+   locally.
+5. **Rebuild every shard after a migration** (§8.2), so snapshots carry the new columns.
+6. **Fixtures:** each released schema keeps a small snapshot fixture; tests migrate and sync each one
+   against the current app.
+
+With these, adding a table or column is a migration step and a default, nothing in sync changes.
 
 ## 19. Determinism, idempotency and testing
 

@@ -128,3 +128,15 @@ fn delete_rules() {
     delete(&conn, "WAITING").unwrap();
     assert_eq!(values(&conn), vec!["NOT_STARTED", "IN_PROGRESS", "DONE"]);
 }
+
+#[test]
+fn a_custom_status_id_is_its_value() {
+    let conn = open_memory();
+    add(&conn, "Blocked", "BLOCKED", "#d4b106").unwrap();
+    let id: String = conn
+        .query_row("SELECT id FROM statuses WHERE value = 'BLOCKED'", [], |r| {
+            r.get(0)
+        })
+        .unwrap();
+    assert_eq!(id, "BLOCKED");
+}

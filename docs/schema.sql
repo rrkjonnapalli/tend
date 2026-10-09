@@ -179,8 +179,12 @@ BEGIN SELECT RAISE(ABORT, 'default status cannot be deleted'); END;
 -------------------------------------------------------------------------------
 -- 6. Task labels: a fixed list (Settings → Tasks); a task can carry several.
 -------------------------------------------------------------------------------
+-- id is the label's value: the slug of its first name ("PR review" → pr_review), made the same
+-- way on every device and never changed, like a status value. Renaming changes only `name`.
 CREATE TABLE task_labels (
-  id         TEXT PRIMARY KEY,
+  id         TEXT PRIMARY KEY CHECK (
+               id <> '' AND id NOT GLOB '*[^a-z0-9_]*'
+               AND id NOT GLOB '_*' AND id NOT GLOB '*_' AND id NOT GLOB '*__*'),
   name       TEXT NOT NULL UNIQUE COLLATE NOCASE,
   color      TEXT NOT NULL CHECK (color GLOB '#[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]'),
   position   INTEGER NOT NULL,
