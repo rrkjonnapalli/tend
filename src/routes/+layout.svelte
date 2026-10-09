@@ -22,6 +22,7 @@
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import { applyTheme } from '#lib/util/theme.ts';
+  import { startTabbingIn } from '#lib/util/focus-start.ts';
   import type { ThemePref } from '#lib/types/theme.type.ts';
 
   let { children }: { children: Snippet } = $props();
@@ -33,7 +34,14 @@
   /** A vault is open and the start page is behind us: the bottom bar and shortcuts are live. */
   const inVault = $derived(Boolean(vault.path) && !onStart);
 
-  afterNavigate(nav.record);
+  let pageEl = $state<HTMLElement>();
+
+  // After a navigation nothing has focus; Tab should start in the page, not at the window buttons.
+  afterNavigate((to) => {
+    nav.record(to);
+    const nothingFocused = document.activeElement === document.body;
+    if (nothingFocused && pageEl) startTabbingIn(pageEl);
+  });
 
   // Errors nobody handled (a failed command, a thrown error) show here as a toast.
   $effect(() => installErrorHandler(toast.error));
@@ -86,7 +94,7 @@
   {#if !settled}
     <VaultGate />
   {:else}
-    <div class="page">{@render children()}</div>
+    <div class="page" bind:this={pageEl}>{@render children()}</div>
     {#if inVault}<BottomNav />{/if}
   {/if}
 </div>

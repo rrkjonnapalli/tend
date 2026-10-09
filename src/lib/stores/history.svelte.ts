@@ -18,10 +18,11 @@ class History {
     this.#replacing = false;
   };
 
-  /** Navigates without adding a step (redirects, filters, renamed folders). */
-  replace = (url: string) => {
+  /** Navigates without adding a step (redirects, filters, renamed folders). `keepFocus` leaves
+   *  focus and scroll where they are (switching a section with the keyboard). */
+  replace = (url: string, { keepFocus = false }: { keepFocus?: boolean } = {}) => {
     this.#replacing = true;
-    return goto(url, { replace: true });
+    return goto(url, { replace: true, reset: !keepFocus });
   };
 
   /** The previous page, or `fallback` when this is the first page of the session. */

@@ -6,7 +6,6 @@
   import SettingsPalette from '#lib/components/SettingsPalette.svelte';
   import SettingsSync from '#lib/components/SettingsSync.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
-  import { tick } from 'svelte';
   import { hasLayers } from '#lib/util/layers.ts';
   import { isTypingTarget } from '#lib/util/keys.ts';
   import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
@@ -34,7 +33,7 @@
   let navEl = $state<HTMLElement>();
 
   function show(id: string) {
-    nav.replace(routes.settingsSection(id));
+    return nav.replace(routes.settingsSection(id), { keepFocus: true });
   }
 
   /** ↑↓ switch sections, like a sidebar, unless focus is in a field or the page's content. */
@@ -47,9 +46,8 @@
     e.preventDefault();
     const at = sections.findIndex((s) => s.id === current.id);
     const next = e.key === 'ArrowDown' ? nextIndex(at, sections.length) : prevIndex(at);
-    show(sections[next].id);
-    await tick();
     navEl?.querySelectorAll<HTMLElement>('.sec')[next]?.focus();
+    await show(sections[next].id);
   }
 </script>
 
