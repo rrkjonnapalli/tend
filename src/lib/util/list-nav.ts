@@ -8,7 +8,7 @@ export const prevIndex = (index: number) => Math.max(index - 1, 0);
 
 /** Where a key moves the keyboard cursor in a list of `count` rows, from row `at` (-1 when the
  *  cursor is in a field above the list). `null` when the key doesn't move it. */
-export function moveTo(key: string, at: number, count: number): number | null {
+export function moveTo({ key, at, count }: { key: string; at: number; count: number }): number | null {
   if (count === 0) return null;
   const inField = at < 0;
   if (key === 'ArrowDown') return inField ? 0 : nextIndex(at, count);

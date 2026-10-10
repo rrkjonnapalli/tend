@@ -24,13 +24,31 @@ pub const LIMIT_MB_RANGE: std::ops::RangeInclusive<u64> = 1..=90;
 #[cfg(test)]
 pub const MAX_FILE_BYTES: u64 = DEFAULT_LIMIT_MB * MB;
 
-/// The vault's file size limit in bytes (Settings → General).
-pub fn max_bytes(conn: &rusqlite::Connection) -> AppResult<u64> {
-    let set = crate::settings::get(conn, LIMIT_KEY)?.and_then(|v| v.as_u64());
-    let mb = set
-        .filter(|mb| LIMIT_MB_RANGE.contains(mb))
-        .unwrap_or(DEFAULT_LIMIT_MB);
-    Ok(mb * MB)
+/// The vault's file size limit (Settings → General): a file this size or larger is left alone.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Limit(u64);
+
+impl Limit {
+    /// The limit the vault has set, or the default.
+    pub fn of(conn: &rusqlite::Connection) -> AppResult<Limit> {
+        let set = crate::settings::get(conn, LIMIT_KEY)?.and_then(|v| v.as_u64());
+        let mb = set
+            .filter(|mb| LIMIT_MB_RANGE.contains(mb))
+            .unwrap_or(DEFAULT_LIMIT_MB);
+        Ok(Limit(mb * MB))
+    }
+
+    /// True for a file Tend works with: under the limit.
+    pub fn allows(self, size: u64) -> bool {
+        size < self.0
+    }
+
+    pub fn mb(self) -> u64 {
+        self.0 / MB
+    }
+
+    #[cfg(test)]
+    pub const DEFAULT: Limit = Limit(MAX_FILE_BYTES);
 }
 
 /// A vault-relative path that stays inside the vault: relative, no `..`, and under `.tend/` only in
@@ -43,11 +61,6 @@ pub fn stays_in_vault(path: &str) -> bool {
     let in_tend = p.starts_with(crate::vault::TEND_DIR);
     let in_store = p.starts_with(crate::vault::ATTACHMENTS_DIR);
     plain && (!in_tend || in_store)
-}
-
-/// True for a file Tend works with: under the limit (`max_bytes`).
-pub fn within_limit(size: u64, max: u64) -> bool {
-    size < max
 }
 
 pub fn sha256(path: &Path) -> AppResult<String> {

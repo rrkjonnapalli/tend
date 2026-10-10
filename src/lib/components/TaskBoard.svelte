@@ -125,7 +125,7 @@
     const task = items.find((t) => t.id === card.dataset.card);
     if (col < 0 || !task) return;
     if (e.shiftKey) {
-      const to = statusTarget(e.key, col, cols.length);
+      const to = statusTarget({ key: e.key, col, columns: cols.length });
       if (to === null) return;
       e.preventDefault();
       moveToStatus(task, tasks.statuses[to].value);
@@ -136,7 +136,7 @@
     // ↑ from a column's top card leaves the board for the zone above (see zoneNav).
     const leaving = e.key === 'ArrowUp' && at.idx === 0;
     if (leaving) return;
-    const next = cardTarget(e.key, at, counts);
+    const next = cardTarget({ key: e.key, at, counts });
     if (!next) return;
     e.preventDefault();
     cardsIn(cols[next.col])[next.idx]?.focus();

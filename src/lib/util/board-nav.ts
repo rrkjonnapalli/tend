@@ -14,7 +14,7 @@ function columnWithCards(counts: number[], col: number, step: number): number {
 }
 
 /** ↑↓ within a column, ←→ to the same row (or the last) of the next column with cards. */
-export function cardTarget(key: string, at: CardSpot, counts: number[]): CardSpot | null {
+export function cardTarget({ key, at, counts }: { key: string; at: CardSpot; counts: number[] }): CardSpot | null {
   const inColumn = counts[at.col] ?? 0;
   if (key === 'ArrowDown') return { col: at.col, idx: Math.min(at.idx + 1, inColumn - 1) };
   if (key === 'ArrowUp') return { col: at.col, idx: Math.max(at.idx - 1, 0) };
@@ -26,7 +26,7 @@ export function cardTarget(key: string, at: CardSpot, counts: number[]): CardSpo
 }
 
 /** ⇧← / ⇧→ moves a card to the neighbouring status column; `null` at either end. */
-export function statusTarget(key: string, col: number, columns: number): number | null {
+export function statusTarget({ key, col, columns }: { key: string; col: number; columns: number }): number | null {
   const step = STEP[key];
   if (step === undefined) return null;
   const next = col + step;

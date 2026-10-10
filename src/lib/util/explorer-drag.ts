@@ -1,24 +1,14 @@
 // Pointer dragging for explorer rows: starts after a small travel so clicks stay clicks, reports
 // moves once per animation frame, and ends on release or cancel. Built on `trackPointer`, so every
 // listener comes off however it ends.
+import type { RowDragOptions } from '#lib/types/drag.type.ts';
 import { swallowReleaseClick, trackPointer } from './drag-session.ts';
 
 /** How far (|dx| + |dy|, in px) the pointer travels before a press becomes a drag. */
 const DRAG_THRESHOLD_PX = 5;
 
-type DragOptions = {
-  /** The pointerdown that may start a drag. */
-  start: PointerEvent;
-  /** The pointer has travelled far enough: the drag begins. */
-  onstart: (e: PointerEvent) => void;
-  /** The latest pointer position while dragging, at most once per frame. */
-  onmove: (e: PointerEvent) => void;
-  /** The pointer was released (`dropped`) or the drag was cancelled; also when no drag began. */
-  onend: (dropped: boolean) => void;
-};
-
 /** Returns `stop`, which ends tracking without calling `onend` (the explorer went away). */
-export function trackDrag({ start, onstart, onmove, onend }: DragOptions): () => void {
+export function trackDrag({ start, onstart, onmove, onend }: RowDragOptions): () => void {
   let dragging = false;
   let frame = 0;
   let last: PointerEvent | null = null;

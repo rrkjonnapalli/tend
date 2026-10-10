@@ -54,14 +54,14 @@ pub struct Stored {
     facts: FileFacts,
 }
 
-/// A file that can be attached: a plain file under the size limit (`files::max_bytes`).
-pub fn check_file(src: &Path, max: u64) -> AppResult<()> {
+/// A file that can be attached: a plain file under the size limit.
+pub fn check_file(src: &Path, limit: files::Limit) -> AppResult<()> {
     let meta = fs::metadata(src).map_err(|_| errors::NOT_FOUND.with("File was not found"))?;
     if !meta.is_file() {
         return Err(errors::NOT_FOUND.with("Only files can be attached"));
     }
-    if !files::within_limit(meta.len(), max) {
-        let mb = max / (1024 * 1024);
+    if !limit.allows(meta.len()) {
+        let mb = limit.mb();
         return Err(
             errors::FILE_TOO_BIG.with(format!("Files of {mb} MB or more can’t be attached."))
         );
@@ -69,10 +69,19 @@ pub fn check_file(src: &Path, max: u64) -> AppResult<()> {
     Ok(())
 }
 
-/// Copies `src` into the store and hashes it, without the database (this is the slow part). A
+/// A file to copy into a vault's store.
+pub struct Incoming<'a> {
+    /// The vault.
+    pub root: &'a Path,
+    /// The file being attached.
+    pub src: &'a Path,
+    pub limit: files::Limit,
+}
+
+/// Copies the file into the store and hashes it, without the database (this is the slow part). A
 /// failed copy leaves nothing behind. Link it with `link_copy`.
-pub fn copy_in(root: &Path, src: &Path, max: u64) -> AppResult<Stored> {
-    check_file(src, max)?;
+pub fn copy_in(&Incoming { root, src, limit }: &Incoming) -> AppResult<Stored> {
+    check_file(src, limit)?;
     let name = src
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
@@ -99,15 +108,25 @@ pub fn copy_in(root: &Path, src: &Path, max: u64) -> AppResult<Stored> {
     }
 }
 
-/// Records a copied file and links it to the owner; the copy is removed if that fails, so the
+/// A copied file and what it is attached to.
+pub struct Copied<'a> {
+    /// The vault.
+    pub root: &'a Path,
+    pub file: &'a Stored,
+    /// `task` or `person`.
+    pub owner: &'a str,
+    pub owner_id: &'a str,
+}
+
+/// Records a copied file and links it to its owner; the copy is removed if that fails, so the
 /// store never keeps a file the database doesn't know.
-pub fn link_copy(
-    conn: &mut Connection,
-    root: &Path,
-    file: &Stored,
-    owner: &str,
-    owner_id: &str,
-) -> AppResult<()> {
+pub fn link_copy(conn: &mut Connection, copied: &Copied) -> AppResult<()> {
+    let Copied {
+        root,
+        file,
+        owner,
+        owner_id,
+    } = *copied;
     check_owner(owner)?;
     let dest = root.join(&file.path);
     let remove_copy = || {

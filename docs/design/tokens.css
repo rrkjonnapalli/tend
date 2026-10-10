@@ -41,45 +41,82 @@
   --orange-700: #a84f2c;
   --orange-900: #45322a;
 
+  --slate-100: #f1f5f7;
+  --indigo-50: #f3f1fe;
+  --slate-150: #eef3f6;
+  --indigo-600: #5b4bd0;
+  --slate-75: #f2f5f7;
+  --slate-450: #616d79;
+  --indigo-100: #ede9ff;
+  --night-900: #1f2328;
+  --night-800: #262b31;
+  --night-700: #30363d;
+  --night-500: #5b6670;
+  --night-50: #e3e7eb;
+  --night-200: #aab3bc;
+  --blue-night-500: #2f6bdc;
+  --blue-night-400: #3b78e7;
+  --blue-night-900: #172a4a;
+  --indigo-400: #8f80f2;
+  --indigo-night-600: #4a4390;
+  --red-night-400: #ff6b86;
+  --red-night-600: #d6204a;
+  --red-night-900: #3a1a22;
+  --red-night-150: #ffb3c1;
+  --green-night-400: #5cc996;
+  --green-night-900: #173328;
+  --orange-night-300: #f0a070;
+  --orange-night-900: #3a2a20;
+  --blue-night-200: #7ab0ff;
+  --night-950: #1a1d21;
+  --night-850: #22262b;
+  --indigo-night-900: #28243f;
+  --night-790: #272c32;
+  --indigo-300: #b9afff;
+  --night-600: #3d454d;
+  --night-300: #939da7;
+  --indigo-night-800: #2c2752;
+  --scrim-light: rgba(48, 56, 65, 0.08);
+  --scrim-dark: rgba(0, 0, 0, 0.45);
   /* semantic */
-  --bg: #f7fbfc;
-  --surface: #ffffff;
-  --surface-raised: #ffffff;
-  --border: #dce3e8;
-  --border-strong: #7d8995;
-  --text: #303841;
-  --text-muted: #5f6b76;
-  --primary: #1259d3;
-  --primary-hover: #113eb0;
-  --on-primary: #ffffff;
-  --primary-soft: #dbfaff;
-  --accent: #6f5ee4;            /* the brand violet: the wordmark dot, avatars, birthdays soon; for "you are here" use --c-current */
-  --accent-soft: #b1b2ff;
-  --danger: #da0037;
-  --danger-fill: #da0037;
-  --on-danger: #ffffff;
-  --danger-soft: #ffebeb;
-  --on-danger-soft: #7a0f2f;
-  --success: #1e7a55;
-  --success-soft: #e3f7ee;
-  --warning: #a84f2c;
-  --warning-soft: #fbebe1;
-  --link: #1259d3;
+  --bg: var(--slate-50);
+  --surface: var(--white);
+  --surface-raised: var(--white);
+  --border: var(--slate-200);
+  --border-strong: var(--slate-400);
+  --text: var(--slate-900);
+  --text-muted: var(--slate-500);
+  --primary: var(--blue-600);
+  --primary-hover: var(--blue-700);
+  --on-primary: var(--white);
+  --primary-soft: var(--blue-50);
+  --accent: var(--indigo-500);            /* the brand violet: the wordmark dot, avatars, birthdays soon; for "you are here" use --c-current */
+  --accent-soft: var(--indigo-200);
+  --danger: var(--red-600);
+  --danger-fill: var(--red-600);
+  --on-danger: var(--white);
+  --danger-soft: var(--red-50);
+  --on-danger-soft: var(--red-800);
+  --success: var(--green-700);
+  --success-soft: var(--green-50);
+  --warning: var(--orange-700);
+  --warning-soft: var(--orange-50);
+  --link: var(--blue-600);
 
   /* app-specific roles used across the mockups */
-  --c-page: #ffffff;            /* app background (mockups use white; --bg for hover/soft fills) */
-  --c-hover: #f1f5f7;           /* row hover */
-  --c-selected: #f3f1fe;        /* the open item or current choice: a violet tint ("you are here") */
-  --c-cursor: #eef3f6;          /* the row with the keyboard cursor (a shade darker than hover) */
-  --c-current: #6f5ee4;         /* "you are here": the view underline, today, drop targets */
-  --c-current-ink: #5b4bd0;     /* text on --c-selected or --c-nav-active-soft (5.3:1 and up) */
-  --c-chip: #f2f5f7;            /* chips, segmented control track, kbd */
-  --c-faint: #b8c4ce;           /* hairlines and quiet borders only; too light for text */
-  --c-muted-2: #616d79;         /* secondary text, icons (4.5:1 or more on white and every row fill) */
-  --c-nav-active: #6f5ee4;      /* bottom-nav active icon + dot, timer chip */
-  --c-nav-active-soft: #ede9ff; /* timer chip, assignee chip, person chips */
-  --c-overdue: #a84f2c;
-  --c-scrim: rgba(48, 56, 65, 0.08);  /* behind a modal: --text at 8% */
+  --c-page: var(--white);            /* app background (mockups use white; --bg for hover/soft fills) */
+  --c-hover: var(--slate-100);           /* row hover */
+  --c-selected: var(--indigo-50);        /* the open item or current choice: a violet tint ("you are here") */
+  --c-cursor: var(--slate-150);          /* the row with the keyboard cursor (a shade darker than hover) */
+  --c-current: var(--indigo-500);         /* "you are here": the view underline, today, drop targets */
+  --c-current-ink: var(--indigo-600);     /* text on --c-selected or --c-nav-active-soft (5.3:1 and up) */
+  --c-chip: var(--slate-75);            /* chips, segmented control track, kbd */
+  --c-faint: var(--slate-300);           /* hairlines and quiet borders only; too light for text */
+  --c-muted-2: var(--slate-450);         /* secondary text, icons (4.5:1 or more on white and every row fill) */
+  --c-nav-active: var(--indigo-500);      /* bottom-nav active icon + dot, timer chip */
+  --c-nav-active-soft: var(--indigo-100); /* timer chip, assignee chip, person chips */
+  --c-overdue: var(--orange-700);
+  --c-scrim: var(--scrim-light);  /* behind a modal: --text at 8% */
 
   /* color swatches for statuses and labels (their color column stores the hex) */
   --sw-gray: #7d8995; --sw-slate: #475569; --sw-blue: #1259d3; --sw-sky: #429ff5; --sw-indigo: #3f51b5;
@@ -155,41 +192,41 @@
    (Settings → General → Appearance; "System" follows the OS). */
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #1f2328;
-  --surface: #1f2328;
-  --surface-raised: #262b31;
-  --border: #30363d;
-  --border-strong: #5b6670;
-  --text: #e3e7eb;
-  --text-muted: #aab3bc;
-  --primary: #2f6bdc;
-  --primary-hover: #3b78e7;
-  --on-primary: #ffffff;
-  --primary-soft: #172a4a;
-  --accent: #8f80f2;
-  --accent-soft: #4a4390;
-  --danger: #ff6b86;
-  --danger-fill: #d6204a;
-  --on-danger: #ffffff;
-  --danger-soft: #3a1a22;
-  --on-danger-soft: #ffb3c1;
-  --success: #5cc996;
-  --success-soft: #173328;
-  --warning: #f0a070;
-  --warning-soft: #3a2a20;
-  --link: #7ab0ff;
+  --bg: var(--night-900);
+  --surface: var(--night-900);
+  --surface-raised: var(--night-800);
+  --border: var(--night-700);
+  --border-strong: var(--night-500);
+  --text: var(--night-50);
+  --text-muted: var(--night-200);
+  --primary: var(--blue-night-500);
+  --primary-hover: var(--blue-night-400);
+  --on-primary: var(--white);
+  --primary-soft: var(--blue-night-900);
+  --accent: var(--indigo-400);
+  --accent-soft: var(--indigo-night-600);
+  --danger: var(--red-night-400);
+  --danger-fill: var(--red-night-600);
+  --on-danger: var(--white);
+  --danger-soft: var(--red-night-900);
+  --on-danger-soft: var(--red-night-150);
+  --success: var(--green-night-400);
+  --success-soft: var(--green-night-900);
+  --warning: var(--orange-night-300);
+  --warning-soft: var(--orange-night-900);
+  --link: var(--blue-night-200);
 
-  --c-page: #1a1d21;
-  --c-hover: #22262b;
-  --c-selected: #28243f;
-  --c-cursor: #272c32;
-  --c-current: #8f80f2;
-  --c-current-ink: #b9afff;
-  --c-chip: #262b31;
-  --c-faint: #3d454d;
-  --c-muted-2: #939da7;
-  --c-nav-active: #8f80f2;
-  --c-nav-active-soft: #2c2752;
-  --c-overdue: #f0a070;
-  --c-scrim: rgba(0, 0, 0, 0.45);
+  --c-page: var(--night-950);
+  --c-hover: var(--night-850);
+  --c-selected: var(--indigo-night-900);
+  --c-cursor: var(--night-790);
+  --c-current: var(--indigo-400);
+  --c-current-ink: var(--indigo-300);
+  --c-chip: var(--night-800);
+  --c-faint: var(--night-600);
+  --c-muted-2: var(--night-300);
+  --c-nav-active: var(--indigo-400);
+  --c-nav-active-soft: var(--indigo-night-800);
+  --c-overdue: var(--orange-night-300);
+  --c-scrim: var(--scrim-dark);
 }

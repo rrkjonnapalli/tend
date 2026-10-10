@@ -46,7 +46,7 @@ export function rowKey(node: HTMLElement, e: KeyboardEvent): boolean {
   if (typing && !isEntry) return false;
   const rows = [...node.querySelectorAll<HTMLElement>(ROW)];
   const at = row ? rows.indexOf(row) : -1;
-  const next = moveTo(e.key, at, rows.length);
+  const next = moveTo({ key: e.key, at, count: rows.length });
   if (next !== null) {
     e.preventDefault();
     focusRow(rows[next]);

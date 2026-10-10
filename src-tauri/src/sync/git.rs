@@ -86,8 +86,8 @@ pub struct Kept<'a> {
     pub managed: &'a BTreeSet<String>,
     /// Managed files the vault still holds unchanged: the parent's entry is reused, unread.
     pub unchanged: &'a BTreeSet<String>,
-    /// Files this size or larger leave the tree (`files::max_bytes`).
-    pub max_bytes: u64,
+    /// Files this size or larger leave the tree.
+    pub limit: crate::files::Limit,
 }
 
 /// Tend's own files: `.gitignore`, everything under `.tend/`, and files rows point at.
@@ -221,7 +221,7 @@ impl Repo {
     }
 
     /// Loads the commit's tree into `index`, minus every file Tend manages there (unless it is
-    /// unchanged) and every file too big to keep (`Kept::max_bytes`).
+    /// unchanged) and every file too big to keep (`Kept::limit`).
     fn read_foreign(&self, index: &mut git2::Index, kept: &Kept) -> AppResult<()> {
         let tree = self.repo.find_commit(kept.commit)?.tree()?;
         index.read_tree(&tree)?;
@@ -232,7 +232,7 @@ impl Repo {
                 let path = String::from_utf8_lossy(&entry.path).into_owned();
                 // The object's header holds its size; the content isn't read.
                 let size = odb.read_header(entry.id).map_or(0, |(size, _)| size as u64);
-                let small = crate::files::within_limit(size, kept.max_bytes);
+                let small = kept.limit.allows(size);
                 let reused = kept.unchanged.contains(&path) && small;
                 let stale = is_managed(Path::new(&path), kept.managed) && !reused;
                 let too_big = !small;
