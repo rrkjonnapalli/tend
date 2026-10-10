@@ -97,7 +97,7 @@
     onsave={setFileLimit} />
   <span class="hint">
     Notes this size or larger aren’t indexed, files this size can’t be attached, and sync never commits one.
-    Lowering it drops bigger notes and files from Tend and from your other devices.
+    Lowering it never deletes anything: a note Tend already has stays, but its changes aren’t picked up while it’s too big.
   </span>
 </section>
 

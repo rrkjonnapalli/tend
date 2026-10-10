@@ -445,6 +445,30 @@ fn a_note_of_30_mb_or_more_is_never_indexed() {
     assert_eq!(names_in(&tree(&conn).unwrap()), vec!["small"]);
 }
 
+#[test]
+fn an_indexed_note_that_grows_over_the_limit_keeps_its_row() {
+    let tmp = tempfile::tempdir().unwrap();
+    let dir = tmp.path().to_path_buf();
+    fs::write(dir.join("grows.md"), "x").unwrap();
+    let mut conn = open_memory();
+    scan(&mut conn, &dir, true).unwrap();
+    let file = fs::OpenOptions::new()
+        .write(true)
+        .open(dir.join("grows.md"))
+        .unwrap();
+    file.set_len(crate::files::MAX_FILE_BYTES).unwrap();
+    scan(&mut conn, &dir, true).unwrap();
+    // A missing row would be purged later and sync as a deletion to the other devices.
+    let missing: Option<i64> = conn
+        .query_row(
+            "SELECT missing_at FROM attachments WHERE path = 'grows.md'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(missing, None);
+}
+
 #[cfg(unix)]
 #[test]
 fn symlinks_are_skipped_so_a_loop_cannot_hang_the_scan() {

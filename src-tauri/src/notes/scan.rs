@@ -45,6 +45,9 @@ struct Disk {
     skipped: Vec<Skipped>,
     /// Renames made during this scan.
     renamed: Vec<Moved>,
+    /// Notes left alone for being over the size limit. Their rows stay as they are: dropping them
+    /// would sync as a deletion and remove the file from the other devices.
+    too_big: HashSet<String>,
 }
 
 /// What stays the same for the whole walk.
@@ -111,7 +114,7 @@ pub fn scan(conn: &mut Connection, dir: &Path, fix: bool) -> AppResult<Vec<Skipp
     let tx = conn.transaction()?;
     log_renames(&tx, &disk.renamed, now)?;
     sync_folders(&tx, &disk.folders, now)?;
-    sync_notes(&tx, dir, &disk.notes, now)?;
+    sync_notes(&tx, dir, &disk, now)?;
     purge(&tx, now)?;
     tx.commit()?;
     disk.skipped.sort_by(|a, b| a.path.cmp(&b.path));
@@ -241,6 +244,7 @@ fn add_disk_note(here: &mut Walk, raw: &str, out: &mut Disk) -> bool {
     // A note over the size limit is never indexed.
     let size = fs::metadata(here.dir.join(format!("{raw}{EXT}"))).map_or(0, |m| m.len());
     if !here.scope.limit.allows(size) {
+        out.too_big.insert(vault_path(here.rel, raw));
         return false;
     }
     let found = Found {
@@ -356,10 +360,10 @@ fn sync_folders(tx: &Transaction, folders: &[String], now: i64) -> AppResult<()>
     Ok(())
 }
 
-fn sync_notes(tx: &Transaction, dir: &Path, notes: &[DiskNote], now: i64) -> AppResult<()> {
+fn sync_notes(tx: &Transaction, dir: &Path, disk: &Disk, now: i64) -> AppResult<()> {
     let indexed = load_indexed(tx)?;
-    let mut vanished = find_vanished(&indexed, notes);
-    for n in notes {
+    let mut vanished = find_vanished(&indexed, disk);
+    for n in &disk.notes {
         let path = vault_path(&n.folder, &n.name);
         match indexed.get(&path) {
             Some(ix) if ix.mtime == Some(n.mtime) && !ix.missing => {}
@@ -395,14 +399,16 @@ fn load_indexed(tx: &Transaction) -> AppResult<HashMap<String, Indexed>> {
 }
 
 /// Present bodies the disk no longer has at their indexed path.
-fn find_vanished(indexed: &HashMap<String, Indexed>, notes: &[DiskNote]) -> Vec<Vanished> {
-    let present: HashSet<String> = notes
+fn find_vanished(indexed: &HashMap<String, Indexed>, disk: &Disk) -> Vec<Vanished> {
+    let present: HashSet<String> = disk
+        .notes
         .iter()
         .map(|n| vault_path(&n.folder, &n.name))
         .collect();
+    let gone = |path: &String| !present.contains(path) && !disk.too_big.contains(path);
     indexed
         .iter()
-        .filter(|(path, ix)| !ix.missing && !present.contains(*path))
+        .filter(|(path, ix)| !ix.missing && gone(path))
         .map(|(_, ix)| Vanished {
             attachment_id: ix.attachment_id.clone(),
             sha256: ix.sha256.clone(),
