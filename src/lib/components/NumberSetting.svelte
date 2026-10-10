@@ -1,26 +1,45 @@
 <script lang="ts">
-  // Minutes between automatic syncs, edited in place: pencil to edit, ✓ or Enter saves, ✕ or Esc
-  // cancels. 0 turns automatic syncs off.
+  // A whole-number setting edited in place (the sync interval, the file size limit): pencil to
+  // edit, ✓ or Enter saves, ✕ or Esc cancels.
   import EditControls from './EditControls.svelte';
-  import { intervalLimits } from '#lib/config/sync.config.ts';
-  import { plural } from '#lib/util/plural.ts';
 
-  let { minutes, onsave }: { minutes: number; onsave: (minutes: number) => Promise<void> } = $props();
+  let {
+    value,
+    min,
+    max,
+    shown,
+    unit,
+    label,
+    what,
+    onsave,
+  }: {
+    value: number;
+    min: number;
+    max: number;
+    /** The value as text while not editing: "Every 15 minutes", "30 MB". */
+    shown: string;
+    /** After the field while editing: "minutes · 0 is off". */
+    unit: string;
+    /** The field's accessible name. */
+    label: string;
+    /** Names the setting for the pencil: "sync interval". */
+    what: string;
+    onsave: (value: number) => Promise<void>;
+  } = $props();
 
   let editing = $state(false);
   /** A number input binds a number, or null while it's empty. */
   let draft = $state<number | null>(null);
 
   const valid = $derived(isValid(draft));
-  const shown = $derived(minutes === 0 ? 'Off' : `Every ${plural(minutes, 'minute')}`);
 
   function isValid(n: number | null): n is number {
     if (n === null || !Number.isInteger(n)) return false;
-    return n >= intervalLimits.min && n <= intervalLimits.max;
+    return n >= min && n <= max;
   }
 
   function start() {
-    draft = minutes;
+    draft = value;
     editing = true;
   }
 
@@ -53,17 +72,17 @@
       class="text-field mono num"
       class:bad={!valid}
       type="number"
-      min={intervalLimits.min}
-      max={intervalLimits.max}
-      aria-label="Minutes between syncs, 0 for off"
+      {min}
+      {max}
+      aria-label={label}
       bind:value={draft}
       use:focus
       {onkeydown} />
-    <span class="unit">minutes · 0 is off</span>
+    <span class="unit">{unit}</span>
   {:else}
     <span class="val">{shown}</span>
   {/if}
-  <EditControls {editing} what="sync interval" onedit={start} oncancel={cancel} onsave={save} />
+  <EditControls {editing} {what} onedit={start} oncancel={cancel} onsave={save} />
 </div>
 
 <style>

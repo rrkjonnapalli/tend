@@ -53,6 +53,8 @@ struct Scope<'a> {
     fix: bool,
     /// Folders the index already has: they stay even when they hold no notes.
     known: &'a HashSet<String>,
+    /// Notes this size or larger are not indexed (`files::max_bytes`).
+    max_bytes: u64,
 }
 
 /// One directory being walked: its place, its depth, and the names in it.
@@ -98,7 +100,11 @@ struct Vanished {
 /// Returns the skipped items. With `fix`, names that can be made valid are renamed on disk first.
 pub fn scan(conn: &mut Connection, dir: &Path, fix: bool) -> AppResult<Vec<Skipped>> {
     let known = known_folders(conn)?;
-    let scope = Scope { fix, known: &known };
+    let scope = Scope {
+        fix,
+        known: &known,
+        max_bytes: files::max_bytes(conn)?,
+    };
     let mut disk = Disk::default();
     walk(&scope, dir, "", 0, &mut disk);
     let now = now_ms();
@@ -232,9 +238,9 @@ fn has_notes(dir: &Path, depth: usize) -> bool {
 }
 
 fn add_disk_note(here: &mut Walk, raw: &str, out: &mut Disk) -> bool {
-    // A note this big is never indexed (`files::MAX_FILE_BYTES`).
+    // A note over the size limit is never indexed.
     let size = fs::metadata(here.dir.join(format!("{raw}{EXT}"))).map_or(0, |m| m.len());
-    if !files::within_limit(size) {
+    if !files::within_limit(size, here.scope.max_bytes) {
         return false;
     }
     let found = Found {

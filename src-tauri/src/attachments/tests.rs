@@ -9,7 +9,7 @@ fn add_file(
     owner_id: &str,
     src: &Path,
 ) -> AppResult<()> {
-    let file = copy_in(root, src)?;
+    let file = copy_in(root, src, crate::files::MAX_FILE_BYTES)?;
     link_copy(conn, root, &file, owner, owner_id)
 }
 
@@ -89,8 +89,10 @@ fn a_file_of_30_mb_or_more_or_a_folder_is_refused_before_anything_is_copied() {
         .unwrap()
         .set_len(crate::files::MAX_FILE_BYTES)
         .unwrap();
-    assert!(check_file(&big).unwrap_err().is(errors::FILE_TOO_BIG));
-    assert!(check_file(tmp.path()).is_err());
+    assert!(check_file(&big, crate::files::MAX_FILE_BYTES)
+        .unwrap_err()
+        .is(errors::FILE_TOO_BIG));
+    assert!(check_file(tmp.path(), crate::files::MAX_FILE_BYTES).is_err());
 }
 
 #[test]

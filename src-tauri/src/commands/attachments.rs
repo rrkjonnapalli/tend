@@ -26,12 +26,13 @@ pub fn attachments_add(
     paths: Vec<String>,
 ) -> AppResult<()> {
     let sources: Vec<&std::path::Path> = paths.iter().map(std::path::Path::new).collect();
+    let max = state.with(|db, _| crate::files::max_bytes(db))?;
     sources
         .iter()
-        .try_for_each(|src| attachments::check_file(src))?;
+        .try_for_each(|src| attachments::check_file(src, max))?;
     let root = state.vault()?.root.clone();
     for src in sources {
-        let file = attachments::copy_in(&root, src)?;
+        let file = attachments::copy_in(&root, src, max)?;
         state.with(|db, v| attachments::link_copy(db, &v.root, &file, &owner, &id))?;
     }
     Ok(())

@@ -8,12 +8,12 @@ use std::collections::HashMap;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde_json::Value;
 
-use crate::error::AppResult;
+use crate::error::{errors, AppResult};
 use crate::util::now_ms;
 
 /// The settings every device shares through sync; the rest belong to one device (layout, last
 /// views, paths). Keys are the ones in `src/lib/config/settings.config.ts`.
-pub const SHARED_KEYS: &[&str] = &["tasks.root_name", "timers.sound"];
+pub const SHARED_KEYS: &[&str] = &["tasks.root_name", "timers.sound", crate::files::LIMIT_KEY];
 
 pub fn all(conn: &Connection) -> AppResult<HashMap<String, Value>> {
     let mut stmt = conn.prepare("SELECT key, value FROM settings")?;
@@ -24,6 +24,17 @@ pub fn all(conn: &Connection) -> AppResult<HashMap<String, Value>> {
         out.insert(key, serde_json::from_str(&text)?);
     }
     Ok(out)
+}
+
+/// The settings with rules: the file size limit is a whole number of MB in its range.
+fn check(key: &str, value: &Value) -> AppResult<()> {
+    let in_range = value
+        .as_u64()
+        .is_some_and(|mb| crate::files::LIMIT_MB_RANGE.contains(&mb));
+    if key == crate::files::LIMIT_KEY && !in_range {
+        return Err(errors::FILE_LIMIT.err());
+    }
+    Ok(())
 }
 
 pub fn get(conn: &Connection, key: &str) -> AppResult<Option<Value>> {
@@ -39,6 +50,7 @@ pub fn get(conn: &Connection, key: &str) -> AppResult<Option<Value>> {
 }
 
 pub fn set(conn: &Connection, key: &str, value: &Value) -> AppResult<()> {
+    check(key, value)?;
     conn.execute(
         "INSERT INTO settings (id, key, value, updated_at) VALUES (?1, ?1, ?2, ?3)
          ON CONFLICT(id) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",

@@ -3,7 +3,9 @@
   // token (kept in the Keychain only), the schedule, the last run, Sync now and Disconnect.
   import ConfirmDialog from './ConfirmDialog.svelte';
   import SyncFields from './SyncFields.svelte';
-  import SyncInterval from './SyncInterval.svelte';
+  import NumberSetting from './NumberSetting.svelte';
+  import { intervalLimits } from '#lib/config/sync.config.ts';
+  import { plural } from '#lib/util/plural.ts';
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import { emptySetup, publicRepoWarning } from '#lib/config/sync.config.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
@@ -90,7 +92,15 @@
   <section class="group">
     <h2 class="section-title">Schedule</h2>
     <span class="cap">Minutes between automatic syncs. Tend also syncs when the vault opens and when you quit.</span>
-    <SyncInterval minutes={config.intervalMinutes} onsave={sync.setInterval} />
+    <NumberSetting
+      value={config.intervalMinutes}
+      min={intervalLimits.min}
+      max={intervalLimits.max}
+      shown={config.intervalMinutes === 0 ? 'Off' : `Every ${plural(config.intervalMinutes, 'minute')}`}
+      unit="minutes · 0 is off"
+      label="Minutes between syncs, 0 for off"
+      what="sync interval"
+      onsave={sync.setInterval} />
   </section>
 
   <section class="group">

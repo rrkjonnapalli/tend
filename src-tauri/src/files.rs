@@ -11,9 +11,27 @@ use crate::error::AppResult;
 
 const READ_CHUNK: usize = 64 * 1024;
 
-/// Files this size or larger are left alone: the scan doesn't index a note this big, a file this
-/// big can't be attached, and sync never commits one.
-pub const MAX_FILE_BYTES: u64 = 30 * 1024 * 1024;
+const MB: u64 = 1024 * 1024;
+
+/// The setting (shared through sync, so every device agrees) for the file size limit, in MB:
+/// a note this big isn't indexed, a file this big can't be attached, and sync never commits one.
+pub const LIMIT_KEY: &str = "files.max_mb";
+pub const DEFAULT_LIMIT_MB: u64 = 30;
+/// 0 is not allowed: every note would count as too big and drop out of the vault.
+pub const LIMIT_MB_RANGE: std::ops::RangeInclusive<u64> = 1..=90;
+
+/// The default limit in bytes, for tests.
+#[cfg(test)]
+pub const MAX_FILE_BYTES: u64 = DEFAULT_LIMIT_MB * MB;
+
+/// The vault's file size limit in bytes (Settings → General).
+pub fn max_bytes(conn: &rusqlite::Connection) -> AppResult<u64> {
+    let set = crate::settings::get(conn, LIMIT_KEY)?.and_then(|v| v.as_u64());
+    let mb = set
+        .filter(|mb| LIMIT_MB_RANGE.contains(mb))
+        .unwrap_or(DEFAULT_LIMIT_MB);
+    Ok(mb * MB)
+}
 
 /// A vault-relative path that stays inside the vault: relative, no `..`, and under `.tend/` only in
 /// the attachment store. The empty path is the vault root. Rows that came by sync are checked
@@ -27,9 +45,9 @@ pub fn stays_in_vault(path: &str) -> bool {
     plain && (!in_tend || in_store)
 }
 
-/// True for a file Tend works with (under `MAX_FILE_BYTES`).
-pub fn within_limit(size: u64) -> bool {
-    size < MAX_FILE_BYTES
+/// True for a file Tend works with: under the limit (`max_bytes`).
+pub fn within_limit(size: u64, max: u64) -> bool {
+    size < max
 }
 
 pub fn sha256(path: &Path) -> AppResult<String> {

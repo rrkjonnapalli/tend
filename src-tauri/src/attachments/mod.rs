@@ -54,22 +54,25 @@ pub struct Stored {
     facts: FileFacts,
 }
 
-/// A file that can be attached: a plain file under the size limit (`files::MAX_FILE_BYTES`).
-pub fn check_file(src: &Path) -> AppResult<()> {
+/// A file that can be attached: a plain file under the size limit (`files::max_bytes`).
+pub fn check_file(src: &Path, max: u64) -> AppResult<()> {
     let meta = fs::metadata(src).map_err(|_| errors::NOT_FOUND.with("File was not found"))?;
     if !meta.is_file() {
         return Err(errors::NOT_FOUND.with("Only files can be attached"));
     }
-    if !files::within_limit(meta.len()) {
-        return Err(errors::FILE_TOO_BIG.err());
+    if !files::within_limit(meta.len(), max) {
+        let mb = max / (1024 * 1024);
+        return Err(
+            errors::FILE_TOO_BIG.with(format!("Files of {mb} MB or more can’t be attached."))
+        );
     }
     Ok(())
 }
 
 /// Copies `src` into the store and hashes it, without the database (this is the slow part). A
 /// failed copy leaves nothing behind. Link it with `link_copy`.
-pub fn copy_in(root: &Path, src: &Path) -> AppResult<Stored> {
-    check_file(src)?;
+pub fn copy_in(root: &Path, src: &Path, max: u64) -> AppResult<Stored> {
+    check_file(src, max)?;
     let name = src
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())

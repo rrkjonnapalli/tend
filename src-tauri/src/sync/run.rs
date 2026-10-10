@@ -36,6 +36,7 @@ pub enum Outcome {
 /// The vault files a commit holds: shard files and every file a row points at that is on disk
 /// (and under the size limit).
 fn synced_paths(conn: &Connection, root: &Path) -> AppResult<Vec<String>> {
+    let max = files::max_bytes(conn)?;
     let mut paths = Vec::new();
     collect_files(root, Path::new(SYNC_DIR), &mut paths)?;
     let mut stmt =
@@ -45,7 +46,7 @@ fn synced_paths(conn: &Connection, root: &Path) -> AppResult<Vec<String>> {
         .collect::<Result<_, _>>()?;
     for path in files {
         let size = fs::metadata(root.join(&path)).map(|m| m.len());
-        if size.is_ok_and(files::within_limit) {
+        if size.is_ok_and(|s| files::within_limit(s, max)) {
             paths.push(path);
         }
     }
@@ -88,6 +89,7 @@ fn tree_now(
         commit,
         managed: &managed,
         unchanged: &unchanged,
+        max_bytes: files::max_bytes(conn)?,
     };
     repo.tree_of_files(&paths, Some(kept))
 }
@@ -139,7 +141,7 @@ fn adopt(conn: &mut Connection, root: &Path, repo: &Repo, head: Oid) -> AppResul
         let Some(bytes) = blobs.read(&path)? else {
             continue;
         };
-        if !files::within_limit(bytes.len() as u64) {
+        if !files::within_limit(bytes.len() as u64, files::max_bytes(conn)?) {
             continue;
         }
         // Taken in on a run whose push failed: the note is already here.
