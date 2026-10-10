@@ -102,6 +102,13 @@ fn merge_row(row: Sides<Option<&Row>>) -> Option<Row> {
 /// Each column from the side that changed it since the base; a column both changed comes from
 /// the newer row. So a rename on one device and an edit on another both survive.
 fn merge_columns(row: Sides<&Row>) -> Row {
+    // Most rows changed on one side only (or neither): no column needs looking at.
+    if row.local == row.base {
+        return row.remote.clone();
+    }
+    if row.remote == row.base {
+        return row.local.clone();
+    }
     let winner = newer(row.local, row.remote);
     let columns: BTreeSet<&String> = row.local.keys().chain(row.remote.keys()).collect();
     let mut out = Row::new();
@@ -420,13 +427,16 @@ fn fix_tasks(merged: &mut Snapshot) -> bool {
     changed
 }
 
-/// Sets `column` to `fallback` when it holds a value `valid` refuses. Returns true when it did.
+/// Sets `column` to `fallback` when it holds a value `valid` refuses. Returns true when that changed
+/// the row: a fallback `valid` refuses too (no root folder row) must not count as a change every
+/// pass.
 fn fix_column(row: &mut Row, column: &str, valid: impl Fn(&str) -> bool, fallback: Value) -> bool {
     let bad = text(row, column).is_some_and(|v| !valid(v));
-    if bad {
+    let changes = bad && row.get(column) != Some(&fallback);
+    if changes {
         row.insert(column.to_string(), fallback);
     }
-    bad
+    changes
 }
 
 /// The status with the lowest position (ties: the smaller value).

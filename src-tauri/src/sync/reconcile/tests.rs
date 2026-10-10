@@ -343,8 +343,20 @@ fn a_rename_on_one_side_and_an_edit_on_the_other_both_survive() {
 #[test]
 fn a_path_with_every_suffix_taken_gets_the_row_id() {
     let taken: BTreeSet<String> = std::iter::once("work/plan.md".to_string())
-        .chain((1..=10_000).map(|n| format!("work/plan_{n}.md")))
+        .chain((1..=100_000).map(|n| format!("work/plan_{n}.md")))
         .collect();
     assert_eq!(free_path("work/plan.md", &taken), None);
     assert_eq!(with_id("work/plan.md", "01ABC"), "work/plan_01abc.md");
+}
+
+#[test]
+fn a_fallback_the_rules_refuse_too_is_not_a_change_every_pass() {
+    // No root folder row: a task moved to the root still fails the folder rule.
+    let task = json!({ "id": "t", "path": "gone", "title": "T", "updated_at": 1 });
+    let mut merged = snap(&[("tasks", vec![task]), ("task_folders", vec![])]);
+    assert!(fix_pass(&mut merged));
+    assert!(
+        !fix_pass(&mut merged),
+        "the second pass has nothing left to do"
+    );
 }
