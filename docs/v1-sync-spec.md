@@ -14,8 +14,9 @@ Back up and synchronize a Tend vault through a Git remote, automatically.
 - Every sync pulls before it pushes.
 - Tend-to-Tend sync never depends on Git's text merge or on Git conflicts.
 - The live SQLite files are never committed; shared data travels as deterministic JSONL files.
-- **A change made on one side always survives.** Only when both sides changed the same row does the
-  newer one win; the older version is discarded and nothing is kept as a conflict copy.
+- **A change made on one side always survives.** Rows merge column by column: only when both sides
+  changed the same column of a row does the newer row's value win; the older value is discarded and
+  nothing is kept as a conflict copy.
 - **A delete always wins** and is never undone by a later edit elsewhere.
 - Sync runs are retryable and idempotent.
 - **Scale target:** 100k rows per table, built up over many years, with sync cost that grows with
@@ -175,8 +176,8 @@ row dirty.
 
 `updated_at = now` (epoch ms) on every insert and update.
 
-The clock only matters when **both sides changed the same row** since the base (§9.1); then the
-newer `updated_at` wins. Every other decision compares content against the base and ignores time.
+The clock only matters when **both sides changed the same column of a row** since the base (§9.1);
+then the newer row's `updated_at` wins. Every other decision compares content against the base and ignores time.
 
 **Known risk:** in that both-changed case, a device whose clock is wrong can make an older edit win.
 Accepted for V1; a hybrid logical clock is a later decision.
@@ -205,7 +206,9 @@ Accepted for V1; a hybrid logical clock is a later decision.
   generated while writing. Same data → byte-identical file. An edit changes its line in place.
 - `manifest.json`: `{ "app_id": "tend", "format_version": 1, "schema_version": 1, "tables": [...] }`.
   A remote with unrelated files and no valid manifest is refused (`SYNC_NOT_A_VAULT`); a manifest
-  whose schema is newer than the app is refused (`SNAPSHOT_TOO_NEW`) and nothing is imported.
+  whose schema is newer than the app is refused (`SNAPSHOT_TOO_NEW`) and nothing is imported. An
+  older schema is read up to date: a snapshot before schema 2 gets its task order keys rewritten
+  exactly as migration 2 rewrites a local database.
 - Settings shows the snapshot size; warn above 200 MB.
 
 Old years are rarely touched, so Git neither rewrites nor rereads them: they act as an archive
@@ -237,14 +240,16 @@ Every row is judged against three versions:
 - **local** — the row in this device's database;
 - **remote** — the row in the fetched remote commit.
 
-Rows are compared by their snapshot line (synced columns only).
+Rows are compared by their snapshot line (synced columns only). When both sides changed a row, it
+merges column by column: each column comes from the side that changed it, and only a column both
+sides changed goes by the clock. A rename on one device and an edit on another both survive.
 
 | Base | Local | Remote | Result |
 |---|---|---|---|
 | A | A | B | remote changed → **B** |
 | A | B | A | local changed → **B** |
 | A | B | B | same change on both → **B** |
-| A | B | C | both changed → **newer `updated_at`** wins; equal times: the line that sorts higher |
+| A | B | C | both changed → per column; a column both changed takes the **newer `updated_at`** row's value; equal times: the line that sorts higher |
 | A | A or B | missing | remote deleted → **deleted** |
 | A | missing | A or B | local deleted → **deleted** |
 | — | new | — | local added → **kept** |
@@ -296,13 +301,18 @@ implemented.
 ## 10. Applying the result
 
 1. Save any note open in the editor (so autosave can't write stale text after the pull).
-2. Pause the notes watcher.
-3. Write incoming files (note bodies, attachments) into `.tend/staging/`.
+2. Index edits made on disk since the last scan, so the merge sees them.
+3. Write incoming files (note bodies, attachments) into `.tend/staging/`, with `pending.json`
+   listing the moves and removals and the hash each touched path held when the merge was made.
 4. Apply rows to SQLite in **one transaction** (a backup copy of `tend.db` is taken just
    before); check references; commit. A failed apply rolls back, `.tend/staging/` is emptied, and the
    sync fails with the vault unchanged.
-5. Move staged files into place and remove deleted ones; renames go to `path_log`. If a move fails, the
-   affected files are restored from the last commit's tree.
+5. Move staged files into place and remove deleted ones; renames go to `path_log`. A file that no
+   longer holds the hash the merge expected was edited meanwhile (an autosave, another editor): it is
+   left alone, and the next scan and sync send the edit. If the app stops between the commit and
+   the moves, the next run first finishes them from `pending.json`: a staged file moves only when the
+   database holds its hash at its path, a removal happens only when no row is left there; a staged
+   apply that never committed is discarded.
 6. Scan the vault, matching files to note rows by `attachments.path` (§11.3). Applied files hash the
    same as their rows, so the scan changes nothing.
    A note or task deleted by this sync while it is open on this device stays on screen and asks
@@ -352,7 +362,7 @@ Paths in rows from the remote must stay inside the vault, and column names must 
 
 ```text
 lock (one run at a time; triggers during a run coalesce into it)
-→ save open note · pause watcher
+→ save open note · scan
 → fetch
 → rebuild shards (§8.2)
 → idle check: git status clean · remote head = last_synced_commit  →  stop
@@ -554,7 +564,7 @@ retry later · simulation test passes.
 **Files** — notes and attachments sync as files · WAL/SHM and staging never committed · files of
 30 MB or more never indexed, attached or committed · renames logged · note index rebuilt by matching paths.
 
-**Runtime** — one run at a time · open → scan → sync · watcher paused and rescanned · open note
+**Runtime** — one run at a time · open → scan → sync · edits made during an apply are never overwritten · open note
 saved before and reloaded after · open / interval / close (10 s) / Sync now all work · status icon
 and Settings section show the state · auth failures stop auto-sync.
 

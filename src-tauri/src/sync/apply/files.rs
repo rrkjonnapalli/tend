@@ -2,10 +2,12 @@
 //! removed so the vault matches the merged rows. Everything incoming is copied into
 //! `.tend/staging/` first; nothing in the vault changes until the database commit succeeds.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use rusqlite::Connection;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::error::{errors, AppResult};
@@ -13,6 +15,8 @@ use crate::sync::shards::{Row, Snapshot};
 
 /// The vault folder staged files wait in, relative to the vault.
 const STAGING_DIR: &str = ".tend/staging";
+/// The staged apply's `Pending`, in `STAGING_DIR`.
+const PENDING_FILE: &str = "pending.json";
 
 /// File contents in the fetched remote commit, by vault-relative path.
 pub trait Blobs {
@@ -40,6 +44,8 @@ pub struct Plan {
     /// Note folders to make sure exist, and ones to remove if empty.
     folders: Vec<String>,
     gone_folders: Vec<String>,
+    /// Each path this device's rows point at, with the hash it should hold.
+    expected: BTreeMap<String, String>,
 }
 
 fn text<'a>(row: &'a Row, column: &str) -> &'a str {
@@ -103,11 +109,21 @@ pub fn plan(local: &Snapshot, merged: &Snapshot, remote: &Snapshot) -> AppResult
         .difference(&paths(merged, "note_folders"))
         .cloned()
         .collect();
+    let expected = local_files
+        .values()
+        .map(|row| {
+            (
+                text(row, "path").to_string(),
+                text(row, "sha256").to_string(),
+            )
+        })
+        .collect();
     Ok(Plan {
         installs,
         removals,
         folders,
         gone_folders,
+        expected,
     })
 }
 
@@ -123,49 +139,106 @@ fn remote_path(
         .map(|r| text(r, "path").to_string())
 }
 
+/// The file side of an apply that has been staged: written to `PENDING_FILE` too, so an apply cut
+/// off after its commit can be finished on the next run (`resume`).
+#[derive(Serialize, Deserialize, Default)]
+pub struct Pending {
+    /// Staged file → vault path.
+    moves: Vec<(PathBuf, String)>,
+    removals: Vec<String>,
+    gone_folders: Vec<String>,
+    /// What each indexed path held when the merge was worked out. A file that no longer holds it
+    /// was edited since (an autosave, another editor) and is left alone; the next scan picks the
+    /// edit up and the next sync sends it.
+    expected: BTreeMap<String, String>,
+}
+
 /// Copies every incoming file into staging and makes every folder the files need, all before the
-/// commit, so a clash (a file where a folder must go) rolls the whole apply back. Returns the staged
-/// path of each install, in order; `None` where the remote has no copy of the file.
-pub fn stage(root: &Path, plan: &Plan, blobs: &dyn Blobs) -> AppResult<Vec<Option<PathBuf>>> {
+/// commit, so a clash (a file where a folder must go) rolls the whole apply back. An install the
+/// remote has no copy of is left out.
+pub fn stage(root: &Path, plan: &Plan, blobs: &dyn Blobs) -> AppResult<Pending> {
     let dir = root.join(STAGING_DIR);
     discard(root)?;
     fs::create_dir_all(&dir)?;
     for folder in &plan.folders {
         fs::create_dir_all(root.join(folder))?;
     }
-    let mut staged = Vec::new();
+    let mut moves = Vec::new();
     for (n, install) in plan.installs.iter().enumerate() {
         if let Some(parent) = root.join(&install.target).parent() {
             fs::create_dir_all(parent)?;
         }
-        let path = dir.join(n.to_string());
         let bytes = match &install.source {
             Source::Local(from) => Some(fs::read(root.join(from))?),
             Source::Remote(from) => blobs.read(from)?,
         };
-        match bytes {
-            Some(bytes) => {
-                fs::write(&path, bytes)?;
-                staged.push(Some(path));
-            }
-            None => staged.push(None),
-        }
+        let Some(bytes) = bytes else { continue };
+        let path = dir.join(n.to_string());
+        fs::write(&path, bytes)?;
+        moves.push((path, install.target.clone()));
     }
-    Ok(staged)
+    let pending = Pending {
+        moves,
+        removals: plan.removals.clone(),
+        gone_folders: plan.gone_folders.clone(),
+        expected: plan.expected.clone(),
+    };
+    fs::write(dir.join(PENDING_FILE), serde_json::to_vec(&pending)?)?;
+    Ok(pending)
 }
 
 /// After the commit: removes what is gone and moves staged files into place (same volume, so only
-/// renames are left to fail).
-pub fn install(root: &Path, plan: &Plan, staged: &[Option<PathBuf>]) -> AppResult<()> {
-    for path in &plan.removals {
-        remove_if_there(&root.join(path))?;
+/// renames are left to fail). A file edited since the merge is skipped, never overwritten.
+pub fn install(root: &Path, pending: &Pending) -> AppResult<()> {
+    for path in &pending.removals {
+        if untouched(root, pending, path) {
+            remove_if_there(&root.join(path))?;
+        }
     }
-    for (install, from) in plan.installs.iter().zip(staged) {
-        let Some(from) = from else { continue };
-        fs::rename(from, root.join(&install.target))?;
+    for (from, target) in &pending.moves {
+        if untouched(root, pending, target) {
+            fs::rename(from, root.join(target))?;
+        }
     }
-    remove_empty_folders(root, &plan.gone_folders);
+    remove_empty_folders(root, &pending.gone_folders);
     discard(root)
+}
+
+/// Nothing is at `path`, or it holds what the merge expected there.
+fn untouched(root: &Path, pending: &Pending, path: &str) -> bool {
+    let full = root.join(path);
+    if !full.exists() {
+        return true;
+    }
+    let now = crate::files::sha256(&full).ok();
+    now.is_some() && now.as_ref() == pending.expected.get(path)
+}
+
+/// Finishes an apply whose commit happened but whose files didn't all move (the app quit or
+/// crashed in between). A staged file moves only when the database now holds its bytes at its
+/// path; a removal happens only when no row is left there. A staged apply that never committed
+/// is just discarded.
+pub fn resume(conn: &Connection, root: &Path) -> AppResult<()> {
+    let file = root.join(STAGING_DIR).join(PENDING_FILE);
+    let Ok(text) = fs::read(&file) else {
+        return Ok(());
+    };
+    let Ok(mut pending) = serde_json::from_slice::<Pending>(&text) else {
+        return discard(root);
+    };
+    let indexed = indexed_shas(conn)?;
+    pending.moves.retain(|(from, target)| {
+        let staged = crate::files::sha256(from).ok();
+        staged.is_some() && staged.as_ref() == indexed.get(target)
+    });
+    pending.removals.retain(|path| !indexed.contains_key(path));
+    install(root, &pending)
+}
+
+fn indexed_shas(conn: &Connection) -> AppResult<BTreeMap<String, String>> {
+    let mut stmt = conn.prepare("SELECT path, sha256 FROM attachments")?;
+    let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+    Ok(rows.collect::<Result<_, _>>()?)
 }
 
 fn remove_if_there(path: &Path) -> AppResult<()> {

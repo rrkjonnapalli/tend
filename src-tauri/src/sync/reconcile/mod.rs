@@ -1,8 +1,9 @@
 //! Reconciling (spec §9): the merged state of base, local and remote snapshots. Pure: the same
 //! three inputs give the same result on every device, so every device ends with the same rows.
 //!
-//! 1. Three-way merge per row: a change on one side wins; both changed → newer `updated_at`
-//!    (equal times: the line that sorts higher); a deletion on either side wins.
+//! 1. Three-way merge per row, column by column: a change on one side wins; a column both sides
+//!    changed takes the newer row's value (`updated_at`; equal times: the line that sorts
+//!    higher); a deletion on either side wins.
 //! 2. Unique keys: rows that collide after merging are merged or renamed, never dropped with
 //!    their content (§9.2).
 //! 3. References: rows pointing at something that no longer exists are fixed or dropped, parents
@@ -70,7 +71,7 @@ fn merge_row(base: Option<&Row>, local: Option<&Row>, remote: Option<&Row>) -> O
     match (base, local, remote) {
         // Present at the last sync and gone on one side: deleted, whatever the other side did.
         (Some(_), None, _) | (Some(_), _, None) => None,
-        (Some(b), Some(l), Some(r)) => Some(changed_side(b, l, r).clone()),
+        (Some(b), Some(l), Some(r)) => Some(merge_columns(b, l, r)),
         (None, Some(l), None) => Some(l.clone()),
         (None, None, Some(r)) => Some(r.clone()),
         (None, Some(l), Some(r)) => Some(newer(l, r).clone()),
@@ -78,15 +79,28 @@ fn merge_row(base: Option<&Row>, local: Option<&Row>, remote: Option<&Row>) -> O
     }
 }
 
-/// The version that holds a change since the base; when both changed, the newer one.
-fn changed_side<'a>(base: &Row, local: &'a Row, remote: &'a Row) -> &'a Row {
-    if local == base {
-        return remote;
+/// Each column from the side that changed it since the base; a column both changed comes from
+/// the newer row. So a rename on one device and an edit on another both survive.
+fn merge_columns(base: &Row, local: &Row, remote: &Row) -> Row {
+    let winner = newer(local, remote);
+    let columns: BTreeSet<&String> = local.keys().chain(remote.keys()).collect();
+    let mut out = Row::new();
+    for column in columns {
+        let was = base.get(column);
+        let mine = local.get(column);
+        let theirs = remote.get(column);
+        let value = if mine == was {
+            theirs
+        } else if theirs == was {
+            mine
+        } else {
+            winner.get(column)
+        };
+        if let Some(value) = value {
+            out.insert(column.clone(), value.clone());
+        }
     }
-    if remote == base {
-        return local;
-    }
-    newer(local, remote)
+    out
 }
 
 /// The row with the later `updated_at`; equal times pick the line that sorts higher, so every

@@ -17,7 +17,7 @@ use crate::error::AppResult;
 use crate::notes::{log_path, Moved, PathKind, Reason};
 use crate::util::now_ms;
 
-pub use files::Blobs;
+pub use files::{resume, Blobs};
 
 /// The three states an apply works from.
 pub struct Change<'a> {
@@ -39,8 +39,8 @@ pub fn apply(
     also: impl FnOnce(&Transaction) -> AppResult<()>,
 ) -> AppResult<()> {
     let plan = files::plan(change.local, change.merged, change.remote)?;
-    let staged = match files::stage(root, &plan, blobs) {
-        Ok(staged) => staged,
+    let pending = match files::stage(root, &plan, blobs) {
+        Ok(pending) => pending,
         Err(e) => {
             files::discard(root)?;
             return Err(e);
@@ -51,7 +51,7 @@ pub fn apply(
         files::discard(root)?;
         return Err(e);
     }
-    files::install(root, &plan, &staged)
+    files::install(root, &pending)
 }
 
 fn write_rows(

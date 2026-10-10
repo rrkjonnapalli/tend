@@ -209,7 +209,15 @@ fn a_folder_that_cannot_be_made_rolls_the_apply_back() {
 
 #[test]
 fn a_path_outside_the_vault_is_refused() {
-    for bad in ["../x.md", "/tmp/x.md", "a/../../x.md", ".tend/tend.db"] {
+    for bad in [
+        "../x.md",
+        "/tmp/x.md",
+        "a/../../x.md",
+        ".tend/tend.db",
+        ".git/config",
+        ".gitignore",
+        "a/.hidden/x.md",
+    ] {
         assert!(files::check_path(bad).is_err(), "{bad}");
     }
     for ok in ["", "work/plan.md", ".tend/attachments/01H.pdf"] {
@@ -263,4 +271,70 @@ fn new_tasks_are_written_once() {
     let root = v.root().to_path_buf();
     apply(&mut v.conn, &root, &change, &Remote(HashMap::new()), no_tx).unwrap();
     assert_eq!(snapshot(&v.conn).unwrap(), merged);
+}
+
+/// A note whose text changed on the other device: the merged rows and the remote's copy of it.
+fn remote_edit(v: &mut Vault) -> (Snapshot, Snapshot, Remote) {
+    let plan = v.note("", "Plan");
+    let local = snapshot(&v.conn).unwrap();
+    let mut merged = local.clone();
+    let id = v.attachment_of(&plan);
+    let sha = crate::files::sha256_of(b"# Plan, from the remote");
+    set(
+        files_of(&mut merged).get_mut(&id).unwrap(),
+        "sha256",
+        json!(sha),
+    );
+    let blobs = Remote(HashMap::from([(
+        "plan.md".to_string(),
+        b"# Plan, from the remote".to_vec(),
+    )]));
+    (local, merged, blobs)
+}
+
+#[test]
+fn a_file_saved_after_the_merge_is_not_overwritten() {
+    let mut v = vault();
+    let (local, merged, blobs) = remote_edit(&mut v);
+    // An autosave lands after the merge was worked out.
+    fs::write(v.root().join("plan.md"), "# Plan, typed just now").unwrap();
+    let change = Change {
+        local: &local,
+        merged: &merged,
+        remote: &merged,
+    };
+    let root = v.root().to_path_buf();
+    apply(&mut v.conn, &root, &change, &blobs, no_tx).unwrap();
+    assert_eq!(v.read("plan.md"), "# Plan, typed just now");
+}
+
+#[test]
+fn an_apply_cut_off_after_its_commit_is_finished_by_resume() {
+    let mut v = vault();
+    let (local, merged, blobs) = remote_edit(&mut v);
+    let change = Change {
+        local: &local,
+        merged: &merged,
+        remote: &merged,
+    };
+    let root = v.root().to_path_buf();
+    let plan = files::plan(&local, &merged, &merged).unwrap();
+    files::stage(&root, &plan, &blobs).unwrap();
+    write_rows(&mut v.conn, &change, no_tx).unwrap();
+    // The app quits here; the next run resumes.
+    resume(&v.conn, &root).unwrap();
+    assert_eq!(v.read("plan.md"), "# Plan, from the remote");
+    assert!(!root.join(".tend/staging").exists());
+}
+
+#[test]
+fn a_staged_apply_that_never_committed_is_discarded_by_resume() {
+    let mut v = vault();
+    let (local, merged, blobs) = remote_edit(&mut v);
+    let root = v.root().to_path_buf();
+    let plan = files::plan(&local, &merged, &merged).unwrap();
+    files::stage(&root, &plan, &blobs).unwrap();
+    resume(&v.conn, &root).unwrap();
+    assert_eq!(v.read("plan.md"), "# Plan\n");
+    assert!(!root.join(".tend/staging").exists());
 }

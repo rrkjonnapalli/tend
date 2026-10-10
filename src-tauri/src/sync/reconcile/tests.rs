@@ -256,3 +256,22 @@ fn merging_a_merge_changes_nothing() {
     let s = snap(&[("people", vec![person("p", "Ann", 1)])]);
     assert_eq!(reconcile(&s, &s, &s), s);
 }
+
+#[test]
+fn a_rename_on_one_side_and_an_edit_on_the_other_both_survive() {
+    let body = |path: &str, sha: &str, at: i64| json!({ "id": "a", "path": path, "sha256": sha, "updated_at": at });
+    let base = snap(&[("attachments", vec![body("plan.md", "old", 1)])]);
+    let edited = snap(&[("attachments", vec![body("plan.md", "new", 5)])]);
+    let renamed = snap(&[("attachments", vec![body("plan_v2.md", "old", 9)])]);
+    let merged = reconcile(&base, &edited, &renamed);
+    let a = &merged["attachments"]["a"];
+    assert_eq!(
+        (text(a, "path"), text(a, "sha256")),
+        (Some("plan_v2.md"), Some("new"))
+    );
+    assert_eq!(
+        merged,
+        reconcile(&base, &renamed, &edited),
+        "the same on both devices"
+    );
+}

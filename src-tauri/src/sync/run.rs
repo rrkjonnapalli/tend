@@ -1,5 +1,6 @@
-//! Connecting, restoring and one sync run (spec §13, §14). The caller pauses the notes watcher and
-//! scans the vault first; afterwards it reloads the stores.
+//! Connecting, restoring and one sync run (spec §13, §14). The caller scans the vault first;
+//! afterwards it reloads the stores. The watcher keeps running: the apply never overwrites a file
+//! edited after the merge (`apply::files::install`).
 
 #[cfg(test)]
 mod tests;
@@ -205,8 +206,13 @@ fn holds_vault(repo: &Repo, commit: Oid) -> AppResult<bool> {
 /// The rows a commit holds.
 fn rows_at(repo: &Repo, commit: Oid) -> AppResult<Snapshot> {
     let files = repo.files_under(commit, SYNC_DIR)?;
-    shards::check_manifest(&files)?;
-    shards::parse(&files)
+    let version = shards::check_manifest(&files)?;
+    let mut rows = shards::parse(&files)?;
+    // A device not yet on migration 2 still writes old keys, which the UI can't order against.
+    if version < shards::ORDER_KEYS_SCHEMA {
+        shards::rekey_tasks(&mut rows);
+    }
+    Ok(rows)
 }
 
 fn oid(text: &str) -> AppResult<Oid> {

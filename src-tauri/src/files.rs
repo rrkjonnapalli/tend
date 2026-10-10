@@ -51,16 +51,20 @@ impl Limit {
     pub const DEFAULT: Limit = Limit(MAX_FILE_BYTES);
 }
 
-/// A vault-relative path that stays inside the vault: relative, no `..`, and under `.tend/` only in
-/// the attachment store. The empty path is the vault root. Rows that came by sync are checked
-/// with this before Tend writes or opens what they point at.
+/// A vault-relative path that stays inside the vault: relative, no `..`, and no hidden part
+/// (`.git/`, `.gitignore`) except the attachment store. The empty path is the vault root. Rows
+/// that came by sync are checked with this before Tend writes or opens what they point at.
 pub fn stays_in_vault(path: &str) -> bool {
     use std::path::Component;
     let p = Path::new(path);
     let plain = p.components().all(|c| matches!(c, Component::Normal(_)));
-    let in_tend = p.starts_with(crate::vault::TEND_DIR);
-    let in_store = p.starts_with(crate::vault::ATTACHMENTS_DIR);
-    plain && (!in_tend || in_store)
+    if p.starts_with(crate::vault::ATTACHMENTS_DIR) {
+        return plain;
+    }
+    let shown = p
+        .components()
+        .all(|c| !c.as_os_str().to_string_lossy().starts_with('.'));
+    plain && shown
 }
 
 pub fn sha256(path: &Path) -> AppResult<String> {
