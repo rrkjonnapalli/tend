@@ -87,21 +87,35 @@ pub fn sync_status(state: State<AppState>, cfg: State<ConfigDir>) -> AppResult<S
     })
 }
 
-/// Starts syncing the open vault to an empty remote.
-#[tauri::command]
-pub async fn sync_connect<R: Runtime>(
+/// Puts back the token `url` had before a connect or restore that failed: another vault may sync
+/// to the same remote. The failure itself is what the user sees, so a problem here is only logged.
+fn put_back_token(url: &str, before: Option<String>) {
+    let undone = match before {
+        Some(token) => token::save(url, &token),
+        None => token::clear(url),
+    };
+    if let Err(e) = undone {
+        eprintln!("tend: could not put back the sync token: {e}");
+    }
+}
+
+/// Starts syncing the open vault to an empty remote. Blocking work (Git, the Keychain), so it runs
+/// off the main thread like every other command.
+#[tauri::command(async)]
+pub fn sync_connect<R: Runtime>(
     app: AppHandle<R>,
-    state: State<'_, AppState>,
-    cfg: State<'_, ConfigDir>,
+    state: State<AppState>,
+    cfg: State<ConfigDir>,
     setup: SyncSetup,
 ) -> AppResult<()> {
     let vault = state.vault()?;
     let config = config_of(&setup);
+    let before = token::load(&config.url)?;
     token::save(&config.url, &setup.token)?;
     let remote = runner::remote_of(&config)?;
     let (mut conn, _) = db::open(&vault::db_path(&vault.root))?;
     if let Err(e) = run::connect(&mut conn, &vault.root, &remote) {
-        token::clear(&config.url)?;
+        put_back_token(&config.url, before);
         return Err(e);
     }
     config::set_sync_config(&cfg.0, &vault.root, Some(config))?;
@@ -110,11 +124,11 @@ pub async fn sync_connect<R: Runtime>(
 }
 
 /// Makes `path` (an empty folder) a vault restored from the remote, and opens it.
-#[tauri::command]
-pub async fn sync_restore<R: Runtime>(
+#[tauri::command(async)]
+pub fn sync_restore<R: Runtime>(
     app: AppHandle<R>,
-    state: State<'_, AppState>,
-    cfg: State<'_, ConfigDir>,
+    state: State<AppState>,
+    cfg: State<ConfigDir>,
     path: String,
     setup: SyncSetup,
 ) -> AppResult<vault::Check> {
@@ -127,10 +141,11 @@ pub async fn sync_restore<R: Runtime>(
         return Ok(check);
     };
     let config = config_of(&setup);
+    let before = token::load(&config.url)?;
     token::save(&config.url, &setup.token)?;
     let remote = runner::remote_of(&config)?;
     if let Err(e) = run::restore(&mut opened.db(), &root, &remote) {
-        token::clear(&config.url)?;
+        put_back_token(&config.url, before);
         return Err(e);
     }
     config::set_sync_config(&cfg.0, &root, Some(config))?;
@@ -182,13 +197,16 @@ pub fn sync_token_set(
     Ok(())
 }
 
-/// Stops syncing: the settings, token and base go; `.git` and all data stay.
+/// Stops syncing: the settings and base go, and the token unless another vault syncs to the same
+/// remote; `.git` and all data stay.
 #[tauri::command(async)]
 pub fn sync_disconnect(state: State<AppState>, cfg: State<ConfigDir>) -> AppResult<()> {
     let vault = state.vault()?;
     state.set_runner(None);
     if let Some(config) = config::sync_config(&cfg.0, &vault.root) {
-        token::clear(&config.url)?;
+        if !config::url_used_elsewhere(&cfg.0, &vault.root, &config.url) {
+            token::clear(&config.url)?;
+        }
     }
     config::set_sync_config(&cfg.0, &vault.root, None)?;
     let conn = vault.db();

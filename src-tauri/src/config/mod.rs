@@ -94,6 +94,15 @@ pub fn sync_config(dir: &Path, vault: &Path) -> Option<SyncConfig> {
     load(dir).sync.get(&key(vault)).cloned()
 }
 
+/// Another vault than `vault` syncs to `url` (so its Keychain token must stay).
+pub fn url_used_elsewhere(dir: &Path, vault: &Path, url: &str) -> bool {
+    let own = key(vault);
+    load(dir)
+        .sync
+        .iter()
+        .any(|(path, sync)| *path != own && sync.url == url)
+}
+
 /// Saves or (with `None`) forgets how `vault` syncs.
 pub fn set_sync_config(dir: &Path, vault: &Path, sync: Option<SyncConfig>) -> AppResult<()> {
     update(dir, |cfg| {

@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tauri::{AppHandle, Runtime, State};
 
 use crate::config::ConfigDir;
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
 use crate::state::AppState;
 use crate::{config, vault};
 
@@ -44,7 +44,7 @@ pub async fn vault_open<R: Runtime>(
 #[derive(serde::Serialize)]
 pub struct Restore {
     path: Option<String>,
-    error: Option<String>,
+    error: Option<AppError>,
 }
 
 /// Reopens the last vault on launch. Async for the same reason as `vault_open`.

@@ -79,3 +79,28 @@ fn a_config_that_cannot_be_read_is_never_saved_over() {
     fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
     assert_eq!(last_vault(dir.path()), Some(PathBuf::from("/tmp/kept")));
 }
+
+#[test]
+fn a_remote_another_vault_syncs_to_is_used_elsewhere() {
+    let dir = tempfile::tempdir().unwrap();
+    let sync = |url: &str| SyncConfig {
+        url: url.into(),
+        branch: "main".into(),
+        username: None,
+        author_name: "Tend".into(),
+        author_email: "tend@localhost".into(),
+        interval_minutes: 15,
+    };
+    set_sync_config(dir.path(), Path::new("/a"), Some(sync("https://x/r.git"))).unwrap();
+    assert!(!url_used_elsewhere(
+        dir.path(),
+        Path::new("/a"),
+        "https://x/r.git"
+    ));
+    set_sync_config(dir.path(), Path::new("/b"), Some(sync("https://x/r.git"))).unwrap();
+    assert!(url_used_elsewhere(
+        dir.path(),
+        Path::new("/a"),
+        "https://x/r.git"
+    ));
+}

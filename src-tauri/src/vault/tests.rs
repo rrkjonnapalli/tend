@@ -82,7 +82,7 @@ fn missing_meta_is_incompatible() {
     incompatible("CREATE TABLE things (id INTEGER PRIMARY KEY);");
 }
 
-fn reopen_err(root: &Path) -> String {
+fn reopen_err(root: &Path) -> AppError {
     match reopen(root) {
         Err(e) => e,
         Ok(_) => panic!("expected {} to fail", root.display()),
@@ -93,17 +93,14 @@ fn reopen_err(root: &Path) -> String {
 fn reopen_explains_what_went_wrong() {
     let dir = tempfile::tempdir().unwrap();
     let gone = dir.path().join("gone");
-    assert!(reopen_err(&gone).contains("isn’t there"));
+    assert!(reopen_err(&gone).is(errors::VAULT_GONE));
     assert!(!gone.exists(), "a missing vault is never recreated");
 
     assert!(reopen(dir.path()).is_ok());
     let bad = tempfile::tempdir().unwrap();
     fs::create_dir_all(bad.path().join(".tend")).unwrap();
     fs::write(bad.path().join(".tend/tend.db"), "junk").unwrap();
-    assert_eq!(
-        reopen_err(bad.path()),
-        "An incompatible database exists in .tend/tend.db"
-    );
+    assert!(reopen_err(bad.path()).is(errors::INCOMPATIBLE_DB));
 }
 
 #[cfg(unix)]
@@ -116,7 +113,7 @@ fn reopen_reports_missing_permission() {
     fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).unwrap();
     let err = reopen_err(&locked);
     fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).unwrap();
-    assert!(err.contains("permission"), "{err}");
+    assert!(err.is(errors::NO_PERMISSION), "{err}");
 }
 
 #[test]

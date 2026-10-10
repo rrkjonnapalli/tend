@@ -1,6 +1,6 @@
 // The open vault. `ready` turns true once launch has reopened a vault, found none, or failed.
 import { vaultAPI } from '#lib/api/vault.ts';
-import { messageOf } from '#lib/errors/app-error.ts';
+import { toAppError } from '#lib/errors/app-error.ts';
 import type { Restore, VaultProblem } from '#lib/types/vault.type.ts';
 import { reloadAll, sync } from './sync.svelte.ts';
 
@@ -16,7 +16,7 @@ class VaultStore {
     try {
       await this.#apply(await vaultAPI.restore());
     } catch (e) {
-      this.problem = { path: null, message: messageOf(e) };
+      this.problem = { path: null, error: toAppError(e) };
     } finally {
       this.ready = true;
     }
@@ -38,7 +38,7 @@ class VaultStore {
   /** Records why launch failed, or loads the reopened vault. No path means no vault was remembered. */
   #apply = async (r: Restore) => {
     if (r.error) {
-      this.problem = { path: r.path, message: r.error };
+      this.problem = { path: r.path, error: toAppError(r.error) };
       return;
     }
     if (!r.path) return;

@@ -13,7 +13,7 @@ use rusqlite::Connection;
 use serde::Serialize;
 
 use crate::db::{self, Opened};
-use crate::error::{errors, AppError};
+use crate::error::{errors, AppError, AppResult};
 use crate::state::Vault;
 use crate::{names, notes};
 
@@ -30,6 +30,9 @@ pub struct Step {
     pub item: &'static str,
     pub status: StepStatus,
     pub detail: String,
+    /// Why a failed step failed, for `reopen` to report by key.
+    #[serde(skip)]
+    pub cause: Option<AppError>,
 }
 
 /// Something the user agrees to before Tend writes into the folder.
@@ -67,13 +70,9 @@ const DB_FILE: &str = "tend.db";
 const NOTES_ITEM: &str = "notes";
 const ATTACHMENTS_ITEM: &str = ".tend/attachments/";
 const DB_ITEM: &str = ".tend/tend.db";
+// Failed-step details on the start page checklist.
 const NO_PERMISSION: &str = "no permission to access this folder";
 const INCOMPATIBLE: &str = "incompatible schema";
-
-const NO_PERMISSION_MESSAGE: &str = "Tend doesn’t have permission to open this folder.";
-const GONE_MESSAGE: &str = "The folder isn’t there any more. It may have been moved or renamed, \
-                            or it's on a drive that isn’t connected.";
-const NOT_A_VAULT_MESSAGE: &str = "This folder isn’t a Tend vault.";
 
 fn plural(n: usize, word: &str) -> String {
     if n == 1 {
@@ -105,6 +104,22 @@ fn step(item: &'static str, status: StepStatus, detail: impl Into<String>) -> St
         item,
         status,
         detail: detail.into(),
+        cause: None,
+    }
+}
+
+/// A failed step: the checklist shows a short detail, `reopen` reports `cause`.
+fn failed_step(item: &'static str, cause: AppError) -> Step {
+    let detail = match &cause {
+        e if e.is(errors::INCOMPATIBLE_DB) => INCOMPATIBLE.to_string(),
+        e if e.is(errors::NO_PERMISSION) => NO_PERMISSION.to_string(),
+        other => other.to_string(),
+    };
+    Step {
+        item,
+        status: StepStatus::Error,
+        detail,
+        cause: Some(cause),
     }
 }
 
@@ -115,33 +130,22 @@ fn ensure_dir(dir: &Path, item: &'static str, found: impl Fn() -> String) -> Ste
     }
     match fs::create_dir_all(dir) {
         Ok(()) => step(item, StepStatus::Created, "created"),
-        Err(e) => step(item, StepStatus::Error, io_detail(&e)),
+        Err(e) => failed_step(item, e.into()),
     }
 }
 
-/// File errors in words the start page can show.
-fn io_detail(e: &std::io::Error) -> String {
-    match e.kind() {
-        ErrorKind::PermissionDenied => NO_PERMISSION.to_string(),
-        _ => e.to_string(),
-    }
-}
-
-/// Reopens the remembered vault on launch, or says in plain words why it can't.
-pub fn reopen(root: &Path) -> Result<Vault, String> {
+/// Reopens the remembered vault on launch, or says why it can't.
+pub fn reopen(root: &Path) -> AppResult<Vault> {
     match fs::metadata(root) {
         Err(e) if e.kind() == ErrorKind::PermissionDenied => {
-            return Err(NO_PERMISSION_MESSAGE.into())
+            return Err(errors::NO_PERMISSION.err())
         }
         Ok(m) if m.is_dir() => {}
         // Never recreate a vault that has gone (moved, renamed, or on a drive that isn't attached).
-        _ => return Err(GONE_MESSAGE.into()),
+        _ => return Err(errors::VAULT_GONE.err()),
     }
     let (check, opened) = open(root, false);
-    match opened {
-        Some(vault) => Ok(vault),
-        None => Err(failure_message(&check)),
-    }
+    opened.ok_or_else(|| failure(check))
 }
 
 /// What to ask before opening `root`, if anything. Reads only; never writes.
@@ -171,17 +175,22 @@ pub fn visible_entries(root: &Path) -> usize {
 }
 
 /// Why `open` failed: what it would have asked, or its first failed step.
-fn failure_message(check: &Check) -> String {
+fn failure(check: Check) -> AppError {
     if check.confirm.is_some() {
-        return NOT_A_VAULT_MESSAGE.into();
+        return errors::NOT_A_VAULT.err();
     }
-    let Some(failed) = check.steps.iter().find(|s| s.status == StepStatus::Error) else {
-        return "The vault couldn’t be opened.".into();
+    let failed = check
+        .steps
+        .into_iter()
+        .find(|s| s.status == StepStatus::Error);
+    let Some(failed) = failed else {
+        return errors::VAULT_OPEN_FAILED.err();
     };
-    match failed.detail.as_str() {
-        INCOMPATIBLE => errors::INCOMPATIBLE_DB.message.into(),
-        NO_PERMISSION => NO_PERMISSION_MESSAGE.into(),
-        detail => format!("{}: {detail}", failed.item),
+    match failed.cause {
+        Some(cause) if cause.is(errors::NO_PERMISSION) || cause.is(errors::INCOMPATIBLE_DB) => {
+            cause
+        }
+        _ => errors::VAULT_OPEN_FAILED.with(format!("{}: {}", failed.item, failed.detail)),
     }
 }
 
@@ -210,7 +219,7 @@ pub fn open(root: &Path, confirmed: bool) -> (Check, Option<Vault>) {
     let allow_fix = new_db && (confirmed || visible_entries(root) == 0);
     if allow_fix {
         if let Err(e) = notes::allow_fix(&conn) {
-            steps.push(step(DB_ITEM, StepStatus::Error, e.to_string()));
+            steps.push(failed_step(DB_ITEM, e));
             return (finish(root, steps, false), None);
         }
     }
@@ -240,7 +249,7 @@ fn open_db(root: &Path) -> (Step, Option<Connection>) {
         .and_then(|_| db::open(&db_dir.join(DB_FILE)));
     match opened {
         Ok((conn, how)) => (opened_step(how), Some(conn)),
-        Err(e) => (step(DB_ITEM, StepStatus::Error, db_error_detail(e)), None),
+        Err(e) => (failed_step(DB_ITEM, e), None),
     }
 }
 
@@ -251,14 +260,6 @@ fn opened_step(how: Opened) -> Step {
         Opened::Migrated { to, .. } => {
             step(DB_ITEM, StepStatus::Found, format!("migrated to v{to}"))
         }
-    }
-}
-
-fn db_error_detail(e: AppError) -> String {
-    match e {
-        e if e.is(errors::INCOMPATIBLE_DB) => INCOMPATIBLE.to_string(),
-        e if e.is(errors::NO_PERMISSION) => NO_PERMISSION.to_string(),
-        other => other.to_string(),
     }
 }
 

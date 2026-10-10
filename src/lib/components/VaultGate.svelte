@@ -4,6 +4,7 @@
   import { vault } from '#lib/stores/vault.svelte.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { errors } from '#lib/errors/registry.ts';
 
   /** Fast launches skip the loading line entirely. */
   const SHOW_AFTER_MS = 300;
@@ -15,9 +16,8 @@
     return () => clearTimeout(timer);
   });
 
-  /** macOS folder-access errors mention this word; they get the System Settings hint. */
-  const PERMISSION_WORD = 'permission';
-  const permission = $derived(vault.problem?.message.includes(PERMISSION_WORD) ?? false);
+  /** A folder-access error gets the System Settings hint. */
+  const permission = $derived(vault.problem?.error.is(errors.NO_PERMISSION) ?? false);
 
   function chooseAnother() {
     vault.dismiss();
@@ -31,7 +31,7 @@
     {#if vault.problem}
       <h3 class="section-title">Can’t open your vault</h3>
       {#if vault.problem.path}<span class="mono">{vault.problem.path}</span>{/if}
-      <div class="banner-err" role="alert">{vault.problem.message}</div>
+      <div class="banner-err" role="alert">{vault.problem.error.message}</div>
       {#if permission}
         <span class="cap">Allow Tend in System Settings → Privacy &amp; Security → Files and Folders, then try again.</span>
       {/if}

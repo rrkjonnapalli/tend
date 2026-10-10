@@ -42,16 +42,24 @@ pub fn apply(
     let pending = match files::stage(root, &plan, blobs) {
         Ok(pending) => pending,
         Err(e) => {
-            files::discard(root)?;
+            discard_after(root, &e);
             return Err(e);
         }
     };
     let written = write_rows(conn, change, also);
     if let Err(e) = written {
-        files::discard(root)?;
+        discard_after(root, &e);
         return Err(e);
     }
     files::install(root, &pending)
+}
+
+/// Empties staging after a failed apply. The apply's own error is what the user sees; a failure
+/// here only leaves staged files, which the next apply clears first, so it is only logged.
+fn discard_after(root: &Path, failure: &crate::error::AppError) {
+    if let Err(e) = files::discard(root) {
+        eprintln!("tend: could not empty staging after \"{failure}\": {e}");
+    }
 }
 
 fn write_rows(

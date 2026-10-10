@@ -18,6 +18,12 @@ pub const NO_PERMISSION: ErrorDef = def(
     "NO_PERMISSION",
     "Tend doesn’t have permission to access this folder",
 );
+pub const VAULT_GONE: ErrorDef = def(
+    "VAULT_GONE",
+    "The folder isn’t there any more. It may have been moved or renamed, or it’s on a drive that isn’t connected.",
+);
+pub const NOT_A_VAULT: ErrorDef = def("NOT_A_VAULT", "This folder isn’t a Tend vault.");
+pub const VAULT_OPEN_FAILED: ErrorDef = def("VAULT_OPEN_FAILED", "The vault couldn’t be opened.");
 pub const IO: ErrorDef = def("IO", "A file couldn’t be read or written");
 pub const DB: ErrorDef = def("DB", "The database couldn’t do that");
 pub const WATCH: ErrorDef = def("WATCH", "The notes folder can’t be watched");

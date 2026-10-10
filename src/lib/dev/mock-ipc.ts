@@ -83,7 +83,7 @@ const taskFolders = ['home', 'inbox', 'work', 'work/infra', 'work/tend_v0_1'];
 
 const handlers: Record<string, Handler> = {
   vault_restore: () => {
-    if (vaultParam === 'denied') return { path: DENIED_VAULT_PATH, error: 'Tend doesn’t have permission to open this folder.' };
+    if (vaultParam === 'denied') return { path: DENIED_VAULT_PATH, error: { key: 'NO_PERMISSION', message: 'Tend doesn’t have permission to access this folder' } };
     return { path: withVault ? VAULT_PATH : null, error: null };
   },
   vault_open: ({ path }) => ({
