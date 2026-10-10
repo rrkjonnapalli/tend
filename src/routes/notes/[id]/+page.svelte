@@ -81,6 +81,8 @@
 
   async function load({ noteId, edit }: { noteId: string; edit: boolean }) {
     const doc = await notesAPI.read(noteId);
+    // Another note may have opened while this one loaded.
+    if (noteId !== id) return;
     show({ noteId, doc, edit });
   }
 

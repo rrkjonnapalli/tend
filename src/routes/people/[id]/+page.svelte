@@ -37,13 +37,15 @@
   let notesEditing = $state(false);
   let deleting = $state(false);
 
-  async function load() {
-    person = await peopleAPI.get(id);
+  async function load(personId: string) {
+    const loaded = await peopleAPI.get(personId);
+    // Another person may have opened while this one loaded.
+    if (personId !== id) return;
+    person = loaded;
   }
 
   $effect(() => {
-    void id;
-    load();
+    load(id);
   });
 
   async function save(patch: PersonPatch) {
@@ -77,7 +79,7 @@
 
         <div class="detail-sections">
           {#each CONTACT_SECTIONS as c (c.kind)}
-            <ContactSection person={id} kind={c.kind} title={c.title} placeholder={c.placeholder} contacts={person.contacts} onchange={load} />
+            <ContactSection person={id} kind={c.kind} title={c.title} placeholder={c.placeholder} contacts={person.contacts} onchange={() => load(id)} />
           {/each}
           <Section title="Notes">
             {#snippet actions()}
