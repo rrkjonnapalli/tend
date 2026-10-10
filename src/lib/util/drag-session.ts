@@ -44,3 +44,11 @@ export function swallowReleaseClick(e: PointerEvent) {
 }
 
 export const pointOf = (e: PointerEvent): Point => ({ x: e.clientX, y: e.clientY });
+
+/** How far (|dx| + |dy|, in px) the pointer travels before a press becomes a drag; less stays a click. */
+const DRAG_START_PX = 5;
+
+export function hasTravelled(from: Point, e: PointerEvent): boolean {
+  const distance = Math.abs(e.clientX - from.x) + Math.abs(e.clientY - from.y);
+  return distance >= DRAG_START_PX;
+}

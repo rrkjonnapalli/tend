@@ -2,9 +2,8 @@
 // receives the keys in their new order; on release `drop` receives the final order (only when
 // it changed). Rows can only move within [min, max] (e.g. open tasks stay above done ones).
 import type { ReorderOptions } from '#lib/types/reorder.type.ts';
-import { clearDragging, markDragging, swallowReleaseClick, trackPointer } from './drag-session.ts';
+import { clearDragging, hasTravelled, markDragging, pointOf, swallowReleaseClick, trackPointer } from './drag-session.ts';
 
-const START_PX = 4;
 const FALLBACK_ROW_PX = 36;
 
 type Rows = { top: number; height: number };
@@ -34,7 +33,7 @@ export function startReorder(e: PointerEvent, o: ReorderOptions): () => void {
   const { top, height } = rows;
   const min = o.min ?? 0;
   const max = o.max ?? o.keys.length - 1;
-  const startY = e.clientY;
+  const start = pointOf(e);
   let order: string[] | null = null;
 
   function slotAt(y: number): number {
@@ -50,7 +49,7 @@ export function startReorder(e: PointerEvent, o: ReorderOptions): () => void {
 
   function move(ev: PointerEvent) {
     if (!order) {
-      if (Math.abs(ev.clientY - startY) < START_PX) return;
+      if (!hasTravelled(start, ev)) return;
       order = o.keys.slice();
       markDragging();
     }

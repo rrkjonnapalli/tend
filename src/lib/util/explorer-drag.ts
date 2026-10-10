@@ -2,10 +2,7 @@
 // moves once per animation frame, and ends on release or cancel. Built on `trackPointer`, so every
 // listener comes off however it ends.
 import type { RowDragOptions } from '#lib/types/drag.type.ts';
-import { swallowReleaseClick, trackPointer } from './drag-session.ts';
-
-/** How far (|dx| + |dy|, in px) the pointer travels before a press becomes a drag. */
-const DRAG_THRESHOLD_PX = 5;
+import { hasTravelled, pointOf, swallowReleaseClick, trackPointer } from './drag-session.ts';
 
 /** Returns `stop`, which ends tracking without calling `onend` (the explorer went away). */
 export function trackDrag({ start, onstart, onmove, onend }: RowDragOptions): () => void {
@@ -13,7 +10,7 @@ export function trackDrag({ start, onstart, onmove, onend }: RowDragOptions): ()
   let frame = 0;
   let last: PointerEvent | null = null;
 
-  const travelled = (e: PointerEvent) => Math.abs(e.clientX - start.clientX) + Math.abs(e.clientY - start.clientY);
+  const from = pointOf(start);
 
   const step = () => {
     frame = 0;
@@ -22,7 +19,7 @@ export function trackDrag({ start, onstart, onmove, onend }: RowDragOptions): ()
 
   const move = (e: PointerEvent) => {
     if (!dragging) {
-      if (travelled(e) < DRAG_THRESHOLD_PX) return;
+      if (!hasTravelled(from, e)) return;
       dragging = true;
       onstart(e);
     }

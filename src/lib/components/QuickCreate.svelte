@@ -19,11 +19,12 @@
   import { durationWords, timerStartedText } from '#lib/util/timer-text.ts';
   import { label as keyLabel } from '#lib/util/keys.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { commands } from '#lib/commands.ts';
 
   let { kind, onclose }: { kind: QuickKind; onclose: () => void } = $props();
 
   const TITLES: Record<QuickKind, string> = { note: 'New note', task: 'New task', folder: 'New folder', timer: 'New timer' };
-  const KEYS: Record<QuickKind, string> = { note: 'mod+n', task: 'mod+shift+t', folder: 'mod+shift+n', timer: 'mod+t' };
+  const keys = $derived(commands.find((c) => c.id === `new.${kind}`)?.keys);
   const PLACEHOLDERS: Record<Exclude<QuickKind, 'timer'>, string> = { note: 'Note title', task: 'Task title', folder: 'folder_name' };
 
   // Folder: Notes or Tasks, defaulting to the section you're in.
@@ -133,7 +134,7 @@
         <button class:on={tree === 'tasks'} onclick={() => (tree = 'tasks')}>Tasks</button>
       </span>
     {/if}
-    <span class="k">{keyLabel(KEYS[kind])}</span>
+    {#if keys}<span class="k">{keyLabel(keys)}</span>{/if}
   {/snippet}
 
   {#if kind === 'timer'}

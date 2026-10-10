@@ -1,7 +1,7 @@
 <script lang="ts">
   // The board: one column per status. Cards move with the pointer; a dashed placeholder shows
   // where they land. Dropping sets the status from the column and the order from the position.
-  import type { DragGhost, Point } from '#lib/types/drag.type.ts';
+  import type { DragGhost } from '#lib/types/drag.type.ts';
   import type { BoardSpot } from '#lib/types/task-board.type.ts';
   import type { Task, TaskPatch } from '#lib/types/task.type.ts';
   import { onDestroy, tick } from 'svelte';
@@ -12,13 +12,11 @@
   import { people } from '#lib/stores/people.svelte.ts';
   import { byOrderKey } from '#lib/util/task-views.ts';
   import { keyAt } from '#lib/util/order-key.ts';
-  import { clearDragging, markDragging, pointOf, swallowReleaseClick, trackPointer } from '#lib/util/drag-session.ts';
+  import { clearDragging, hasTravelled, markDragging, pointOf, swallowReleaseClick, trackPointer } from '#lib/util/drag-session.ts';
   import { liftGhost } from '#lib/util/drag-ghost.ts';
   import { sameSpot, spotAt } from '#lib/util/task-board.ts';
 
   let { items, folder }: { items: Task[]; folder: string } = $props();
-
-  const DRAG_START_PX = 5;
 
   people.load();
 
@@ -45,9 +43,6 @@
     return list;
   }
 
-  /** Manhattan distance, enough to tell a drag from a click. */
-  const travel = (a: Point, b: Point) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
-
   function grab(e: PointerEvent, task: Task) {
     if (e.button !== 0) return;
     const card = e.currentTarget as HTMLElement;
@@ -73,7 +68,7 @@
 
     function move(ev: PointerEvent) {
       if (!ghost) {
-        if (travel(pointOf(ev), start) < DRAG_START_PX) return;
+        if (!hasTravelled(start, ev)) return;
         ghost = lift();
       }
       ev.preventDefault();
