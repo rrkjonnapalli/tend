@@ -66,3 +66,16 @@ fn a_config_that_does_not_parse_is_never_saved_over() {
         "{ not json"
     );
 }
+
+#[cfg(unix)]
+#[test]
+fn a_config_that_cannot_be_read_is_never_saved_over() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("config.json");
+    fs::write(&path, r#"{"vault":"/tmp/kept"}"#).unwrap();
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o000)).unwrap();
+    assert!(remember_vault(dir.path(), Path::new("/tmp/v")).is_err());
+    fs::set_permissions(&path, fs::Permissions::from_mode(0o600)).unwrap();
+    assert_eq!(last_vault(dir.path()), Some(PathBuf::from("/tmp/kept")));
+}

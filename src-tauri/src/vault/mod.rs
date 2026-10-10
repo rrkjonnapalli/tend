@@ -82,8 +82,9 @@ fn plural(n: usize, word: &str) -> String {
     format!("{n} {word}s")
 }
 
-/// Files under `dir`, in subfolders too, leaving out hidden ones (`.tend/`, `.git/`). With `ext`
-/// (`.md`), only files whose names end with it.
+/// Files under `dir`, in subfolders too, leaving out hidden ones (`.tend/`, `.git/`) and symlinks
+/// (as the scan does; a link loop would never end). With `ext` (`.md`), only files whose names end
+/// with it.
 fn count_files(dir: &Path, ext: Option<&str>) -> usize {
     let Ok(entries) = fs::read_dir(dir) else {
         return 0;
@@ -91,12 +92,14 @@ fn count_files(dir: &Path, ext: Option<&str>) -> usize {
     let mut count = 0;
     for entry in entries.flatten() {
         let name = entry.file_name().to_string_lossy().into_owned();
-        if names::is_hidden(&name) {
+        let Ok(kind) = entry.file_type() else {
+            continue;
+        };
+        if names::is_hidden(&name) || kind.is_symlink() {
             continue;
         }
-        let path = entry.path();
-        if path.is_dir() {
-            count += count_files(&path, ext);
+        if kind.is_dir() {
+            count += count_files(&entry.path(), ext);
             continue;
         }
         let matches = ext.is_none_or(|x| name.ends_with(x));

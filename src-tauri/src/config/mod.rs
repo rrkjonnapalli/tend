@@ -49,12 +49,14 @@ fn lock() -> MutexGuard<'static, ()> {
 }
 
 /// Applies `change` to the saved config as one step. A config that exists but doesn't parse is
-/// left alone (an error), so one bad byte can't make a save wipe every vault's sync settings.
+/// left alone (an error), and so is one that can't be read, so neither a bad byte nor a permission
+/// problem can make a save wipe every vault's sync settings.
 fn update(dir: &Path, change: impl FnOnce(&mut Config)) -> AppResult<()> {
     let _held = lock();
     let mut cfg = match fs::read_to_string(file(dir)) {
         Ok(text) => serde_json::from_str(&text)?,
-        Err(_) => Config::default(),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Config::default(),
+        Err(e) => return Err(e.into()),
     };
     change(&mut cfg);
     save(dir, &cfg)

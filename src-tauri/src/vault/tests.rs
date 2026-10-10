@@ -168,3 +168,13 @@ fn a_folder_with_things_in_it_asks_first_and_agreeing_allows_fixes() {
     assert!(fix_names(&vault));
     assert_eq!(inspect(dir.path()), None, "now it is a vault");
 }
+
+#[cfg(unix)]
+#[test]
+fn a_symlink_loop_does_not_hang_the_count() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir_all(dir.path().join("work")).unwrap();
+    fs::write(dir.path().join("work/a.md"), "# A").unwrap();
+    std::os::unix::fs::symlink(dir.path(), dir.path().join("work/loop")).unwrap();
+    assert_eq!(count_files(dir.path(), Some(".md")), 1);
+}
