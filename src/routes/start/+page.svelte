@@ -193,7 +193,7 @@
 
   .cols {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 72px;
     padding: 112px 0 0;
     width: 960px;
@@ -260,7 +260,7 @@
   }
 
   .vlist .mono {
-    flex: 0 0 110px;
+    flex: 0 0 150px;
   }
 
   .path {

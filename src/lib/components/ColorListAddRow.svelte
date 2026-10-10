@@ -113,6 +113,7 @@
     font: var(--text-mono-meta);
     color: var(--text-muted);
     letter-spacing: 0.02em;
+    text-align: right;
   }
 
   .addrow .vin::placeholder {
