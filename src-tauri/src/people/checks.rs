@@ -27,27 +27,10 @@ pub fn first_name(name: &str) -> AppResult<String> {
     Ok(trimmed.to_string())
 }
 
-fn is_leap(year: i64) -> bool {
-    let every_fourth = year % 4 == 0 && year % 100 != 0;
-    every_fourth || year % 400 == 0
-}
-
-/// Without a year, February allows the 29th.
-fn days_in_month(year: Option<i64>, month: i64) -> i64 {
-    match month {
-        2 => match year {
-            Some(y) if !is_leap(y) => 28,
-            _ => 29,
-        },
-        4 | 6 | 9 | 11 => 30,
-        _ => 31,
-    }
-}
-
 pub fn dob(d: &Dob) -> AppResult<()> {
     let year_ok = d.year.is_none_or(|y| (1..=9999).contains(&y));
     let month_ok = (1..=12).contains(&d.month);
-    let day_ok = month_ok && (1..=days_in_month(d.year, d.month)).contains(&d.day);
+    let day_ok = month_ok && (1..=crate::dates::days_in_month(d.year, d.month)).contains(&d.day);
     if !(year_ok && day_ok) {
         return Err(errors::DOB_INVALID.err());
     }
@@ -56,15 +39,8 @@ pub fn dob(d: &Dob) -> AppResult<()> {
 
 /// Time of birth as `HH:MM`, 24-hour.
 pub fn tob(t: &str) -> AppResult<()> {
-    let bad = || errors::TOB_INVALID.err();
-    let shaped = t.len() == 5 && t.as_bytes()[2] == b':';
-    if !shaped {
-        return Err(bad());
-    }
-    let hour_ok = t[..2].parse::<u8>().is_ok_and(|h| h < 24);
-    let minute_ok = t[3..].parse::<u8>().is_ok_and(|m| m < 60);
-    if !(hour_ok && minute_ok) {
-        return Err(bad());
+    if !crate::dates::is_time(t) {
+        return Err(errors::TOB_INVALID.err());
     }
     Ok(())
 }

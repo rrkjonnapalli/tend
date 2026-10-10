@@ -89,6 +89,8 @@ pub const LABEL_ORDER: ErrorDef = def("LABEL_ORDER", "The order must list every 
 pub const FIRST_NAME_EMPTY: ErrorDef = def("FIRST_NAME_EMPTY", "A first name is needed");
 pub const DOB_INVALID: ErrorDef = def("DOB_INVALID", "Use yyyy-mm-dd or mm-dd");
 pub const TOB_INVALID: ErrorDef = def("TOB_INVALID", "Use a time like 6:30 AM");
+pub const DUE_DATE_INVALID: ErrorDef = def("DUE_DATE_INVALID", "That isn’t a real date.");
+pub const DUE_TIME_INVALID: ErrorDef = def("DUE_TIME_INVALID", "Use a time like 6:30 AM");
 pub const CONTACT_KIND: ErrorDef = def("CONTACT_KIND", "Unknown contact kind");
 pub const CONTACT_EMPTY: ErrorDef = def("CONTACT_EMPTY", "Enter a value");
 

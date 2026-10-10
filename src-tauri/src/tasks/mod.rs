@@ -154,6 +154,7 @@ fn parent_path(conn: &Connection, parent_id: &str) -> AppResult<String> {
 
 pub fn create(conn: &mut Connection, new: &NewTask) -> AppResult<Task> {
     let title = check_title(&new.title)?;
+    check_due((new.due_date.as_deref(), None))?;
     let path = match &new.parent_id {
         Some(parent) => parent_path(conn, parent)?,
         None => names::accept_path(&new.path)?,
@@ -177,6 +178,7 @@ pub fn update(conn: &mut Connection, id: &str, patch: &Patch) -> AppResult<Task>
     if let Some(title) = &patch.title {
         check_title(title)?;
     }
+    check_due(new_due(patch))?;
     let now = now_ms();
     let tx = conn.transaction()?;
     if let Some(title) = &patch.title {
@@ -203,6 +205,24 @@ pub fn update(conn: &mut Connection, id: &str, patch: &Patch) -> AppResult<Task>
     set(&tx, id, "updated_at", &now)?;
     tx.commit()?;
     get(conn, id)
+}
+
+/// The due date and time a patch sets (`None` where it leaves or clears them).
+fn new_due(patch: &Patch) -> (Option<&str>, Option<&str>) {
+    let date = patch.due_date.as_ref().and_then(|d| d.as_deref());
+    let time = patch.due_time.as_ref().and_then(|t| t.as_deref());
+    (date, time)
+}
+
+/// A due date must be a real day and a due time `HH:MM`, as the database keeps them.
+fn check_due((date, time): (Option<&str>, Option<&str>)) -> AppResult<()> {
+    if date.is_some_and(|d| !crate::dates::is_date(d)) {
+        return Err(errors::DUE_DATE_INVALID.err());
+    }
+    if time.is_some_and(|t| !crate::dates::is_time(t)) {
+        return Err(errors::DUE_TIME_INVALID.err());
+    }
+    Ok(())
 }
 
 /// Writes one column. `column` is always one of the literals in `update`, never user input.

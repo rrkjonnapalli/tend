@@ -317,3 +317,28 @@ fn a_new_task_can_be_due_on_creation() {
     .unwrap();
     assert_eq!(t.due_date.as_deref(), Some("2026-10-09"));
 }
+
+#[test]
+fn a_due_date_or_time_that_does_not_exist_is_refused() {
+    let mut conn = open_memory();
+    let t = create(
+        &mut conn,
+        &NewTask {
+            title: "T".into(),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let due = |date: &str, time: &str| Patch {
+        due_date: Some(Some(date.into())),
+        due_time: Some(Some(time.into())),
+        ..Default::default()
+    };
+    assert!(update(&mut conn, &t.id, &due("2026-02-31", "09:00"))
+        .unwrap_err()
+        .is(errors::DUE_DATE_INVALID));
+    assert!(update(&mut conn, &t.id, &due("2026-02-28", "29:59"))
+        .unwrap_err()
+        .is(errors::DUE_TIME_INVALID));
+    assert!(update(&mut conn, &t.id, &due("2026-02-28", "17:30")).is_ok());
+}

@@ -71,3 +71,20 @@ fn migration_2_gives_every_task_a_short_key_in_the_same_order() {
         [("t1", "a0"), ("t2", "a1"), ("t3", "a2")].map(|(a, b)| (a.to_string(), b.to_string()));
     assert_eq!(keys, want);
 }
+
+#[test]
+fn a_transaction_holds_the_write_lock_from_its_start() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("tend.db");
+    let (mut app, _) = open(&path).unwrap();
+    let other = Connection::open(&path).unwrap();
+    other.busy_timeout(std::time::Duration::ZERO).unwrap();
+    let tx = app.transaction().unwrap();
+    // Nothing written yet, but the other connection already has to wait.
+    let write = other.execute("UPDATE sync_state SET last_result = 'x' WHERE id = 1", []);
+    assert!(write.is_err());
+    drop(tx);
+    assert!(other
+        .execute("UPDATE sync_state SET last_result = 'x' WHERE id = 1", [])
+        .is_ok());
+}

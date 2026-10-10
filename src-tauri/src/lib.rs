@@ -3,6 +3,7 @@ mod colors;
 mod commands;
 mod comments;
 mod config;
+mod dates;
 mod db;
 mod error;
 mod feedback;

@@ -6,7 +6,7 @@ mod tests;
 
 use std::path::Path;
 
-use rusqlite::{Connection, OpenFlags, OptionalExtension, Transaction};
+use rusqlite::{Connection, OpenFlags, OptionalExtension, Transaction, TransactionBehavior};
 use rusqlite_migration::{Migrations, M};
 
 use crate::error::{errors, AppError, AppResult};
@@ -52,6 +52,10 @@ pub fn open(path: &Path) -> AppResult<(Connection, Opened)> {
     conn.pragma_update(None, "journal_mode", "WAL")?;
     // The app and the sync runner each hold a connection; a writer waits this long for the other.
     conn.busy_timeout(BUSY_TIMEOUT)?;
+    // Every transaction takes the write lock when it starts. A deferred one that reads first and
+    // writes later fails at once ("database is locked") if the other connection committed in
+    // between; an immediate one waits its turn (BUSY_TIMEOUT) instead.
+    conn.set_transaction_behavior(TransactionBehavior::Immediate);
     MIGRATIONS.to_latest(&mut conn)?;
     let opened = match from {
         None => Opened::Created,
