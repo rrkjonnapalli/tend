@@ -63,8 +63,24 @@ pub fn stays_in_vault(path: &str) -> bool {
     }
     let shown = p
         .components()
-        .all(|c| !c.as_os_str().to_string_lossy().starts_with('.'));
+        .all(|c| !crate::names::is_hidden(&c.as_os_str().to_string_lossy()));
     plain && shown
+}
+
+/// The entries of `dir` a vault walk looks at, with their names: hidden ones (`.tend/`, `.git/`)
+/// and symlinks are left out, so a link loop can't make a walk endless. None if `dir` can't be read.
+pub fn shown_entries(dir: &Path) -> Vec<(String, fs::FileType)> {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    entries
+        .flatten()
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            Some((name, e.file_type().ok()?))
+        })
+        .filter(|(name, kind)| !crate::names::is_hidden(name) && !kind.is_symlink())
+        .collect()
 }
 
 pub fn sha256(path: &Path) -> AppResult<String> {

@@ -12,6 +12,9 @@ use rusqlite_migration::{Migrations, M};
 use crate::error::{errors, AppError, AppResult};
 
 pub const APP_ID: &str = "tend";
+
+/// SQL: `path` is the folder `?1` or anything under it.
+pub const UNDER: &str = "(path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/')";
 const BUSY_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// Migration n is `STEPS[n - 1]`. Each step is checked for broken foreign keys before it commits.

@@ -142,19 +142,7 @@ fn walk(scope: &Scope, dir: &Path, rel: &str, depth: usize, out: &mut Disk) -> b
     if depth > MAX_DEPTH {
         return false;
     }
-    let Ok(entries) = fs::read_dir(dir) else {
-        return false;
-    };
-    let entries: Vec<(String, fs::FileType)> = entries
-        .flatten()
-        .filter_map(|e| {
-            Some((
-                e.file_name().to_string_lossy().into_owned(),
-                e.file_type().ok()?,
-            ))
-        })
-        .filter(|(name, kind)| !names::is_hidden(name) && !kind.is_symlink())
-        .collect();
+    let entries = files::shown_entries(dir);
     let mut taken = HashMap::new();
     for (name, _) in &entries {
         *taken.entry(name.to_lowercase()).or_insert(0) += 1;
@@ -217,19 +205,9 @@ fn has_notes(dir: &Path, depth: usize) -> bool {
     if depth > MAX_DEPTH {
         return false;
     }
-    let Ok(entries) = fs::read_dir(dir) else {
-        return false;
-    };
-    for entry in entries.flatten() {
-        let name = entry.file_name().to_string_lossy().into_owned();
-        let Ok(kind) = entry.file_type() else {
-            continue;
-        };
-        if names::is_hidden(&name) || kind.is_symlink() {
-            continue;
-        }
+    for (name, kind) in files::shown_entries(dir) {
         let found = if kind.is_dir() {
-            has_notes(&entry.path(), depth + 1)
+            has_notes(&dir.join(&name), depth + 1)
         } else {
             name.ends_with(EXT)
         };

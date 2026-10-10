@@ -10,7 +10,7 @@ use super::{
     attachment_of, file_path, log_path, note_path, row, vault_path, Moved, NoteRow, PathKind,
     Reason, EXT, MIME,
 };
-use crate::db::{commit_or_undo, in_transaction};
+use crate::db::{commit_or_undo, in_transaction, UNDER};
 use crate::error::{errors, AppResult};
 use crate::files;
 use crate::names;
@@ -82,8 +82,7 @@ fn clear_missing(tx: &Transaction, path: &str) -> AppResult<()> {
         params![path, EXT],
     )?;
     tx.execute(
-        "DELETE FROM note_folders WHERE missing_at IS NOT NULL
-         AND (path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/')",
+        &format!("DELETE FROM note_folders WHERE missing_at IS NOT NULL AND {UNDER}"),
         [path],
     )?;
     Ok(())
@@ -358,8 +357,10 @@ fn relocate_folder(conn: &mut Connection, dir: &Path, moved: Moved) -> AppResult
         |tx| {
             clear_missing(tx, new)?;
             tx.execute(
-                "UPDATE note_folders SET path = ?2 || substr(path, length(?1) + 1), updated_at = ?3
-                 WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
+                &format!(
+                    "UPDATE note_folders SET path = ?2 || substr(path, length(?1) + 1), updated_at = ?3
+                     WHERE {UNDER}"
+                ),
                 params![old, new, now],
             )?;
             // Note bodies under the folder move with it.
@@ -399,10 +400,7 @@ pub fn delete_folder(conn: &mut Connection, dir: &Path, path: &str) -> AppResult
             "DELETE FROM attachments WHERE substr(path, 1, length(?1)) = ?1",
             [format!("{path}/")],
         )?;
-        tx.execute(
-            "DELETE FROM note_folders WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
-            [path],
-        )?;
+        tx.execute(&format!("DELETE FROM note_folders WHERE {UNDER}"), [path])?;
         Ok(())
     })
 }

@@ -86,20 +86,10 @@ fn plural(n: usize, word: &str) -> String {
 /// (as the scan does; a link loop would never end). With `ext` (`.md`), only files whose names end
 /// with it.
 fn count_files(dir: &Path, ext: Option<&str>) -> usize {
-    let Ok(entries) = fs::read_dir(dir) else {
-        return 0;
-    };
     let mut count = 0;
-    for entry in entries.flatten() {
-        let name = entry.file_name().to_string_lossy().into_owned();
-        let Ok(kind) = entry.file_type() else {
-            continue;
-        };
-        if names::is_hidden(&name) || kind.is_symlink() {
-            continue;
-        }
+    for (name, kind) in crate::files::shown_entries(dir) {
         if kind.is_dir() {
-            count += count_files(&entry.path(), ext);
+            count += count_files(&dir.join(&name), ext);
             continue;
         }
         let matches = ext.is_none_or(|x| name.ends_with(x));

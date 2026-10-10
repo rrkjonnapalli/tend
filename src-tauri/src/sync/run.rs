@@ -39,7 +39,7 @@ pub enum Outcome {
 fn synced_paths(conn: &Connection, root: &Path) -> AppResult<Vec<String>> {
     let limit = files::Limit::of(conn)?;
     let mut paths = Vec::new();
-    collect_files(root, Path::new(SYNC_DIR), &mut paths)?;
+    collect_files(root, Path::new(SYNC_DIR), &mut paths);
     let mut stmt =
         conn.prepare("SELECT path FROM attachments WHERE missing_at IS NULL ORDER BY path")?;
     let files: Vec<String> = stmt
@@ -55,19 +55,15 @@ fn synced_paths(conn: &Connection, root: &Path) -> AppResult<Vec<String>> {
 }
 
 /// Every file under `dir` (relative to `root`), as vault-relative paths.
-fn collect_files(root: &Path, dir: &Path, out: &mut Vec<String>) -> AppResult<()> {
-    let Ok(entries) = fs::read_dir(root.join(dir)) else {
-        return Ok(());
-    };
-    for entry in entries.flatten() {
-        let rel = dir.join(entry.file_name());
-        if entry.file_type()?.is_dir() {
-            collect_files(root, &rel, out)?;
+fn collect_files(root: &Path, dir: &Path, out: &mut Vec<String>) {
+    for (name, kind) in files::shown_entries(&root.join(dir)) {
+        let rel = dir.join(name);
+        if kind.is_dir() {
+            collect_files(root, &rel, out);
         } else {
             out.push(rel.to_string_lossy().into_owned());
         }
     }
-    Ok(())
 }
 
 /// The tree to commit on top of `parent`: the vault's synced files, plus the parent's files Tend

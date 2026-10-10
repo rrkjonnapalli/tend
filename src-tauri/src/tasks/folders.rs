@@ -3,6 +3,7 @@
 
 use rusqlite::{params, Connection, OptionalExtension, Transaction};
 
+use crate::db::UNDER;
 use crate::error::{errors, AppResult};
 use crate::names;
 use crate::util::{new_id, now_ms};
@@ -94,14 +95,15 @@ fn relocate(tx: &Transaction, old: &str, new: &str) -> AppResult<()> {
     }
     let now = now_ms();
     tx.execute(
-        "UPDATE task_folders SET path = ?2 || substr(path, length(?1) + 1), updated_at = ?3
-         WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
+        &format!(
+            "UPDATE task_folders SET path = ?2 || substr(path, length(?1) + 1), updated_at = ?3
+             WHERE {UNDER}"
+        ),
         params![old, new, now],
     )?;
     // Tasks followed through ON UPDATE CASCADE; mark them changed so sync carries the new paths.
     tx.execute(
-        "UPDATE tasks SET updated_at = ?2
-         WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
+        &format!("UPDATE tasks SET updated_at = ?2 WHERE {UNDER}"),
         params![new, now],
     )?;
     Ok(())
@@ -113,14 +115,8 @@ pub fn delete(conn: &mut Connection, path: &str) -> AppResult<()> {
         return Err(errors::ROOT_FOLDER.err());
     }
     let tx = conn.transaction()?;
-    tx.execute(
-        "DELETE FROM tasks WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
-        [path],
-    )?;
-    tx.execute(
-        "DELETE FROM task_folders WHERE path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/'",
-        [path],
-    )?;
+    tx.execute(&format!("DELETE FROM tasks WHERE {UNDER}"), [path])?;
+    tx.execute(&format!("DELETE FROM task_folders WHERE {UNDER}"), [path])?;
     tx.commit()?;
     Ok(())
 }
