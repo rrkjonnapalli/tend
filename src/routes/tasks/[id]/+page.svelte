@@ -103,8 +103,11 @@
   /** The parent tasks, outermost first. */
   const ancestors = $derived.by(() => {
     const out: Task[] = [];
+    // A parent loop (two synced edits crossing) must not hang the page.
+    const seen = new Set<string>();
     let p = task?.parentId ? tasks.byId(task.parentId) : undefined;
-    while (p) {
+    while (p && !seen.has(p.id)) {
+      seen.add(p.id);
       out.unshift(p);
       p = p.parentId ? tasks.byId(p.parentId) : undefined;
     }

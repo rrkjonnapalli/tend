@@ -234,22 +234,36 @@ fn suffix_clashing_paths(rows: &mut Rows) {
         if taken.insert(path.clone()) {
             continue;
         }
-        let free = free_path(&path, &taken);
+        // Every suffix taken (thousands of clashes): the row's own id can't clash.
+        let free = free_path(&path, &taken).unwrap_or_else(|| with_id(&path, &id));
         taken.insert(free.clone());
         set_path(row, &free);
     }
 }
 
-/// `folder/name.ext` with the name given the next free suffix among `taken`.
-fn free_path(path: &str, taken: &BTreeSet<String>) -> String {
+/// A path's folder, file stem and extension (with its dot, or empty).
+fn split_path(path: &str) -> (&str, &str, String) {
     let folder = names::parent(path);
     let file = names::base(path);
-    let (stem, ext) = match file.rsplit_once('.') {
-        Some((stem, ext)) => (stem, format!(".{ext}")),
-        None => (file, String::new()),
-    };
+    match file.rsplit_once('.') {
+        Some((stem, ext)) => (folder, stem, format!(".{ext}")),
+        None => (folder, file, String::new()),
+    }
+}
+
+/// `folder/name.ext` with the name given the next free suffix among `taken`; `None` when every
+/// suffix is taken.
+fn free_path(path: &str, taken: &BTreeSet<String>) -> Option<String> {
+    let (folder, stem, ext) = split_path(path);
     let is_taken = |n: &str| Ok(taken.contains(&names::join(folder, &format!("{n}{ext}"))));
-    let name = names::free(stem, is_taken).unwrap_or_else(|_| stem.to_string());
+    let name = names::free(stem, is_taken).ok()?;
+    Some(names::join(folder, &format!("{name}{ext}")))
+}
+
+/// `folder/name_<id>.ext`: unique because the id is, and within the name rule (lowercase).
+fn with_id(path: &str, id: &str) -> String {
+    let (folder, stem, ext) = split_path(path);
+    let name = names::with_tag(stem, &id.to_lowercase());
     names::join(folder, &format!("{name}{ext}"))
 }
 
@@ -261,12 +275,15 @@ fn set_path(row: &mut Row, path: &str) {
 // ---- 3. references
 
 /// Applies the reference rules until a pass changes nothing (a dropped task drops its subtasks,
-/// which drops their comments, and so on).
+/// which drops their comments, and so on). A pass that changes something changes at least one
+/// row, so one pass per row (plus the last, quiet one) is always enough; the cap only guards
+/// against a rule that would undo another.
 fn fix_references(merged: &mut Snapshot) {
-    loop {
+    let rows: usize = merged.values().map(BTreeMap::len).sum();
+    for _ in 0..=rows {
         let changed = fix_pass(merged);
         if !changed {
-            break;
+            return;
         }
     }
 }
@@ -360,7 +377,8 @@ fn move_homeless_notes(merged: &mut Snapshot) -> bool {
             continue;
         }
         taken.remove(&path);
-        let free = free_path(names::base(&path), &taken);
+        let base = names::base(&path);
+        let free = free_path(base, &taken).unwrap_or_else(|| with_id(base, id));
         taken.insert(free.clone());
         set_path(row, &free);
         changed = true;

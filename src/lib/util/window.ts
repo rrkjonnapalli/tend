@@ -12,6 +12,7 @@ export async function runWindowAction(action: WindowAction) {
 
 /** Calls `onchange` now and on every resize with whether the window fills the screen. Returns a stop function. */
 export function watchFilled(onchange: (filled: boolean) => void) {
+  if (!inTauri()) return () => {};
   const win = getCurrentWindow();
   const check = async () => {
     const filled = (await win.isMaximized()) || (await win.isFullscreen());

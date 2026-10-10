@@ -65,7 +65,7 @@ pub fn fix_names<R: Runtime>(app: &AppHandle<R>, vault: &Vault) -> AppResult<()>
 pub fn rescan_and_emit<R: Runtime>(app: &AppHandle<R>, vault: &Vault) -> AppResult<()> {
     rescan(vault)?;
     app.emit(CHANGED, ())
-        .map_err(|e| errors::WATCH.with(e.to_string()))?;
+        .map_err(|e| errors::EVENT.with(e.to_string()))?;
     Ok(())
 }
 

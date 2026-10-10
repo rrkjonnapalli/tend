@@ -27,6 +27,7 @@ pub const VAULT_OPEN_FAILED: ErrorDef = def("VAULT_OPEN_FAILED", "The vault coul
 pub const IO: ErrorDef = def("IO", "A file couldn’t be read or written");
 pub const DB: ErrorDef = def("DB", "The database couldn’t do that");
 pub const WATCH: ErrorDef = def("WATCH", "The notes folder can’t be watched");
+pub const EVENT: ErrorDef = def("EVENT", "The window couldn’t be told about a change");
 pub const JSON: ErrorDef = def("JSON", "That data couldn’t be read");
 pub const COLOR_INVALID: ErrorDef = def("COLOR_INVALID", "Colors are #rrggbb.");
 pub const OPEN_FAILED: ErrorDef = def("OPEN_FAILED", "The file couldn’t be opened");

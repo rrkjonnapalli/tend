@@ -339,3 +339,12 @@ fn a_rename_on_one_side_and_an_edit_on_the_other_both_survive() {
         "the same on both devices"
     );
 }
+
+#[test]
+fn a_path_with_every_suffix_taken_gets_the_row_id() {
+    let taken: BTreeSet<String> = std::iter::once("work/plan.md".to_string())
+        .chain((1..=10_000).map(|n| format!("work/plan_{n}.md")))
+        .collect();
+    assert_eq!(free_path("work/plan.md", &taken), None);
+    assert_eq!(with_id("work/plan.md", "01ABC"), "work/plan_01abc.md");
+}

@@ -105,7 +105,12 @@ pub fn free(base: &str, taken: impl Fn(&str) -> AppResult<bool>) -> AppResult<St
 
 /// `base_n`, with `base` shortened when needed to stay within `MAX_CHARS`. Names are ASCII.
 fn with_suffix(base: &str, n: u32) -> String {
-    let suffix = format!("_{n}");
+    with_tag(base, &n.to_string())
+}
+
+/// `base_tag`, with `base` shortened when needed to stay within `MAX_CHARS`. Names are ASCII.
+pub fn with_tag(base: &str, tag: &str) -> String {
+    let suffix = format!("_{tag}");
     let room = MAX_CHARS - suffix.len();
     let kept = base[..base.len().min(room)].trim_end_matches('_');
     format!("{kept}{suffix}")

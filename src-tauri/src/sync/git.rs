@@ -48,9 +48,14 @@ impl From<git2::Error> for AppError {
     }
 }
 
+/// libgit2 has a code for a refused login, but a 403 (a token without access) only comes as an
+/// HTTP error whose message holds the status.
 fn is_auth(e: &git2::Error) -> bool {
-    let message = e.message().to_lowercase();
-    e.code() == ErrorCode::Auth || message.contains("401") || message.contains("403")
+    if e.code() == ErrorCode::Auth {
+        return true;
+    }
+    let message = e.message();
+    e.class() == ErrorClass::Http && (message.contains("401") || message.contains("403"))
 }
 
 /// Network deadlines for libgit2, set once per process.
@@ -106,7 +111,9 @@ impl Repo {
         set_timeouts();
         let repo = match Repository::open(root) {
             Ok(repo) => repo,
-            Err(_) => Repository::init(root)?,
+            // No repository yet; any other failure (a damaged .git) must not be papered over.
+            Err(e) if e.code() == ErrorCode::NotFound => Repository::init(root)?,
+            Err(e) => return Err(e.into()),
         };
         let ignore = root.join(GITIGNORE);
         if !ignore.exists() {
