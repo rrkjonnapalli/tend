@@ -1,5 +1,7 @@
-// Pointer dragging for explorer rows: starts after a small travel so clicks stay clicks,
-// reports moves once per animation frame, and ends on release.
+// Pointer dragging for explorer rows: starts after a small travel so clicks stay clicks, reports
+// moves once per animation frame, and ends on release or cancel. Built on `trackPointer`, so every
+// listener comes off however it ends.
+import { swallowReleaseClick, trackPointer } from './drag-session.ts';
 
 /** How far (|dx| + |dy|, in px) the pointer travels before a press becomes a drag. */
 const DRAG_THRESHOLD_PX = 5;
@@ -11,11 +13,12 @@ type DragOptions = {
   onstart: (e: PointerEvent) => void;
   /** The latest pointer position while dragging, at most once per frame. */
   onmove: (e: PointerEvent) => void;
-  /** The pointer was released, whether or not a drag began. */
-  onend: () => void;
+  /** The pointer was released (`dropped`) or the drag was cancelled; also when no drag began. */
+  onend: (dropped: boolean) => void;
 };
 
-export function trackDrag({ start, onstart, onmove, onend }: DragOptions) {
+/** Returns `stop`, which ends tracking without calling `onend` (the explorer went away). */
+export function trackDrag({ start, onstart, onmove, onend }: DragOptions): () => void {
   let dragging = false;
   let frame = 0;
   let last: PointerEvent | null = null;
@@ -37,15 +40,17 @@ export function trackDrag({ start, onstart, onmove, onend }: DragOptions) {
     if (!frame) frame = requestAnimationFrame(step);
   };
 
-  const up = () => {
-    window.removeEventListener('pointermove', move);
-    window.removeEventListener('pointerup', up);
-    if (frame) cancelAnimationFrame(frame);
-    onend();
+  const end = (e: PointerEvent) => {
+    // The click a release fires after a drag must not also open the row.
+    if (dragging) swallowReleaseClick(e);
+    onend(e.type === 'pointerup');
   };
 
-  window.addEventListener('pointermove', move);
-  window.addEventListener('pointerup', up);
+  const cleanup = () => {
+    if (frame) cancelAnimationFrame(frame);
+  };
+
+  return trackPointer({ move, end, cleanup });
 }
 
 /** The `data-drop` folder under a point, or null when there is none. */

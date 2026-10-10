@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { baseOf, cleanPath, isUnder, isValidName, join, nameError, nameErrors, parentOf, pathError, relativeTo, slug, titleError } from './names.ts';
+import { baseOf, cleanPath, isUnder, join, nameError, nameErrors, parentOf, pathError, relativeTo, slug, titleError } from './names.ts';
 
 describe('names', () => {
   it('slugs text the way Rust does', () => {
@@ -7,7 +7,7 @@ describe('names', () => {
     expect(slug('Café notes (Q4)!')).toBe('cafe_notes_q4');
     expect(slug('  Résumé -- 2024 ')).toBe('resume_2024');
     expect(slug('日本')).toBe('');
-    expect(isValidName(slug('a — b • c'))).toBe(true);
+    expect(slug('a — b • c')).toBe('a_b_c');
   });
 
   it('checks typed folder names and note titles', () => {

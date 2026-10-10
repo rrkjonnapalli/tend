@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { inTauri } from '#lib/util/window.ts';
   // Attachments of one owner: a drop zone (or click to choose), "link a note", and the rows.
   import { onMount } from 'svelte';
   import { open as openDialog } from '@tauri-apps/plugin-dialog';
@@ -75,7 +76,6 @@
     if (hit) addPaths(p.paths);
   }
 
-  const inTauri = () => '__TAURI_INTERNALS__' in window;
 
   onMount(() => {
     if (!inTauri()) return;

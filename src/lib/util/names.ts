@@ -3,15 +3,12 @@
 // `slug`; a name taken in its folder gets a suffix (plan_1) when saved, so a clash is never an error.
 
 const MAX_CHARS = 200;
-const RULE = /^[a-z0-9]+(_[a-z0-9]+)*$/;
 
 export const nameErrors = {
   empty: 'Name can’t be empty',
   noLetters: 'Use at least one letter or digit',
   title: 'A note needs a title',
 } as const;
-
-export const isValidName = (name: string) => RULE.test(name) && name.length <= MAX_CHARS;
 
 /** The name text becomes on disk: accents dropped, lowercase, other runs → _ ("Café notes (Q4)" →
  *  "cafe_notes_q4"). '' when no letter or digit is left. */

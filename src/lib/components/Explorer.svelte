@@ -7,7 +7,7 @@
   // The left-hand tree shared by Notes (folders + notes) and Tasks (folders only).
   import type { DropState, ExplorerActions, ExplorerEdit, ExplorerItem, ExplorerRow, Leaf, NewKind } from '#lib/types/explorer.type.ts';
   import type { Anchor } from '#lib/types/popover.type.ts';
-  import { untrack } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
   import Icon from './Icon.svelte';
   import ExplorerRowView from './ExplorerRow.svelte';
   import ExplorerMenu from './ExplorerMenu.svelte';
@@ -69,7 +69,9 @@
   let moving = $state<ExplorerRow | null>(null);
   let deleting = $state<ExplorerRow | null>(null);
   let drag = $state<{ row: ExplorerRow; over: string | null; x: number; y: number } | null>(null);
-  let suppressClick = false;
+  /** Ends the drag being tracked, if any (also when the explorer goes away). */
+  let stopDrag: (() => void) | null = null;
+  onDestroy(() => stopDrag?.());
 
   const tree = $derived({ folders, leaves });
   const selectedKey = $derived(selected ? keyOf(selected) : null);
@@ -202,26 +204,20 @@
 
   const ghostAt = (e: PointerEvent) => ({ x: e.clientX + GHOST_OFFSET_X, y: e.clientY + GHOST_OFFSET_Y });
 
-  /** The click that ends a drag must not also open the row. */
-  function suppressNextClick() {
-    suppressClick = true;
-    setTimeout(() => {
-      suppressClick = false;
-    }, 0);
-  }
-
-  function endDrag() {
+  /** A cancelled drag (the system took the pointer) moves nothing. */
+  function endDrag(dropped: boolean) {
     const done = drag;
     drag = null;
-    if (!done) return;
-    suppressNextClick();
+    stopDrag = null;
+    if (!done || !dropped) return;
     const target = done.over;
     if (target !== null && allowsDrop(done.row, target)) moveTo(done.row, target);
   }
 
   function onRowDown(row: ExplorerRow, e: PointerEvent) {
     if (!canDrag(row, e)) return;
-    trackDrag({
+    stopDrag?.();
+    stopDrag = trackDrag({
       start: e,
       onstart: (ev) => {
         menu = null;
@@ -273,7 +269,7 @@
   // ---- interactions
 
   function openRow(row: ExplorerRow) {
-    if (suppressClick || row.isNew || editing?.key === row.key) return;
+    if (row.isNew || editing?.key === row.key) return;
     menu = null;
     actions.open(row.item);
   }

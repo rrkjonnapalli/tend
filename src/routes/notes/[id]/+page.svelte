@@ -53,6 +53,8 @@
   let moving = $state(false);
   let deleting = $state(false);
 
+  /** The last write sent; the next one waits for it. */
+  let lastWrite: Promise<unknown> = Promise.resolve();
   /** A write is on its way to disk. */
   let writing = $state(false);
   /** The last write failed; the text stays on screen until a retry works. */
@@ -139,8 +141,11 @@
     const noteId = loadedId;
     const body = text;
     writing = true;
+    // Writes go one after another, so an older text can't land after a newer one.
+    const write = lastWrite.then(() => notesAPI.write({ id: noteId, text: body }));
+    lastWrite = write.catch(() => {});
     try {
-      await notesAPI.write({ id: noteId, text: body });
+      await write;
     } catch (e) {
       // Only the note still open shows the failure; a late answer for one that was left doesn't.
       failed = noteId === loadedId && !toAppError(e).is(errors.NOT_FOUND);
