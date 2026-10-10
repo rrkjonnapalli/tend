@@ -109,7 +109,10 @@ class TasksStore {
   create = async (task: NewTask) => {
     const orderKey = task.orderKey ?? keyBetween(null, this.#firstKey());
     const created = await tasksAPI.create({ ...task, orderKey });
-    await this.load();
+    // A path the list doesn't know made a folder too, so everything reloads; otherwise the new row is enough.
+    const isNewFolder = task.path !== '' && !this.folders.includes(task.path);
+    if (isNewFolder) await this.load();
+    else this.#replace(created);
     return created;
   };
 

@@ -3,7 +3,7 @@
   // Note page: sticky bar (back, breadcrumb, width, read/edit), tags, then the note itself.
   // Edits autosave to disk ~500 ms after typing stops, and on blur or leaving the page.
   import type { Crumb } from '#lib/types/breadcrumb.type.ts';
-  import type { NoteDoc } from '#lib/types/note.type.ts';
+  import type { NoteDoc, NoteRow } from '#lib/types/note.type.ts';
   import { beforeNavigate } from '$app/navigation';
   import { onBeforeQuit } from '#lib/util/before-quit.ts';
   import { untrack } from 'svelte';
@@ -146,8 +146,9 @@
     // Writes go one after another, so an older text can't land after a newer one.
     const write = lastWrite.then(() => notesAPI.write({ id: noteId, text: body }));
     lastWrite = write.catch(() => {});
+    let row: NoteRow;
     try {
-      await write;
+      row = await write;
     } catch (e) {
       // Only the note still open shows the failure; a late answer for one that was left doesn't.
       failed = noteId === loadedId && !toAppError(e).is(errors.NOT_FOUND);
@@ -157,6 +158,7 @@
       writing = false;
     }
     failed = false;
+    notes.patch(row);
     if (loadedId === noteId) saved = body;
   }
 

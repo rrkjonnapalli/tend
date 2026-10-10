@@ -1,6 +1,6 @@
 //! Watches the vault (the notes root) and re-indexes after outside changes (Finder, other editors).
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -9,6 +9,7 @@ use notify_debouncer_full::{new_debouncer, DebounceEventResult};
 use tauri::{AppHandle, Emitter, Runtime};
 
 use crate::error::{errors, AppResult};
+use crate::files;
 use crate::names;
 use crate::notes;
 use crate::state::{Guard, Vault};
@@ -23,6 +24,25 @@ fn is_hidden(root: &Path, path: &Path) -> bool {
     };
     rel.components()
         .any(|c| names::is_hidden(&c.as_os_str().to_string_lossy()))
+}
+
+/// `path` is a note file exactly as the index holds it (same mtime): the change was Tend's own
+/// save, which already updated the index.
+fn is_indexed(vault: &Vault, roots: &[PathBuf], path: &Path) -> bool {
+    let Some(rel) = roots.iter().find_map(|root| path.strip_prefix(root).ok()) else {
+        return false;
+    };
+    let rel = rel.to_string_lossy();
+    let indexed: Option<i64> = vault
+        .db()
+        .query_row(
+            "SELECT mtime FROM attachments WHERE path = ?1 AND missing_at IS NULL",
+            [rel.as_ref()],
+            |r| r.get(0),
+        )
+        .ok()
+        .flatten();
+    indexed.is_some_and(|mtime| mtime == files::mtime(path))
 }
 
 /// Rescans the notes folder and records what it skipped. Names are fixed on disk only when the
@@ -51,7 +71,7 @@ pub fn rescan_and_emit<R: Runtime>(app: &AppHandle<R>, vault: &Vault) -> AppResu
 
 /// Starts watching the vault. `changed` runs after each debounced batch of outside changes to
 /// notes and folders. Changes inside hidden folders (`.tend/`, where the database lives, `.git/`)
-/// are ignored, so Tend's own writes never trigger a rescan.
+/// are ignored, and so are saves Tend already indexed, so Tend's own writes never trigger a rescan.
 pub fn start(vault: Arc<Vault>, changed: impl Fn(&Vault) + Send + 'static) -> AppResult<Guard> {
     let dir = vault.notes_dir();
     // Events may name the canonical path (/private/var for /var on macOS).
@@ -63,11 +83,13 @@ pub fn start(vault: Arc<Vault>, changed: impl Fn(&Vault) + Send + 'static) -> Ap
         let Ok(events) = res else {
             return;
         };
-        let visible = events
+        let visible: Vec<&PathBuf> = events
             .iter()
             .flat_map(|e| e.paths.iter())
-            .any(|p| roots.iter().any(|root| !is_hidden(root, p)));
-        if visible {
+            .filter(|p| roots.iter().any(|root| !is_hidden(root, p)))
+            .collect();
+        let outside = visible.iter().any(|p| !is_indexed(&vault, &roots, p));
+        if outside {
             changed(&vault);
         }
     })?;

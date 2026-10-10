@@ -70,3 +70,14 @@ fn outside_file_reaches_the_index_within_a_second() {
         started.elapsed()
     );
 }
+
+#[test]
+fn tends_own_save_does_not_trigger_a_rescan() {
+    let (_tmp, vault, rx, _guard) = watched("# A");
+    let id = notes::tree(&vault.db()).unwrap().notes[0].id.clone();
+    notes::write(&vault.db(), &vault.notes_dir(), &id, "# A\n\nsaved by Tend").unwrap();
+    assert!(
+        rx.recv_timeout(Duration::from_millis(1000)).is_err(),
+        "the save already updated the index"
+    );
+}

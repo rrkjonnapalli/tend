@@ -35,6 +35,13 @@ class NotesStore {
 
   byId = (id: string) => this.notes.find((n) => n.id === id);
 
+  /** Puts a row the API returned back in the list: a save moves its modified time, and the
+   *  watcher doesn't reload for Tend's own saves. */
+  patch = (row: NoteRow) => {
+    const i = this.notes.findIndex((n) => n.id === row.id);
+    if (i >= 0) this.notes[i] = row;
+  };
+
   /** Every note in `folder` or below it, newest edit first. */
   under = (folder: string) => {
     const inside = this.notes.filter((n) => isUnder(n.folder, folder));
