@@ -22,8 +22,24 @@ fn defaults_are_first_middle_last() {
 #[test]
 fn custom_statuses_go_before_done() {
     let conn = open_memory();
-    add(&conn, "Waiting", "WAITING", "#d57149").unwrap();
-    add(&conn, "In review", "IN_REVIEW", "#6f5ee4").unwrap();
+    add(
+        &conn,
+        &NewStatus {
+            label: "Waiting",
+            value: "WAITING",
+            color: "#d57149",
+        },
+    )
+    .unwrap();
+    add(
+        &conn,
+        &NewStatus {
+            label: "In review",
+            value: "IN_REVIEW",
+            color: "#6f5ee4",
+        },
+    )
+    .unwrap();
     assert_eq!(
         values(&conn),
         vec!["NOT_STARTED", "IN_PROGRESS", "WAITING", "IN_REVIEW", "DONE"]
@@ -34,32 +50,89 @@ fn custom_statuses_go_before_done() {
 fn add_rules() {
     let conn = open_memory();
     assert!(fails_with(
-        add(&conn, "Ready", "done", "#000000"),
+        add(
+            &conn,
+            &NewStatus {
+                label: "Ready",
+                value: "done",
+                color: "#000000"
+            }
+        ),
         errors::STATUS_VALUE
     ));
     assert!(fails_with(
-        add(&conn, "Ready", "DONE", "#000000"),
+        add(
+            &conn,
+            &NewStatus {
+                label: "Ready",
+                value: "DONE",
+                color: "#000000"
+            }
+        ),
         errors::STATUS_RESERVED
     ));
     assert!(fails_with(
-        add(&conn, "Ready", "In_Progress", "#000000"),
+        add(
+            &conn,
+            &NewStatus {
+                label: "Ready",
+                value: "In_Progress",
+                color: "#000000"
+            }
+        ),
         errors::STATUS_VALUE
     ));
     assert!(fails_with(
-        add(&conn, "not started", "READY", "#000000"),
+        add(
+            &conn,
+            &NewStatus {
+                label: "not started",
+                value: "READY",
+                color: "#000000"
+            }
+        ),
         errors::STATUS_LABEL_TAKEN
     ));
     assert!(fails_with(
-        add(&conn, "Ready", "READY", "blue"),
+        add(
+            &conn,
+            &NewStatus {
+                label: "Ready",
+                value: "READY",
+                color: "blue"
+            }
+        ),
         errors::COLOR_INVALID
     ));
-    add(&conn, "Ready", "READY", "#000000").unwrap();
+    add(
+        &conn,
+        &NewStatus {
+            label: "Ready",
+            value: "READY",
+            color: "#000000",
+        },
+    )
+    .unwrap();
     assert!(fails_with(
-        add(&conn, "Other", "READY", "#000000"),
+        add(
+            &conn,
+            &NewStatus {
+                label: "Other",
+                value: "READY",
+                color: "#000000"
+            }
+        ),
         errors::STATUS_VALUE_TAKEN
     ));
     assert!(fails_with(
-        add(&conn, "  ", "X", "#000000"),
+        add(
+            &conn,
+            &NewStatus {
+                label: "  ",
+                value: "X",
+                color: "#000000"
+            }
+        ),
         errors::STATUS_LABEL_EMPTY
     ));
 }
@@ -85,7 +158,15 @@ fn rename_and_recolor() {
 #[test]
 fn reorder_keeps_first_and_last() {
     let mut conn = open_memory();
-    add(&conn, "Waiting", "WAITING", "#d57149").unwrap();
+    add(
+        &conn,
+        &NewStatus {
+            label: "Waiting",
+            value: "WAITING",
+            color: "#d57149",
+        },
+    )
+    .unwrap();
     let order = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
     reorder(
         &mut conn,
@@ -112,7 +193,15 @@ fn reorder_keeps_first_and_last() {
 #[test]
 fn delete_rules() {
     let mut conn = open_memory();
-    add(&conn, "Waiting", "WAITING", "#d57149").unwrap();
+    add(
+        &conn,
+        &NewStatus {
+            label: "Waiting",
+            value: "WAITING",
+            color: "#d57149",
+        },
+    )
+    .unwrap();
     assert!(fails_with(delete(&conn, "DONE"), errors::STATUS_DEFAULT));
     let t = crate::tasks::create(
         &mut conn,
@@ -132,7 +221,15 @@ fn delete_rules() {
 #[test]
 fn a_custom_status_id_is_its_value() {
     let conn = open_memory();
-    add(&conn, "Blocked", "BLOCKED", "#d4b106").unwrap();
+    add(
+        &conn,
+        &NewStatus {
+            label: "Blocked",
+            value: "BLOCKED",
+            color: "#d4b106",
+        },
+    )
+    .unwrap();
     let id: String = conn
         .query_row("SELECT id FROM statuses WHERE value = 'BLOCKED'", [], |r| {
             r.get(0)

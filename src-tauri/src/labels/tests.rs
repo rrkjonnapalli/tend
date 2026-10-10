@@ -17,8 +17,24 @@ fn task(conn: &mut Connection) -> String {
 #[test]
 fn add_rename_recolor_and_order() {
     let mut conn = open_memory();
-    let script = add(&conn, "script", "SCRIPT", "#1259d3").unwrap();
-    let review = add(&conn, " review in progress ", "REVIEW", "#d57149").unwrap();
+    let script = add(
+        &conn,
+        &NewLabel {
+            name: "script",
+            value: "SCRIPT",
+            color: "#1259d3",
+        },
+    )
+    .unwrap();
+    let review = add(
+        &conn,
+        &NewLabel {
+            name: " review in progress ",
+            value: "REVIEW",
+            color: "#d57149",
+        },
+    )
+    .unwrap();
     assert_eq!(review.name, "review in progress");
     assert_eq!(
         list(&conn)
@@ -29,15 +45,36 @@ fn add_rename_recolor_and_order() {
         ["script", "review in progress"]
     );
 
-    assert!(add(&conn, "Script", "OTHER", "#000000")
-        .unwrap_err()
-        .is(errors::LABEL_NAME_TAKEN));
-    assert!(add(&conn, "  ", "BLANK", "#000000")
-        .unwrap_err()
-        .is(errors::LABEL_NAME_EMPTY));
-    assert!(add(&conn, "x", "X", "blue")
-        .unwrap_err()
-        .is(errors::COLOR_INVALID));
+    assert!(add(
+        &conn,
+        &NewLabel {
+            name: "Script",
+            value: "OTHER",
+            color: "#000000"
+        }
+    )
+    .unwrap_err()
+    .is(errors::LABEL_NAME_TAKEN));
+    assert!(add(
+        &conn,
+        &NewLabel {
+            name: "  ",
+            value: "BLANK",
+            color: "#000000"
+        }
+    )
+    .unwrap_err()
+    .is(errors::LABEL_NAME_EMPTY));
+    assert!(add(
+        &conn,
+        &NewLabel {
+            name: "x",
+            value: "X",
+            color: "blue"
+        }
+    )
+    .unwrap_err()
+    .is(errors::COLOR_INVALID));
     assert!(rename(&conn, &review.id, "SCRIPT")
         .unwrap_err()
         .is(errors::LABEL_NAME_TAKEN));
@@ -61,8 +98,24 @@ fn add_rename_recolor_and_order() {
 #[test]
 fn tasks_carry_labels_until_the_label_is_deleted() {
     let mut conn = open_memory();
-    let a = add(&conn, "script", "SCRIPT", "#1259d3").unwrap();
-    let b = add(&conn, "pending approval", "PENDING_APPROVAL", "#d57149").unwrap();
+    let a = add(
+        &conn,
+        &NewLabel {
+            name: "script",
+            value: "SCRIPT",
+            color: "#1259d3",
+        },
+    )
+    .unwrap();
+    let b = add(
+        &conn,
+        &NewLabel {
+            name: "pending approval",
+            value: "PENDING_APPROVAL",
+            color: "#d57149",
+        },
+    )
+    .unwrap();
     let t = task(&mut conn);
 
     let set = set_for_task(&mut conn, &t, &[b.id.clone(), a.id.clone()]).unwrap();
@@ -80,18 +133,48 @@ fn tasks_carry_labels_until_the_label_is_deleted() {
 #[test]
 fn a_label_value_is_its_id_in_capitals_and_never_changes() {
     let conn = open_memory();
-    let pr = add(&conn, "PR review", "PR_REVIEW", "#f67280").unwrap();
+    let pr = add(
+        &conn,
+        &NewLabel {
+            name: "PR review",
+            value: "PR_REVIEW",
+            color: "#f67280",
+        },
+    )
+    .unwrap();
     assert_eq!(pr.id, "pr_review");
     // Another name, same value: the user is asked to change the value, not given a suffix.
-    assert!(add(&conn, "PR reviews", "PR_REVIEW", "#f67280")
-        .unwrap_err()
-        .is(errors::LABEL_VALUE_TAKEN));
-    assert!(add(&conn, "C#", "C_SHARP", "#f67280").is_ok());
+    assert!(add(
+        &conn,
+        &NewLabel {
+            name: "PR reviews",
+            value: "PR_REVIEW",
+            color: "#f67280"
+        }
+    )
+    .unwrap_err()
+    .is(errors::LABEL_VALUE_TAKEN));
+    assert!(add(
+        &conn,
+        &NewLabel {
+            name: "C#",
+            value: "C_SHARP",
+            color: "#f67280"
+        }
+    )
+    .is_ok());
     for bad in ["db script", "db_script", "_X", "X__Y", ""] {
         assert!(
-            add(&conn, "Odd", bad, "#f67280")
-                .unwrap_err()
-                .is(errors::LABEL_VALUE),
+            add(
+                &conn,
+                &NewLabel {
+                    name: "Odd",
+                    value: bad,
+                    color: "#f67280"
+                }
+            )
+            .unwrap_err()
+            .is(errors::LABEL_VALUE),
             "{bad}"
         );
     }

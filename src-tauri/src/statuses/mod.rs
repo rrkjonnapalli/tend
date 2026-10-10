@@ -47,10 +47,18 @@ pub fn list(conn: &Connection) -> AppResult<Vec<Status>> {
     Ok(rows)
 }
 
+/// A status to add: its label, its value (picked once, never changed) and its color.
+pub struct NewStatus<'a> {
+    pub label: &'a str,
+    pub value: &'a str,
+    pub color: &'a str,
+}
+
 /// Adds a custom status just before Done.
-pub fn add(conn: &Connection, label: &str, value: &str, color: &str) -> AppResult<Status> {
-    let value = checks::new_value(conn, value)?;
-    let label = checks::label(conn, label, None)?;
+pub fn add(conn: &Connection, new: &NewStatus) -> AppResult<Status> {
+    let value = checks::new_value(conn, new.value)?;
+    let label = checks::label(conn, new.label, None)?;
+    let color = new.color;
     crate::colors::check(color)?;
     let position: i64 = conn.query_row(
         "SELECT max(position) + 1 FROM statuses WHERE value <> ?1",

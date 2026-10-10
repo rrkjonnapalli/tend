@@ -123,7 +123,11 @@ impl World {
         let head_index = self.remote.len() - 1;
         let base = &self.remote[self.devices[d].base];
         let head = &self.remote[head_index];
-        let merged = reconcile(base, &self.devices[d].snap, head);
+        let merged = reconcile(&Sides {
+            base,
+            local: &self.devices[d].snap,
+            remote: head,
+        });
         check_rules(&merged);
         let changed = merged != *head;
         let device = &mut self.devices[d];
@@ -707,7 +711,11 @@ fn run(seed: u64) {
         assert_eq!(device.snap, head, "seed {seed}: device {d} differs");
     }
     assert_eq!(
-        reconcile(&head, &head, &head),
+        reconcile(&Sides {
+            base: &head,
+            local: &head,
+            remote: &head
+        }),
         head,
         "seed {seed}: merging the result changed it"
     );

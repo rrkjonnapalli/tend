@@ -18,7 +18,16 @@ pub fn status_add(
     value: String,
     color: String,
 ) -> AppResult<statuses::Status> {
-    state.with(|db, _| statuses::add(db, &label, &value, &color))
+    state.with(|db, _| {
+        statuses::add(
+            db,
+            &statuses::NewStatus {
+                label: &label,
+                value: &value,
+                color: &color,
+            },
+        )
+    })
 }
 
 #[tauri::command(async)]

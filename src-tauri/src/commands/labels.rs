@@ -18,7 +18,16 @@ pub fn label_add(
     value: String,
     color: String,
 ) -> AppResult<labels::Label> {
-    state.with(|db, _| labels::add(db, &name, &value, &color))
+    state.with(|db, _| {
+        labels::add(
+            db,
+            &labels::NewLabel {
+                name: &name,
+                value: &value,
+                color: &color,
+            },
+        )
+    })
 }
 
 #[tauri::command(async)]

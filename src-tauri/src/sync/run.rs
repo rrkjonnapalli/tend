@@ -14,7 +14,7 @@ use rusqlite::{Connection, Transaction};
 
 use super::apply::{apply, Blobs, Change};
 use super::git::{Kept, Remote, Repo};
-use super::reconcile::reconcile;
+use super::reconcile::{reconcile, Sides};
 use super::shards::{self, Snapshot};
 use super::state;
 use crate::error::{errors, AppResult};
@@ -335,7 +335,11 @@ fn merge_in(
     let base_rows = rows_at(repo, base)?;
     let remote_rows = rows_at(repo, head)?;
     let local_rows = shards::snapshot(conn)?;
-    let merged = reconcile(&base_rows, &local_rows, &remote_rows);
+    let merged = reconcile(&Sides {
+        base: &base_rows,
+        local: &local_rows,
+        remote: &remote_rows,
+    });
     let change = Change {
         local: &local_rows,
         merged: &merged,

@@ -34,8 +34,22 @@ fn a_change_on_one_side_wins_without_looking_at_the_clock() {
     let base = snap(&[("people", vec![person("p", "Ann", 10)])]);
     let local = snap(&[("people", vec![person("p", "Ann", 10)])]);
     let remote = snap(&[("people", vec![person("p", "Anna", 1)])]);
-    assert_eq!(names_of(&reconcile(&base, &local, &remote)), vec!["Anna"]);
-    assert_eq!(names_of(&reconcile(&base, &remote, &local)), vec!["Anna"]);
+    assert_eq!(
+        names_of(&reconcile(&Sides {
+            base: &base,
+            local: &local,
+            remote: &remote
+        })),
+        vec!["Anna"]
+    );
+    assert_eq!(
+        names_of(&reconcile(&Sides {
+            base: &base,
+            local: &remote,
+            remote: &local
+        })),
+        vec!["Anna"]
+    );
 }
 
 #[test]
@@ -43,12 +57,27 @@ fn both_changed_newer_wins_and_ties_are_the_same_everywhere() {
     let base = snap(&[("people", vec![person("p", "Ann", 1)])]);
     let a = snap(&[("people", vec![person("p", "Anna", 5)])]);
     let b = snap(&[("people", vec![person("p", "Annie", 9)])]);
-    assert_eq!(names_of(&reconcile(&base, &a, &b)), vec!["Annie"]);
+    assert_eq!(
+        names_of(&reconcile(&Sides {
+            base: &base,
+            local: &a,
+            remote: &b
+        })),
+        vec!["Annie"]
+    );
     let tie_a = snap(&[("people", vec![person("p", "Anna", 5)])]);
     let tie_b = snap(&[("people", vec![person("p", "Annie", 5)])]);
     assert_eq!(
-        reconcile(&base, &tie_a, &tie_b),
-        reconcile(&base, &tie_b, &tie_a),
+        reconcile(&Sides {
+            base: &base,
+            local: &tie_a,
+            remote: &tie_b
+        }),
+        reconcile(&Sides {
+            base: &base,
+            local: &tie_b,
+            remote: &tie_a
+        }),
         "a tie resolves the same way on both devices"
     );
 }
@@ -61,7 +90,11 @@ fn a_delete_beats_an_edit_and_adds_are_kept() {
         "people",
         vec![person("p", "Edited", 9), person("r", "Remote", 2)],
     )]);
-    let merged = reconcile(&base, &local, &remote);
+    let merged = reconcile(&Sides {
+        base: &base,
+        local: &local,
+        remote: &remote,
+    });
     let ids: Vec<&String> = merged["people"].keys().collect();
     assert_eq!(ids, vec!["n", "r"]);
 }
@@ -110,7 +143,11 @@ fn colliding_links_and_folders_collapse_to_the_smallest_id() {
         l.entry(table).or_default().extend(rows.clone());
         r.entry(table).or_default().extend(rows.clone());
     }
-    let merged = reconcile(&base, &l, &r);
+    let merged = reconcile(&Sides {
+        base: &base,
+        local: &l,
+        remote: &r,
+    });
     assert_eq!(merged["task_tags"].keys().collect::<Vec<_>>(), vec!["a"]);
     let folders: Vec<&String> = merged["task_folders"].keys().collect();
     assert_eq!(folders, vec!["f1", "root"]);
@@ -139,7 +176,11 @@ fn equal_label_names_get_numbered_and_clashing_note_paths_a_suffix() {
             vec![json!({ "id": "a2", "path": "plan.md", "name": "plan.md", "updated_at": 1 })],
         ),
     ]);
-    let merged = reconcile(&empty, &l, &r);
+    let merged = reconcile(&Sides {
+        base: &empty,
+        local: &l,
+        remote: &r,
+    });
     let labels: Vec<&str> = merged["task_labels"]
         .values()
         .map(|r| text(r, "name").unwrap())
@@ -203,7 +244,11 @@ fn references_to_gone_rows_are_fixed_or_dropped_in_cascade() {
             row(json!({ "id": "c", "task_id": "sub", "updated_at": 1 })),
         )]),
     );
-    let merged = reconcile(&base, &local, &remote);
+    let merged = reconcile(&Sides {
+        base: &base,
+        local: &local,
+        remote: &remote,
+    });
     let tasks: Vec<&String> = merged["tasks"].keys().collect();
     assert_eq!(tasks, vec!["t"], "the subtask went with its parent");
     let t = &merged["tasks"]["t"];
@@ -247,14 +292,25 @@ fn a_note_whose_folder_is_gone_moves_to_the_root() {
         "n1".into(),
         row(json!({ "id": "n1", "attachment_id": "a1", "updated_at": 1 })),
     );
-    let merged = reconcile(&base, &local, &remote);
+    let merged = reconcile(&Sides {
+        base: &base,
+        local: &local,
+        remote: &remote,
+    });
     assert_eq!(text(&merged["attachments"]["a1"], "path"), Some("x_1.md"));
 }
 
 #[test]
 fn merging_a_merge_changes_nothing() {
     let s = snap(&[("people", vec![person("p", "Ann", 1)])]);
-    assert_eq!(reconcile(&s, &s, &s), s);
+    assert_eq!(
+        reconcile(&Sides {
+            base: &s,
+            local: &s,
+            remote: &s
+        }),
+        s
+    );
 }
 
 #[test]
@@ -263,7 +319,11 @@ fn a_rename_on_one_side_and_an_edit_on_the_other_both_survive() {
     let base = snap(&[("attachments", vec![body("plan.md", "old", 1)])]);
     let edited = snap(&[("attachments", vec![body("plan.md", "new", 5)])]);
     let renamed = snap(&[("attachments", vec![body("plan_v2.md", "old", 9)])]);
-    let merged = reconcile(&base, &edited, &renamed);
+    let merged = reconcile(&Sides {
+        base: &base,
+        local: &edited,
+        remote: &renamed,
+    });
     let a = &merged["attachments"]["a"];
     assert_eq!(
         (text(a, "path"), text(a, "sha256")),
@@ -271,7 +331,11 @@ fn a_rename_on_one_side_and_an_edit_on_the_other_both_survive() {
     );
     assert_eq!(
         merged,
-        reconcile(&base, &renamed, &edited),
+        reconcile(&Sides {
+            base: &base,
+            local: &renamed,
+            remote: &edited
+        }),
         "the same on both devices"
     );
 }

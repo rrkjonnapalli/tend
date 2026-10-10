@@ -21,9 +21,17 @@ use serde_json::Value;
 use super::shards::{Row, Snapshot};
 use crate::names;
 
+/// The three versions a merge works from: the last agreed state and each side's.
+#[derive(Clone, Copy)]
+pub struct Sides<T> {
+    pub base: T,
+    pub local: T,
+    pub remote: T,
+}
+
 /// The merged state of the three snapshots.
-pub fn reconcile(base: &Snapshot, local: &Snapshot, remote: &Snapshot) -> Snapshot {
-    let mut merged = merge_tables(base, local, remote);
+pub fn reconcile(sides: &Sides<&Snapshot>) -> Snapshot {
+    let mut merged = merge_tables(sides);
     fix_unique_keys(&mut merged);
     fix_references(&mut merged);
     merged
@@ -31,35 +39,43 @@ pub fn reconcile(base: &Snapshot, local: &Snapshot, remote: &Snapshot) -> Snapsh
 
 // ---- 1. three-way merge
 
-fn merge_tables(base: &Snapshot, local: &Snapshot, remote: &Snapshot) -> Snapshot {
+fn merge_tables(sides: &Sides<&Snapshot>) -> Snapshot {
     let empty = BTreeMap::new();
-    let tables: BTreeSet<&'static str> = base
+    let tables: BTreeSet<&'static str> = sides
+        .base
         .keys()
-        .chain(local.keys())
-        .chain(remote.keys())
+        .chain(sides.local.keys())
+        .chain(sides.remote.keys())
         .copied()
         .collect();
     let mut merged = Snapshot::new();
     for table in tables {
-        let b = base.get(table).unwrap_or(&empty);
-        let l = local.get(table).unwrap_or(&empty);
-        let r = remote.get(table).unwrap_or(&empty);
-        merged.insert(table, merge_table(b, l, r));
+        let rows = Sides {
+            base: sides.base.get(table).unwrap_or(&empty),
+            local: sides.local.get(table).unwrap_or(&empty),
+            remote: sides.remote.get(table).unwrap_or(&empty),
+        };
+        merged.insert(table, merge_table(rows));
     }
     merged
 }
 
 type Rows = BTreeMap<String, Row>;
 
-fn merge_table(base: &Rows, local: &Rows, remote: &Rows) -> Rows {
-    let ids: BTreeSet<&String> = base
+fn merge_table(rows: Sides<&Rows>) -> Rows {
+    let ids: BTreeSet<&String> = rows
+        .base
         .keys()
-        .chain(local.keys())
-        .chain(remote.keys())
+        .chain(rows.local.keys())
+        .chain(rows.remote.keys())
         .collect();
     let mut out = Rows::new();
     for id in ids {
-        let row = merge_row(base.get(id), local.get(id), remote.get(id));
+        let row = merge_row(Sides {
+            base: rows.base.get(id),
+            local: rows.local.get(id),
+            remote: rows.remote.get(id),
+        });
         if let Some(row) = row {
             out.insert(id.clone(), row);
         }
@@ -67,11 +83,15 @@ fn merge_table(base: &Rows, local: &Rows, remote: &Rows) -> Rows {
     out
 }
 
-fn merge_row(base: Option<&Row>, local: Option<&Row>, remote: Option<&Row>) -> Option<Row> {
-    match (base, local, remote) {
+fn merge_row(row: Sides<Option<&Row>>) -> Option<Row> {
+    match (row.base, row.local, row.remote) {
         // Present at the last sync and gone on one side: deleted, whatever the other side did.
         (Some(_), None, _) | (Some(_), _, None) => None,
-        (Some(b), Some(l), Some(r)) => Some(merge_columns(b, l, r)),
+        (Some(base), Some(local), Some(remote)) => Some(merge_columns(Sides {
+            base,
+            local,
+            remote,
+        })),
         (None, Some(l), None) => Some(l.clone()),
         (None, None, Some(r)) => Some(r.clone()),
         (None, Some(l), Some(r)) => Some(newer(l, r).clone()),
@@ -81,14 +101,14 @@ fn merge_row(base: Option<&Row>, local: Option<&Row>, remote: Option<&Row>) -> O
 
 /// Each column from the side that changed it since the base; a column both changed comes from
 /// the newer row. So a rename on one device and an edit on another both survive.
-fn merge_columns(base: &Row, local: &Row, remote: &Row) -> Row {
-    let winner = newer(local, remote);
-    let columns: BTreeSet<&String> = local.keys().chain(remote.keys()).collect();
+fn merge_columns(row: Sides<&Row>) -> Row {
+    let winner = newer(row.local, row.remote);
+    let columns: BTreeSet<&String> = row.local.keys().chain(row.remote.keys()).collect();
     let mut out = Row::new();
     for column in columns {
-        let was = base.get(column);
-        let mine = local.get(column);
-        let theirs = remote.get(column);
+        let was = row.base.get(column);
+        let mine = row.local.get(column);
+        let theirs = row.remote.get(column);
         let value = if mine == was {
             theirs
         } else if theirs == was {

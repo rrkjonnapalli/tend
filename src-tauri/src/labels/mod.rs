@@ -85,11 +85,19 @@ fn id_of(conn: &Connection, value: &str) -> AppResult<String> {
     Ok(id)
 }
 
+/// A label to add: its name, its value (picked once, never changed) and its color.
+pub struct NewLabel<'a> {
+    pub name: &'a str,
+    pub value: &'a str,
+    pub color: &'a str,
+}
+
 /// Adds a label at the end of the list. Its value (shown in capitals, stored as its id) is picked
 /// when it is added and never changes: tasks and other devices refer to the label by it.
-pub fn add(conn: &Connection, name: &str, value: &str, color: &str) -> AppResult<Label> {
-    let name = check_name(name)?;
-    let id = id_of(conn, value)?;
+pub fn add(conn: &Connection, new: &NewLabel) -> AppResult<Label> {
+    let name = check_name(new.name)?;
+    let id = id_of(conn, new.value)?;
+    let color = new.color;
     colors::check(color)?;
     let position: i64 = conn.query_row(
         "SELECT coalesce(max(position) + 1, 0) FROM task_labels",

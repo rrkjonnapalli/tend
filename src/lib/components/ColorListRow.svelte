@@ -151,9 +151,10 @@
     box-shadow: inset 0 0 0 2px var(--c);
   }
 
-  .sw:hover {
-    outline: 2px solid var(--border);
-    outline-offset: 2px;
+  /* No outline or ring (the app never draws one): the swatch grows a little instead. */
+  .sw:hover,
+  .sw:focus-visible {
+    transform: scale(1.2);
   }
 
   .lab {

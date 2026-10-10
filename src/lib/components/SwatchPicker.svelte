@@ -87,9 +87,10 @@
     cursor: pointer;
   }
 
-  .swopt:hover {
-    outline: 2px solid var(--c-faint);
-    outline-offset: 2px;
+  /* No outline or ring (the app never draws one): the swatch grows a little instead. */
+  .swopt:hover,
+  .swopt:focus-visible {
+    transform: scale(1.2);
   }
 
   .custom {
