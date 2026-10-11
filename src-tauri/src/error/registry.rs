@@ -101,6 +101,15 @@ pub const DUE_TIME_INVALID: ErrorDef = def("DUE_TIME_INVALID", "Use a time like 
 pub const CONTACT_KIND: ErrorDef = def("CONTACT_KIND", "Unknown contact kind");
 pub const CONTACT_EMPTY: ErrorDef = def("CONTACT_EMPTY", "Enter a value");
 
+// ---- library
+pub const WORD_TITLE_EMPTY: ErrorDef = def("WORD_TITLE_EMPTY", "Give it a title.");
+pub const WORD_TAKEN: ErrorDef = def("WORD_TAKEN", "Already saved.");
+pub const WORD_KIND_UNKNOWN: ErrorDef = def("WORD_KIND_UNKNOWN", "Pick one of the word kinds.");
+pub const SNAP_TEXT_EMPTY: ErrorDef = def("SNAP_TEXT_EMPTY", "Write something first.");
+pub const STACK_INTO_SELF: ErrorDef = def("STACK_INTO_SELF", "A stack can’t go inside itself.");
+pub const REF_VALUE_EMPTY: ErrorDef = def("REF_VALUE_EMPTY", "Paste a link or type a name.");
+pub const REF_LINK_TAKEN: ErrorDef = def("REF_LINK_TAKEN", "You saved this link already.");
+
 // ---- attachments, timers, feedback
 pub const OWNER_TYPE: ErrorDef = def("OWNER_TYPE", "Unknown owner type");
 pub const TIMER_DURATION: ErrorDef = def("TIMER_DURATION", "A timer must be longer than 0");

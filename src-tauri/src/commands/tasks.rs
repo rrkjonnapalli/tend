@@ -2,6 +2,7 @@
 
 use tauri::State;
 
+use crate::enums::SourceType;
 use crate::error::AppResult;
 use crate::state::AppState;
 use crate::{tags, tasks};
@@ -30,7 +31,7 @@ pub fn task_get(state: State<AppState>, id: String) -> AppResult<TaskDetail> {
         Ok(TaskDetail {
             task: tasks::get(db, &id)?,
             description: tasks::description(db, &id)?,
-            tags: tags::of(db, tags::Owner::Task, &id)?,
+            tags: tags::of(db, SourceType::Task, &id)?,
             labels: crate::labels::of_task(db, &id)?,
         })
     })

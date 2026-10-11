@@ -35,3 +35,16 @@ fn default_rows_cant_be_deleted() {
     let conn = open_memory();
     assert!(rows::delete(&conn, EnumKind::TaskStatus, "DONE").is_err());
 }
+
+#[test]
+fn papers_and_reference_kinds_read_back_and_unknowns_fall_back() {
+    for paper in Paper::ALL {
+        assert_eq!(Paper::parse(paper.as_str()), paper);
+        let json = serde_json::to_value(paper).unwrap();
+        assert_eq!(json, paper.as_str());
+    }
+    assert_eq!(Paper::parse("FOLDED"), Paper::Scrap);
+    assert_eq!(RefKind::parse("LINK"), RefKind::Link);
+    assert_eq!(RefKind::parse("BOOK"), RefKind::Text);
+    assert_eq!(serde_json::to_value(RefKind::Text).unwrap(), "TEXT");
+}

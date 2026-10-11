@@ -338,3 +338,39 @@ fn a_staged_apply_that_never_committed_is_discarded_by_resume() {
     assert_eq!(v.read("plan.md"), "# Plan\n");
     assert!(!root.join(".tend/staging").exists());
 }
+
+#[test]
+fn a_word_merged_into_another_keeps_its_tags() {
+    let mut v = vault();
+    v.conn
+        .execute_batch(
+            "INSERT INTO tend_enums (id, kind, value, label, created_at, updated_at)
+               VALUES ('t', 'TAG', 'SOUND', 'sound', 0, 0);
+             INSERT INTO words (id, title, created_at, updated_at) VALUES ('w2', 'petrichor', 0, 0);
+             INSERT INTO tend_links
+               (id, source_type, source_id, target_type, target_kind, target_value, created_at, updated_at)
+               VALUES ('l', 'WORD', 'w2', 'ENUM', 'TAG', 'SOUND', 0, 0);",
+        )
+        .unwrap();
+    let local = snapshot(&v.conn).unwrap();
+    // The merge kept the other device's w1 and moved the tag to it.
+    let mut merged = local.clone();
+    let words = merged.get_mut("words").unwrap();
+    let mut kept = words.remove("w2").unwrap();
+    set(&mut kept, "id", json!("w1"));
+    words.insert("w1".into(), kept);
+    let link = merged.get_mut("tend_links").unwrap().get_mut("l").unwrap();
+    set(link, "source_id", json!("w1"));
+    let change = Change {
+        local: &local,
+        merged: &merged,
+        remote: &merged,
+    };
+    let root = v.root().to_path_buf();
+    apply(&mut v.conn, &root, &change, &Remote(HashMap::new()), no_tx).unwrap();
+    assert_eq!(
+        snapshot(&v.conn).unwrap(),
+        merged,
+        "the trigger dropped the link with w2; it is written again for w1"
+    );
+}

@@ -194,6 +194,61 @@ fn tasks_round_trip_through_ipc() {
 }
 
 #[test]
+fn the_library_round_trips_through_ipc() {
+    let h = Harness::new();
+    let word = h.ok("word_create", json!({ "word": { "title": "Petrichor" } }));
+    assert_eq!(
+        (word["title"].clone(), word["kind"].clone()),
+        (json!("petrichor"), json!("WORD"))
+    );
+    let id = word["id"].as_str().unwrap().to_string();
+    h.ok("word_tags_set", json!({ "id": id, "tags": ["Sound"] }));
+    let edited = h.ok(
+        "word_update",
+        json!({ "id": id, "patch": { "meaning": "rain on dry ground", "dictionary": null } }),
+    );
+    assert_eq!(edited["tags"], json!(["sound"]));
+    assert_eq!(
+        h.ok("words_list", json!({}))[0]["meaning"],
+        "rain on dry ground"
+    );
+    assert_eq!(
+        h.ok("word_kinds_list", json!({})).as_array().unwrap().len(),
+        6
+    );
+    let taken = h
+        .call("word_create", json!({ "word": { "title": "PETRICHOR" } }))
+        .unwrap_err();
+    assert_eq!(taken["key"], "WORD_TAKEN");
+
+    let stack = h.ok("stack_create", json!({ "parent": null, "name": "Haiku" }));
+    let snap = h.ok(
+        "snap_create",
+        json!({ "snap": { "text": "first rain", "stackId": stack["id"], "paper": "STICKY", "color": "#d4b23b" } }),
+    );
+    assert_eq!(snap["paper"], "STICKY");
+    h.ok("stack_remove", json!({ "id": stack["id"] }));
+    let board = h.ok("snaps_board", json!({}));
+    assert_eq!(board["snaps"][0]["stackId"], Value::Null);
+    assert_eq!(board["stacks"], json!([]));
+    let bad = h.call(
+        "snap_create",
+        json!({ "snap": { "text": "x", "paper": "FOLDED" } }),
+    );
+    assert!(bad.is_err(), "an unknown paper is refused");
+
+    let link = json!({ "reference": { "kind": "LINK", "value": "https://svelte.dev/" } });
+    let r = h.ok("ref_create", link.clone());
+    assert_eq!(r["urlKey"], "svelte.dev");
+    assert_eq!(
+        h.call("ref_create", link).unwrap_err()["key"],
+        "REF_LINK_TAKEN"
+    );
+    h.ok("ref_delete", json!({ "id": r["id"] }));
+    assert_eq!(h.ok("refs_list", json!({})), json!([]));
+}
+
+#[test]
 fn people_round_trip_through_ipc() {
     let h = Harness::new();
     let id = h.ok("person_create", json!({ "first": "Ravi", "last": "Kumar" }));

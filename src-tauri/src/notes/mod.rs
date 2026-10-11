@@ -210,7 +210,7 @@ fn attachment_of(conn: &Connection, note_id: &str) -> AppResult<String> {
 pub fn read(conn: &Connection, dir: &Path, id: &str) -> AppResult<NoteDoc> {
     let row = row(conn, id)?;
     let text = fs::read_to_string(note_path(dir, &row))?;
-    let tags = crate::tags::of(conn, crate::tags::Owner::Note, id)?;
+    let tags = crate::tags::of(conn, crate::enums::SourceType::Note, id)?;
     Ok(NoteDoc { row, text, tags })
 }
 

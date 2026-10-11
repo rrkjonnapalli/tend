@@ -286,7 +286,7 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 ---
 
-## L1 · Library data and Rust core  ☐
+## L1 · Library data and Rust core  ☑
 
 **Read:** decisions §15, §16 · `tend-library-plan.md` *Data model*
 
@@ -299,6 +299,8 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 **Done when**
 - `cargo test` covers CRUD, the lowercase rule, the cycle refusal, remove-moves-up, and sync merges: a duplicate word, a duplicate link, an orphan snap, a stack cycle, a deleted kind. Merging gives the same rows on both devices.
 - By hand: two vaults synced through one remote agree on words, snaps, stacks, references and their tags, including a word added on both while offline.
+
+**Status (2026-10-12):** built. Commands: `words_list`, `word_kinds_list`, `word_create/update/delete`, `snaps_board`, `snap_create/update/delete`, `stack_create/rename/move/remove`, `refs_list`, `ref_create/update/delete`, and `word|snap|ref_tags_set`. Papers and reference kinds are code enums (`Paper`, `RefKind`); `tags::Owner` was replaced by `SourceType`. `MergeRule` names its rows' link source type instead of link tables, since every link is in `tend_links`. A snap edit, pin or move sets `updated_at`, so it moves to the front of its level (sync needs the new time). Word kinds are list-only in Rust; adding and editing them comes with Settings in L4. Open: the two-vault sync check by hand.
 
 ---
 

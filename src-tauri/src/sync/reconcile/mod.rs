@@ -5,7 +5,7 @@
 //!    changed takes the newer row's value (`updated_at`; equal times: the line that sorts
 //!    higher); a deletion on either side wins.
 //! 2. Unique keys: rows that collide after merging are merged or renamed, never dropped with
-//!    their content (§9.2).
+//!    their content (§9.2). Words and links that share a key become one row (`MERGE_ON_KEY`).
 //! 3. References: rows pointing at something that no longer exists are fixed or dropped, parents
 //!    first, until nothing changes (§9.3).
 
@@ -22,6 +22,7 @@ use super::shards::{Row, Snapshot};
 use crate::enums::rows::POSITION;
 use crate::enums::{EnumKind, SourceType, TargetType};
 use crate::names;
+use crate::words;
 
 /// The three versions a merge works from: the last agreed state and each side's.
 #[derive(Clone, Copy)]
@@ -173,7 +174,37 @@ const KEEP_SMALLEST: &[(&str, &[&str])] = &[
 /// stay. (table, name column, group column)
 const UNIQUE_NAMES: &[(&str, &str, &str)] = &[("tend_enums", "label", "kind")];
 
+/// A table whose rows sharing a key become one row: the smallest id is kept, `merge` makes its
+/// fields from the two rows, and the links (`tend_links`) of the others move to it. `merge` must be
+/// pure, so every device makes the same row.
+struct MergeRule {
+    table: &'static str,
+    key: &'static [&'static str],
+    /// The link source type of this table's rows.
+    source: SourceType,
+    merge: fn(&Row, &Row) -> Row,
+}
+
+const MERGE_ON_KEY: &[MergeRule] = &[
+    MergeRule {
+        table: "words",
+        key: &["title"],
+        source: SourceType::Word,
+        merge: newest_fill_empty,
+    },
+    MergeRule {
+        table: "refs",
+        key: &["url_key"],
+        source: SourceType::Ref,
+        merge: newest_fill_empty,
+    },
+];
+
 fn fix_unique_keys(merged: &mut Snapshot) {
+    // Before KEEP_SMALLEST, which then drops links doubled by the move.
+    for rule in MERGE_ON_KEY {
+        merge_on_key(merged, rule);
+    }
     for (table, columns) in KEEP_SMALLEST {
         if let Some(rows) = merged.get_mut(table) {
             keep_smallest(rows, columns);
@@ -198,6 +229,81 @@ fn key_of(row: &Row, columns: &[&str]) -> Vec<Value> {
         .iter()
         .map(|c| row.get(*c).cloned().unwrap_or(Value::Null))
         .collect()
+}
+
+fn is_empty(value: Option<&Value>) -> bool {
+    match value {
+        None | Some(Value::Null) => true,
+        Some(Value::String(s)) => s.is_empty(),
+        _ => false,
+    }
+}
+
+/// Every field from the newer row (`updated_at`, ties as in `newer`); a field empty there comes
+/// from the other row.
+fn newest_fill_empty(a: &Row, b: &Row) -> Row {
+    let newest = newer(a, b);
+    let other = if std::ptr::eq(newest, a) { b } else { a };
+    let mut out = newest.clone();
+    for (column, value) in other {
+        if is_empty(out.get(column)) && !is_empty(Some(value)) {
+            out.insert(column.clone(), value.clone());
+        }
+    }
+    out
+}
+
+/// Ids of rows sharing a key (a key with an empty part is no key), smallest first; only groups of
+/// two or more.
+fn shared_keys(rows: &Rows, columns: &[&str]) -> Vec<Vec<String>> {
+    let mut groups: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for (id, row) in rows {
+        let key = key_of(row, columns);
+        if key.iter().any(|v| is_empty(Some(v))) {
+            continue;
+        }
+        let key = serde_json::to_string(&key).unwrap_or_default();
+        groups.entry(key).or_default().push(id.clone());
+    }
+    groups.into_values().filter(|ids| ids.len() > 1).collect()
+}
+
+fn merge_on_key(merged: &mut Snapshot, rule: &MergeRule) {
+    let Some(rows) = merged.get_mut(rule.table) else {
+        return;
+    };
+    // Dropped id → the id kept.
+    let mut moved: BTreeMap<String, String> = BTreeMap::new();
+    for ids in shared_keys(rows, rule.key) {
+        let keep = ids[0].clone();
+        let mut row = rows[&keep].clone();
+        for other in &ids[1..] {
+            row = (rule.merge)(&row, &rows[other]);
+            moved.insert(other.clone(), keep.clone());
+        }
+        row.insert("id".into(), Value::String(keep.clone()));
+        for other in &ids[1..] {
+            rows.remove(other);
+        }
+        rows.insert(keep, row);
+    }
+    move_links(merged, rule.source, &moved);
+}
+
+/// Points the links of `source` rows at the row each was merged into.
+fn move_links(merged: &mut Snapshot, source: SourceType, moved: &BTreeMap<String, String>) {
+    let Some(links) = merged.get_mut("tend_links") else {
+        return;
+    };
+    for row in links.values_mut() {
+        if text(row, "source_type") != Some(source.as_str()) {
+            continue;
+        }
+        let kept = text(row, "source_id").and_then(|id| moved.get(id)).cloned();
+        if let Some(kept) = kept {
+            row.insert("source_id".into(), Value::String(kept));
+        }
+    }
 }
 
 fn keep_smallest(rows: &mut Rows, columns: &[&str]) {
@@ -336,6 +442,8 @@ fn fix_pass(merged: &mut Snapshot) -> bool {
     for child in ["my_day", "task_comments"] {
         changed |= drop_missing(merged, child, "task_id", "tasks");
     }
+    changed |= fix_words(merged);
+    changed |= fix_stacks(merged);
     changed |= drop_dangling_links(merged);
     changed
 }
@@ -442,6 +550,86 @@ fn fix_column(row: &mut Row, column: &str, valid: impl Fn(&str) -> bool, fallbac
         row.insert(column.to_string(), fallback);
     }
     changes
+}
+
+/// A word whose kind is gone becomes `OTHER`: never `WORD`, whose lowercasing could make a title
+/// clash after the unique keys were settled.
+fn fix_words(merged: &mut Snapshot) -> bool {
+    let kinds = enum_values(merged, EnumKind::WordKind);
+    let Some(rows) = merged.get_mut("words") else {
+        return false;
+    };
+    let mut changed = false;
+    for row in rows.values_mut() {
+        let fallback = Value::String(words::OTHER.into());
+        changed |= fix_column(row, "kind", |k| kinds.contains(k), fallback);
+    }
+    changed
+}
+
+/// Snaps and stacks whose stack is gone go to the board; stacks nested in each other (each moved
+/// into the other on a different device) are untangled by moving the one with the larger id out.
+fn fix_stacks(merged: &mut Snapshot) -> bool {
+    let stacks = ids(merged, "snap_stacks");
+    let mut changed = false;
+    for (table, column) in [("snaps", "stack_id"), ("snap_stacks", "parent_id")] {
+        let Some(rows) = merged.get_mut(table) else {
+            continue;
+        };
+        for row in rows.values_mut() {
+            changed |= fix_column(row, column, |s| stacks.contains(s), Value::Null);
+        }
+    }
+    changed | break_stack_cycle(merged)
+}
+
+/// The parent of each stack that has one.
+fn stack_parents(merged: &Snapshot) -> BTreeMap<String, String> {
+    let rows = merged
+        .get("snap_stacks")
+        .into_iter()
+        .flat_map(BTreeMap::iter);
+    rows.filter_map(|(id, r)| Some((id.clone(), text(r, "parent_id")?.to_string())))
+        .collect()
+}
+
+/// The stacks of one cycle, if there is any. A walk up from a stack in a cycle comes back to it
+/// within as many steps as there are stacks.
+fn stack_cycle(parents: &BTreeMap<String, String>) -> Option<Vec<String>> {
+    for start in parents.keys() {
+        let mut path = vec![start.clone()];
+        let mut current = start;
+        for _ in 0..parents.len() {
+            let Some(parent) = parents.get(current) else {
+                break;
+            };
+            if parent == start {
+                return Some(path);
+            }
+            path.push(parent.clone());
+            current = parent;
+        }
+    }
+    None
+}
+
+/// Moves the stack with the largest id of one cycle to the board. One per pass: the passes repeat
+/// until none is left.
+fn break_stack_cycle(merged: &mut Snapshot) -> bool {
+    let Some(cycle) = stack_cycle(&stack_parents(merged)) else {
+        return false;
+    };
+    let Some(last) = cycle.iter().max() else {
+        return false;
+    };
+    let row = merged
+        .get_mut("snap_stacks")
+        .and_then(|rows| rows.get_mut(last));
+    let Some(row) = row else {
+        return false;
+    };
+    row.insert("parent_id".into(), Value::Null);
+    true
 }
 
 /// The values of one enum kind.

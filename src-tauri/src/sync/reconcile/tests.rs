@@ -411,3 +411,183 @@ fn a_fallback_the_rules_refuse_too_is_not_a_change_every_pass() {
         "the second pass has nothing left to do"
     );
 }
+
+fn word(id: &str, title: &str, meaning: &str, notes: &str, at: i64) -> Value {
+    json!({ "id": id, "title": title, "kind": "WORD", "meaning": meaning, "notes": notes, "dictionary": null, "updated_at": at })
+}
+
+fn word_kinds() -> Value {
+    enum_row("WORD_KIND:WORD", EnumKind::WordKind, "WORD", "word", 0)
+}
+
+fn word_tag(id: &str, word: &str, tag: &str) -> Value {
+    let mut link = tag_link(id, word, tag, 1);
+    link["source_type"] = json!(SourceType::Word.as_str());
+    link
+}
+
+#[test]
+fn the_same_word_added_on_two_devices_becomes_one() {
+    let base = snap(&[(
+        "tend_enums",
+        vec![
+            word_kinds(),
+            enum_row("T1", EnumKind::Tag, "READING", "reading", 0),
+            enum_row("T2", EnumKind::Tag, "SOUND", "sound", 0),
+        ],
+    )]);
+    let mut local = base.clone();
+    local.insert(
+        "words",
+        BTreeMap::from([("w1".into(), row(word("w1", "petrichor", "", "rain", 5)))]),
+    );
+    local.insert(
+        "tend_links",
+        BTreeMap::from([("l1".into(), row(word_tag("l1", "w1", "READING")))]),
+    );
+    let mut remote = base.clone();
+    remote.insert(
+        "words",
+        BTreeMap::from([(
+            "w2".into(),
+            row(word("w2", "petrichor", "smell of rain", "", 9)),
+        )]),
+    );
+    remote.insert(
+        "tend_links",
+        BTreeMap::from([
+            ("l2".into(), row(word_tag("l2", "w2", "READING"))),
+            ("l3".into(), row(word_tag("l3", "w2", "SOUND"))),
+        ]),
+    );
+    let merged = reconcile(&Sides {
+        base: &base,
+        local: &local,
+        remote: &remote,
+    });
+    let words: Vec<&String> = merged["words"].keys().collect();
+    assert_eq!(words, vec!["w1"], "the smaller id is kept");
+    let w = &merged["words"]["w1"];
+    assert_eq!(
+        (text(w, "meaning"), text(w, "notes")),
+        (Some("smell of rain"), Some("rain")),
+        "the newer row's fields, an empty one filled from the other"
+    );
+    let tags: Vec<(&str, &str)> = merged["tend_links"]
+        .values()
+        .map(|l| {
+            (
+                text(l, "source_id").unwrap(),
+                text(l, "target_value").unwrap(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        tags,
+        vec![("w1", "READING"), ("w1", "SOUND")],
+        "tags moved, doubles dropped"
+    );
+    let flipped = reconcile(&Sides {
+        base: &base,
+        local: &remote,
+        remote: &local,
+    });
+    assert_eq!(merged, flipped, "the same on both devices");
+}
+
+#[test]
+fn the_same_link_saved_on_two_devices_becomes_one() {
+    let link = |id: &str, why: &str, at: i64| json!({ "id": id, "kind": "LINK", "value": "https://svelte.dev", "title": null, "why": why, "url_key": "svelte.dev", "updated_at": at });
+    let text_ref = json!({ "id": "r9", "kind": "TEXT", "value": "Perfect Days", "title": null, "why": "", "url_key": null, "updated_at": 1 });
+    let empty = Snapshot::new();
+    let l = snap(&[("refs", vec![link("r1", "runes", 1), text_ref.clone()])]);
+    let mut text_twin = text_ref.clone();
+    text_twin["id"] = json!("r8");
+    let r = snap(&[("refs", vec![link("r2", "", 2), text_twin])]);
+    let merged = reconcile(&Sides {
+        base: &empty,
+        local: &l,
+        remote: &r,
+    });
+    let ids: Vec<&String> = merged["refs"].keys().collect();
+    assert_eq!(
+        ids,
+        vec!["r1", "r8", "r9"],
+        "text references have no key and both stay"
+    );
+    assert_eq!(text(&merged["refs"]["r1"], "why"), Some("runes"));
+}
+
+#[test]
+fn snaps_and_stacks_whose_stack_is_gone_go_to_the_board() {
+    let stack = |id: &str, parent: Option<&str>| json!({ "id": id, "parent_id": parent, "name": id, "updated_at": 0 });
+    let base = snap(&[("snap_stacks", vec![stack("s1", None)])]);
+    let mut local = base.clone();
+    local.get_mut("snap_stacks").unwrap().remove("s1");
+    let mut remote = base.clone();
+    remote
+        .get_mut("snap_stacks")
+        .unwrap()
+        .insert("s2".into(), row(stack("s2", Some("s1"))));
+    remote.insert(
+        "snaps",
+        BTreeMap::from([(
+            "n".into(),
+            row(json!({ "id": "n", "stack_id": "s1", "text": "x", "updated_at": 1 })),
+        )]),
+    );
+    let merged = reconcile(&Sides {
+        base: &base,
+        local: &local,
+        remote: &remote,
+    });
+    assert_eq!(merged["snap_stacks"]["s2"]["parent_id"], Value::Null);
+    assert_eq!(merged["snaps"]["n"]["stack_id"], Value::Null);
+}
+
+#[test]
+fn stacks_nested_in_each_other_are_untangled() {
+    let stack = |id: &str, parent: Option<&str>, at: i64| json!({ "id": id, "parent_id": parent, "name": id, "updated_at": at });
+    let base = snap(&[(
+        "snap_stacks",
+        vec![stack("a", None, 0), stack("b", None, 0)],
+    )]);
+    // One device moves a into b, the other b into a.
+    let local = snap(&[(
+        "snap_stacks",
+        vec![stack("a", Some("b"), 1), stack("b", None, 0)],
+    )]);
+    let remote = snap(&[(
+        "snap_stacks",
+        vec![stack("a", None, 0), stack("b", Some("a"), 1)],
+    )]);
+    let merged = reconcile(&Sides {
+        base: &base,
+        local: &local,
+        remote: &remote,
+    });
+    let parent = |id: &str| merged["snap_stacks"][id]["parent_id"].clone();
+    assert_eq!((parent("a"), parent("b")), (json!("b"), Value::Null));
+}
+
+#[test]
+fn a_word_whose_kind_is_gone_becomes_other() {
+    let slang = enum_row("K", EnumKind::WordKind, "SLANG", "slang", 6);
+    let base = snap(&[("tend_enums", vec![word_kinds(), slang]), ("words", vec![])]);
+    let mut local = base.clone();
+    local.get_mut("tend_enums").unwrap().remove("K");
+    let mut remote = base.clone();
+    let mut w = word("w", "Gnarly", "", "", 1);
+    w["kind"] = json!("SLANG");
+    remote.get_mut("words").unwrap().insert("w".into(), row(w));
+    let merged = reconcile(&Sides {
+        base: &base,
+        local: &local,
+        remote: &remote,
+    });
+    let w = &merged["words"]["w"];
+    assert_eq!(
+        (text(w, "kind"), text(w, "title")),
+        (Some("OTHER"), Some("Gnarly"))
+    );
+}

@@ -282,15 +282,15 @@ with their content:
 | Two notes with the same path | keep both; the note with the larger id gets the next free suffix (`plan_1`) and its file is renamed (logged in `path_log`) |
 
 **Merging on a key (`MERGE_ON_KEY`).** Some tables merge two rows that share a key into one
-instead of keeping both. Each entry names the table, the key columns, the link tables that point at
-the row, and a merge function; another table joins by adding an entry and, if it needs one, its own
-function:
+instead of keeping both. Each entry names the table, the key columns, the link source type of its
+rows (their links live in `tend_links`), and a merge function; another table joins by adding an
+entry and, if it needs one, its own function:
 
 ```rust
 struct MergeRule {
     table: &'static str,
     key: &'static [&'static str],
-    links: &'static [(&'static str, &'static str)], // (link table, column pointing at the row)
+    source: SourceType, // its rows' links: tend_links.source_type
     merge: fn(&Row, &Row) -> Row,
 }
 ```
@@ -301,7 +301,10 @@ struct MergeRule {
 | `refs` | `url_key` | `newest_fill_empty` |
 
 - The smaller id survives. Links that pointed at the other row are moved to it, then the other row
-  is deleted. This runs before `KEEP_SMALLEST`, which then drops any doubled links.
+  is deleted. This runs before `KEEP_SMALLEST`, which then drops any doubled links. A key with an
+  empty part (a text reference's NULL `url_key`) is no key: those rows all stay.
+- Applying it, deleting the dropped row fires its trigger, which removes the moved links from the
+  database; they are written again because an update that finds no row inserts it.
 - `newest_fill_empty` takes every field from the row with the newer `updated_at` and fills its empty
   fields from the other row. A field filled on both sides keeps the newer row's value (rows have one
   `updated_at`, not one per field). Equal `updated_at` is broken like any other tie: by comparing

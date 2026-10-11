@@ -1,9 +1,11 @@
 //! The shared tag pool: `TAG` rows of `tend_enums`. A tag is its slug under the name rule
-//! (`ui_design`), kept as the label; its value is the slug in capitals (`UI_DESIGN`). Notes and
-//! tasks carry tags through `tend_links`. Tags are never renamed.
+//! (`ui_design`), kept as the label; its value is the slug in capitals (`UI_DESIGN`). Notes, tasks
+//! and Library items carry tags through `tend_links`. Tags are never renamed.
 
 #[cfg(test)]
 mod tests;
+
+use std::collections::HashMap;
 
 use rusqlite::Connection;
 use serde_json::Map;
@@ -16,23 +18,6 @@ use crate::links::{self, Source};
 use crate::names;
 
 const KIND: EnumKind = EnumKind::Tag;
-
-/// Which record a tag list belongs to.
-#[derive(Clone, Copy)]
-pub enum Owner {
-    Note,
-    Task,
-}
-
-impl Owner {
-    fn source(self, id: &str) -> Source<'_> {
-        let kind = match self {
-            Owner::Note => SourceType::Note,
-            Owner::Task => SourceType::Task,
-        };
-        Source { kind, id }
-    }
-}
 
 /// A stored value back to the tag as shown.
 fn shown(value: &str) -> String {
@@ -49,9 +34,22 @@ pub fn all(conn: &Connection) -> AppResult<Vec<String>> {
     Ok(tags)
 }
 
-pub fn of(conn: &Connection, owner: Owner, id: &str) -> AppResult<Vec<String>> {
-    let values = links::enum_values(conn, owner.source(id), KIND)?;
+pub fn of(conn: &Connection, owner: SourceType, id: &str) -> AppResult<Vec<String>> {
+    let source = Source { kind: owner, id };
+    let values = links::enum_values(conn, source, KIND)?;
     Ok(values.iter().map(|v| shown(v)).collect())
+}
+
+/// The tags of every record of one type that has any, by record id, each list sorted.
+pub fn by_record(conn: &Connection, owner: SourceType) -> AppResult<HashMap<String, Vec<String>>> {
+    let mut out: HashMap<String, Vec<String>> = HashMap::new();
+    for (id, value) in links::enum_pairs(conn, owner, KIND)? {
+        out.entry(id).or_default().push(shown(&value));
+    }
+    for tags in out.values_mut() {
+        tags.sort();
+    }
+    Ok(out)
 }
 
 /// The tags typed text names, as shown: each slugged, blanks and duplicates dropped, in order.
@@ -83,11 +81,11 @@ fn ensure(conn: &Connection, tag: &str) -> AppResult<String> {
 /// ignored; tags no longer used anywhere stay in the pool.
 pub fn set(
     conn: &mut Connection,
-    owner: Owner,
+    owner: SourceType,
     id: &str,
     names: &[String],
 ) -> AppResult<Vec<String>> {
-    let source = owner.source(id);
+    let source = Source { kind: owner, id };
     in_transaction(conn, |tx| {
         let mut values = Vec::new();
         for tag in tag_names(names) {

@@ -245,7 +245,77 @@ CREATE TRIGGER task_comments_drop_links AFTER DELETE ON task_comments
 BEGIN DELETE FROM tend_links WHERE source_type = 'COMMENT' AND source_id = OLD.id; END;
 
 -------------------------------------------------------------------------------
--- 6. Timers (local to the device)
+-- 6. Library: words, snaps (in stacks), references (docs/decisions.md §15)
+-------------------------------------------------------------------------------
+-- Word kinds are WORD_KIND rows in tend_enums; `meta.lookup` says whether the dictionary is asked.
+INSERT INTO tend_enums (id, kind, value, label, is_default, meta, created_at, updated_at) VALUES
+  ('WORD_KIND:WORD',   'WORD_KIND', 'WORD',   'word',           1, '{"lookup":true,"position":0}',  0, 0),
+  ('WORD_KIND:IDIOM',  'WORD_KIND', 'IDIOM',  'idiom',          1, '{"lookup":true,"position":1}',  0, 0),
+  ('WORD_KIND:PHRASE', 'WORD_KIND', 'PHRASE', 'phrase',         1, '{"lookup":true,"position":2}',  0, 0),
+  ('WORD_KIND:ABBR',   'WORD_KIND', 'ABBR',   'abbr',           1, '{"lookup":false,"position":3}', 0, 0),
+  ('WORD_KIND:TERM',   'WORD_KIND', 'TERM',   'term / concept', 1, '{"lookup":false,"position":4}', 0, 0),
+  ('WORD_KIND:OTHER',  'WORD_KIND', 'OTHER',  'something else', 1, '{"lookup":false,"position":5}', 0, 0);
+
+-- A title is unique by exact match; a WORD title is saved in lowercase (checked in the app).
+CREATE TABLE words (
+  id         TEXT PRIMARY KEY,
+  title      TEXT NOT NULL UNIQUE,
+  kind       TEXT NOT NULL DEFAULT 'WORD',   -- a WORD_KIND value
+  dictionary TEXT,                           -- JSON from the lookup; NULL when not looked up or not found
+  meaning    TEXT NOT NULL DEFAULT '',       -- markdown
+  notes      TEXT NOT NULL DEFAULT '',       -- markdown
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+) STRICT;
+
+CREATE TRIGGER words_drop_links AFTER DELETE ON words
+BEGIN DELETE FROM tend_links WHERE source_type = 'WORD' AND source_id = OLD.id; END;
+
+-- Stacks group snaps like folders and nest; no stack is inside itself (checked in the app and by
+-- sync). The name is free text; the UI shows "Untitled stack" when it is empty.
+CREATE TABLE snap_stacks (
+  id         TEXT PRIMARY KEY,
+  parent_id  TEXT REFERENCES snap_stacks(id) ON DELETE SET NULL,   -- NULL = on the board
+  name       TEXT NOT NULL DEFAULT '',
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX snap_stacks_parent ON snap_stacks(parent_id);
+
+-- The board orders snaps by pinned, then updated_at; positions are never stored.
+CREATE TABLE snaps (
+  id         TEXT PRIMARY KEY,
+  stack_id   TEXT REFERENCES snap_stacks(id) ON DELETE SET NULL,   -- NULL = loose on the board
+  text       TEXT NOT NULL,
+  paper      TEXT NOT NULL DEFAULT 'SCRAP',  -- SCRAP, SLIP, LINED, PLAIN, STICKY
+  color      TEXT CHECK (color IS NULL OR color GLOB '#[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]'),  -- sticky only
+  pinned     INTEGER NOT NULL DEFAULT 0 CHECK (pinned IN (0, 1)),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX snaps_stack ON snaps(stack_id);
+
+CREATE TRIGGER snaps_drop_links AFTER DELETE ON snaps
+BEGIN DELETE FROM tend_links WHERE source_type = 'SNAP' AND source_id = OLD.id; END;
+
+-- A reference is a link or text. `url_key` is a link's normalised URL (scheme, trailing slash and
+-- case ignored) for the duplicate check; NULL for text.
+CREATE TABLE refs (
+  id         TEXT PRIMARY KEY,
+  kind       TEXT NOT NULL,                  -- LINK, TEXT
+  value      TEXT NOT NULL,                  -- the URL or the text as entered
+  title      TEXT,                           -- fetched or typed; NULL falls back to the value
+  why        TEXT NOT NULL DEFAULT '',
+  url_key    TEXT UNIQUE,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+) STRICT;
+
+CREATE TRIGGER refs_drop_links AFTER DELETE ON refs
+BEGIN DELETE FROM tend_links WHERE source_type = 'REF' AND source_id = OLD.id; END;
+
+-------------------------------------------------------------------------------
+-- 7. Timers (local to the device)
 -------------------------------------------------------------------------------
 -- No background process. The window does the work:
 --   create  → insert (title, ends_at, state 'running')
@@ -264,7 +334,7 @@ CREATE TABLE timers (
 CREATE INDEX timers_running ON timers(state, ends_at);
 
 -------------------------------------------------------------------------------
--- 7. Feedback (local)
+-- 8. Feedback (local)
 -------------------------------------------------------------------------------
 CREATE TABLE feedback (
   id          TEXT PRIMARY KEY,
@@ -276,7 +346,7 @@ CREATE TABLE feedback (
 ) STRICT;
 
 -------------------------------------------------------------------------------
--- 8. Sync bookkeeping (local)
+-- 9. Sync bookkeeping (local)
 -------------------------------------------------------------------------------
 -- The base of the next sync merge (the commit both sides last agreed on) and how the last run went.
 -- One row; local, never synced.

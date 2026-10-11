@@ -18,7 +18,9 @@ mod macos;
 mod names;
 mod notes;
 mod people;
+mod refs;
 mod settings;
+mod snaps;
 mod state;
 mod statuses;
 mod sync;
@@ -27,6 +29,7 @@ mod tasks;
 mod timers;
 mod util;
 mod vault;
+mod words;
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -157,6 +160,26 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
             commands::tasks::task_move,
             commands::tasks::task_delete,
             commands::tags::task_tags_set,
+            commands::tags::word_tags_set,
+            commands::tags::snap_tags_set,
+            commands::tags::ref_tags_set,
+            commands::words::words_list,
+            commands::words::word_kinds_list,
+            commands::words::word_create,
+            commands::words::word_update,
+            commands::words::word_delete,
+            commands::snaps::snaps_board,
+            commands::snaps::snap_create,
+            commands::snaps::snap_update,
+            commands::snaps::snap_delete,
+            commands::snaps::stack_create,
+            commands::snaps::stack_rename,
+            commands::snaps::stack_move,
+            commands::snaps::stack_remove,
+            commands::refs::refs_list,
+            commands::refs::ref_create,
+            commands::refs::ref_update,
+            commands::refs::ref_delete,
             commands::tasks::my_day_set,
             commands::tasks::task_folder_create,
             commands::tasks::task_folder_rename,

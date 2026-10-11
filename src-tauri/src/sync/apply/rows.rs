@@ -21,6 +21,8 @@ const FIRST: &str = "tasks";
 
 /// Columns that must stay unique and can change on an existing row.
 const UNIQUE_COLUMNS: &[(&str, &str)] = &[
+    ("words", "title"),
+    ("refs", "url_key"),
     ("attachments", "path"),
     ("note_folders", "path"),
     ("task_folders", "path"),
@@ -96,9 +98,11 @@ fn upsert(tx: &Transaction, table: &str, local: &Snapshot, merged: &Snapshot) ->
         park_unique(tx, table, column, &changed, local)?;
     }
     for (id, row) in changed {
-        match old(id) {
-            Some(_) => update(tx, table, row)?,
-            None => insert(tx, table, row)?,
+        // A row this device had may be gone already: a trigger drops links with their record,
+        // and a merge (§9.2) moves a link from a dropped word to the one kept.
+        let updated = old(id).is_some() && update(tx, table, row)? > 0;
+        if !updated {
+            insert(tx, table, row)?;
         }
     }
     Ok(())
@@ -127,7 +131,8 @@ fn park_unique(
     Ok(())
 }
 
-fn update(tx: &Transaction, table: &str, row: &Row) -> AppResult<()> {
+/// Returns how many rows it changed: none when the row isn't there.
+fn update(tx: &Transaction, table: &str, row: &Row) -> AppResult<usize> {
     let columns: Vec<&String> = row.keys().filter(|c| *c != "id").collect();
     let sets: Vec<String> = columns
         .iter()
@@ -141,8 +146,7 @@ fn update(tx: &Transaction, table: &str, row: &Row) -> AppResult<()> {
     );
     let mut values: Vec<SqlValue> = columns.iter().map(|c| to_sql(&row[*c])).collect();
     values.push(to_sql(&row["id"]));
-    tx.execute(&sql, params_from_iter(values))?;
-    Ok(())
+    Ok(tx.execute(&sql, params_from_iter(values))?)
 }
 
 fn insert(tx: &Transaction, table: &str, row: &Row) -> AppResult<()> {

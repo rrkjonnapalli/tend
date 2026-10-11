@@ -72,6 +72,10 @@ const TABLES: &[Table] = &[
     table("tasks"),
     table("my_day"),
     table("task_comments"),
+    table("words"),
+    table("snap_stacks"),
+    table("snaps"),
+    table("refs"),
     // Last: links point at rows of every table above.
     table("tend_links"),
 ];
