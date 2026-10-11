@@ -1,6 +1,6 @@
 //! Snapshot files (spec §8): every synced table written as JSONL under `.tend/sync/`. Rows whose id
 //! is a ULID go into year shards of 10,000 rows in id order (`tasks/2026-001.jsonl`); rows with
-//! natural ids (settings keys, status values, tags, labels, `root`) go into `fixed.jsonl`. Every run
+//! natural ids (settings keys, default enum rows, `root`) go into `fixed.jsonl`. Every run
 //! rebuilds all of them from SQLite and writes only the files whose bytes changed, so Git sees
 //! exactly what changed.
 
@@ -56,28 +56,24 @@ const TABLES: &[Table] = &[
         only: Some(("key", settings::SHARED_KEYS)),
         ..table("settings")
     },
-    table("tags"),
+    table("tend_enums"),
     Table {
         local_columns: &["mtime", "missing_at"],
         ..table("attachments")
     },
-    table("attachment_links"),
     Table {
         local_columns: &["missing_at"],
         ..table("note_folders")
     },
     table("notes"),
-    table("note_tags"),
     table("people"),
     table("person_contacts"),
-    table("statuses"),
-    table("task_labels"),
     table("task_folders"),
     table("tasks"),
     table("my_day"),
-    table("task_tags"),
-    table("task_label_links"),
     table("task_comments"),
+    // Last: links point at rows of every table above.
+    table("tend_links"),
 ];
 
 /// The names of the synced tables, in apply order.

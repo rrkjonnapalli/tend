@@ -3,7 +3,7 @@ import { call } from './core.ts';
 
 export const labelsAPI = {
   list: () => call<Label[]>('labels_list'),
-  /** `value` is the label's id in capitals (`DB_SCRIPT`), fixed once added. */
+  /** `value` (`DB_SCRIPT`) becomes the label's id, fixed once added. */
   add: (input: { name: string; value: string; color: string }) => call<Label>('label_add', { args: input }),
   rename: (input: { id: string; name: string }) => call<Label>('label_rename', { args: input }),
   recolor: (input: { id: string; color: string }) => call<Label>('label_recolor', { args: input }),

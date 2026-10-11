@@ -219,21 +219,14 @@ fn delete_rules() {
 }
 
 #[test]
-fn a_custom_status_id_is_its_value() {
+fn default_ids_come_from_kind_and_value() {
     let conn = open_memory();
-    add(
-        &conn,
-        &NewStatus {
-            label: "Blocked",
-            value: "BLOCKED",
-            color: "#d4b106",
-        },
-    )
-    .unwrap();
     let id: String = conn
-        .query_row("SELECT id FROM statuses WHERE value = 'BLOCKED'", [], |r| {
-            r.get(0)
-        })
+        .query_row(
+            "SELECT id FROM tend_enums WHERE kind = 'TASK_STATUS' AND value = 'DONE'",
+            [],
+            |r| r.get(0),
+        )
         .unwrap();
-    assert_eq!(id, "BLOCKED");
+    assert_eq!(id, "TASK_STATUS:DONE");
 }

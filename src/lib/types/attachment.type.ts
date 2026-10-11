@@ -1,4 +1,7 @@
-export type Owner = 'task' | 'note' | 'comment' | 'person';
+import type { SourceType } from '#lib/enums/link.enum.ts';
+
+/** The record attachments hang off. */
+export type Owner = SourceType;
 
 export type AttachmentLink = {
   id: string;

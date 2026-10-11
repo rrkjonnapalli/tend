@@ -2,6 +2,7 @@
   import { zoneNav } from '#lib/actions/zone-nav.action.ts';
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   // Task page: breadcrumb (folders → parent tasks), title, fields, then the collapsible sections.
+  import { SOURCE_TYPE } from '#lib/enums/link.enum.ts';
   import type { Crumb } from '#lib/types/breadcrumb.type.ts';
   import type { Task, TaskPatch } from '#lib/types/task.type.ts';
   import { page } from '$app/state';
@@ -267,7 +268,7 @@
           {/if}
 
           <Section title="Attachments">
-            <Attachments owner="task" {id} />
+            <Attachments owner={SOURCE_TYPE.task} {id} />
           </Section>
 
           <Section title="Comments" extra={commentCount ? String(commentCount) : ''}>

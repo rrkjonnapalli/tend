@@ -73,11 +73,11 @@ fn rows_become_the_merged_rows_whatever_the_order_rules() {
     let mut v = vault();
     v.conn
         .execute_batch(
-            "INSERT INTO statuses (id, value, label, color, position, is_default, updated_at)
-               VALUES ('HOLD', 'HOLD', 'Hold', '#123456', 5, 0, 0);
+            "INSERT INTO tend_enums (id, kind, value, label, created_at, updated_at) VALUES
+               ('h', 'TASK_STATUS', 'HOLD', 'Hold', 0, 0),
+               ('a', 'TASK_LABEL', 'ALPHA', 'Alpha', 0, 0),
+               ('b', 'TASK_LABEL', 'BETA', 'Beta', 0, 0);
              INSERT INTO task_folders (id, path, created_at, updated_at) VALUES ('w', 'work', 0, 0);
-             INSERT INTO task_labels (id, name, color, position, created_at, updated_at) VALUES
-               ('a', 'Alpha', '#123456', 0, 0, 0), ('b', 'Beta', '#123456', 1, 0, 0);
              INSERT INTO tasks (id, path, title, status, order_key, created_at, updated_at)
                VALUES ('t', 'work', 'T', 'HOLD', 'V', 0, 0);",
         )
@@ -85,15 +85,15 @@ fn rows_become_the_merged_rows_whatever_the_order_rules() {
     let local = snapshot(&v.conn).unwrap();
     let mut merged = local.clone();
     // The status and the folder go away while the task that used them moves off them...
-    merged.get_mut("statuses").unwrap().remove("HOLD");
+    merged.get_mut("tend_enums").unwrap().remove("h");
     merged.get_mut("task_folders").unwrap().remove("w");
     let task = merged.get_mut("tasks").unwrap().get_mut("t").unwrap();
     set(task, "status", json!("NOT_STARTED"));
     set(task, "path", json!(""));
     // ...and two labels swap names.
-    let labels = merged.get_mut("task_labels").unwrap();
-    set(labels.get_mut("a").unwrap(), "name", json!("Beta"));
-    set(labels.get_mut("b").unwrap(), "name", json!("Alpha"));
+    let labels = merged.get_mut("tend_enums").unwrap();
+    set(labels.get_mut("a").unwrap(), "label", json!("Beta"));
+    set(labels.get_mut("b").unwrap(), "label", json!("Alpha"));
     let change = Change {
         local: &local,
         merged: &merged,

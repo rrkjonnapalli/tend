@@ -5,12 +5,14 @@ mod comments;
 mod config;
 mod dates;
 mod db;
+mod enums;
 mod error;
 mod feedback;
 mod files;
 #[cfg(test)]
 mod ipc_tests;
 mod labels;
+mod links;
 #[cfg(target_os = "macos")]
 mod macos;
 mod names;

@@ -32,8 +32,9 @@ fn rows_go_to_year_shards_and_natural_ids_to_fixed() {
     person(&conn, &ulid_at(MS_2025, 1), "Ann");
     person(&conn, &ulid_at(MS_2026, 1), "Bo");
     conn.execute(
-        "INSERT INTO tags (id, created_at, updated_at) VALUES ('ops', 0, 0)",
-        [],
+        "INSERT INTO tend_enums (id, kind, value, label, created_at, updated_at)
+         VALUES (?1, 'TAG', 'OPS', 'ops', 0, 0)",
+        [ulid_at(MS_2026, 2)],
     )
     .unwrap();
     let files = render(&snapshot(&conn).unwrap()).unwrap();
@@ -42,8 +43,8 @@ fn rows_go_to_year_shards_and_natural_ids_to_fixed() {
         "manifest.json",
         "people/2025-001.jsonl",
         "people/2026-001.jsonl",
-        "tags/fixed.jsonl",
-        "statuses/fixed.jsonl",
+        "tend_enums/fixed.jsonl",
+        "tend_enums/2026-001.jsonl",
         "task_folders/fixed.jsonl",
         "note_folders/fixed.jsonl",
     ] {
@@ -52,7 +53,9 @@ fn rows_go_to_year_shards_and_natural_ids_to_fixed() {
             "{expected} in {names:?}"
         );
     }
-    assert!(files[&PathBuf::from("tags/fixed.jsonl")].contains(r#""id":"ops""#));
+    let fixed = &files[&PathBuf::from("tend_enums/fixed.jsonl")];
+    assert!(fixed.contains(r#""id":"TASK_STATUS:DONE""#), "default rows");
+    assert!(files[&PathBuf::from("tend_enums/2026-001.jsonl")].contains(r#""value":"OPS""#));
 }
 
 #[test]

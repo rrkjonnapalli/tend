@@ -168,9 +168,9 @@ fn tasks_round_trip_through_ipc() {
     std::fs::write(&file, "x").unwrap();
     h.ok(
         "attachments_add",
-        json!({ "owner": "task", "id": pid, "paths": [file] }),
+        json!({ "owner": "TASK", "id": pid, "paths": [file] }),
     );
-    let links = h.ok("attachments_list", json!({ "owner": "task", "id": pid }));
+    let links = h.ok("attachments_list", json!({ "owner": "TASK", "id": pid }));
     assert_eq!(links[0]["name"], "report.txt");
     assert_eq!(
         std::fs::read_dir(h.vault.path().join(".tend/attachments"))

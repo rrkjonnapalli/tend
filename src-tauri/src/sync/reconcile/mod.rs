@@ -19,6 +19,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde_json::Value;
 
 use super::shards::{Row, Snapshot};
+use crate::enums::rows::POSITION;
+use crate::enums::{EnumKind, SourceType, TargetType};
 use crate::names;
 
 /// The three versions a merge works from: the last agreed state and each side's.
@@ -148,21 +150,28 @@ fn newer<'a>(a: &'a Row, b: &'a Row) -> &'a Row {
 // ---- 2. unique keys
 
 /// Link and path tables: rows with the same key collapse into the one with the smallest id.
+/// Link, path and enum tables: rows with the same key collapse into the one with the smallest id.
+/// Nothing points at an enum or link row by id, so dropping the others leaves nothing dangling.
 const KEEP_SMALLEST: &[(&str, &[&str])] = &[
-    ("note_tags", &["note_id", "tag_id"]),
-    ("task_tags", &["task_id", "tag_id"]),
-    ("task_label_links", &["task_id", "label_id"]),
-    ("my_day", &["task_id", "day"]),
+    ("tend_enums", &["kind", "value"]),
     (
-        "attachment_links",
-        &["owner_type", "owner_id", "attachment_id"],
+        "tend_links",
+        &[
+            "source_type",
+            "source_id",
+            "target_type",
+            "target_kind",
+            "target_value",
+        ],
     ),
+    ("my_day", &["task_id", "day"]),
     ("note_folders", &["path"]),
     ("task_folders", &["path"]),
 ];
 
-/// Display names unique ignoring case: a later row gets " 2", " 3", … so both stay.
-const UNIQUE_NAMES: &[(&str, &str)] = &[("task_labels", "name"), ("statuses", "label")];
+/// Display names unique ignoring case within a group: a later row gets " 2", " 3", … so both
+/// stay. (table, name column, group column)
+const UNIQUE_NAMES: &[(&str, &str, &str)] = &[("tend_enums", "label", "kind")];
 
 fn fix_unique_keys(merged: &mut Snapshot) {
     for (table, columns) in KEEP_SMALLEST {
@@ -170,9 +179,9 @@ fn fix_unique_keys(merged: &mut Snapshot) {
             keep_smallest(rows, columns);
         }
     }
-    for (table, column) in UNIQUE_NAMES {
+    for (table, column, group) in UNIQUE_NAMES {
         if let Some(rows) = merged.get_mut(table) {
-            number_duplicates(rows, column);
+            number_duplicates(rows, column, group);
         }
     }
     if let Some(rows) = merged.get_mut("attachments") {
@@ -206,21 +215,22 @@ fn keep_smallest(rows: &mut Rows, columns: &[&str]) {
     }
 }
 
-fn number_duplicates(rows: &mut Rows, column: &str) {
-    let mut seen: BTreeSet<String> = BTreeSet::new();
+fn number_duplicates(rows: &mut Rows, column: &str, group: &str) {
+    let mut seen: BTreeSet<(String, String)> = BTreeSet::new();
     let ids: Vec<String> = rows.keys().cloned().collect();
     for id in ids {
         let Some(row) = rows.get_mut(&id) else {
             continue;
         };
         let name = text(row, column).unwrap_or_default().to_string();
+        let set = text(row, group).unwrap_or_default().to_string();
         let mut candidate = name.clone();
         let mut n = 2;
-        while seen.contains(&candidate.to_lowercase()) {
+        while seen.contains(&(set.clone(), candidate.to_lowercase())) {
             candidate = format!("{name} {n}");
             n += 1;
         }
-        seen.insert(candidate.to_lowercase());
+        seen.insert((set, candidate.to_lowercase()));
         if candidate != name {
             row.insert(column.to_string(), Value::String(candidate));
         }
@@ -321,17 +331,12 @@ fn fix_pass(merged: &mut Snapshot) -> bool {
     changed |= drop_orphan_folders(merged, "task_folders");
     changed |= drop_missing(merged, "notes", "attachment_id", "attachments");
     changed |= move_homeless_notes(merged);
-    changed |= drop_missing(merged, "note_tags", "note_id", "notes");
-    changed |= drop_missing(merged, "note_tags", "tag_id", "tags");
     changed |= drop_missing(merged, "person_contacts", "person_id", "people");
     changed |= fix_tasks(merged);
-    for child in ["my_day", "task_tags", "task_label_links", "task_comments"] {
+    for child in ["my_day", "task_comments"] {
         changed |= drop_missing(merged, child, "task_id", "tasks");
     }
-    changed |= drop_missing(merged, "task_tags", "tag_id", "tags");
-    changed |= drop_missing(merged, "task_label_links", "label_id", "task_labels");
-    changed |= drop_missing(merged, "attachment_links", "attachment_id", "attachments");
-    changed |= drop_ownerless_links(merged);
+    changed |= drop_dangling_links(merged);
     changed
 }
 
@@ -399,7 +404,7 @@ fn fix_tasks(merged: &mut Snapshot) -> bool {
     let tasks = ids(merged, "tasks");
     let folders = values(merged, "task_folders", "path");
     let people = ids(merged, "people");
-    let statuses = values(merged, "statuses", "value");
+    let statuses = enum_values(merged, EnumKind::TaskStatus);
     let first = first_status(merged);
     let Some(rows) = merged.get_mut("tasks") else {
         return false;
@@ -439,15 +444,35 @@ fn fix_column(row: &mut Row, column: &str, valid: impl Fn(&str) -> bool, fallbac
     changes
 }
 
+/// The values of one enum kind.
+fn enum_values(merged: &Snapshot, kind: EnumKind) -> BTreeSet<String> {
+    enum_rows(merged, kind)
+        .filter_map(|r| text(r, "value"))
+        .map(String::from)
+        .collect()
+}
+
+fn enum_rows(merged: &Snapshot, kind: EnumKind) -> impl Iterator<Item = &Row> {
+    let rows = merged
+        .get("tend_enums")
+        .into_iter()
+        .flat_map(BTreeMap::values);
+    rows.filter(move |r| text(r, "kind") == Some(kind.as_str()))
+}
+
+/// An enum row's `meta.position` (its JSON text parsed); missing sorts last.
+fn position(row: &Row) -> i64 {
+    let meta: Option<Value> = text(row, "meta").and_then(|m| serde_json::from_str(m).ok());
+    let position = meta
+        .as_ref()
+        .and_then(|m| m.get(POSITION))
+        .and_then(Value::as_i64);
+    position.unwrap_or(i64::MAX)
+}
+
 /// The status with the lowest position (ties: the smaller value).
 fn first_status(merged: &Snapshot) -> Option<String> {
-    let rows = merged.get("statuses")?;
-    let position = |r: &Row| {
-        r.get("position")
-            .and_then(Value::as_i64)
-            .unwrap_or(i64::MAX)
-    };
-    rows.values()
+    enum_rows(merged, EnumKind::TaskStatus)
         .min_by_key(|r| {
             (
                 position(r),
@@ -458,24 +483,40 @@ fn first_status(merged: &Snapshot) -> Option<String> {
         .map(String::from)
 }
 
-/// Attachment links whose owner (a task, note, comment or person) is gone.
-fn drop_ownerless_links(merged: &mut Snapshot) -> bool {
-    let owners: BTreeMap<&str, BTreeSet<String>> = [
-        ("task", ids(merged, "tasks")),
-        ("note", ids(merged, "notes")),
-        ("comment", ids(merged, "task_comments")),
-        ("person", ids(merged, "people")),
-    ]
-    .into_iter()
-    .collect();
-    let Some(rows) = merged.get_mut("attachment_links") else {
+/// Links whose source row, attachment or enum value is gone.
+fn drop_dangling_links(merged: &mut Snapshot) -> bool {
+    let sources: BTreeMap<&str, BTreeSet<String>> = SourceType::ALL
+        .into_iter()
+        .map(|s| (s.as_str(), ids(merged, s.table())))
+        .collect();
+    let attachments = ids(merged, "attachments");
+    let enums: BTreeSet<(String, String)> = merged
+        .get("tend_enums")
+        .into_iter()
+        .flat_map(BTreeMap::values)
+        .map(|r| {
+            let kind = text(r, "kind").unwrap_or_default().to_string();
+            (kind, text(r, "value").unwrap_or_default().to_string())
+        })
+        .collect();
+    let target_alive = |row: &Row| {
+        let kind = text(row, "target_kind").unwrap_or_default().to_string();
+        let value = text(row, "target_value").unwrap_or_default().to_string();
+        match text(row, "target_type") {
+            Some(t) if t == TargetType::Enum.as_str() => enums.contains(&(kind, value)),
+            Some(t) if t == TargetType::Attachment.as_str() => attachments.contains(&value),
+            _ => false,
+        }
+    };
+    let source_alive = |row: &Row| {
+        let alive = text(row, "source_type").and_then(|t| sources.get(t));
+        let id = text(row, "source_id").unwrap_or_default();
+        alive.is_some_and(|ids| ids.contains(id))
+    };
+    let Some(rows) = merged.get_mut("tend_links") else {
         return false;
     };
     let before = rows.len();
-    rows.retain(|_, row| {
-        let kind = text(row, "owner_type").unwrap_or_default();
-        let owner = text(row, "owner_id").unwrap_or_default();
-        owners.get(kind).is_some_and(|alive| alive.contains(owner))
-    });
+    rows.retain(|_, row| source_alive(row) && target_alive(row));
     rows.len() != before
 }

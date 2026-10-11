@@ -131,7 +131,7 @@ fn tasks_carry_labels_until_the_label_is_deleted() {
 }
 
 #[test]
-fn a_label_value_is_its_id_in_capitals_and_never_changes() {
+fn a_label_value_is_its_id_and_never_changes() {
     let conn = open_memory();
     let pr = add(
         &conn,
@@ -142,7 +142,7 @@ fn a_label_value_is_its_id_in_capitals_and_never_changes() {
         },
     )
     .unwrap();
-    assert_eq!(pr.id, "pr_review");
+    assert_eq!(pr.id, "PR_REVIEW");
     // Another name, same value: the user is asked to change the value, not given a suffix.
     assert!(add(
         &conn,
@@ -178,9 +178,9 @@ fn a_label_value_is_its_id_in_capitals_and_never_changes() {
             "{bad}"
         );
     }
-    let renamed = rename(&conn, "pr_review", "Code review").unwrap();
+    let renamed = rename(&conn, "PR_REVIEW", "Code review").unwrap();
     assert_eq!(
         (renamed.id.as_str(), renamed.name.as_str()),
-        ("pr_review", "Code review")
+        ("PR_REVIEW", "Code review")
     );
 }

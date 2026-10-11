@@ -1,8 +1,9 @@
 //! The rules for status values, labels, colours and order.
 
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::Connection;
 
-use super::{Status, DONE, FIRST, RESERVED};
+use super::{Status, DONE, FIRST, KIND, RESERVED};
+use crate::enums::rows;
 use crate::error::{errors, AppResult};
 
 /// A new value: UPPER_SNAKE, not a default status's value, not used yet. Returns it trimmed.
@@ -20,12 +21,7 @@ pub fn new_value<'a>(conn: &Connection, value: &'a str) -> AppResult<&'a str> {
             errors::STATUS_RESERVED.with(format!("{value} is reserved for a default status."))
         );
     }
-    let taken = conn
-        .query_row("SELECT 1 FROM statuses WHERE value = ?1", [value], |_| {
-            Ok(())
-        })
-        .optional()?;
-    if taken.is_some() {
+    if rows::get(conn, KIND, value)?.is_some() {
         return Err(
             errors::STATUS_VALUE_TAKEN.with(format!("{value} is already used by another status."))
         );
@@ -39,14 +35,7 @@ pub fn label(conn: &Connection, label: &str, except: Option<&str>) -> AppResult<
     if label.is_empty() {
         return Err(errors::STATUS_LABEL_EMPTY.err());
     }
-    let taken = conn
-        .query_row(
-            "SELECT 1 FROM statuses WHERE label = ?1 COLLATE NOCASE AND value IS NOT ?2",
-            params![label, except],
-            |_| Ok(()),
-        )
-        .optional()?;
-    if taken.is_some() {
+    if rows::label_taken(conn, KIND, label, except)? {
         return Err(errors::STATUS_LABEL_TAKEN.err());
     }
     Ok(label.to_string())

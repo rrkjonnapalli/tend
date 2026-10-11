@@ -22,6 +22,25 @@ fn person(id: &str, name: &str, at: i64) -> Value {
     json!({ "id": id, "first_name": name, "updated_at": at })
 }
 
+/// A `tend_enums` row; `position` goes into its meta JSON.
+fn enum_row(id: &str, kind: EnumKind, value: &str, label: &str, position: i64) -> Value {
+    let meta = json!({ "position": position }).to_string();
+    json!({ "id": id, "kind": kind.as_str(), "value": value, "label": label, "meta": meta, "updated_at": 0 })
+}
+
+/// A task carrying a tag.
+fn tag_link(id: &str, task: &str, tag: &str, at: i64) -> Value {
+    json!({
+        "id": id,
+        "source_type": SourceType::Task.as_str(),
+        "source_id": task,
+        "target_type": TargetType::Enum.as_str(),
+        "target_kind": EnumKind::Tag.as_str(),
+        "target_value": tag,
+        "updated_at": at
+    })
+}
+
 fn names_of(s: &Snapshot) -> Vec<String> {
     s["people"]
         .values()
@@ -106,11 +125,11 @@ fn colliding_links_and_folders_collapse_to_the_smallest_id() {
             "tasks",
             vec![json!({ "id": "t", "path": "", "status": "NOT_STARTED", "updated_at": 0 })],
         ),
-        ("tags", vec![json!({ "id": "ops", "updated_at": 0 })]),
         (
-            "statuses",
+            "tend_enums",
             vec![
-                json!({ "id": "NOT_STARTED", "value": "NOT_STARTED", "label": "Not started", "position": 0, "updated_at": 0 }),
+                enum_row("T1", EnumKind::Tag, "OPS", "ops", 0),
+                enum_row("S1", EnumKind::TaskStatus, "NOT_STARTED", "Not started", 0),
             ],
         ),
         (
@@ -120,9 +139,10 @@ fn colliding_links_and_folders_collapse_to_the_smallest_id() {
     ];
     let base = snap(&tables);
     let mut l = snap(&[
+        ("tend_links", vec![tag_link("b", "t", "OPS", 1)]),
         (
-            "task_tags",
-            vec![json!({ "id": "b", "task_id": "t", "tag_id": "ops", "updated_at": 1 })],
+            "tend_enums",
+            vec![enum_row("T3", EnumKind::Tag, "Q4", "q4", 0)],
         ),
         (
             "task_folders",
@@ -130,9 +150,10 @@ fn colliding_links_and_folders_collapse_to_the_smallest_id() {
         ),
     ]);
     let mut r = snap(&[
+        ("tend_links", vec![tag_link("a", "t", "OPS", 1)]),
         (
-            "task_tags",
-            vec![json!({ "id": "a", "task_id": "t", "tag_id": "ops", "updated_at": 1 })],
+            "tend_enums",
+            vec![enum_row("T2", EnumKind::Tag, "Q4", "q4", 0)],
         ),
         (
             "task_folders",
@@ -148,7 +169,13 @@ fn colliding_links_and_folders_collapse_to_the_smallest_id() {
         local: &l,
         remote: &r,
     });
-    assert_eq!(merged["task_tags"].keys().collect::<Vec<_>>(), vec!["a"]);
+    assert_eq!(merged["tend_links"].keys().collect::<Vec<_>>(), vec!["a"]);
+    let enums: Vec<&String> = merged["tend_enums"].keys().collect();
+    assert_eq!(
+        enums,
+        vec!["S1", "T1", "T2"],
+        "the same tag made twice keeps the smaller id"
+    );
     let folders: Vec<&String> = merged["task_folders"].keys().collect();
     assert_eq!(folders, vec!["f1", "root"]);
 }
@@ -158,8 +185,11 @@ fn equal_label_names_get_numbered_and_clashing_note_paths_a_suffix() {
     let empty = Snapshot::new();
     let l = snap(&[
         (
-            "task_labels",
-            vec![json!({ "id": "x", "name": "Review", "updated_at": 1 })],
+            "tend_enums",
+            vec![
+                enum_row("x", EnumKind::TaskLabel, "REVIEW", "Review", 0),
+                enum_row("z", EnumKind::TaskStatus, "REVIEW", "review", 0),
+            ],
         ),
         (
             "attachments",
@@ -168,8 +198,14 @@ fn equal_label_names_get_numbered_and_clashing_note_paths_a_suffix() {
     ]);
     let r = snap(&[
         (
-            "task_labels",
-            vec![json!({ "id": "y", "name": "review", "updated_at": 1 })],
+            "tend_enums",
+            vec![enum_row(
+                "y",
+                EnumKind::TaskLabel,
+                "CODE_REVIEW",
+                "review",
+                0,
+            )],
         ),
         (
             "attachments",
@@ -181,11 +217,15 @@ fn equal_label_names_get_numbered_and_clashing_note_paths_a_suffix() {
         local: &l,
         remote: &r,
     });
-    let labels: Vec<&str> = merged["task_labels"]
+    let labels: Vec<&str> = merged["tend_enums"]
         .values()
-        .map(|r| text(r, "name").unwrap())
+        .map(|r| text(r, "label").unwrap())
         .collect();
-    assert_eq!(labels, vec!["Review", "review 2"]);
+    assert_eq!(
+        labels,
+        vec!["Review", "review 2", "review"],
+        "numbered within a kind; a status may share a label's name"
+    );
     let paths: Vec<&str> = merged["attachments"]
         .values()
         .map(|r| text(r, "path").unwrap())
@@ -202,10 +242,10 @@ fn references_to_gone_rows_are_fixed_or_dropped_in_cascade() {
     let base = snap(&[
         ("people", vec![person("p", "Ann", 0)]),
         (
-            "statuses",
+            "tend_enums",
             vec![
-                json!({ "id": "TODO", "value": "TODO", "label": "To do", "position": 0, "updated_at": 0 }),
-                json!({ "id": "HOLD", "value": "HOLD", "label": "Hold", "position": 5, "updated_at": 0 }),
+                enum_row("TODO", EnumKind::TaskStatus, "TODO", "To do", 0),
+                enum_row("HOLD", EnumKind::TaskStatus, "HOLD", "Hold", 5),
             ],
         ),
         (
@@ -225,7 +265,7 @@ fn references_to_gone_rows_are_fixed_or_dropped_in_cascade() {
     // Local deletes the person, the HOLD status and the folder; remote adds work that uses them.
     let mut local = base.clone();
     local.get_mut("people").unwrap().clear();
-    local.get_mut("statuses").unwrap().remove("HOLD");
+    local.get_mut("tend_enums").unwrap().remove("HOLD");
     local.get_mut("task_folders").unwrap().remove("w");
     local.get_mut("tasks").unwrap().remove("parent");
     let mut remote = base.clone();
@@ -244,6 +284,13 @@ fn references_to_gone_rows_are_fixed_or_dropped_in_cascade() {
             row(json!({ "id": "c", "task_id": "sub", "updated_at": 1 })),
         )]),
     );
+    remote.insert(
+        "tend_links",
+        BTreeMap::from([
+            ("l1".into(), row(tag_link("l1", "sub", "OPS", 1))),
+            ("l2".into(), row(tag_link("l2", "t", "GONE", 1))),
+        ]),
+    );
     let merged = reconcile(&Sides {
         base: &base,
         local: &local,
@@ -259,6 +306,10 @@ fn references_to_gone_rows_are_fixed_or_dropped_in_cascade() {
     assert!(
         merged["task_comments"].is_empty(),
         "the comment went with the subtask"
+    );
+    assert!(
+        merged["tend_links"].is_empty(),
+        "links to a gone task or a missing tag are dropped"
     );
 }
 

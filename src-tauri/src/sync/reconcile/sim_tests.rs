@@ -74,11 +74,13 @@ fn start() -> Snapshot {
     for table in super::super::shards::table_names() {
         s.insert(table, Rows::new());
     }
-    let statuses = s.get_mut("statuses").unwrap();
+    let enums = s.get_mut("tend_enums").unwrap();
     for (value, label, position) in [("NOT_STARTED", "Not started", 0), ("DONE", "Done", 1000)] {
-        statuses.insert(
-            value.into(),
-            row(json!({ "id": value, "value": value, "label": label, "position": position, "updated_at": 0 })),
+        let id = format!("TASK_STATUS:{value}");
+        let meta = json!({ "position": position }).to_string();
+        enums.insert(
+            id.clone(),
+            row(json!({ "id": id, "kind": EnumKind::TaskStatus.as_str(), "value": value, "label": label, "meta": meta, "updated_at": 0 })),
         );
     }
     for table in ["task_folders", "note_folders"] {
@@ -340,7 +342,7 @@ fn delete_task_folder(w: &mut World, d: usize) {
 fn add_task(w: &mut World, d: usize) {
     let snap = &w.devices[d].snap;
     let paths = texts(snap, "task_folders", "path");
-    let statuses = texts(snap, "statuses", "value");
+    let statuses = kind_values(snap, EnumKind::TaskStatus);
     let people = keys(snap, "people");
     let tops: Vec<(String, String)> = snap["tasks"]
         .iter()
@@ -372,7 +374,7 @@ fn add_task(w: &mut World, d: usize) {
 
 fn edit_task(w: &mut World, d: usize) {
     let ids = keys(&w.devices[d].snap, "tasks");
-    let statuses = texts(&w.devices[d].snap, "statuses", "value");
+    let statuses = kind_values(&w.devices[d].snap, EnumKind::TaskStatus);
     let Some(id) = w.rng.pick(&ids).cloned() else {
         return;
     };
@@ -402,7 +404,7 @@ fn remove_task(deleted: &mut BTreeSet<String>, snap: &mut Snapshot, id: &str) {
     }
     snap.get_mut("tasks").unwrap().remove(id);
     deleted.insert(id.to_string());
-    for child in ["task_tags", "task_label_links", "task_comments", "my_day"] {
+    for child in ["task_comments", "my_day"] {
         let rows = snap.get_mut(child).unwrap();
         let gone: Vec<String> = rows
             .iter()
@@ -413,6 +415,20 @@ fn remove_task(deleted: &mut BTreeSet<String>, snap: &mut Snapshot, id: &str) {
             rows.remove(&g);
             deleted.insert(g);
         }
+    }
+    // The trigger tasks_drop_links.
+    let links = snap.get_mut("tend_links").unwrap();
+    let gone: Vec<String> = links
+        .iter()
+        .filter(|(_, r)| {
+            text(r, "source_type") == Some(SourceType::Task.as_str())
+                && text(r, "source_id") == Some(id)
+        })
+        .map(|(id, _)| id.clone())
+        .collect();
+    for g in gone {
+        links.remove(&g);
+        deleted.insert(g);
     }
 }
 
@@ -439,22 +455,63 @@ fn add_comment(w: &mut World, d: usize) {
         .insert(id, comment);
 }
 
-/// Adds a link row unless the pair is already linked.
-fn link(w: &mut World, d: usize, table: &'static str, pair: [(&str, String); 2]) {
-    let linked = w.devices[d].snap[table].values().any(|r| {
-        pair.iter()
-            .all(|(column, value)| text(r, column) == Some(value.as_str()))
+/// The values of one enum kind.
+fn kind_values(snap: &Snapshot, kind: EnumKind) -> Vec<String> {
+    kind_rows(snap, kind)
+        .map(|(_, r)| text(r, "value").unwrap().to_string())
+        .collect()
+}
+
+fn kind_rows(snap: &Snapshot, kind: EnumKind) -> impl Iterator<Item = (&String, &Row)> {
+    snap["tend_enums"]
+        .iter()
+        .filter(move |(_, r)| text(r, "kind") == Some(kind.as_str()))
+}
+
+/// Adds an enum row unless the kind already has the value.
+fn ensure_enum(w: &mut World, d: usize, kind: EnumKind, value: &str, label: &str) {
+    if kind_values(&w.devices[d].snap, kind).contains(&value.to_string()) {
+        return;
+    }
+    let id = w.new_id(d, "e");
+    let at = w.stamp(d);
+    let r = row(json!({
+        "id": id, "kind": kind.as_str(), "value": value, "label": label,
+        "meta": "{}", "updated_at": at,
+    }));
+    w.devices[d]
+        .snap
+        .get_mut("tend_enums")
+        .unwrap()
+        .insert(id, r);
+}
+
+/// Links a task to an enum value unless it already is.
+fn link(w: &mut World, d: usize, task: String, kind: EnumKind, value: String) {
+    let linked = w.devices[d].snap["tend_links"].values().any(|r| {
+        text(r, "source_id") == Some(task.as_str())
+            && text(r, "target_kind") == Some(kind.as_str())
+            && text(r, "target_value") == Some(value.as_str())
     });
     if linked {
         return;
     }
     let id = w.new_id(d, "l");
     let at = w.stamp(d);
-    let mut r = row(json!({ "id": id, "updated_at": at }));
-    for (column, value) in pair {
-        r.insert(column.into(), json!(value));
-    }
-    w.devices[d].snap.get_mut(table).unwrap().insert(id, r);
+    let r = row(json!({
+        "id": id,
+        "source_type": SourceType::Task.as_str(),
+        "source_id": task,
+        "target_type": TargetType::Enum.as_str(),
+        "target_kind": kind.as_str(),
+        "target_value": value,
+        "updated_at": at,
+    }));
+    w.devices[d]
+        .snap
+        .get_mut("tend_links")
+        .unwrap()
+        .insert(id, r);
 }
 
 fn tag_task(w: &mut World, d: usize) {
@@ -463,86 +520,66 @@ fn tag_task(w: &mut World, d: usize) {
         return;
     };
     let tag = ["ops", "ui", "db"][w.rng.below(3)];
-    let at = w.stamp(d);
-    let tags = w.devices[d].snap.get_mut("tags").unwrap();
-    if !tags.contains_key(tag) {
-        tags.insert(tag.into(), row(json!({ "id": tag, "updated_at": at })));
-    }
-    link(
-        w,
-        d,
-        "task_tags",
-        [("task_id", task), ("tag_id", tag.to_string())],
-    );
+    let value = tag.to_uppercase();
+    ensure_enum(w, d, EnumKind::Tag, &value, tag);
+    link(w, d, task, EnumKind::Tag, value);
 }
 
 fn untag_task(w: &mut World, d: usize) {
-    let ids = keys(&w.devices[d].snap, "task_tags");
+    let ids = keys(&w.devices[d].snap, "tend_links");
     let Some(id) = w.rng.pick(&ids).cloned() else {
         return;
     };
-    w.devices[d].snap.get_mut("task_tags").unwrap().remove(&id);
+    w.devices[d].snap.get_mut("tend_links").unwrap().remove(&id);
     w.deleted.insert(id);
 }
 
 const LABELS: [&str; 4] = ["Review", "Script", "Blocked", "Ship"];
 
+fn label_used(snap: &Snapshot, name: &str) -> bool {
+    kind_rows(snap, EnumKind::TaskLabel)
+        .any(|(_, r)| text(r, "label").unwrap().eq_ignore_ascii_case(name))
+}
+
 fn add_label(w: &mut World, d: usize) {
     let name = *w.rng.pick(&LABELS).unwrap();
-    let id = names::slug(name).unwrap();
-    let snap = &w.devices[d].snap;
-    let used = texts(snap, "task_labels", "name")
-        .iter()
-        .any(|n| n.eq_ignore_ascii_case(name));
-    if used || snap["task_labels"].contains_key(&id) {
+    let value = names::slug(name).unwrap().to_uppercase();
+    if label_used(&w.devices[d].snap, name) {
         return;
     }
-    let at = w.stamp(d);
-    let label =
-        row(json!({ "id": id, "name": name, "color": "#123456", "position": 0, "updated_at": at }));
-    w.devices[d]
-        .snap
-        .get_mut("task_labels")
-        .unwrap()
-        .insert(id, label);
+    ensure_enum(w, d, EnumKind::TaskLabel, &value, name);
 }
 
 fn rename_label(w: &mut World, d: usize) {
-    let ids = keys(&w.devices[d].snap, "task_labels");
+    let ids: Vec<String> = kind_rows(&w.devices[d].snap, EnumKind::TaskLabel)
+        .map(|(id, _)| id.clone())
+        .collect();
     let Some(id) = w.rng.pick(&ids).cloned() else {
         return;
     };
     let name = *w.rng.pick(&LABELS).unwrap();
-    let used = texts(&w.devices[d].snap, "task_labels", "name")
-        .iter()
-        .any(|n| n.eq_ignore_ascii_case(name));
-    if used {
+    if label_used(&w.devices[d].snap, name) {
         return;
     }
     let at = w.stamp(d);
     let l = w.devices[d]
         .snap
-        .get_mut("task_labels")
+        .get_mut("tend_enums")
         .unwrap()
         .get_mut(&id)
         .unwrap();
-    l.insert("name".into(), json!(name));
+    l.insert("label".into(), json!(name));
     l.insert("updated_at".into(), json!(at));
 }
 
 fn label_task(w: &mut World, d: usize) {
     let tasks = keys(&w.devices[d].snap, "tasks");
-    let labels = keys(&w.devices[d].snap, "task_labels");
+    let labels = kind_values(&w.devices[d].snap, EnumKind::TaskLabel);
     let (Some(task), Some(label)) = (w.rng.pick(&tasks).cloned(), w.rng.pick(&labels).cloned())
     else {
         return;
     };
-    link(
-        w,
-        d,
-        "task_label_links",
-        [("task_id", task), ("label_id", label)],
-    );
+    link(w, d, task, EnumKind::TaskLabel, label);
 }
 
 fn add_note(w: &mut World, d: usize) {
@@ -605,7 +642,7 @@ fn delete_note(w: &mut World, d: usize) {
 fn check_rules(s: &Snapshot) {
     let has = |table: &str, id: &str| s[table].contains_key(id);
     let folder_paths = texts(s, "task_folders", "path");
-    let statuses = texts(s, "statuses", "value");
+    let statuses = kind_values(s, EnumKind::TaskStatus);
     for t in s["tasks"].values() {
         assert!(
             folder_paths.contains(&text(t, "path").unwrap().to_string()),
@@ -624,10 +661,7 @@ fn check_rules(s: &Snapshot) {
     }
     for (child, column, parent) in [
         ("task_comments", "task_id", "tasks"),
-        ("task_tags", "task_id", "tasks"),
-        ("task_tags", "tag_id", "tags"),
-        ("task_label_links", "task_id", "tasks"),
-        ("task_label_links", "label_id", "task_labels"),
+        ("tend_links", "source_id", "tasks"),
         ("notes", "attachment_id", "attachments"),
     ] {
         for r in s[child].values() {
@@ -646,27 +680,26 @@ fn check_rules(s: &Snapshot) {
     }
     assert_unique(&texts(s, "task_folders", "path"), "task folder paths");
     assert_unique(&texts(s, "attachments", "path"), "attachment paths");
-    let lower: Vec<String> = texts(s, "task_labels", "name")
-        .iter()
-        .map(|n| n.to_lowercase())
+    let lower: Vec<String> = kind_rows(s, EnumKind::TaskLabel)
+        .map(|(_, r)| text(r, "label").unwrap().to_lowercase())
         .collect();
     assert_unique(&lower, "label names");
-    for (table, columns) in [
-        ("task_tags", ["task_id", "tag_id"]),
-        ("task_label_links", ["task_id", "label_id"]),
-    ] {
-        let pairs: Vec<String> = s[table]
-            .values()
-            .map(|r| {
-                format!(
-                    "{}|{}",
-                    text(r, columns[0]).unwrap(),
-                    text(r, columns[1]).unwrap()
-                )
-            })
-            .collect();
-        assert_unique(&pairs, table);
+    let enum_keys: Vec<String> = s["tend_enums"]
+        .values()
+        .map(|r| format!("{}|{}", text(r, "kind").unwrap(), text(r, "value").unwrap()))
+        .collect();
+    assert_unique(&enum_keys, "enum kind + value");
+    let mut links = Vec::new();
+    for r in s["tend_links"].values() {
+        let kind = r["target_kind"].as_str().unwrap();
+        let value = text(r, "target_value").unwrap().to_string();
+        assert!(
+            enum_keys.contains(&format!("{kind}|{value}")),
+            "link target: {r:?}"
+        );
+        links.push(format!("{}|{kind}|{value}", text(r, "source_id").unwrap()));
     }
+    assert_unique(&links, "links");
 }
 
 fn assert_unique(items: &[String], what: &str) {

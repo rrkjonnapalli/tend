@@ -1,88 +1,78 @@
-//! Task labels: a fixed list kept in Settings → Tasks, in a set order. A task carries any number
-//! of them; deleting a label takes it off every task.
+//! Task labels: `TASK_LABEL` rows of `tend_enums`, kept in Settings → Tasks in a set order. A task
+//! carries any number of them through `tend_links`; deleting a label takes it off every task.
 
 #[cfg(test)]
 mod tests;
 
-use rusqlite::{params, Connection, ErrorCode, OptionalExtension};
+use rusqlite::Connection;
 use serde::Serialize;
+use serde_json::{Map, Value};
 
 use crate::colors;
 use crate::db::in_transaction;
-use crate::error::{errors, AppError, AppResult};
+use crate::enums::rows::{self, EnumRow, NewRow, COLOR, POSITION};
+use crate::enums::{EnumKind, SourceType};
+use crate::error::{errors, AppResult};
+use crate::links::{self, Source};
 use crate::names;
-use crate::util::{new_id, now_ms};
+
+const KIND: EnumKind = EnumKind::TaskLabel;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Label {
+    /// The label's value (`DB_SCRIPT`): picked once, never changed.
     pub id: String,
     pub name: String,
     pub color: String,
     pub position: i64,
 }
 
-const ROW_SQL: &str = "SELECT id, name, color, position FROM task_labels";
-
-fn to_label(r: &rusqlite::Row) -> rusqlite::Result<Label> {
-    Ok(Label {
-        id: r.get(0)?,
-        name: r.get(1)?,
-        color: r.get(2)?,
-        position: r.get(3)?,
-    })
+fn to_label(row: EnumRow) -> Label {
+    Label {
+        color: row.text(COLOR),
+        position: row.position(),
+        id: row.value,
+        name: row.label,
+    }
 }
 
 pub fn list(conn: &Connection) -> AppResult<Vec<Label>> {
-    let labels = conn
-        .prepare(&format!("{ROW_SQL} ORDER BY position"))?
-        .query_map([], to_label)?
-        .collect::<Result<_, _>>()?;
+    let labels = rows::list(conn, KIND)?.into_iter().map(to_label).collect();
     Ok(labels)
 }
 
 fn get(conn: &Connection, id: &str) -> AppResult<Label> {
-    conn.query_row(&format!("{ROW_SQL} WHERE id = ?1"), [id], to_label)
-        .optional()?
+    rows::get(conn, KIND, id)?
+        .map(to_label)
         .ok_or_else(|| errors::NOT_FOUND.with("Label was not found"))
 }
 
-/// The trimmed name, which must not be empty.
-fn check_name(name: &str) -> AppResult<String> {
+/// The trimmed name, which must not be empty or another label's (ignoring case).
+fn check_name(conn: &Connection, name: &str, except: Option<&str>) -> AppResult<String> {
     let name = name.trim();
     if name.is_empty() {
         return Err(errors::LABEL_NAME_EMPTY.err());
     }
+    if rows::label_taken(conn, KIND, name, except)? {
+        return Err(errors::LABEL_NAME_TAKEN.err());
+    }
     Ok(name.to_string())
 }
 
-/// A unique-key conflict on insert or rename means another label has this name or id; the
-/// database is the one check for it.
-fn taken_on_conflict(e: rusqlite::Error) -> AppError {
-    match e.sqlite_error_code() {
-        Some(ErrorCode::ConstraintViolation) => errors::LABEL_NAME_TAKEN.err(),
-        _ => e.into(),
-    }
-}
-
-/// A label's value (`DB_SCRIPT`) as its id (`db_script`): the value is the id shown in capitals,
-/// so it follows the name rule. Refuses a value another label already has.
-fn id_of(conn: &Connection, value: &str) -> AppResult<String> {
+/// A label's value (`DB_SCRIPT`): the name rule in capitals. Refuses a value another label has.
+fn check_value(conn: &Connection, value: &str) -> AppResult<String> {
     let value = value.trim();
-    let id = value.to_lowercase();
     let capitals = value == value.to_uppercase();
-    if !capitals || !names::is_valid(&id) {
+    if !capitals || !names::is_valid(&value.to_lowercase()) {
         return Err(errors::LABEL_VALUE.err());
     }
-    let taken = conn
-        .query_row("SELECT 1 FROM task_labels WHERE id = ?1", [&id], |_| Ok(()))
-        .optional()?;
-    if taken.is_some() {
+    if rows::get(conn, KIND, value)?.is_some() {
         return Err(errors::LABEL_VALUE_TAKEN.with(format!(
             "{value} is already used by another label. Change the value."
         )));
     }
-    Ok(id)
+    Ok(value.to_string())
 }
 
 /// A label to add: its name, its value (picked once, never changed) and its color.
@@ -92,43 +82,41 @@ pub struct NewLabel<'a> {
     pub color: &'a str,
 }
 
-/// Adds a label at the end of the list. Its value (shown in capitals, stored as its id) is picked
-/// when it is added and never changes: tasks and other devices refer to the label by it.
+/// Adds a label at the end of the list. Its value is picked when it is added and never changes:
+/// tasks and other devices refer to the label by it.
 pub fn add(conn: &Connection, new: &NewLabel) -> AppResult<Label> {
-    let name = check_name(new.name)?;
-    let id = id_of(conn, new.value)?;
-    let color = new.color;
-    colors::check(color)?;
-    let position: i64 = conn.query_row(
-        "SELECT coalesce(max(position) + 1, 0) FROM task_labels",
-        [],
-        |r| r.get(0),
+    let name = check_name(conn, new.name, None)?;
+    let value = check_value(conn, new.value)?;
+    colors::check(new.color)?;
+    let position = list(conn)?
+        .iter()
+        .map(|l| l.position + 1)
+        .max()
+        .unwrap_or(0);
+    let mut meta = Map::new();
+    meta.insert(COLOR.into(), Value::from(new.color));
+    meta.insert(POSITION.into(), Value::from(position));
+    rows::insert(
+        conn,
+        &NewRow {
+            kind: KIND,
+            value: &value,
+            label: &name,
+            meta,
+        },
     )?;
-    conn.execute(
-        "INSERT INTO task_labels (id, name, color, position, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?5)",
-        params![id, name, color, position, now_ms()],
-    )
-    .map_err(taken_on_conflict)?;
-    get(conn, &id)
+    get(conn, &value)
 }
 
 pub fn rename(conn: &Connection, id: &str, name: &str) -> AppResult<Label> {
-    let name = check_name(name)?;
-    conn.execute(
-        "UPDATE task_labels SET name = ?1, updated_at = ?2 WHERE id = ?3",
-        params![name, now_ms(), id],
-    )
-    .map_err(taken_on_conflict)?;
+    let name = check_name(conn, name, Some(id))?;
+    rows::set_label(conn, KIND, id, &name)?;
     get(conn, id)
 }
 
 pub fn recolor(conn: &Connection, id: &str, color: &str) -> AppResult<Label> {
     colors::check(color)?;
-    conn.execute(
-        "UPDATE task_labels SET color = ?1, updated_at = ?2 WHERE id = ?3",
-        params![color, now_ms(), id],
-    )?;
+    rows::set_meta(conn, KIND, id, COLOR, Value::from(color))?;
     get(conn, id)
 }
 
@@ -142,13 +130,9 @@ pub fn reorder(conn: &mut Connection, ids: &[String]) -> AppResult<()> {
     if proposed != existing {
         return Err(errors::LABEL_ORDER.err());
     }
-    let now = now_ms();
     in_transaction(conn, |tx| {
         for (position, id) in ids.iter().enumerate() {
-            tx.execute(
-                "UPDATE task_labels SET position = ?1, updated_at = ?2 WHERE id = ?3 AND position <> ?1",
-                params![position as i64, now, id],
-            )?;
+            rows::set_meta(tx, KIND, id, POSITION, Value::from(position as i64))?;
         }
         Ok(())
     })
@@ -156,39 +140,35 @@ pub fn reorder(conn: &mut Connection, ids: &[String]) -> AppResult<()> {
 
 /// How many tasks carry the label (shown before deleting it).
 pub fn usage(conn: &Connection, id: &str) -> AppResult<i64> {
-    let count = conn.query_row(
-        "SELECT count(*) FROM task_label_links WHERE label_id = ?1",
-        [id],
-        |r| r.get(0),
-    )?;
-    Ok(count)
+    links::enum_usage(conn, KIND, id)
 }
 
-/// Deletes the label and takes it off every task (ON DELETE CASCADE).
+/// Deletes the label and takes it off every task (trigger `tend_enums_drop_links`).
 pub fn delete(conn: &Connection, id: &str) -> AppResult<()> {
-    conn.execute("DELETE FROM task_labels WHERE id = ?1", [id])?;
-    Ok(())
+    rows::delete(conn, KIND, id)
+}
+
+fn task(id: &str) -> Source<'_> {
+    Source {
+        kind: SourceType::Task,
+        id,
+    }
 }
 
 /// The task's label ids, in the list's order.
 pub fn of_task(conn: &Connection, task_id: &str) -> AppResult<Vec<String>> {
-    let ids = conn
-        .prepare(
-            "SELECT l.id FROM task_label_links x JOIN task_labels l ON l.id = x.label_id
-             WHERE x.task_id = ?1 ORDER BY l.position",
-        )?
-        .query_map([task_id], |r| r.get(0))?
-        .collect::<Result<_, _>>()?;
-    Ok(ids)
+    let carried = links::enum_values(conn, task(task_id), KIND)?;
+    let ordered = list(conn)?
+        .into_iter()
+        .map(|l| l.id)
+        .filter(|id| carried.contains(id))
+        .collect();
+    Ok(ordered)
 }
 
 /// Every (task id, label id) pair, for the task lists and the board.
 pub fn links(conn: &Connection) -> AppResult<Vec<(String, String)>> {
-    let pairs = conn
-        .prepare("SELECT task_id, label_id FROM task_label_links")?
-        .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
-        .collect::<Result<_, _>>()?;
-    Ok(pairs)
+    links::enum_pairs(conn, SourceType::Task, KIND)
 }
 
 /// Replaces the task's labels. Every id must be a configured label.
@@ -200,24 +180,8 @@ pub fn set_for_task(
     for id in ids {
         get(conn, id)?;
     }
-    let current = of_task(conn, task_id)?;
-    let now = now_ms();
-    // Only links that change are written, so unchanged ones keep their ids.
     in_transaction(conn, |tx| {
-        for id in current.iter().filter(|id| !ids.contains(id)) {
-            tx.execute(
-                "DELETE FROM task_label_links WHERE task_id = ?1 AND label_id = ?2",
-                params![task_id, id],
-            )?;
-        }
-        for id in ids.iter().filter(|id| !current.contains(id)) {
-            tx.execute(
-                "INSERT OR IGNORE INTO task_label_links (id, task_id, label_id, updated_at)
-                 VALUES (?1, ?2, ?3, ?4)",
-                params![new_id(), task_id, id, now],
-            )?;
-        }
-        Ok(())
+        links::set_enum_values(tx, task(task_id), KIND, ids)
     })?;
     of_task(conn, task_id)
 }

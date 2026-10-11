@@ -10,7 +10,7 @@
   tasks.loadLabels();
 
   const items = $derived(
-    tasks.labels.map((l): ColorItem => ({ key: l.id, name: l.name, color: l.color, meta: l.id.toUpperCase() })),
+    tasks.labels.map((l): ColorItem => ({ key: l.id, name: l.name, color: l.color, meta: l.id })),
   );
 
   const intro =

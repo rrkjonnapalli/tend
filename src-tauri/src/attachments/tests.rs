@@ -38,8 +38,8 @@ fn files_are_copied_hashed_and_linked() {
     )
     .unwrap();
 
-    add_file(&mut conn, &root, "task", &t.id, &src).unwrap();
-    let links = list(&conn, "task", &t.id).unwrap();
+    add_file(&mut conn, &root, "TASK", &t.id, &src).unwrap();
+    let links = list(&conn, "TASK", &t.id).unwrap();
     assert_eq!(links.len(), 1);
     let l = &links[0];
     assert_eq!(
@@ -63,7 +63,7 @@ fn files_are_copied_hashed_and_linked() {
     );
 
     unlink(&conn, &l.id).unwrap();
-    assert!(list(&conn, "task", &t.id).unwrap().is_empty());
+    assert!(list(&conn, "TASK", &t.id).unwrap().is_empty());
     assert!(path.exists(), "unlinking keeps the file");
     assert!(add_file(&mut conn, &root, "nope", &t.id, &src).is_err());
 }
@@ -80,9 +80,9 @@ fn notes_link_once() {
     )
     .unwrap();
     crate::notes::seed(&conn, "n", "work/q4_plan.md");
-    link_note(&conn, "task", &t.id, "n").unwrap();
-    link_note(&conn, "task", &t.id, "n").unwrap();
-    let links = list(&conn, "task", &t.id).unwrap();
+    link_note(&conn, "TASK", &t.id, "n").unwrap();
+    link_note(&conn, "TASK", &t.id, "n").unwrap();
+    let links = list(&conn, "TASK", &t.id).unwrap();
     assert_eq!(links.len(), 1);
     assert_eq!(
         (links[0].name.as_str(), links[0].folder.as_deref()),

@@ -3,11 +3,11 @@
 //!
 //! 1. Foreign keys are checked at commit (`defer_foreign_keys`), so rows can point at parents that
 //!    arrive later in the same transaction.
-//! 2. Tasks are written first: a status or folder that is going away can only be deleted once no
-//!    kept task points at it (those keys are `ON DELETE RESTRICT`, checked at once).
+//! 2. Tasks are written first: a folder that is going away can only be deleted once no kept task
+//!    points at it (that key is `ON DELETE RESTRICT`, checked at once).
 //! 3. Gone rows are deleted, children first.
-//! 4. Changed and new rows are written, parents first. A unique column that changes (a label's
-//!    name, a path) first gets a placeholder, so two rows swapping values never collide.
+//! 4. Changed and new rows are written, parents first. A unique column that changes (a path)
+//!    first gets a placeholder, so two rows swapping values never collide.
 
 use rusqlite::types::Value as SqlValue;
 use rusqlite::{params_from_iter, Transaction};
@@ -21,8 +21,6 @@ const FIRST: &str = "tasks";
 
 /// Columns that must stay unique and can change on an existing row.
 const UNIQUE_COLUMNS: &[(&str, &str)] = &[
-    ("task_labels", "name"),
-    ("statuses", "label"),
     ("attachments", "path"),
     ("note_folders", "path"),
     ("task_folders", "path"),

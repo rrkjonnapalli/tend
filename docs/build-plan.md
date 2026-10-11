@@ -262,7 +262,7 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 ---
 
-## L0 · One enum table and one link table  ☐
+## L0 · One enum table and one link table  ☑
 
 **Read:** decisions §16 · `docs/schema.sql` §1, §2, §5–§7 · `v1-sync-spec.md` §4.1, §9.2, §9.3
 
@@ -281,6 +281,8 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 - Statuses, labels, tags and attachments behave exactly as before, including sync.
 - Tests: every source type has its clean-up trigger; deleting a folder of tasks leaves no links behind; two devices adding the same tag or status merge into one row; default enum rows land in `fixed.jsonl`.
 - By hand: two vaults synced through one remote agree on statuses, labels, tags and attachment links.
+
+**Status (2026-10-12):** built. `statuses`, `labels`, `tags` and `attachments` keep their public functions and commands; only storage moved, so the UI is unchanged except that a label's id is now its value in capitals (`DB_SCRIPT`) and attachment owners are `SOURCE_TYPE` values (`TASK`). `meta` is one column, so sync merges colour and position as one value (a colour change on one device and a reorder on another: the newer row's `meta` wins). Open: the two-vault sync check by hand.
 
 ---
 
