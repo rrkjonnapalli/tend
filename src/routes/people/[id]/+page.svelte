@@ -17,6 +17,7 @@
   import type { ContactKind, Person, PersonPatch } from '#lib/types/person.type.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
+  import { settings } from '#lib/stores/settings.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
@@ -53,6 +54,12 @@
     people.load();
   }
 
+  /** Asks first unless Settings → General turned that off for persons. */
+  function askDelete() {
+    if (settings.asksDelete('person')) deleting = true;
+    else remove();
+  }
+
   async function remove() {
     deleting = false;
     const name = person ? displayName(person) : '';
@@ -69,7 +76,7 @@
       <PageBar onback={() => nav.back(routes.people)}>
         <Breadcrumbs crumbs={[{ label: PEOPLE_ROOT_NAME, href: routes.people }, { label: displayName(person) }]} />
         {#snippet actions()}
-          <button class="icon-btn" aria-label="Delete person" title="Delete person" onclick={() => (deleting = true)}><Icon name="trash" size={14} /></button>
+          <button class="icon-btn" aria-label="Delete person" title="Delete person" onclick={askDelete}><Icon name="trash" size={14} /></button>
         {/snippet}
       </PageBar>
 

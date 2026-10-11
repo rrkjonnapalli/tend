@@ -24,6 +24,6 @@ export type ColorListOps = {
   remove(key: string): Promise<unknown>;
   /** Reloads the list after a change. */
   reload(): Promise<unknown>;
-  /** Why removing this row needs a confirm (it is in use), or null to remove it at once. */
+  /** What removing this row takes with it (it is in use), for its confirm; null when nothing. */
   removeWarning?(key: string): Promise<string | null>;
 };

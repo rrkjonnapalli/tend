@@ -1,6 +1,6 @@
 <script lang="ts">
   // A colour list in Settings → Tasks (statuses, labels): drag to order, colour swatch, rename
-  // inline, add with an UPPER_SNAKE value, delete (with a confirm when `ops.removeWarning` says so).
+  // inline, add with an UPPER_SNAKE value, delete (always asks; `ops.removeWarning` says what it takes).
   import { onDestroy } from 'svelte';
   import Section from './Section.svelte';
   import ColorListRow from './ColorListRow.svelte';
@@ -94,14 +94,10 @@
     await runRow(key, () => ops.recolor({ key, color }));
   }
 
-  /** A row with nothing depending on it goes at once; one in use asks first. */
+  /** Every delete in Settings asks first; one in use says what it takes with it. */
   async function askRemove(item: ColorItem) {
     const warning = ops.removeWarning ? await ops.removeWarning(item.key) : null;
-    if (warning === null) {
-      await runRow(item.key, () => ops.remove(item.key));
-      return;
-    }
-    deleting = { item, warning };
+    deleting = { item, warning: warning ?? 'This can’t be undone.' };
   }
 
   async function confirmRemove() {

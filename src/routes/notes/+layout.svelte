@@ -6,6 +6,7 @@
   import { page } from '$app/state';
   import Explorer from '#lib/components/Explorer.svelte';
   import { notes } from '#lib/stores/notes.svelte.ts';
+  import { settings } from '#lib/stores/settings.svelte.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
   import { isUnder, join, parentOf } from '#lib/util/names.ts';
   import { NOTES_ROOT_NAME, folderContents } from '#lib/util/note-paths.ts';
@@ -78,6 +79,8 @@
     createLeaf,
     rename,
     move,
+    // A folder always asks; a note asks unless Settings → General turned that off.
+    asksDelete: (item) => item.kind === 'folder' || settings.asksDelete('note'),
     remove,
     reload: () => notes.rescan(),
     contents,

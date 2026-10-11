@@ -1,5 +1,5 @@
 // Every key the app stores in the vault's settings table, in one place.
-import type { QuickKind, Tree } from '#lib/types/ui.type.ts';
+import type { DeleteKind, QuickKind, Tree } from '#lib/types/ui.type.ts';
 
 export const settingKeys = {
   navOpen: 'ui.nav_open',
@@ -19,6 +19,8 @@ export const settingKeys = {
    *  files can't be attached, and sync never commits one. Checked again in Rust. */
   fileLimitMB: 'files.max_mb',
   /** The folder Quick create last used for each kind; folders keep one per tree. */
+  /** Whether deleting a note, task or person asks first; kept on this device. */
+  confirmDelete: (kind: DeleteKind) => `confirm.delete.${kind}`,
   quickLastPath: (kind: QuickKind, tree?: Tree) =>
     kind === 'folder' && tree ? `quick.last_path.folder.${tree}` : `quick.last_path.${kind}`,
 };
@@ -35,6 +37,7 @@ export const settingDefaults = {
   timersSound: true,
   theme: 'system',
   fileLimitMB: 30,
+  confirmDelete: true,
 } as const;
 
 /** The range the file size limit may take (src-tauri/src/files.rs `LIMIT_MB_RANGE`). */
@@ -45,4 +48,12 @@ export const themeChoices = [
   { value: 'system', label: 'System' },
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
+] as const;
+
+/** The delete confirmations that can be turned off, in Settings → General. Folders, statuses and
+ *  labels always ask. */
+export const deleteChoices = [
+  { kind: 'note', label: 'Ask before deleting a note' },
+  { kind: 'task', label: 'Ask before deleting a task' },
+  { kind: 'person', label: 'Ask before deleting a person' },
 ] as const;

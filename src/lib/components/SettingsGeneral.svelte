@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Settings → General: the theme, the file size limit, the timer sound, the vault folder, and notes or folders skipped for breaking the name rule
+  // Settings → General: the theme, the file size limit, the timer sound, delete confirmations, the vault folder, and notes or folders skipped for breaking the name rule
   // (with the name each can be renamed to, and one button to rename them all).
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -11,7 +11,7 @@
   import { plural } from '#lib/util/plural.ts';
   import { fixable } from '#lib/util/skipped.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
-  import { fileLimitRange, settingDefaults, settingKeys, themeChoices } from '#lib/config/settings.config.ts';
+  import { deleteChoices, fileLimitRange, settingDefaults, settingKeys, themeChoices } from '#lib/config/settings.config.ts';
   import NumberSetting from './NumberSetting.svelte';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import type { ThemePref } from '#lib/types/theme.type.ts';
@@ -110,6 +110,20 @@
       onchange={(e) => settings.set(settingKeys.timersSound, e.currentTarget.checked)} />
     Play a sound when a timer ends
   </label>
+</section>
+
+<section class="group">
+  <h2 class="section-title">Confirmations</h2>
+  {#each deleteChoices as c (c.kind)}
+    <label class="check">
+      <input
+        type="checkbox"
+        checked={settings.asksDelete(c.kind)}
+        onchange={(e) => settings.set(settingKeys.confirmDelete(c.kind), e.currentTarget.checked)} />
+      {c.label}
+    </label>
+  {/each}
+  <span class="hint">Deleting a folder, a status or a label always asks.</span>
 </section>
 
 <style>

@@ -297,8 +297,9 @@
   }
 
   function askDelete(row: ExplorerRow) {
-    deleting = row;
     menu = null;
+    if (actions.asksDelete?.(row.item) === false) confirmDelete(row);
+    else deleting = row;
   }
 
   /** The row with the keyboard cursor, when focus is in the tree. */
@@ -324,7 +325,7 @@
       moving = row;
     } else if (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey) {
       e.preventDefault();
-      deleting = row;
+      askDelete(row);
     }
   }
 </script>

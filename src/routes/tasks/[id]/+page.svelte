@@ -150,6 +150,12 @@
     toast.show(`Moved to ${target || rootName}/`);
   }
 
+  /** Asks first unless Settings → General turned that off for tasks. */
+  function askDelete() {
+    if (settings.asksDelete('task')) deleting = true;
+    else remove();
+  }
+
   async function remove() {
     if (!task) return;
     deleting = false;
@@ -216,7 +222,7 @@
         {#if !task.parentId}
           <button class="icon-btn" aria-label="Move to…" title="Move to…" onclick={() => (moving = true)}><Icon name="folder" size={14} /></button>
         {/if}
-        <button class="icon-btn" aria-label="Delete task" title="Delete task" onclick={() => (deleting = true)}><Icon name="trash" size={14} /></button>
+        <button class="icon-btn" aria-label="Delete task" title="Delete task" onclick={askDelete}><Icon name="trash" size={14} /></button>
         <button class="icon-btn" aria-label={widthLabel} title={widthLabel} onclick={toggleWidth}>
           <Icon name={wide ? 'narrow' : 'widen'} size={14} />
         </button>

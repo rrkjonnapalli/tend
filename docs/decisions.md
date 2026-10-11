@@ -50,6 +50,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - **Changing vault:** Settings → General → *Change vault folder…*. This reopens the start-up flow.
 - **File size limit:** 30 MB by default, set in Settings → General → Files (1–90 MB; 0 isn't allowed, it would drop every note). Shared through sync (setting `files.max_mb`), so every device agrees; changing it rescans. A `.md` that size or larger is never indexed; a file that size can't be attached; sync never commits one. A note already indexed that grows to the limit keeps its row unchanged (never marked missing), so nothing syncs as a deletion.
 - **Theme:** Settings → General → Appearance: *System* (default, follows macOS and changes with it), *Light* or *Dark*. Kept per device (setting `ui.theme`, never synced). The dark theme remaps the same token roles (`tokens.css`).
+- **Delete confirmations:** Settings → General → Confirmations: *Ask before deleting a note / a task / a person*, each on by default. Turned off, that delete (page trash button, explorer menu or ⌫) goes at once. Kept per device (settings `confirm.delete.note|task|person`, never synced). Folders, statuses and labels always ask.
 
 ## 3. Start-up page
 
@@ -92,7 +93,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - **Edit in place:** task rows, note rows and subtask rows show a pencil on hover, first in the right-hand part of the row. It turns the title into a field: Enter or leaving saves, Esc cancels. Every in-place edit, explorer rename included, uses the same soft-fill field (no border).
 - **No autocorrect** (nor spellcheck, auto-capitalise, autofill) in any input or textarea; the markdown editors have it off too.
 - **Assignee in task rows:** the person's initials, or a gray "U" (hover: Unassigned); click opens a people search to assign, with Unassign at the bottom. Subtask rows on a task page show it too, after My day.
-- **Labels:** a fixed list in Settings → Tasks → Labels (name + color, drag to order, rename, recolor; a label has a value, like a status: typed when it is added (it starts as the name in capitals, `DB Script` → `DB_SCRIPT`, and can be edited then); a value another label has is refused with a request to change it; it is shown in capitals, stored as the label's id in small letters (`db_script`) and never changes; deleting one in use asks, then takes it off those tasks). A task (or subtask) carries any number, picked on the task page from that list only. Board cards show them as colored dots (up to 4, then +N; hover names them); list rows don't. Tags stay free-typed and shared with notes.
+- **Labels:** a fixed list in Settings → Tasks → Labels (name + color, drag to order, rename, recolor; a label has a value, like a status: typed when it is added (it starts as the name in capitals, `DB Script` → `DB_SCRIPT`, and can be edited then); a value another label has is refused with a request to change it; it is shown in capitals, stored as the label's id in small letters (`db_script`) and never changes; deleting one always asks; one in use says it comes off those tasks). A task (or subtask) carries any number, picked on the task page from that list only. Board cards show them as colored dots (up to 4, then +N; hover names them); list rows don't. Tags stay free-typed and shared with notes.
 - **Colors:** 20 swatches (tokens.css `--sw-*`, `util/swatches.ts`) shared by statuses and labels, plus any color: the system color picker or a typed #rrggbb (Enter applies).
 - **Status dot** in task list rows and subtask rows opens the status list to change it in place (trial; may go).
 - **Width toggle:**
@@ -149,7 +150,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - Moving a folder moves everything inside it. Moving a task moves its subtasks.
 - **Delete:**
   - **Folder:** a dialog shows "It contains N notes and M folders. Everything inside is deleted from disk." You type the **folder name** to enable the red *Delete folder* button.
-  - **Note:** a simple confirmation, with no typing.
+  - **Note:** a simple confirmation, with no typing (can be turned off, see *Delete confirmations*).
   - **Tasks folders:** delete works the same way, with task counts.
 
 ## 6. Tasks
@@ -175,7 +176,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - Fixed once created.
   - Inserted before Done.
 - **Blocked:** values `NOT_STARTED` / `IN_PROGRESS` / `DONE` (any letter case) and duplicate labels.
-- **Deleting:** if any task uses the status → inline red error; otherwise it's deleted.
+- **Deleting:** always asks first; then, if any task uses the status → inline red error; otherwise it's deleted.
 - **Color:** stored as a hex code (`#rrggbb`). The picker offers 10 palette swatches. The color is used for the status dot everywhere; Not started is drawn as a ring.
 - **Settings row:**
   - drag handle (not on first or last) · color dot · label · value (grey) · delete · edit

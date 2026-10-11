@@ -13,6 +13,8 @@ export type ExplorerActions = {
   rename: (item: ExplorerItem, name: string) => Promise<void>;
   move: (item: ExplorerItem, target: string) => Promise<void>;
   remove: (item: ExplorerItem) => Promise<void>;
+  /** False when deleting this item goes at once; left out, every delete asks first. */
+  asksDelete?: (item: ExplorerItem) => boolean;
   reload: () => Promise<void>;
   /** "5 notes and 2 folders" for the delete dialog. */
   contents: (path: string) => string;

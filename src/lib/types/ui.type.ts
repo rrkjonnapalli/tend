@@ -1,5 +1,8 @@
 export type Popup = 'feedback' | 'timers' | null;
 
+/** What a delete confirmation can be turned off for. */
+export type DeleteKind = 'note' | 'task' | 'person';
+
 export type QuickKind = 'note' | 'task' | 'folder' | 'timer';
 
 /** The two folder trees: notes and tasks. */
