@@ -50,7 +50,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - **Changing vault:** Settings → General → *Change vault folder…*. This reopens the start-up flow.
 - **File size limit:** 30 MB by default, set in Settings → General → Files (1–90 MB; 0 isn't allowed, it would drop every note). Shared through sync (setting `files.max_mb`), so every device agrees; changing it rescans. A `.md` that size or larger is never indexed; a file that size can't be attached; sync never commits one. A note already indexed that grows to the limit keeps its row unchanged (never marked missing), so nothing syncs as a deletion.
 - **Theme:** Settings → General → Appearance: *System* (default, follows macOS and changes with it), *Light* or *Dark*. Kept per device (setting `ui.theme`, never synced). The dark theme remaps the same token roles (`tokens.css`).
-- **Delete confirmations:** Settings → General → Confirmations: *Ask before deleting a note / a task / a person*, each on by default. Turned off, that delete (page trash button, explorer menu or ⌫) goes at once. Kept per device (settings `confirm.delete.note|task|person`, never synced). Folders, statuses and labels always ask.
+- **Delete confirmations:** Settings → General → Confirmations: *Ask before deleting a note / a task / a person / a word / a snap / a reference*, each on by default. Turned off, that delete (page trash button, explorer menu or ⌫) goes at once. Kept per device (settings `confirm.delete.note|task|person|word|snap|reference`, never synced). Folders, stacks, statuses, labels and word kinds always ask.
 
 ## 3. Start-up page
 
@@ -76,7 +76,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - A full-width hairline, with icons centred below it and no container.
   - The active section is **violet** with a small dot under it.
   - One caret sits on the line: `⌄` hides the nav, and it becomes `^` at the bottom edge to show it again.
-  - **Sections, centred:** Notes (doc) · Tasks (checkbox) · People (person).
+  - **Sections, centred:** Notes (doc) · Tasks (checkbox) · People (person) · Library (books, §15).
   - **Right side, in order:** *Timer chip* (only while timers run) · Settings (gear) · Feedback.
 - **Timer chip:**
   - A violet pill showing the soonest countdown, e.g. `⏱ 4:32`, plus `+1` when more timers run.
@@ -93,7 +93,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - **Edit in place:** task rows, note rows and subtask rows show a pencil on hover, first in the right-hand part of the row. It turns the title into a field: Enter or leaving saves, Esc cancels. Every in-place edit, explorer rename included, uses the same soft-fill field (no border).
 - **No autocorrect** (nor spellcheck, auto-capitalise, autofill) in any input or textarea; the markdown editors have it off too.
 - **Assignee in task rows:** the person's initials, or a gray "U" (hover: Unassigned); click opens a people search to assign, with Unassign at the bottom. Subtask rows on a task page show it too, after My day.
-- **Labels:** a fixed list in Settings → Tasks → Labels (name + color, drag to order, rename, recolor; a label has a value, like a status: typed when it is added (it starts as the name in capitals, `DB Script` → `DB_SCRIPT`, and can be edited then); a value another label has is refused with a request to change it; it is shown in capitals, stored as the label's id in small letters (`db_script`) and never changes; deleting one always asks; one in use says it comes off those tasks). A task (or subtask) carries any number, picked on the task page from that list only. Board cards show them as colored dots (up to 4, then +N; hover names them); list rows don't. Tags stay free-typed and shared with notes.
+- **Labels:** a fixed list in Settings → Tasks → Labels (name + color, drag to order, rename, recolor; a label has a value, like a status: typed when it is added (it starts as the name in capitals, `DB Script` → `DB_SCRIPT`, and can be edited then); a value another label has is refused with a request to change it; it is shown and stored in capitals (a `TASK_LABEL` row in `tend_enums`, §16) and never changes; deleting one always asks; one in use says it comes off those tasks). A task (or subtask) carries any number, picked on the task page from that list only. Board cards show them as colored dots (up to 4, then +N; hover names them); list rows don't. Tags stay free-typed and shared with notes.
 - **Colors:** 20 swatches (tokens.css `--sw-*`, `util/swatches.ts`) shared by statuses and labels, plus any color: the system color picker or a typed #rrggbb (Enter applies).
 - **Status dot** in task list rows and subtask rows opens the status list to change it in place (trial; may go).
 - **Width toggle:**
@@ -165,6 +165,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - A folder list shows all top-level tasks under that path (recursive), with subtask counts.
 
 ### Statuses (app-wide, Settings → Tasks)
+- Statuses are `TASK_STATUS` rows in `tend_enums` (§16).
 - Each status has a fixed **value** (`NOT_STARTED`) and an editable **label** ("Not started", renameable e.g. to "Ready").
 - Defaults:
   - `NOT_STARTED`: always **first**; new tasks start here.
@@ -224,13 +225,13 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - **Comments:** composer; each comment shows a pencil on hover and edits inline.
 
 ## 7. Tags
-- One shared pool for notes and tasks (`tags`, `note_tags`, `task_tags`).
-- **A tag is its name**, under the name rule (`^[a-z0-9]+(_[a-z0-9]+)*$`), and the name is its id. What is typed becomes its slug ("UI Design" → `ui_design`, "C++" → `c`), the same on every device, so the same tag always has the same id. Tags are never renamed.
+- One shared pool for notes, tasks, words, snaps and references: `TAG` rows in `tend_enums`, linked through `tend_links` (§16).
+- **A tag is its name**, under the name rule (`^[a-z0-9]+(_[a-z0-9]+)*$`). What is typed becomes its slug ("UI Design" → `ui_design`, "C++" → `c`), the same on every device. The slug is the tag's label; its value is the slug in capitals (`UI_DESIGN`). Tags are never renamed.
 
 ## 8. Attachments
 
 - **Upload:** copy to `.tend/attachments/<id>.<ext>` and insert a row in `attachments` (original name, mime type, size, sha256).
-- **Linking:** link to a task, note, comment or person through `attachment_links`. A note can also be linked to a task.
+- **Linking:** link to a task, note, comment or person through `tend_links` (§16, target type `ATTACHMENT`). A note can also be linked to a task.
 - The UI always refers to attachments by id, never by path.
 - **Task page → Attachments:**
   - A dashed drop zone: "Drop files here or click to choose" (several files at once), plus *or link a note*, which opens a note search.
@@ -296,14 +297,15 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - **Timer:**
   - Minutes ≥ 0 with no upper limit; seconds 0–59; total > 0.
   - A bare number means minutes.
-- **Shortcuts:** ⌘1 Notes · ⌘2 Tasks · ⌘3 People · ⌘, Settings · ⌘K palette · ⌘D toggle the dock (bottom bar).
+- **Shortcuts:** ⌘1 Notes · ⌘2 Tasks · ⌘3 People · ⌘4 Library · ⌘, Settings · ⌘K palette · ⌘D toggle the dock (bottom bar).
 - **Keyboard focus** is never an outline or ring. A focused button or link gets the hover fill, a list row the cursor fill, a field its border colour, a filled button its hover colour.
 - **Arrow keys across a page (zones):** a list page is a stack of zones: page bar · (task views) · search · add field · rows (or the board). ↑ / ↓ leave a zone for the one above or below (a list is left with ↑ only from its first row; empty zones are skipped). ← / → move along a horizontal zone (page bar, task views); moving onto a task view switches to it, like the Settings sections. Fields keep ←→ for typing. **⌘← / ⌘→** jump between the side pane (the explorer, opened if hidden, or the Settings sections) and the page, returning to where you were. On a row, ← / → step through its own controls (edit, My day, assignee…), Enter opens, F2 renames. Task and person pages are zones too: page bar · title · fields (↑↓ between lines, ←→ along a line) · each section's head (←→ to its edit pencil) · its body (subtasks, contacts, attachments and comments as rows; the add fields and an open editor as fields). A multi-line field is left with ↑ / ↓ only from its first or last character; the Markdown editor keeps all its arrows. Space presses whatever has focus, like Enter (rows, links, the dock, board cards). **⌘⇧↓** syncs now (when the vault is connected; not inside a field, where it selects). **⌘↓** goes to the dock (opening it if hidden) on the current section; ← / → move along it, Enter opens, ↑ / Esc / ⌘↑ return to the page. **⌘[ / ⌘]** go back and forward (Back falls back to the parent page when there is no history).
 - **Lists and the explorer:** ↓ from the search or add field enters the list · ↑↓ Home End move the cursor (a slightly darker row) · ↵ opens · F2 renames · → / ← open and close a folder in the explorer. The explorer's F2, ⌘⇧M and ⌫ act on the row with the cursor, else on the open item. On the task board: ↑↓ within a column, ←→ across columns (skipping empty ones), ⇧← ⇧→ move the card to the previous or next status (to the end of that column), ↵ opens. The Settings sections, a task's subtasks and a person's tasks take ↑↓ too.
 
 ## 13. Settings
 
-- Sections on the left: General · Notes · Tasks · People · Command palette.
+- Sections on the left: General · Notes · Tasks · People · Library · Command palette.
+- **Library:** word kinds (§15).
 - **General:** vault path as plain text, with a *Change vault folder…* link on the right. Below it, a quiet "N items skipped" line (files/folders whose names break the rule) that expands to the list.
 - **Tasks:** statuses (see §6).
 - Notes and People settings come later; their sections are empty in v1.
@@ -316,3 +318,37 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - Dark mode.
 - Per-folder status lists (statuses are app-wide).
 - Recent vaults list.
+
+## 15. Library (Words, Snaps, References)
+
+The full behaviour is in `docs/tend-library-plan.md` and the mockups in `docs/tend-library/designs/`. This section records where Tend differs from them; where they disagree, this section wins.
+
+- **Tab:** the fourth bottom-nav section, Library (⌘4). A bar on top switches Home · Words · Snaps · References, holds the + button and a search scoped to the area. Library reopens on the last area used (setting `ui.library.area`, per device).
+- **Inputs:** every Library input keeps the text exactly as typed (no autocorrect, spellcheck, auto-capitalise or smart punctuation), except a `WORD` title, which is saved in lowercase.
+- **Word kinds:** `WORD_KIND` rows in `tend_enums`, edited in Settings → Library → Word kinds (add, rename, reorder, delete). Defaults: word, idiom, phrase, abbr, term, other. `WORD`, `IDIOM` and `PHRASE` look things up in the dictionary; custom kinds don't. `WORD` and `OTHER` can't be deleted; a kind in use can't be deleted.
+- **Word titles** are unique by exact match across all kinds. A `WORD` title is lowercased on save; other kinds keep their case, so `it` (word) and `IT` (abbr) are different entries. Changing a saved entry's kind to `WORD` lowercases its title and is refused if that title already exists.
+- **Kind guess** while adding, until a kind is picked by hand: an uppercase letter and no spaces guesses abbr, no spaces guesses word, spaces guess phrase; a dictionary hit marked idiom switches to idiom.
+- **Words list:** grouped by kind in kind order, always open; no random or collapse buttons.
+- **Meaning and Notes** render the markdown as written; Tend adds no link syntax of its own.
+- **Pronunciation:** the dictionary's audio URL is stored with the entry and played from it (CSP `media-src https:`).
+- **Tags:** the app's shared tag pool and name rule (§7), not the spec's 24-character rule. The inline chip input from the mockups is `TagEditor`'s inline style.
+- **Tag filter:** none. The mockups only show it on standalone pages, which Tend doesn't have; search covers it.
+- **Deletes ask** (§2 *Delete confirmations*); removing a stack always asks. Moves (drag or the stack picker) don't ask and show "Moved to …". Undo comes later.
+- **Look:** the board, papers, stacks and the drag ghost keep their shadows. Popovers, dialogs, the segmented switch and toasts follow the app: border only, no shadow. Fields show focus with their border, never a ring (§12).
+- **Stacks** have their own table (`snap_stacks`: parent id + free-text name), not the path-based folder model. A stack can't go inside itself or its sub-stacks; removing one moves its contents up one level.
+- **Title fetch and dictionary lookup** run in Rust (`ureq` on a worker thread) only while the popup or entry page asks for them. Nothing fetches in the background.
+- **Search** is substring matching over the loaded lists; there is no text index.
+
+## 16. Enums and links
+
+- **`tend_enums`** holds every list the user can change: `TASK_STATUS`, `TASK_LABEL`, `WORD_KIND`, `TAG`. Columns: `id` (ULID; default rows use `<KIND>:<VALUE>`), `kind`, `value`, `label`, `is_default`, `meta` (JSON: colour, position, lookup, …), `created_at`, `updated_at`; `UNIQUE (kind, value)`.
+  - Kinds and values are SCREAMING_SNAKE_CASE (the name rule in capitals). A value never changes; the label is what the user sees and renames.
+  - `meta` is checked in the app, not in SQL. `is_default` rows can't be deleted.
+  - Order within a kind is `meta.position`.
+- **`tend_links`** joins any record to an enum or an attachment: `id`, `source_type`, `source_id`, `target_type`, `target_kind`, `target_value`, `created_at`, `updated_at`; `UNIQUE (source_type, source_id, target_type, target_kind, target_value)`.
+  - `target_type` `ENUM`: `target_kind` is the enum kind, `target_value` the enum value.
+  - `target_type` `ATTACHMENT`: `target_kind` is `''` (not NULL, so the unique key holds), `target_value` the attachment id.
+  - Sources: `TASK`, `NOTE`, `COMMENT`, `PERSON`, `WORD`, `SNAP`, `REF`.
+- **Code enums, not rows:** `TEND_SOURCE_TYPE`, `TEND_TARGET_TYPE` and `TEND_TARGET_KIND` change only with a release, so they live in code: `src-tauri/src/enums/` and `src/lib/enums/*.enum.ts`, same values on both sides. No enum kind, value or type is typed inline anywhere else.
+- **Integrity in the app:** an enum in use can't be deleted where the rules say so (statuses, word kinds); the check is not atomic. Triggers remove links when their source row, attachment or enum row is deleted. Deleting a label or tag removes it from everything that carries it.
+- **Sync:** duplicates by `(kind, value)` and by the link key keep the smaller id (v1-sync-spec §9.2).

@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>References: add and edit</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tend.css">
+<link rel="stylesheet" href="refs.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Lato:wght@400;700&amp;family=Montserrat:wght@500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="{{ appCls }}" style="font-family: 'Lato', sans-serif; color: #303841; position: relative;">
+  <div class="body">
+    <main class="pane">
+      <div class="list-page" style="gap: 2px;">
+        <sc-if value="{{ standalone }}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; align-items: flex-end; gap: 12px;">
+          <div>
+            <h1 class="title">References</h1>
+            <span class="caption">{{ caption }}</span>
+          </div>
+<sc-if value="{{ standalone }}" hint-placeholder-val="{{ true }}">          <button class="icon-btn" aria-label="Add a reference" title="Add a reference" onClick="{{ startAdd }}" style="width: 32px; height: 32px; margin-left: auto; margin-right: -4px;"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+          <label class="search" style="width: 280px; height: 32px;"><svg class="ico sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input class="search-in" type="search" aria-label="Search references" placeholder="Search title, note or site" value="{{ query }}" onChange="{{ onQuery }}"></label></sc-if>
+        </div>
+
+        <div class="tools-row">
+          <div class="tagbox">
+            <button class="{{ tagBtnCls }}" aria-haspopup="listbox" aria-expanded="{{ tagExpanded }}" onClick="{{ toggleTagFilter }}"># {{ tagBtnLabel }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
+            <sc-if value="{{ hasTagFilter }}" hint-placeholder-val="{{ false }}">
+              <button class="tagclear" aria-label="Clear tag filter" onClick="{{ clearTag }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg></button>
+            </sc-if>
+            <sc-if value="{{ tagFilterOpen }}" hint-placeholder-val="{{ false }}">
+              <div class="pop">
+                <input role="combobox" aria-expanded="true" aria-label="Find a tag" placeholder="Find a tag" value="{{ tagFilterQuery }}" onChange="{{ onTagFilterQuery }}" onKeyDown="{{ onTagFilterKey }}" ref="{{ focusRef }}">
+                <div class="poplist" role="listbox" aria-label="Tags">
+                  <sc-for list="{{ tagFilterOptions }}" as="t" hint-placeholder-count="4">
+                    <button class="{{ t.cls }}" role="option" aria-selected="{{ t.selected }}" onClick="{{ t.pick }}"><span>{{ t.label }}</span><span class="n">{{ t.count }}</span></button>
+                  </sc-for>
+                  <sc-if value="{{ noTagFilterMatch }}" hint-placeholder-val="{{ false }}"><span class="none">No tags match</span></sc-if>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        </sc-if>
+
+        <div class="grid head"><span>Title</span><span>Reference</span><span>Why I kept it</span><span>Tags</span><span style="text-align: right;">Added</span></div>
+        <div class="rows">
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
+            <div class="{{ r.cls }}">
+              <button class="hit" onClick="{{ r.open }}" aria-label="{{ r.aria }}"></button>
+              <span class="grid" style="gap: 14px;">
+                <span class="t"><span class="tt">{{ r.title }}</span></span>
+                <span class="ref"><sc-if value="{{ r.isLink }}" hint-placeholder-val="{{ false }}"><a class="open" href="{{ r.url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ r.openLabel }}" title="Open link"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a></sc-if><span class="{{ r.refCls }}">{{ r.refText }}</span></span>
+                <span class="{{ r.noteCls }}">{{ r.note }}</span>
+                <span class="g"><sc-for list="{{ r.tags }}" as="t" hint-placeholder-count="1"><span class="chip soft">{{ t }}</span></sc-for></span>
+                <span class="d">{{ r.added }}</span>
+              </span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ listEmpty }}" hint-placeholder-val="{{ false }}"><div class="emptylist">{{ emptyText }}</div></sc-if>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <sc-if value="{{ formOpen }}" hint-placeholder-val="{{ false }}">
+    <div class="veil" onMouseDown="{{ veilDown }}">
+      <div class="card" role="dialog" aria-label="{{ f.label }}" onMouseDown="{{ stop }}">
+        <input class="main-in" aria-label="Reference: a link or text" placeholder="Paste a link, or type a book, film, video…" spellcheck="false" autocomplete="off" value="{{ f.main }}" onChange="{{ onMain }}" onKeyDown="{{ onMainKey }}" ref="{{ mainRef }}">
+        <div class="under">
+          <div class="seg" role="radiogroup" aria-label="Type">
+            <button class="{{ f.linkCls }}" role="radio" aria-checked="{{ f.isLinkStr }}" onClick="{{ pickLink }}">link</button>
+            <button class="{{ f.textCls }}" role="radio" aria-checked="{{ f.isTextStr }}" onClick="{{ pickText }}">text</button>
+          </div>
+        </div>
+        <sc-if value="{{ f.dupe }}" hint-placeholder-val="{{ false }}">
+          <div class="dupe">You saved this link on {{ f.dupeDate }}. <button class="linkish" onClick="{{ openDupe }}">Open it</button></div>
+        </sc-if>
+
+        <label class="field">
+          <span class="lbl">Title</span>
+          <span class="title-row">
+            <input class="title-in" placeholder="{{ f.titlePlaceholder }}" spellcheck="true" autocomplete="off" value="{{ f.title }}" onChange="{{ onTitle }}" onKeyDown="{{ onFieldKey }}">
+            <sc-if value="{{ f.fetching }}" hint-placeholder-val="{{ false }}"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span></sc-if>
+            <sc-if value="{{ f.isLink }}" hint-placeholder-val="{{ false }}">
+              <span class="site">{{ f.site }}</span>
+              <a class="open" href="{{ f.url }}" target="_blank" rel="noopener noreferrer" aria-label="Open link" title="Open link"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+            </sc-if>
+          </span>
+        </label>
+
+        <label class="field">
+          <span class="lbl">Why I kept it</span>
+          <textarea class="why" placeholder="Optional. A few words now saves a mystery later." value="{{ f.why }}" onChange="{{ onWhy }}" onKeyDown="{{ onFieldKey }}" ref="{{ whyRef }}"></textarea>
+        </label>
+
+        <div class="field">
+          <span class="lbl">Tags</span>
+          <div class="tagchips">
+            <sc-for list="{{ f.tags }}" as="t" hint-placeholder-count="1"><button class="tchip" aria-label="{{ t.aria }}" title="Remove" onClick="{{ t.remove }}">#{{ t.name }}</button></sc-for>
+            <input class="tag-in" aria-label="Add a tag" placeholder="{{ f.tagPlaceholder }}" maxlength="24" spellcheck="false" autocomplete="off" value="{{ f.tagInput }}" onChange="{{ onTagInput }}" onKeyDown="{{ onTagKey }}" onBlur="{{ commitTag }}">
+          </div>
+          <sc-if value="{{ f.hasSugg }}" hint-placeholder-val="{{ false }}">
+            <div class="sugg"><span>used before:</span><sc-for list="{{ f.sugg }}" as="g" hint-placeholder-count="3"><button onMouseDown="{{ g.pick }}">#{{ g.name }}</button></sc-for></div>
+          </sc-if>
+        </div>
+
+        <div class="card-foot">
+          <sc-if value="{{ f.isEdit }}" hint-placeholder-val="{{ false }}">
+            <button class="del" onClick="{{ remove }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"/><path d="M10 7V5h4v2"/><path d="M7 7l1 12h8l1-12"/></svg>Delete</button>
+          </sc-if>
+          <span class="grow"></span>
+          <span class="hint">{{ f.hint }}</span>
+          <button class="btn-ghost" onClick="{{ close }}">Cancel</button>
+          <button class="btn-primary" onClick="{{ save }}" disabled="{{ f.cantSave }}">{{ f.saveLabel }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div class="toast" role="status">{{ toast }}
+      <sc-if value="{{ canUndo }}" hint-placeholder-val="{{ false }}"><button class="undo" onClick="{{ undo }}">Undo</button></sc-if>
+      <sc-if value="{{ noUndo }}" hint-placeholder-val="{{ true }}"><span class="gap"></span></sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ standalone }}" hint-placeholder-val="{{ true }}"><nav class="nav" aria-label="Main">
+    <span></span>
+    <div class="tabs">
+      <button class="tab" aria-label="Notes"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg></button>
+      <button class="tab" aria-label="Tasks"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></button>
+      <button class="tab" aria-label="People"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></button>
+      <button class="tab" aria-label="Words"><svg viewBox="0 0 24 24"><path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3z"/><path d="M21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/></svg></button>
+      <button class="tab" aria-label="Snaps"><svg viewBox="0 0 24 24"><path d="M10 7H6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3v1a3 3 0 0 1-3 3"/><path d="M20 7h-4a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3v1a3 3 0 0 1-3 3"/></svg></button>
+      <button class="tab on" aria-label="References"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></button>
+    </div>
+    <div class="right">
+      <button class="icon-btn" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button>
+      <button class="icon-btn" aria-label="Feedback"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/></svg></button>
+    </div>
+  </nav></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"embedded":{"editor":null},"query":{"editor":null},"addRequest":{"editor":null},"onAddTaken":{"editor":null},"$preview":{"width":1280,"height":800}}'>
+// References: the A list, plus one popup for adding and editing.
+// One input takes a link or text; link | text is picked for you and can be switched.
+// Only that input is required: paste, Enter, done. "Why I kept it" and tags can wait.
+// Links get their page title fetched into Title (editable); "Why I kept it" stays yours.
+// A reference is either a link or text. The type is picked from what you enter, and you can switch it.
+
+// stands in for the page-title fetch the app does after a link is saved
+const META = {
+  'svelte.dev/blog/runes': 'What are runes?',
+  'dictionaryapi.dev': 'Free Dictionary API',
+  'paulgraham.com/greatwork.html': 'How to Do Great Work',
+  'practicaltypography.com': 'Butterick’s Practical Typography',
+  'v2.tauri.app/plugin': 'Tauri 2 plugins',
+  'docs.rs/rusqlite': 'rusqlite docs',
+  'www.figma.com/blog/how-figmas-multiplayer-technology-works': 'How Figma’s multiplayer technology works',
+  'www.youtube.com/watch?v=rx7mpbt7vlo': 'Simple Made Easy, Rich Hickey',
+};
+
+// tags already used elsewhere in the app (Words, Snaps): one shared pool
+const OTHER_TAGS = ['poem', 'thought', 'work', 'reading', 'sound', 'code', 'haiku'];
+
+const SEED = [
+  { main: 'https://svelte.dev/blog/runes', type: 'link', why: '$state, $derived, $effect in one page. Read before M12.', tags: ['tend'], added: 'today' },
+  { main: 'https://dictionaryapi.dev', type: 'link', why: 'For the words fetch button. No key, JSON by word.', tags: ['tend'], added: 'today' },
+  { main: 'https://www.youtube.com/watch?v=rx7mpbt7vlo', type: 'link', why: '', tags: [], added: 'Wed' },
+  { main: 'https://paulgraham.com/greatwork.html', type: 'link', why: 'The part on curiosity and following what bores others.', tags: ['essay'], added: 'Tue' },
+  { main: 'Perfect Days', type: 'text', why: 'Wim Wenders. Someone said it is the calmest film they know.', tags: ['watch'], added: 'Mon' },
+  { main: 'https://practicaltypography.com', type: 'link', why: 'Line length, and why body text is 15–25 words per line.', tags: ['design', 'reading'], added: '2 Oct' },
+  { main: 'Severance', type: 'text', why: '', tags: [], added: '30 Sep' },
+  { main: 'https://v2.tauri.app/plugin', type: 'link', why: '', tags: [], added: '28 Sep' },
+  { main: 'The Remains of the Day', type: 'text', why: 'Where “ephemeral” came from.', tags: ['reading'], added: '20 Sep' },
+  { main: 'https://docs.rs/rusqlite', type: 'link', why: '', tags: [], added: '12 Sep' },
+];
+
+function isUrl(v) {
+  const t = v.trim();
+  return /^https?:\/\/\S+$/i.test(t) || /^[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i.test(t);
+}
+function normUrl(v) {
+  const t = v.trim();
+  return /^https?:\/\//i.test(t) ? t : 'https://' + t;
+}
+function keyOf(url) {
+  return normUrl(url).replace(/^https?:\/\//i, '').replace(/\/$/, '').toLowerCase();
+}
+function siteOf(url) {
+  const m = normUrl(url).match(/^https?:\/\/([^/?#]+)/i);
+  return m ? m[1].replace(/^www\./, '') : '';
+}
+// what a fetched page would be called; a readable guess from the URL when it is not known
+function fetchTitle(url) {
+  const k = keyOf(url);
+  if (META[k]) return META[k];
+  const parts = k.split('/').filter(Boolean);
+  const slug = parts.length > 1 ? parts[parts.length - 1] : '';
+  if (!slug) return siteOf(url);
+  return slug.replace(/[-_]+/g, ' ').replace(/\.\w+$/, '').replace(/^\w/, (c) => c.toUpperCase());
+}
+function cleanTag(v) {
+  return (v || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 24);
+}
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.mainRef = (el) => { if (el && this.focusMain) { this.focusMain = false; el.focus(); } };
+    this.whyRef = (el) => { if (el && this.focusWhy) { this.focusWhy = false; el.focus(); } };
+    this.focusRef = (el) => { if (el && document.activeElement !== el) el.focus(); };
+    const refs = SEED.map((r, i) => this.withMeta({ ...r, id: 'r' + i }));
+    this.state = {
+      refs,
+      form: null,        // { id?, main, type, typeSet, fetching, title, titleSet, why, tags, tagInput }
+      query: '',
+      tagFilter: null,
+      tagFilterOpen: false,
+      tagFilterQuery: '',
+      fresh: null,
+      toast: '',
+      undo: null,
+      seq: 0,
+    };
+  }
+
+  // inside the Library: the Library's + asks this area to open its own add, maybe with text already typed
+  componentDidMount() { this.takeAdd(); }
+  componentDidUpdate() { this.takeAdd(); }
+  takeAdd() {
+    const r = this.props.addRequest;
+    if (!r || r.n === this.lastAdd) return;
+    this.lastAdd = r.n;
+    this.openFromLibrary(r.text || '');
+    if (this.props.onAddTaken) this.props.onAddTaken();
+  }
+
+  openFromLibrary(text) {
+    this.startAdd();
+    if (text) setTimeout(() => this.onMainChange(text), 0);
+  }
+
+  componentWillUnmount() { clearTimeout(this.fetchTimer); clearTimeout(this.toastTimer); }
+
+  withMeta(r) {
+    const link = r.type ? r.type === 'link' : isUrl(r.main);
+    return { ...r, type: link ? 'link' : 'text', isLink: link, url: link ? normUrl(r.main) : '', site: link ? siteOf(r.main) : '', title: (r.title || '').trim() || (link ? fetchTitle(r.main) : r.main.trim()) };
+  }
+
+  say(msg, ms) {
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => this.setState({ toast: '', undo: null }), ms || 2600);
+    return msg;
+  }
+
+  allTags() {
+    const set = {};
+    this.state.refs.forEach((r) => r.tags.forEach((t) => { set[t] = (set[t] || 0) + 1; }));
+    OTHER_TAGS.forEach((t) => { if (!set[t]) set[t] = 0; });
+    return set;
+  }
+
+  // ---------- the popup ----------
+  startAdd() {
+    this.focusMain = true;
+    this.setState({ form: { main: '', type: 'text', typeSet: false, fetching: false, title: '', titleSet: false, why: '', tags: [], tagInput: '' } });
+  }
+
+  openRef(r) {
+    this.focusMain = true;
+    this.setState({ form: { id: r.id, main: r.main, type: r.type, typeSet: true, fetching: false, title: r.title, titleSet: r.isLink || r.title !== r.main.trim(), why: r.why, tags: r.tags.slice(), tagInput: '' } });
+  }
+
+  close() { clearTimeout(this.fetchTimer); this.setState({ form: null }); }
+
+  patchForm(p) { this.setState({ form: { ...this.state.form, ...p } }); }
+
+  onMainChange(value) {
+    const f = this.state.form;
+    const type = f.typeSet ? f.type : (isUrl(value) ? 'link' : 'text');
+    const link = type === 'link';
+    clearTimeout(this.fetchTimer);
+    // a new link fetches its page title into Title, unless you already wrote one
+    // text: the title follows what you type until you change it; link: the page title is fetched into it
+    this.patchForm({ main: value, type, fetching: link && !f.titleSet, title: f.titleSet ? f.title : (link ? '' : value) });
+    if (link && !f.titleSet) {
+      this.fetchTimer = setTimeout(() => {
+        const cur = this.state.form;
+        if (cur && cur.main === value && !cur.titleSet) this.patchForm({ fetching: false, title: fetchTitle(value) });
+      }, 650);
+    }
+  }
+
+  // switching by hand: a link fetches its title, text takes its title from what you typed
+  setType(type) {
+    const f = this.state.form;
+    if (!f || f.type === type) { if (f) this.patchForm({ typeSet: true }); return; }
+    clearTimeout(this.fetchTimer);
+    const ownTitle = f.titleSet && f.title.trim();
+    const title = ownTitle ? f.title : (type === 'text' ? f.main : '');
+    this.patchForm({ type, typeSet: true, title, fetching: type === 'link' && !ownTitle && !!f.main.trim() });
+    if (type === 'link' && !ownTitle && f.main.trim()) {
+      const value = f.main;
+      this.fetchTimer = setTimeout(() => {
+        const cur = this.state.form;
+        if (cur && cur.main === value && cur.type === 'link' && !cur.titleSet) this.patchForm({ fetching: false, title: fetchTitle(value) });
+      }, 650);
+    }
+  }
+
+  dupeOf(main, exceptId) {
+    if (!isUrl(main) || (this.state.form && this.state.form.type !== 'link')) return null;
+    const k = keyOf(main);
+    return this.state.refs.find((r) => r.id !== exceptId && r.isLink && keyOf(r.main) === k) || null;
+  }
+
+  commitTag(raw) {
+    const f = this.state.form;
+    if (!f) return;
+    const t = cleanTag(raw != null ? raw : f.tagInput);
+    this.patchForm({ tags: t && f.tags.indexOf(t) < 0 ? f.tags.concat([t]) : f.tags, tagInput: '' });
+  }
+
+  save() {
+    const f = this.state.form;
+    if (!f || !f.main.trim() || this.dupeOf(f.main, f.id)) return;   // the link or title is all that's required
+    clearTimeout(this.fetchTimer);
+    const pending = cleanTag(f.tagInput);
+    const tags = pending && f.tags.indexOf(pending) < 0 ? f.tags.concat([pending]) : f.tags;
+    const link = f.type === 'link';
+    const base = { main: f.main.trim(), type: f.type, why: f.why, tags, title: f.title.trim() || (link ? fetchTitle(f.main) : f.main.trim()) };
+    if (f.id) {
+      this.setState({
+        refs: this.state.refs.map((r) => (r.id === f.id ? this.withMeta({ ...r, ...base }) : r)),
+        form: null, fresh: f.id, toast: this.say('Saved'),
+      });
+      return;
+    }
+    const seq = this.state.seq + 1;
+    const ref = this.withMeta({ ...base, id: 'new' + seq, added: 'just now' });
+    this.setState({ refs: [ref].concat(this.state.refs), form: null, seq, fresh: ref.id, toast: this.say('Saved to references') });
+  }
+
+  remove() {
+    const f = this.state.form;
+    if (!f || !f.id) return;
+    const before = this.state.refs;
+    this.setState({ refs: before.filter((r) => r.id !== f.id), form: null, undo: before, toast: this.say('Reference deleted', 5000) });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const q = (this.props.embedded ? (this.props.query || '') : s.query).trim().toLowerCase();
+    const shown = s.refs.filter((r) =>
+      (!s.tagFilter || r.tags.indexOf(s.tagFilter) > -1) &&
+      (!q || (r.title + ' ' + r.why + ' ' + r.site + ' ' + r.main).toLowerCase().indexOf(q) > -1));
+
+    const rows = shown.map((r) => {
+      return {
+        cls: 'r' + (r.id === s.fresh ? ' fresh' : ''),
+        title: r.title,
+        note: r.why || '',
+        noteCls: 'n' + (r.why.trim() ? '' : ' empty'),
+        tags: r.tags,
+        added: r.added,
+        refText: r.isLink ? r.main.replace(/^https?:\/\//i, '').replace(/^www\./, '') : r.main,
+        refCls: 'rt' + (r.isLink ? ' url' : ''),
+        aria: 'Edit reference: ' + r.title,
+        isLink: r.isLink, url: r.url, openLabel: 'Open ' + r.title,
+        open: () => this.openRef(r),
+      };
+    });
+
+    const counts = this.allTags();
+    const used = Object.keys(counts).filter((t) => counts[t] > 0);
+    const tq = s.tagFilterQuery.trim().replace(/^#/, '').toLowerCase();
+    const tagNames = used.sort((a, b) => counts[b] - counts[a] || a.localeCompare(b)).filter((t) => !tq || t.indexOf(tq) > -1);
+    const pickTag = (t) => this.setState({ tagFilter: t, tagFilterOpen: false, tagFilterQuery: '' });
+    const tagFilterOptions = (tq ? [] : [{ t: null, label: 'All tags', count: String(s.refs.length) }])
+      .concat(tagNames.map((t) => ({ t, label: '#' + t, count: String(counts[t]) })))
+      .map((o) => ({ label: o.label, count: o.count, cls: 'opt' + (o.t === s.tagFilter ? ' on' : ''), selected: o.t === s.tagFilter ? 'true' : 'false', pick: () => pickTag(o.t) }));
+
+    let caption = s.refs.length + (s.refs.length === 1 ? ' reference' : ' references');
+    if (q || s.tagFilter) caption = rows.length + ' shown of ' + s.refs.length;
+
+    // the form
+    const fm = s.form;
+    let f = {};
+    if (fm) {
+      const link = fm.type === 'link';
+      const dupe = this.dupeOf(fm.main, fm.id);
+      const tq2 = cleanTag(fm.tagInput);
+      const sugg = Object.keys(counts).filter((t) => fm.tags.indexOf(t) < 0 && (!tq2 || t.indexOf(tq2) === 0))
+        .sort((a, b) => counts[b] - counts[a] || a.localeCompare(b)).slice(0, 6);
+      f = {
+        label: fm.id ? 'Edit reference' : 'Add a reference',
+        isEdit: !!fm.id,
+        main: fm.main,
+        linkCls: link ? 'on' : '', textCls: link ? '' : 'on',
+        isLinkStr: link ? 'true' : 'false', isTextStr: link ? 'false' : 'true',
+        fetching: link && fm.fetching,
+        isLink: link,
+        url: link ? normUrl(fm.main) : '',
+        title: fm.title,
+        titlePlaceholder: link ? (fm.fetching ? 'Getting the page title…' : 'Page title') : 'Same as the reference',
+        mainHint: '',
+        site: link ? siteOf(fm.main) : '',
+        letter: (siteOf(fm.main) || '?').charAt(0).toUpperCase(),
+        dupe: !!dupe, dupeDate: dupe ? dupe.added : '', dupeId: dupe ? dupe.id : null,
+        why: fm.why,
+        tags: fm.tags.map((t) => ({ name: t, aria: 'Remove tag ' + t, remove: () => this.patchForm({ tags: this.state.form.tags.filter((x) => x !== t) }) })),
+        tagInput: fm.tagInput,
+        tagPlaceholder: fm.tags.length ? '+ tag' : 'add tags, space between',
+        sugg: sugg.map((t) => ({ name: t, pick: (e) => { if (e) e.preventDefault(); this.commitTag(t); } })),
+        hasSugg: sugg.length > 0 && (fm.tagInput.length > 0 || fm.tags.length < 3),
+        cantSave: !fm.main.trim() || !!dupe,
+        saveLabel: fm.id ? 'Save' : 'Save',
+        hint: fm.id ? '⌘↵ saves' : '↵ saves',
+      };
+    }
+
+    const onFieldKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); this.save(); }
+      if (e.key === 'Escape') { e.preventDefault(); this.close(); }
+    };
+
+    return {
+      caption,
+      standalone: !this.props.embedded,
+      appCls: 'app r-app' + (this.props.embedded ? ' embedded' : ''),
+      rows,
+      listEmpty: rows.length === 0,
+      emptyText: s.refs.length ? 'Nothing matches.' : 'Nothing saved yet. Press + and paste a link.',
+      query: s.query,
+      onQuery: (e) => this.setState({ query: e.target.value }),
+      startAdd: () => this.startAdd(),
+      tagBtnCls: 'chipbtn' + (s.tagFilter ? ' on' : ''),
+      tagBtnLabel: s.tagFilter || 'all tags',
+      tagExpanded: s.tagFilterOpen ? 'true' : 'false',
+      hasTagFilter: !!s.tagFilter,
+      clearTag: () => this.setState({ tagFilter: null }),
+      toggleTagFilter: () => this.setState({ tagFilterOpen: !s.tagFilterOpen, tagFilterQuery: '' }),
+      tagFilterOpen: s.tagFilterOpen,
+      tagFilterQuery: s.tagFilterQuery,
+      tagFilterOptions,
+      noTagFilterMatch: tagFilterOptions.length === 0,
+      onTagFilterQuery: (e) => this.setState({ tagFilterQuery: e.target.value }),
+      onTagFilterKey: (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); if (tagNames.length) pickTag(tagNames[0]); }
+        if (e.key === 'Escape') { e.preventDefault(); this.setState({ tagFilterOpen: false }); }
+      },
+      focusRef: this.focusRef,
+      mainRef: this.mainRef,
+      whyRef: this.whyRef,
+      formOpen: !!fm,
+      f,
+      pickLink: () => this.setType('link'),
+      pickText: () => this.setType('text'),
+      onMain: (e) => this.onMainChange(e.target.value),
+      onMainKey: (e) => {
+        // paste, Enter, done
+        if (e.key === 'Enter') { e.preventDefault(); this.save(); return; }
+        onFieldKey(e);
+      },
+      onWhy: (e) => this.patchForm({ why: e.target.value }),
+      onTitle: (e) => { clearTimeout(this.fetchTimer); this.patchForm({ title: e.target.value, titleSet: e.target.value.trim() !== '', fetching: false }); },
+      onFieldKey,
+      onTagInput: (e) => {
+        const raw = e.target.value;
+        if (/[\s,]$/.test(raw)) { this.commitTag(raw); return; }
+        this.patchForm({ tagInput: cleanTag(raw) });
+      },
+      onTagKey: (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); this.save(); return; }
+        if (e.key === 'Enter') { e.preventDefault(); this.commitTag(); return; }
+        if (e.key === 'Backspace' && !this.state.form.tagInput && this.state.form.tags.length) {
+          e.preventDefault();
+          this.patchForm({ tags: this.state.form.tags.slice(0, -1) });
+          return;
+        }
+        if (e.key === 'Escape') { e.preventDefault(); this.close(); }
+      },
+      commitTag: () => this.commitTag(),
+      openDupe: () => { const d = this.state.refs.find((r) => r.id === f.dupeId); if (d) this.openRef(d); },
+      save: () => this.save(),
+      close: () => this.close(),
+      remove: () => this.remove(),
+      veilDown: () => this.close(),
+      stop: (e) => e.stopPropagation(),
+      hasToast: !!s.toast,
+      toast: s.toast,
+      canUndo: !!s.undo,
+      noUndo: !s.undo,
+      undo: () => { clearTimeout(this.toastTimer); this.setState({ refs: s.undo, undo: null, toast: '' }); },
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -23,9 +23,9 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - **Shortcuts:** ⌘1/⌘2/⌘3 switch sections, ⌘, opens Settings.
 
 **Done when**
-- `npm run tauri dev` opens the window. Nav switches pages, the active state matches `png/notes.png`, and collapse/expand works.
+- `bun run tauri dev` opens the window. Nav switches pages, the active state matches `png/notes.png`, and collapse/expand works.
 - The Tend icon shows in the Dock / taskbar.
-- `npm run check` and `npm test` pass (one trivial test is fine).
+- `bun run check` and `bun run test` pass (one trivial test is fine).
 
 **Status (2026-10-09):** done. Changed: tooling runs on Bun; the adapter is set in `vite.config.js`; the window is frameless with a 1280×800 default and remembers its size and position (`tauri-plugin-window-state`). Gap: the favicon is the 32px app icon, not `design/icon/mark.svg` (see `open-questions.md`).
 
@@ -251,6 +251,136 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - A 10 s timer notifies on time, even after the laptop sleeps mid-countdown (it fires right after wake).
 
 **Status (2026-10-09):** done. Added: ⌘E explorer, ⌘R read/edit or list/board, ⌘L search, ⌘D dock. Gap: the timer sound can't be switched off (`timers.sound` has no control). Note: quick-create folder shares one last path between Notes and Tasks.
+
+---
+
+# Library: Words, Snaps, References
+
+Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec) and `docs/tend-library/designs/` (the mockups; read each `.dc.html` script for exact flows). Where they disagree with `decisions.md` §15–§16, the decisions win. Do one milestone per session, in order; L0 changes existing tables, so it comes first.
+
+**Constants:** no magic strings. Enum kinds, link source and target types, paper types, default enum values and setting keys live in one place per side: `src/lib/enums/*.enum.ts` (TS) and `src-tauri/src/enums/` (Rust, serde `SCREAMING_SNAKE_CASE`). Code imports them; it never types `'TASK'` or `'WORD_KIND'` inline.
+
+---
+
+## L0 · One enum table and one link table  ☐
+
+**Read:** decisions §16 · `docs/schema.sql` §1, §2, §5–§7 · `v1-sync-spec.md` §4.1, §9.2, §9.3
+
+**Build**
+- `tend_enums` replaces `statuses`, `task_labels` and `tags`. `tend_links` replaces `note_tags`, `task_tags`, `task_label_links` and `attachment_links`. Shapes and rules: decisions §16.
+- `schema.sql` is edited in place (nothing has shipped). Existing vaults are reset: delete `.tend/tend.db` and reopen; note files are untouched.
+- Default rows (statuses, word kinds) are seeded with ids derived from kind and value (`TASK_STATUS:DONE`), so every device makes the same rows.
+- Clean-up triggers: `AFTER DELETE` on every source table (`tasks`, `notes`, `task_comments`, `people`; later `words`, `snaps`, `refs`) removes its links; on `attachments` and `tend_enums`, removes the links pointing at the row.
+- `tasks.status` keeps the status value and loses its foreign key. The app refuses to delete a status in use (not atomic; accepted).
+- Rust: `statuses/`, `labels/` and `tags/` read and write `tend_enums`; tags, labels and attachments link through `tend_links`. Code enums for `TEND_SOURCE_TYPE`, `TEND_TARGET_TYPE` and `TEND_TARGET_KIND` (decisions §16).
+- Sync: `TABLES` lists the two new tables instead of the seven old ones. `KEEP_SMALLEST` on `tend_enums (kind, value)` and on the `tend_links` key. The " 2" rule for duplicate display names runs per `kind`. Orphans: a link whose source row, attachment or enum is gone is dropped; a task whose status is gone gets `NOT_STARTED`.
+- TS: `statusesAPI`, `labelsAPI`, `tagsAPI`, the attachment calls, their stores and Settings → Tasks keep working on the new commands.
+
+**Done when**
+- `cargo test`, `bun run check` and `bun run test` pass.
+- Statuses, labels, tags and attachments behave exactly as before, including sync.
+- Tests: every source type has its clean-up trigger; deleting a folder of tasks leaves no links behind; two devices adding the same tag or status merge into one row; default enum rows land in `fixed.jsonl`.
+- By hand: two vaults synced through one remote agree on statuses, labels, tags and attachment links.
+
+---
+
+## L1 · Library data and Rust core  ☐
+
+**Read:** decisions §15, §16 · `tend-library-plan.md` *Data model*
+
+**Build**
+- Tables: `words (title, kind, dictionary, meaning, notes)` with `UNIQUE (title)`; `snap_stacks (parent_id, name)`; `snaps (stack_id, text, paper, color, pinned)`; `refs (type, value, title, why, url_key)` with `UNIQUE (url_key)`. Tags and word kinds go through `tend_enums` and `tend_links`; seed `WORD_KIND` with `WORD`, `IDIOM`, `PHRASE`, `ABBR`, `TERM`, `OTHER`.
+- Modules `words/`, `snaps/` (stacks included) and `refs/` with CRUD commands.
+- Rules in Rust: a `WORD` title is lowercased on save, other kinds keep the title as typed; a stack can't move into itself or its own sub-stacks; removing a stack moves its snaps and sub-stacks up one level in one transaction; `url_key` is the normalised URL (scheme, trailing slash and case ignored).
+- Sync: the new tables in `TABLES` (`snap_stacks` before `snaps`). The new `MERGE_ON_KEY` rule (v1-sync-spec §9.2) for `words` by `title` and `refs` by `url_key`, with `newest_fill_empty`. Orphans: a snap or stack whose stack is gone goes to the board root; a word whose kind is gone becomes `OTHER`. Cycles: when two devices nest two stacks in each other, the stack with the larger id goes to the root.
+
+**Done when**
+- `cargo test` covers CRUD, the lowercase rule, the cycle refusal, remove-moves-up, and sync merges: a duplicate word, a duplicate link, an orphan snap, a stack cycle, a deleted kind. Merging gives the same rows on both devices.
+- By hand: two vaults synced through one remote agree on words, snaps, stacks, references and their tags, including a word added on both while offline.
+
+---
+
+## L2 · Library shell  ☐
+
+**Read:** decisions §15 · `designs/library.dc.html`, `library.css`
+
+**Build**
+- Fourth bottom-nav tab, Library (the books icon from the Library mockup), route `/library`, ⌘4. Library reopens on the last area (setting `ui.library.area`, per device).
+- The bar: a `Segmented` component (Words · Snaps · References; Home arrives in L6), the + icon button, and the scoped search (placeholder per area; switching area, Esc or × clears it).
+- Bundle `@fontsource/caveat` (500, 600).
+- Settings → General → Confirmations: *Ask before deleting a word / a snap / a reference*, on by default.
+- `ui.library.area` and the new `confirm.delete.*` keys stay off the shared-keys list, so they never sync.
+
+**Done when**
+- The tab switches areas and reopens on the last one; search clears as described; Library chrome follows decisions §15 (no shadows, no focus rings).
+
+---
+
+## L3 · References  ☐
+
+**Read:** decisions §15 · `designs/references.dc.html`, `refs.css`
+
+**Build**
+- Add `ureq`. Command `ref_title(url)`: async, runs `ureq` on a worker thread, 5 s timeout, reads at most 64 KB, returns the `<title>` text. Unit-test the parser.
+- List: Title · Reference · Why I kept it · Tags · Added, newest first. Link references show the URL without `https://` and `www.`, with the open-link icon (opener plugin). Added is relative (`ago`).
+- Popup for add and edit: reference input; link · text switch, picked from the input and fixed once changed by hand; title (mirrors text references; for links, fetched about 650 ms after typing stops, with the site name; a typed title is never overwritten); why; tags with up to six "used before" suggestions. Duplicate links show "You saved this link on <date>. Open it" and disable Save. Enter in the reference saves, ⌘↵ from any field, Esc closes; Delete asks first.
+- `url_key` normalising exists in TS (live check) and Rust (stored value) with the same test cases.
+- Search filters title, reference and why.
+
+**Done when**
+- Paste + Enter saves; the title fills in; a duplicate link blocks Save; search filters; inputs never autocorrect (check smart quotes and dashes by hand on macOS).
+
+---
+
+## L4 · Words  ☐
+
+**Read:** decisions §15 · `designs/words.dc.html`, `words.css`
+
+**Build**
+- List on the left grouped by kind (always open, in kind order, only kinds with entries), alphabetical within a group; a "new …" row while adding. No random or collapse buttons.
+- Entry page: title styled as the page heading (on a saved entry, empty or duplicate on blur reverts); meta row: kind chip with a listbox, IPA + play, part of speech, tags (inline `TagEditor`); Dictionary fold; "What it is for me" fold with Meaning and Notes (markdown as written, click to edit in place, no box).
+- Kind guess while typing until picked by hand: uppercase and no spaces → `ABBR`, no spaces → `WORD`, spaces → `PHRASE`; a dictionary idiom switches to `IDIOM`.
+- Command `word_lookup(title)` against dictionaryapi.dev (lowercase query) for kinds with `lookup`; map to our JSON (senses with examples, synonyms, IPA, part of speech, audio URL, fetched_at). Fixture test for the mapping. "Not in the dictionary." / "No dictionary for this one." / re-fetch icon.
+- Play: CSP gets `media-src https:`.
+- Adding: Save / Cancel row (⌘↵ / Esc); "Already saved. Open '<title>'" disables Save. Saved entries save as you go; delete in the top bar asks first. Changing a kind to `WORD` lowercases the title and is refused if that clashes.
+- Settings → Library → Word kinds: add, rename, reorder, delete (blocked while in use; `WORD` and `OTHER` can't be deleted). Reuse the labels list editor; extract a shared helper if the code would otherwise be copied.
+
+**Done when**
+- Add, look up, rename, change kind, edit Meaning and Notes, tags and delete all persist; word kinds editable in Settings.
+
+---
+
+## L5 · Snaps  ☐
+
+**Read:** decisions §15 · `designs/snaps.dc.html`, `snaps.css`
+
+**Build**
+- Board: CSS columns (width 250px, gap 52px), dot grid, tilt by position (±1.8°), pinned first then newest edit, stacks spread through the rest (formula from the mockup), three empty states.
+- Papers: scrap, slip, lined, plain, sticky. Sticky tint from the picked colour (hue kept, lightness 87% / band 79%, saturation ≤ 85%) as a tested util; the colour comes from `SwatchPicker`.
+- Editor (340 × 300 for every paper): × / Esc, pin to top, delete (asks first), ✓ / ⌘↵; rotate, stack picker (indented by depth, "+ New stack"), colour dot (sticky only), inline tags. Esc closes an open picker first.
+- Stacks: open with the path floating at the board's top left; hover tools rename inline ("Untitled stack" when empty) and remove (asks; contents move up).
+- Drag with `trackPointer` + `liftGhost`: onto a stack moves in (it opens up), onto a snap makes a new stack named inline, onto a path step moves up; auto-scroll near the edges; a press under 5 px is a click; off while searching. Moves don't ask and show "Moved to …".
+- Search: snap text and stack names across all stacks, each result labelled "in <path>".
+- Without hover, the snap and stack tools are always visible.
+
+**Done when**
+- Every add, edit, pin, move, stack rename, stack removal and delete persists; the board matches the mockup.
+
+---
+
+## L6 · Library Home  ☐
+
+**Read:** decisions §15 · `designs/library.dc.html`
+
+**Build**
+- Home first in the switch, reading real data: the counts line, five recent words (title + first line of Meaning), the four latest snaps on the mini board, five newest references. Each item opens in its area; "All →" / "Board →" switch area.
+- Search on Home: one list grouped by area with counts; a result opens in its area.
+- + on Home: the "what is this?" box. Guess as you type (a URL → References; one line of four words / 40 characters or fewer → Words; anything else → Snaps; util with tests), a Save-to switch overrides it, Continue (Enter) opens that area's add with the text in: a link starts its title fetch, a word its lookup, longer text lands on a snap paper. Shift+Enter adds a line.
+
+**Done when**
+- Each hand-off opens the right add with the text in and starts its fetch or lookup; Home and its search show live data.
+
+**Deferred (not in L0–L6):** Undo on deletes and moves, fetching a title in the background after save, a full-text index, the tag filter, phone layouts, the dark board, drag on touch, links between Library items.
 
 ---
 

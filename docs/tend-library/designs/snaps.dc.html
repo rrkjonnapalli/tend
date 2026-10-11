@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Snaps: add and edit a snap</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tend.css">
+<link rel="stylesheet" href="snaps.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Lato:wght@400;700&amp;family=Montserrat:wght@500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="{{ appCls }}" style="font-family: 'Lato', sans-serif; color: #303841; position: relative;" ref="{{ appRef }}">
+  
+
+  <sc-if value="{{ composing }}" hint-placeholder-val="{{ false }}">
+    <div class="veil">
+      <div class="{{ d.outer }}" style="{{ d.style }}" role="dialog" aria-label="{{ d.label }}">
+        <div class="{{ d.cls }}" style="{{ d.paperStyle }}">
+          <textarea class="ink" aria-label="Snap text" placeholder="Write it down…" value="{{ draft }}" onChange="{{ onDraft }}" onKeyDown="{{ onKey }}" ref="{{ inkRef }}"></textarea>
+          <div class="foot">
+            <button class="pbtn" aria-label="{{ d.cycleLabel }}" title="{{ d.cycleLabel }}" onClick="{{ cycle }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"></path><path d="M4 3v5h5"></path><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"></path><path d="M20 21v-5h-5"></path></svg></button>
+            <button class="where" aria-label="{{ destLabel }}" title="{{ destLabel }}" aria-expanded="{{ destExpanded }}" onClick="{{ toggleDest }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 9h14v10H5z"></path><path d="M7 6h10"></path><path d="M9 3h6"></path></svg><span>{{ destName }}</span></button>
+            <sc-if value="{{ isSticky }}" hint-placeholder-val="{{ false }}">
+              <button class="cdot" aria-label="Sticky colour" title="Sticky colour" aria-expanded="{{ pickerExpanded }}" onClick="{{ togglePicker }}"><span style="{{ dotStyle }}"></span></button>
+            </sc-if>
+            <div class="tag tagchips" role="group" aria-label="Tags">
+              <sc-for list="{{ draftTags }}" as="t" hint-placeholder-count="1"><button class="tchip" aria-label="{{ t.aria }}" title="Remove" onClick="{{ t.remove }}">#{{ t.name }}</button></sc-for>
+              <input aria-label="Add a tag" placeholder="{{ tagPlaceholder }}" maxlength="24" spellcheck="false" autocomplete="off" value="{{ tagInput }}" onChange="{{ onTagInput }}" onKeyDown="{{ onTagInputKey }}" onBlur="{{ commitTagInput }}">
+            </div>
+
+            <sc-if value="{{ showDest }}" hint-placeholder-val="{{ false }}">
+              <div class="menu" role="listbox" aria-label="Put in stack">
+                <sc-for list="{{ destOptions }}" as="o" hint-placeholder-count="5">
+                  <button class="{{ o.cls }}" style="{{ o.indent }}" role="option" aria-selected="{{ o.selected }}" onClick="{{ o.pick }}">{{ o.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ showPicker }}" hint-placeholder-val="{{ false }}">
+              <div class="picker" role="group" aria-label="Pick a sticky colour">
+                <div class="grid">
+                  <sc-for list="{{ swatches }}" as="w" hint-placeholder-count="20">
+                    <button class="{{ w.cls }}" style="{{ w.style }}" aria-label="{{ w.hex }}" title="{{ w.hex }}" aria-pressed="{{ w.pressed }}" onClick="{{ w.pick }}"></button>
+                  </sc-for>
+                </div>
+                <div class="hexrow">
+                  <span class="cur" style="{{ dotStyle }}"></span>
+                  <input aria-label="Hex colour" spellcheck="false" autocomplete="off" maxlength="7" value="{{ hexDraft }}" onChange="{{ onHex }}" onKeyDown="{{ onHexKey }}">
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+        <span class="pin" aria-hidden="true"></span>
+        <button class="pbtn corner l" aria-label="Cancel" title="Cancel (Esc)" onClick="{{ cancel }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+        <span class="corner-r">
+          <button class="{{ d.pinCls }}" aria-label="Pin to top" title="{{ d.pinTitle }}" aria-pressed="{{ d.pinPressed }}" onClick="{{ togglePinDraft }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3z"></path><path d="M12 14v6"></path></svg></button>
+          <sc-if value="{{ isEditing }}" hint-placeholder-val="{{ false }}">
+            <button class="pbtn soft" aria-label="Delete snap" title="Delete snap" onClick="{{ deleteEditing }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"></path><path d="M10 7V5h4v2"></path><path d="M7 7l1 12h8l1-12"></path></svg></button>
+          </sc-if>
+          <button class="pbtn save" aria-label="{{ d.saveLabel }}" title="{{ d.saveLabel }} (⌘↵)" onClick="{{ save }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg></button>
+        </span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+    <div class="toast" role="status">
+      <span class="pin"></span>{{ toast }}
+      <sc-if value="{{ canUndo }}" hint-placeholder-val="{{ false }}">
+        <button class="undo" onClick="{{ undo }}">Undo</button>
+      </sc-if>
+      <sc-if value="{{ noUndo }}" hint-placeholder-val="{{ true }}"><span class="gap"></span></sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ hasGhost }}" hint-placeholder-val="{{ false }}">
+    <div class="ghost" style="{{ ghost.style }}" aria-hidden="true">
+      <div class="ghost-in">
+        <sc-if value="{{ ghost.isSnap }}" hint-placeholder-val="{{ true }}">
+          <div class="{{ ghost.outer }}">
+            <article class="{{ ghost.cls }}" style="{{ ghost.paperStyle }}">
+              <div class="txt">{{ ghost.text }}</div>
+              <div class="foot"><span>{{ ghost.date }}</span><span class="tag">{{ ghost.tag }}</span></div>
+            </article>
+            <span class="pin"></span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ ghost.isStack }}" hint-placeholder-val="{{ false }}">
+          <div class="stack">
+            <span class="under u2"></span>
+            <span class="under u1"></span>
+            <span class="top">
+              <span class="name">{{ ghost.name }}</span>
+              <span class="peek">{{ ghost.peek }}</span>
+              <span class="foot"><span>{{ ghost.count }}</span><span class="tag">stack</span></span>
+            </span>
+            <span class="clip"></span>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <div class="body">
+    <main class="pane">
+      <div class="list-page" style="gap: 16px; overflow: hidden;">
+        <sc-if value="{{ standalone }}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; align-items: flex-end; gap: 16px;">
+          <div style="display: flex; flex-direction: column;">
+            <sc-if value="{{ inStack }}" hint-placeholder-val="{{ false }}">
+              <nav class="trail" aria-label="Stack path">
+                <sc-for list="{{ crumbs }}" as="c" hint-placeholder-count="1">
+                  <button class="{{ c.cls }}" data-drop="{{ c.key }}" onClick="{{ c.go }}">{{ c.name }}</button><span class="sep">/</span>
+                </sc-for>
+              </nav>
+            </sc-if>
+            <h1 class="title">{{ head.title }}</h1>
+            <span class="caption">{{ head.caption }}</span>
+          </div>
+          <div class="tagbox">
+            <button class="{{ tagBtnCls }}" aria-haspopup="listbox" aria-expanded="{{ tagExpanded }}" onClick="{{ toggleTags }}"><span class="hash">#</span><span class="lbl">{{ tagBtnLabel }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg></button>
+            <sc-if value="{{ hasTagFilter }}" hint-placeholder-val="{{ false }}">
+              <button class="tagclear" aria-label="Clear tag filter" title="Clear tag filter" onClick="{{ clearTag }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"></path></svg></button>
+            </sc-if>
+            <sc-if value="{{ tagOpen }}" hint-placeholder-val="{{ false }}">
+              <div class="tagpop">
+                <input class="tagq" role="combobox" aria-label="Find a tag" aria-expanded="true" placeholder="Find a tag" spellcheck="false" autocomplete="off" value="{{ tagQuery }}" onChange="{{ onTagQuery }}" onKeyDown="{{ onTagKey }}" ref="{{ focusRef }}">
+                <div class="taglist" role="listbox" aria-label="Tags">
+                  <sc-for list="{{ tagOptions }}" as="t" hint-placeholder-count="4">
+                    <button class="{{ t.cls }}" role="option" aria-selected="{{ t.selected }}" onClick="{{ t.pick }}"><span>{{ t.label }}</span><span class="n">{{ t.count }}</span></button>
+                  </sc-for>
+                  <sc-if value="{{ noTagMatch }}" hint-placeholder-val="{{ false }}"><span class="tagnone">No tags match</span></sc-if>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+<sc-if value="{{ standalone }}" hint-placeholder-val="{{ true }}">          <button class="icon-btn" aria-label="{{ head.addLabel }}" title="{{ head.addLabel }}" onClick="{{ compose }}" style="width: 32px; height: 32px; margin-left: auto; margin-right: -8px;"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
+          <label class="search" style="width: 280px; height: 32px;"><svg class="ico sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg><input class="search-in" type="search" aria-label="Search snaps and stacks" placeholder="Search snaps and stacks" value="{{ query }}" onChange="{{ onQuery }}" onKeyDown="{{ onQueryKey }}"></label></sc-if>
+        </div>
+        </sc-if>
+
+        <div class="board" ref="{{ boardRef }}">
+          <sc-if value="{{ floatTrail }}" hint-placeholder-val="{{ false }}">
+            <nav class="trail float" aria-label="Stack path">
+              <sc-for list="{{ crumbs }}" as="c" hint-placeholder-count="1">
+                <button class="{{ c.cls }}" data-drop="{{ c.key }}" onClick="{{ c.go }}">{{ c.name }}</button><span class="sep">/</span>
+              </sc-for>
+              <b class="here">{{ head.title }}</b>
+            </nav>
+          </sc-if>
+          <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+            <div class="empty">
+              <p class="e1">{{ empty.title }}</p>
+              <p class="e2">{{ empty.hint }}</p>
+            </div>
+          </sc-if>
+          <div class="surface">
+            <sc-for list="{{ items }}" as="it" hint-placeholder-count="8">
+              <div class="{{ it.itemCls }}" style="{{ it.tilt }}" data-drop="{{ it.key }}" onPointerDown="{{ it.press }}">
+                <sc-if value="{{ it.hasWhere }}" hint-placeholder-val="{{ false }}"><span class="in-label">{{ it.whereLabel }}</span></sc-if>
+                <sc-if value="{{ it.isStack }}" hint-placeholder-val="{{ false }}">
+                  <div class="{{ it.stackCls }}">
+                    <span class="under u2"></span>
+                    <span class="under u1"></span>
+                    <span class="top">
+                      <sc-if value="{{ it.showName }}" hint-placeholder-val="{{ true }}"><span class="name">{{ it.name }}</span></sc-if>
+                      <sc-if value="{{ it.renaming }}" hint-placeholder-val="{{ false }}"><span class="name-space"></span></sc-if>
+                      <span class="peek">{{ it.peek }}</span>
+                      <span class="foot"><span>{{ it.count }}</span><span class="tag">stack</span></span>
+                    </span>
+                    <span class="clip" aria-hidden="true"></span>
+                    <button class="hit" aria-label="{{ it.aria }}" onClick="{{ it.open }}"></button>
+                    <sc-if value="{{ it.renaming }}" hint-placeholder-val="{{ false }}">
+                      <input class="rename" aria-label="Stack name" placeholder="Name this stack" maxlength="40" value="{{ renameDraft }}" onChange="{{ onRename }}" onKeyDown="{{ onRenameKey }}" onBlur="{{ commitRename }}" ref="{{ focusRef }}">
+                    </sc-if>
+                    <span class="tools">
+                      <button class="del" aria-label="{{ it.renameLabel }}" title="Rename" onClick="{{ it.startRename }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg></button>
+                      <button class="del" aria-label="{{ it.delLabel }}" title="Remove stack (keeps its snaps)" onClick="{{ it.remove }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"></path><path d="M10 7V5h4v2"></path><path d="M7 7l1 12h8l1-12"></path></svg></button>
+                    </span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ it.isSnap }}" hint-placeholder-val="{{ true }}">
+                  <div class="{{ it.outer }}">
+                    <article class="{{ it.cls }}" style="{{ it.paperStyle }}">
+                      <div class="txt">{{ it.text }}</div>
+                      <div class="foot"><span>{{ it.date }}</span><span class="tag">{{ it.tag }}</span></div>
+                    </article>
+                    <span class="pin" aria-hidden="true"></span>
+                    <button class="hit" aria-label="{{ it.aria }}" onClick="{{ it.edit }}"></button>
+                    <span class="snap-tools">
+                      <button class="{{ it.pinBtnCls }}" aria-label="{{ it.pinLabel }}" title="{{ it.pinLabel }}" aria-pressed="{{ it.pinPressed }}" onClick="{{ it.togglePin }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6l-1 5 3 3v2H7v-2l3-3z"></path><path d="M12 14v6"></path></svg></button>
+                      <button class="del" aria-label="{{ it.delLabel }}" title="Delete" onClick="{{ it.remove }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14"></path><path d="M10 7V5h4v2"></path><path d="M7 7l1 12h8l1-12"></path></svg></button>
+                    </span>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div><sc-if value="{{ standalone }}" hint-placeholder-val="{{ true }}"><nav class="nav" aria-label="Main">
+    <span></span>
+    <div class="tabs">
+      <button class="tab" aria-label="Notes"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h5"></path></svg></button>
+      <button class="tab" aria-label="Tasks"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></button>
+      <button class="tab" aria-label="People"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></button>
+      <button class="tab" aria-label="Words"><svg viewBox="0 0 24 24"><path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3z"></path><path d="M21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"></path></svg></button>
+      <button class="tab on" aria-label="Snaps"><svg viewBox="0 0 24 24"><path d="M10 7H6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3v1a3 3 0 0 1-3 3"></path><path d="M20 7h-4a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3v1a3 3 0 0 1-3 3"></path></svg></button>
+      <button class="tab" aria-label="References"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"></path><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg></button>
+    </div>
+    <div class="right">
+      <button class="icon-btn" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg></button>
+      <button class="icon-btn" aria-label="Feedback"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M8.5 11h7M8.5 14.5h4"></path></svg></button>
+    </div>
+  </nav></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"embedded":{"editor":null},"query":{"editor":null},"addRequest":{"editor":null},"onAddTaken":{"editor":null},"empty":{"editor":"boolean","default":false},"$preview":{"width":1280,"height":800}}'>
+// Board + the add / edit / delete flow.
+// The board lays snaps out in even columns: every snap is shown whole, nothing overlaps,
+// and it scrolls when there is more. Positions are not stored.
+// + opens a blank paper; clicking a snap opens it on the same paper to edit.
+// Hover a snap for the small bin at its top right (Undo in the toast).
+// Stacks: drag a snap onto a stack to move it in, onto a snap to make a new stack,
+// onto the path above the board to move it out; or pick the stack from the paper.
+// Hover a stack to rename it or remove it (its snaps move up a level).
+const STACKS = [
+  { id: 'work', parent: null, name: 'Work rules' },
+  { id: 'haiku', parent: null, name: 'Haiku drafts' },
+  { id: 'letters', parent: null, name: 'Unsent letters' },
+  { id: 'reviews', parent: 'work', name: 'Code reviews' },
+  { id: 'monsoon', parent: 'haiku', name: 'Monsoon' },
+];
+
+const SEED = [
+  { folder: null, kind: 'lined', date: '28 Sep', tags: ['poem'], text: 'The first cold morning.\nEveryone on the street\nwalking a little faster\nas if late for winter.' },
+  { folder: null, kind: 'sticky', color: '#d4b23b', date: 'Thu', tags: ['poem'], text: 'late train —\nthe window holds\na second, quieter city' },
+  { folder: null, kind: 'slip', date: '2 Sep', tags: ['poem'], text: 'rain on the skylight, the whole flat listening' },
+  { folder: null, kind: 'scrap', date: '14 Sep', tags: ['poem', 'home'], text: 'the kettle clicks off\nbefore I remember\nwhy I stood up' },
+  { folder: null, kind: 'sticky', color: '#82d4a8', date: '9 Sep', tags: ['thought'], text: 'A good name is one you never have to explain twice.' },
+  { folder: null, kind: 'scrap', date: 'Today', tags: ['thought'], pinned: true, text: 'write it down before\nit becomes a feeling' },
+  { folder: null, kind: 'plain', date: '20 Aug', tags: ['poem'], text: 'the sea says\neverything twice:\nleave, return,\nleave, return.' },
+  { folder: null, kind: 'slip', date: '18 Aug', tags: ['work'], text: 'Measure twice, ship once, then measure again.' },
+  { folder: null, kind: 'sticky', color: '#5b9ee8', date: '12 Aug', tags: ['thought'], text: 'Rest is part\nof the work.' },
+
+  { folder: 'work', kind: 'lined', date: 'Today', tags: ['thought', 'code'], text: 'Good code reads like\na short letter: one idea\nper line, and no apology\nat the end.' },
+  { folder: 'work', kind: 'sticky', color: '#e57a80', date: 'Tue', tags: ['work'], text: 'Say less in the standup. Write more in the ticket.' },
+  { folder: 'work', kind: 'scrap', date: '5 Sep', tags: ['work'], text: 'Ship the boring\nversion first.' },
+  { folder: 'work', kind: 'slip', date: '1 Sep', tags: ['work'], text: 'Delete the meeting, keep the decision.' },
+
+  { folder: 'reviews', kind: 'scrap', date: '3 Oct', tags: ['work', 'code'], text: 'Review the diff,\nnot the person.' },
+  { folder: 'reviews', kind: 'slip', date: '26 Sep', tags: ['work'], text: 'If it needs a comment, it might need a better name.' },
+  { folder: 'reviews', kind: 'lined', date: '19 Sep', tags: ['work'], text: 'Approve with notes\nbeats blocking\nin silence.' },
+
+  { folder: 'haiku', kind: 'scrap', date: 'Wed', tags: ['poem', 'haiku'], text: 'morning fog —\nthe crane lifts nothing\nfor an hour' },
+  { folder: 'haiku', kind: 'lined', date: '30 Sep', tags: ['poem', 'haiku'], text: 'power cut —\nthe whole street\nfinds the moon' },
+  { folder: 'haiku', kind: 'slip', date: '21 Sep', tags: ['poem', 'haiku'], text: 'first tea —\nthe steam writes something\nI can’t read' },
+  { folder: 'haiku', kind: 'scrap', date: '17 Sep', tags: ['poem', 'haiku'], text: 'night window\nmy reflection\nkeeps the umbrella' },
+
+  { folder: 'monsoon', kind: 'scrap', date: '2 Aug', tags: ['poem', 'haiku'], text: 'first rain —\nthe whole street\nsmells of clay' },
+  { folder: 'monsoon', kind: 'lined', date: '28 Jul', tags: ['poem', 'haiku'], text: 'puddle sky —\na bus drives\nthrough the clouds' },
+
+  { folder: 'letters', kind: 'lined', date: '6 Aug', tags: ['thought'], text: 'Dear old flat,\nthe new one has better light,\nyou had better neighbours.' },
+  { folder: 'letters', kind: 'scrap', date: '30 Jul', tags: ['thought'], text: 'to whoever finds\nmy lost umbrella:\nkeep it, it never\nliked me anyway' },
+];
+
+const PAPERS = [
+  { kind: 'scrap', name: 'scrap' },
+  { kind: 'slip', name: 'slip' },
+  { kind: 'lined', name: 'lined paper' },
+  { kind: 'plain', name: 'plain card' },
+  { kind: 'sticky', name: 'sticky note' },
+];
+
+const PALETTE = [
+  '#7d8791', '#475162', '#2b5cd0', '#5b9ee8', '#4550b5',
+  '#7262e0', '#b3b0f5', '#9440b8', '#b2365c', '#e57a80',
+  '#cc2a3c', '#c87451', '#df8c33', '#d4b23b', '#7d8c3a',
+  '#3e7a57', '#82d4a8', '#3e8a8a', '#4fa6c8', '#8a6f64',
+];
+
+// a small, steady tilt per position keeps the pinned feel without overlap
+const TILTS = [-1.6, 1.2, -0.6, 1.8, -1.2, 0.6, 1.4, -1.8];
+
+const DRAFT = { w: 340, h: 300 };
+
+function hexToHsl(hex) {
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let hue = 0;
+  let sat = 0;
+  if (max !== min) {
+    const d = max - min;
+    sat = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    if (max === r) hue = ((g - b) / d + (g < b ? 6 : 0)) * 60;
+    else if (max === g) hue = ((b - r) / d + 2) * 60;
+    else hue = ((r - g) / d + 4) * 60;
+  }
+  return { h: Math.round(hue), s: Math.round(sat * 100) };
+}
+
+// the picked colour sets the hue; the paper is a light tint of it so dark text always reads
+function stickyPaper(hex) {
+  const c = hexToHsl(hex);
+  const s = Math.min(c.s, 85);
+  return 'background: linear-gradient(hsl(' + c.h + ' ' + s + '% 79%) 0 14px, hsl(' + c.h + ' ' + s + '% 87%) 14px);';
+}
+
+function validHex(v) {
+  return /^#([0-9a-f]{3}|[0-9a-f]{6})$/.test(v);
+}
+
+function cleanTag(v) {
+  return (v || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 24);
+}
+
+function plural(n, word) {
+  return n + ' ' + word + (n === 1 ? '' : 's');
+}
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.inkRef = { current: null };
+    this.appRef = { current: null };
+    this.boardRef = { current: null };
+    this.onMove = (ev) => this.move(ev);
+    this.onUp = () => this.up();
+    this.onCancel = () => this.cancelPress();
+    this.focusRef = (el) => { if (el && document.activeElement !== el) el.focus(); };
+    this.state = {
+      open: null,
+      snaps: props.empty ? [] : SEED.map((s, i) => ({ ...s, id: 's' + i })),
+      stacks: props.empty ? [] : STACKS.slice(),
+      query: '',           // global search over snap text and stack names
+      tagFilter: null,     // one tag, picked from the combobox
+      tagOpen: false,
+      tagQuery: '',
+      pinDraft: false,
+      composing: false,
+      editingId: null,
+      draft: '',
+      paper: 0,
+      color: '#d4b23b',
+      hexDraft: '#d4b23b',
+      pickerOpen: false,
+      dest: null,          // stack id the snap goes in; null = loose on Snaps; '__new' = a new stack here
+      destOpen: false,
+      tags: [],           // tags on the snap being written
+      tagInput: '',
+      justPinned: null,
+      toast: '',
+      undo: null,          // { snaps, stacks } before the last delete / move
+      drag: null,          // { type: 'snap' | 'stack', id }
+      over: null,          // key of the item or crumb under the pointer while dragging
+      ghost: null,         // { x, y } of the lifted copy, in artboard pixels
+      renamingId: null,
+      renameDraft: '',
+      seq: 0,
+    };
+  }
+
+  // inside the Library: the Library's + asks this area to open its own add, maybe with text already typed
+  componentDidMount() { this.takeAdd(); }
+  componentDidUpdate() { this.takeAdd(); }
+  takeAdd() {
+    const r = this.props.addRequest;
+    if (!r || r.n === this.lastAdd) return;
+    this.lastAdd = r.n;
+    this.openFromLibrary(r.text || '');
+    if (this.props.onAddTaken) this.props.onAddTaken();
+  }
+
+  openFromLibrary(text) {
+    this.compose();
+    if (text) setTimeout(() => this.setState({ draft: text }), 0);
+  }
+
+  componentWillUnmount() {
+    clearTimeout(this.toastTimer);
+    window.removeEventListener('pointermove', this.onMove);
+    window.removeEventListener('pointerup', this.onUp);
+    window.removeEventListener('pointercancel', this.onCancel);
+  }
+
+  focusInk() {
+    setTimeout(() => { if (this.inkRef.current) this.inkRef.current.focus(); }, 30);
+  }
+
+  say(msg, ms) {
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => this.setState({ toast: '', undo: null }), ms || 2600);
+    return msg;
+  }
+
+  stackById(id) { return this.state.stacks.find((s) => s.id === id); }
+
+  pathOf(id) {
+    const path = [];
+    let cur = this.stackById(id);
+    while (cur) {
+      path.unshift(cur);
+      const parent = cur.parent;
+      cur = this.stackById(parent);
+    }
+    return path;
+  }
+
+  where(id) {
+    return id ? this.pathOf(id).map((p) => p.name).join(' / ') : 'Snaps';
+  }
+
+  // true when `id` is `ancestor` or lives somewhere inside it
+  isWithin(id, ancestor) {
+    let cur = this.stackById(id);
+    while (cur) {
+      if (cur.id === ancestor) return true;
+      cur = this.stackById(cur.parent);
+    }
+    return false;
+  }
+
+  newStack(parent, seq) {
+    return { id: 'stack' + seq, parent, name: '' };
+  }
+
+  // ---------- moving ----------
+
+  moveTo(src, folder) {
+    const s = this.state;
+    const undo = { snaps: s.snaps, stacks: s.stacks };
+    if (src.type === 'stack') {
+      if (src.id === folder || this.isWithin(folder, src.id)) {
+        this.setState({ drag: null, over: null, ghost: null, toast: this.say('A stack can’t go inside itself') });
+        return;
+      }
+      this.setState({
+        stacks: s.stacks.map((st) => (st.id === src.id ? { ...st, parent: folder } : st)),
+        drag: null, over: null, ghost: null, undo, toast: this.say('Moved to ' + this.where(folder), 5000),
+      });
+      return;
+    }
+    this.setState({
+      snaps: s.snaps.map((n) => (n.id === src.id ? { ...n, folder } : n)),
+      drag: null, over: null, ghost: null, undo, toast: this.say('Moved to ' + this.where(folder), 5000),
+    });
+  }
+
+  // a snap dropped on a snap: both go into a new stack, named right there
+  pair(srcId, targetId) {
+    const s = this.state;
+    const seq = s.seq + 1;
+    const stack = this.newStack(s.open, seq);
+    this.setState({
+      stacks: s.stacks.concat([stack]),
+      snaps: s.snaps.map((n) => (n.id === srcId || n.id === targetId ? { ...n, folder: stack.id } : n)),
+      seq, drag: null, over: null, ghost: null, justPinned: stack.id,
+      undo: { snaps: s.snaps, stacks: s.stacks },
+      renamingId: stack.id, renameDraft: '',
+    });
+  }
+
+  removeStack(st) {
+    const s = this.state;
+    const undo = { snaps: s.snaps, stacks: s.stacks };
+    const n = s.snaps.filter((x) => x.folder === st.id).length;
+    this.setState({
+      stacks: s.stacks.filter((x) => x.id !== st.id).map((x) => (x.parent === st.id ? { ...x, parent: st.parent } : x)),
+      snaps: s.snaps.map((x) => (x.folder === st.id ? { ...x, folder: st.parent } : x)),
+      undo, justPinned: null,
+      toast: this.say('Stack removed' + (n ? ', ' + n + (n === 1 ? ' snap' : ' snaps') + ' moved to ' + this.where(st.parent) : ''), 5000),
+    });
+  }
+
+  removeSnap(snap) {
+    const s = this.state;
+    this.setState({
+      snaps: s.snaps.filter((n) => n.id !== snap.id),
+      undo: { snaps: s.snaps, stacks: s.stacks },
+      justPinned: null, toast: this.say('Snap deleted', 5000),
+    });
+  }
+
+  commitTag(raw) {
+    const t = cleanTag(raw != null ? raw : this.state.tagInput);
+    const tags = this.state.tags;
+    this.setState({ tags: t && tags.indexOf(t) < 0 ? tags.concat([t]) : tags, tagInput: '' });
+  }
+
+  togglePin(snap) {
+    const s = this.state;
+    const pinned = !snap.pinned;
+    this.setState({
+      snaps: s.snaps.map((n) => (n.id === snap.id ? { ...n, pinned } : n)),
+      undo: null, toast: this.say(pinned ? 'Pinned to the top' : 'Unpinned'),
+    });
+  }
+
+  deleteEditing() {
+    const snap = this.state.snaps.find((n) => n.id === this.state.editingId);
+    this.setState({ composing: false, pickerOpen: false, destOpen: false, editingId: null });
+    if (snap) this.removeSnap(snap);
+  }
+
+  undoLast() {
+    const u = this.state.undo;
+    if (!u) return;
+    clearTimeout(this.toastTimer);
+    this.setState({ snaps: u.snaps, stacks: u.stacks, undo: null, toast: '' });
+  }
+
+  openStack(id) {
+    if (this.state.renamingId) return;
+    this.setState({ open: id, justPinned: null });
+    if (this.boardRef.current) this.boardRef.current.scrollTop = 0;
+  }
+
+  startRename(st) {
+    this.setState({ renamingId: st.id, renameDraft: st.name });
+  }
+
+  commitRename() {
+    const s = this.state;
+    if (!s.renamingId) return;
+    const name = s.renameDraft.trim() || 'Untitled stack';
+    this.setState({
+      stacks: s.stacks.map((st) => (st.id === s.renamingId ? { ...st, name } : st)),
+      renamingId: null, renameDraft: '',
+    });
+  }
+
+  // ---------- the paper ----------
+
+  compose() {
+    this.setState({ composing: true, editingId: null, draft: '', tags: [], tagInput: '', dest: this.state.open, pinDraft: false, pickerOpen: false, destOpen: false, tagOpen: false });
+    this.focusInk();
+  }
+
+  edit(snap) {
+    const paper = PAPERS.findIndex((p) => p.kind === snap.kind);
+    const color = snap.color || this.state.color;
+    this.setState({
+      composing: true, editingId: snap.id, draft: snap.text, tags: (snap.tags || []).slice(), tagInput: '', dest: snap.folder, pinDraft: !!snap.pinned, tagOpen: false,
+      paper, color, hexDraft: color, pickerOpen: false, destOpen: false,
+    });
+    this.focusInk();
+  }
+
+  cancel() { this.setState({ composing: false, pickerOpen: false, destOpen: false }); }
+
+  save() {
+    const s = this.state;
+    if (!s.draft.trim()) { this.focusInk(); return; }
+    const paper = PAPERS[s.paper];
+    const pending = cleanTag(s.tagInput);
+    const tags = pending && s.tags.indexOf(pending) < 0 ? s.tags.concat([pending]) : s.tags;
+    const look = { kind: paper.kind, color: paper.kind === 'sticky' ? s.color : undefined, tags, text: s.draft, pinned: s.pinDraft };
+    let seq = s.seq;
+    let stacks = s.stacks;
+    let folder = s.dest;
+    let renamingId = null;
+    let justPinned = null;
+
+    if (s.dest === '__new') {
+      seq += 1;
+      const stack = this.newStack(s.open, seq);
+      stacks = stacks.concat([stack]);
+      folder = stack.id;
+      renamingId = stack.id;
+      justPinned = stack.id;
+    }
+    const base = { stacks, seq, composing: false, pickerOpen: false, destOpen: false, renamingId, renameDraft: '', undo: null };
+
+    if (s.editingId) {
+      const before = s.snaps.find((n) => n.id === s.editingId);
+      const moved = before && before.folder !== folder;
+      this.setState({
+        ...base,
+        snaps: [{ ...before, ...look, folder, date: 'Edited now' }].concat(s.snaps.filter((n) => n.id !== s.editingId)),
+        justPinned,
+        toast: renamingId ? '' : this.say(moved ? 'Saved and moved to ' + this.where(folder) : 'Saved'),
+      });
+      return;
+    }
+
+    seq += 1;
+    const snap = { id: 'new' + seq, folder, date: 'Now', ...look };
+    this.setState({
+      ...base, seq,
+      snaps: [snap].concat(s.snaps),
+      justPinned: justPinned || snap.id,
+      toast: renamingId ? '' : this.say('Added to ' + this.where(folder)),
+    });
+  }
+
+  // ---------- drag (pointer based: smooth, and the copy keeps its real size) ----------
+
+  press(type, id, key, click) {
+    return (e) => {
+      if (e.button !== 0 || this.state.composing) return;
+      if (e.target.closest && e.target.closest('.del, .tools, input')) return;
+      const app = this.appRef.current;
+      if (!app) return;
+      const item = e.currentTarget || (e.target.closest && e.target.closest('[data-drop]'));
+      if (!item) return;
+      const r = item.getBoundingClientRect();
+      const appRect = app.getBoundingClientRect();
+      const scale = appRect.width / app.offsetWidth || 1;
+      this.pending = {
+        type, id, key, click, noDrag: this.searching(), started: false, startX: e.clientX, startY: e.clientY,
+        ox: (e.clientX - r.left) / scale, oy: (e.clientY - r.top) / scale,
+        w: item.offsetWidth, scale, appRect,
+      };
+      this.release();
+      window.addEventListener('pointermove', this.onMove);
+      window.addEventListener('pointerup', this.onUp);
+      window.addEventListener('pointercancel', this.onCancel);
+    };
+  }
+
+  move(ev) {
+    const p = this.pending;
+    if (!p) return;
+    if (!p.started) {
+      if (p.noDrag || Math.hypot(ev.clientX - p.startX, ev.clientY - p.startY) < 5) return;
+      p.started = true;
+      this.setState({ drag: { type: p.type, id: p.id, key: p.key, w: p.w } });
+    }
+    ev.preventDefault();
+    p.lastX = ev.clientX;
+    p.lastY = ev.clientY;
+    if (this.frame) return;
+    this.frame = requestAnimationFrame(() => {
+      this.frame = null;
+      const q = this.pending;
+      if (!q) return;
+      const x = (q.lastX - q.appRect.left) / q.scale - q.ox;
+      const y = (q.lastY - q.appRect.top) / q.scale - q.oy;
+      const el = document.elementFromPoint(q.lastX, q.lastY);
+      const hit = el && el.closest ? el.closest('[data-drop]') : null;
+      let over = hit ? hit.getAttribute('data-drop') : null;
+      if (over === q.key) over = null;
+      if (over && over.indexOf('snap:') === 0 && q.type !== 'snap') over = null;
+      // scroll the board when held near its top or bottom edge
+      const board = this.boardRef.current;
+      if (board) {
+        const br = board.getBoundingClientRect();
+        if (q.lastY > br.bottom - 48) board.scrollTop += 14;
+        else if (q.lastY < br.top + 48) board.scrollTop -= 14;
+      }
+      this.setState({ ghost: { x, y }, over });
+    });
+  }
+
+  release() {
+    window.removeEventListener('pointermove', this.onMove);
+    window.removeEventListener('pointerup', this.onUp);
+    window.removeEventListener('pointercancel', this.onCancel);
+    if (this.frame) { cancelAnimationFrame(this.frame); this.frame = null; }
+  }
+
+  cancelPress() {
+    this.release();
+    this.pending = null;
+    if (this.state.drag) this.setState({ drag: null, over: null, ghost: null });
+  }
+
+  up() {
+    this.release();
+    const p = this.pending;
+    this.pending = null;
+    if (!p) return;
+    // a press that never moved is a click: open the snap or stack
+    if (!p.started) { if (p.click) p.click(); return; }
+    const over = this.state.over;
+    const src = { type: p.type, id: p.id };
+    this.setState({ ghost: null });
+    if (!over) { this.setState({ drag: null, over: null }); return; }
+    const [kind, target] = over.split(':');
+    if (kind === 'stack') this.moveTo(src, target);
+    else if (kind === 'snap') this.pair(src.id, target);
+    else if (kind === 'crumb') this.moveTo(src, target === 'root' ? null : target);
+    else this.setState({ drag: null, over: null });
+  }
+
+  searching() {
+    return !!(this.state.query.trim() || this.state.tagFilter);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const open = s.open;
+    const queryText = this.props.embedded ? (this.props.query || '') : s.query;
+    const q = queryText.trim().toLowerCase();
+    const results = !!(q || s.tagFilter);
+    // search is global: snap text and stack names, everywhere (a real text index does this in the app)
+    const here = (results
+      ? s.snaps.filter((n) => (!q || n.text.toLowerCase().indexOf(q) > -1) && (!s.tagFilter || (n.tags || []).indexOf(s.tagFilter) > -1))
+      : s.snaps.filter((n) => n.folder === open)
+    ).slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+    const subs = results
+      ? (q && !s.tagFilter ? s.stacks.filter((st) => (st.name || '').toLowerCase().indexOf(q) > -1) : [])
+      : s.stacks.filter((st) => st.parent === open);
+    const drag = s.drag;
+
+    const itemCls = (type, id, key) => {
+      let c = 'item' + (type === 'snap' ? ' pair-ghost' : '');
+      if (drag && drag.type === type && drag.id === id) c += ' dragging';
+      if (s.over === key) c += ' drop-on ' + (type === 'stack' ? 'into' : 'pair');
+      return c;
+    };
+
+    const snapItems = here.map((n) => {
+      const key = 'snap:' + n.id;
+      const first = n.text.split('\n')[0];
+      return {
+        isSnap: true, isStack: false,
+        itemCls: itemCls('snap', n.id, key),
+        outer: 'note' + (n.kind === 'scrap' ? ' is-scrap' : '') + (n.pinned ? ' top' : '') + (n.id === s.justPinned ? ' dropped' : ''),
+        hasWhere: results, whereLabel: 'in ' + this.where(n.folder),
+        pinBtnCls: 'del' + (n.pinned ? ' on' : ''),
+        pinLabel: n.pinned ? 'Unpin from top' : 'Pin to top',
+        pinPressed: n.pinned ? 'true' : 'false',
+        togglePin: () => this.togglePin(n),
+        cls: 'sheet ' + n.kind,
+        paperStyle: n.kind === 'sticky' ? stickyPaper(n.color || '#d4b23b') : '',
+        text: n.text, date: n.date,
+        tag: (n.tags || []).length ? '#' + n.tags[0] + (n.tags.length > 1 ? ' +' + (n.tags.length - 1) : '') : '',
+        aria: 'Edit snap: ' + first,
+        delLabel: 'Delete snap: ' + first,
+        key,
+        edit: (e) => { if (!e || e.detail === 0) this.edit(n); },
+        remove: () => this.removeSnap(n),
+        press: this.press('snap', n.id, key, () => this.edit(n)),
+      };
+    });
+
+    const stackItems = subs.map((st) => {
+      const key = 'stack:' + st.id;
+      const inside = s.snaps.filter((n) => n.folder === st.id);
+      const kids = s.stacks.filter((k) => k.parent === st.id);
+      const parts = [plural(inside.length, 'snap')];
+      if (kids.length) parts.push(plural(kids.length, 'stack'));
+      const name = st.name || 'Untitled stack';
+      const renaming = s.renamingId === st.id;
+      return {
+        isSnap: false, isStack: true,
+        hasWhere: results, whereLabel: 'in ' + this.where(st.parent),
+        itemCls: itemCls('stack', st.id, key),
+        stackCls: 'stack' + (st.id === s.justPinned ? ' dropped' : ''),
+        name, renaming, showName: !renaming,
+        peek: inside.length ? inside[0].text : kids.map((k) => k.name).join('\n'),
+        count: parts.join(' · '),
+        aria: 'Open stack ' + name + ', ' + parts.join(', '),
+        renameLabel: 'Rename stack ' + name,
+        delLabel: 'Remove stack ' + name + ', keeping its snaps',
+        key,
+        open: (e) => { if (!e || e.detail === 0) this.openStack(st.id); },
+        startRename: () => this.startRename(st),
+        remove: () => this.removeStack(st),
+        press: this.press('stack', st.id, key, () => this.openStack(st.id)),
+      };
+    });
+
+    // pinned snaps lead; stacks spread evenly between the rest
+    const pinnedCount = here.filter((n) => n.pinned).length;
+    const items = snapItems.slice();
+    stackItems.forEach((st, i) => {
+      const rest = snapItems.length - pinnedCount;
+      const at = pinnedCount + Math.min(rest + i, Math.round(((i + 1) * (rest + stackItems.length)) / (stackItems.length + 1)) - 1);
+      items.splice(Math.max(0, at), 0, st);
+    });
+    items.forEach((it, i) => { it.tilt = 'transform: rotate(' + TILTS[i % TILTS.length] + 'deg);'; });
+
+    const path = this.pathOf(open);
+    const current = path[path.length - 1];
+    // the path above the board: also where you drop things to move them up and out
+    const crumbs = [{ id: null, name: 'Snaps' }].concat(path.slice(0, -1).map((st) => ({ id: st.id, name: st.name || 'Untitled stack' })))
+      .map((c) => {
+        const key = 'crumb:' + (c.id || 'root');
+        return {
+          name: c.name,
+          cls: 'crumb' + (s.over === key ? ' drop-on' : ''),
+          key,
+          go: () => this.setState({ open: c.id, justPinned: null }),
+        };
+      });
+
+    const levelParts = [plural(here.length, 'snap')];
+    if (subs.length) levelParts.push(plural(subs.length, 'stack'));
+    const curName = current ? (current.name || 'Untitled stack') : '';
+    let caption = current
+      ? 'Stack · ' + levelParts.join(' · ')
+      : plural(s.snaps.length, 'snap') + ' · ' + plural(s.stacks.length, 'stack');
+    if (results) {
+      const parts = [];
+      if (s.tagFilter) parts.push('#' + s.tagFilter);
+      if (q) parts.push('\u201c' + queryText.trim() + '\u201d');
+      const n = here.length + subs.length;
+      caption = n + (n === 1 ? ' match' : ' matches') + ' for ' + parts.join(' + ') + ' across all stacks';
+    }
+    if (drag) {
+      caption = drag.type === 'snap'
+        ? (current ? 'Drop on a stack to move it, on a snap to make a stack, or on the path above to take it out'
+                   : 'Drop on a stack to move it in, or on another snap to make a stack')
+        : (current ? 'Drop on a stack to nest it, or on the path above to move it out'
+                   : 'Drop on another stack to nest it');
+    }
+    const head = {
+      title: current ? curName : 'Snaps',
+      caption,
+      search: current ? 'Search this stack' : 'Search snaps',
+      addLabel: current ? 'New snap in ' + curName : 'New snap',
+    };
+
+    // where the snap on the paper goes
+    const options = [];
+    const walk = (parent, depth) => {
+      s.stacks.filter((st) => st.parent === parent).forEach((st) => {
+        options.push({ id: st.id, label: st.name || 'Untitled stack', depth });
+        walk(st.id, depth + 1);
+      });
+    };
+    walk(null, 1);
+    const destOptions = [{ id: null, label: 'Snaps (loose)', depth: 0 }].concat(options).map((o) => ({
+      label: o.label,
+      indent: 'padding-left: ' + (10 + o.depth * 14) + 'px;',
+      cls: 'opt' + (o.id === s.dest ? ' on' : ''),
+      selected: o.id === s.dest ? 'true' : 'false',
+      pick: () => { this.setState({ dest: o.id, destOpen: false }); this.focusInk(); },
+    })).concat([{
+      label: '+ New stack' + (current ? ' in ' + curName : ''),
+      indent: '',
+      cls: 'opt new' + (s.dest === '__new' ? ' on' : ''),
+      selected: s.dest === '__new' ? 'true' : 'false',
+      pick: () => { this.setState({ dest: '__new', destOpen: false }); this.focusInk(); },
+    }]);
+    const destName = s.dest === '__new' ? 'New stack' : (s.dest ? (this.stackById(s.dest) || {}).name || 'Untitled stack' : 'Snaps');
+
+    const paper = PAPERS[s.paper];
+    const nextPaper = PAPERS[(s.paper + 1) % PAPERS.length];
+    const isSticky = paper.kind === 'sticky';
+    const d = {
+      outer: 'draft' + (paper.kind === 'scrap' ? ' is-scrap' : ''),
+      cls: 'sheet ' + paper.kind,
+      paperStyle: isSticky ? stickyPaper(s.color) : '',
+      style: 'width: ' + DRAFT.w + 'px; height: ' + DRAFT.h + 'px; transform: rotate(-1deg);',
+      cycleLabel: 'Change paper to ' + nextPaper.name,
+      label: s.editingId ? 'Edit snap' : head.addLabel,
+      saveLabel: s.editingId ? 'Save' : 'Add',
+      pinCls: 'pbtn pin-t' + (s.pinDraft ? ' on' : ''),
+      pinTitle: s.pinDraft ? 'Pinned to top' : 'Pin to top',
+      pinPressed: s.pinDraft ? 'true' : 'false',
+    };
+
+    // the lifted copy under the pointer
+    let ghost = null;
+    if (drag && s.ghost) {
+      const src = items.find((it) => it.key === drag.key);
+      if (src) {
+        ghost = {
+          ...src,
+          outer: src.isSnap ? 'note' + (src.outer.indexOf('is-scrap') > -1 ? ' is-scrap' : '') : '',
+          style: 'left: ' + s.ghost.x + 'px; top: ' + s.ghost.y + 'px; width: ' + drag.w + 'px;',
+        };
+      }
+    }
+
+    // tags in use, for the combobox (a snap can carry several)
+    const counts = {};
+    s.snaps.forEach((n) => (n.tags || []).forEach((t) => { counts[t] = (counts[t] || 0) + 1; }));
+    const tq = s.tagQuery.trim().toLowerCase().replace(/^#/, '');
+    const tagNames = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b))
+      .filter((t) => !tq || t.indexOf(tq) > -1);
+    const pickTag = (t) => {
+      this.setState({ tagFilter: t, tagOpen: false, tagQuery: '' });
+      if (this.boardRef.current) this.boardRef.current.scrollTop = 0;
+    };
+    const tagOptions = (tq ? [] : [{ t: null, label: 'All tags', count: String(s.snaps.length) }])
+      .concat(tagNames.map((t) => ({ t, label: '#' + t, count: String(counts[t]) })))
+      .map((o) => ({
+        label: o.label, count: o.count,
+        cls: 'opt' + (o.t === s.tagFilter ? ' on' : ''),
+        selected: o.t === s.tagFilter ? 'true' : 'false',
+        pick: () => pickTag(o.t),
+      }));
+
+    const isEmpty = items.length === 0;
+    const empty = results
+      ? { title: 'Nothing matches', hint: 'Try other words, or clear the tag.' }
+      : current
+        ? { title: 'Nothing in this stack yet', hint: 'Press + to add a snap here, or drag snaps onto this stack.' }
+        : { title: 'Nothing on the board yet', hint: 'Press + to pin your first snap.' };
+
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); this.save(); }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (this.state.pickerOpen || this.state.destOpen) this.setState({ pickerOpen: false, destOpen: false });
+        else this.cancel();
+      }
+    };
+
+    return {
+      items, head, crumbs,
+      isEmpty, empty,
+      query: s.query,
+      onQuery: (e) => {
+        this.setState({ query: e.target.value, tagOpen: false });
+        if (this.boardRef.current) this.boardRef.current.scrollTop = 0;
+      },
+      onQueryKey: (e) => { if (e.key === 'Escape') { e.preventDefault(); this.setState({ query: '' }); } },
+      tagBtnCls: 'tagbtn' + (s.tagFilter ? ' on' : ''),
+      tagBtnLabel: s.tagFilter || 'all tags',
+      tagExpanded: s.tagOpen ? 'true' : 'false',
+      hasTagFilter: !!s.tagFilter,
+      clearTag: () => this.setState({ tagFilter: null }),
+      toggleTags: () => this.setState({ tagOpen: !s.tagOpen, tagQuery: '' }),
+      tagOpen: s.tagOpen,
+      tagQuery: s.tagQuery,
+      tagOptions,
+      noTagMatch: tagOptions.length === 0,
+      onTagQuery: (e) => this.setState({ tagQuery: e.target.value.toLowerCase().replace(/[^a-z0-9_#]/g, '') }),
+      onTagKey: (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); if (tagNames.length) pickTag(tagNames[0]); }
+        if (e.key === 'Escape') { e.preventDefault(); this.setState({ tagOpen: false, tagQuery: '' }); }
+      },
+      isEditing: !!s.editingId,
+      togglePinDraft: () => this.setState({ pinDraft: !s.pinDraft }),
+      deleteEditing: () => this.deleteEditing(),
+      inStack: !!current,
+      atRoot: !current,
+      compose: () => this.compose(),
+      appRef: this.appRef,
+      boardRef: this.boardRef,
+      appCls: 'app s-app' + (s.drag ? ' is-dragging' : '') + (this.props.embedded ? ' embedded' : ''),
+      standalone: !this.props.embedded,
+      floatTrail: !!this.props.embedded && !!current,
+      hasGhost: !!(s.drag && s.ghost && ghost),
+      ghost: ghost || {},
+      renameDraft: s.renameDraft,
+      focusRef: this.focusRef,
+      onRename: (e) => this.setState({ renameDraft: e.target.value }),
+      onRenameKey: (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); this.commitRename(); }
+        if (e.key === 'Escape') { e.preventDefault(); this.commitRename(); }
+      },
+      commitRename: () => this.commitRename(),
+      composing: s.composing,
+      d,
+      destName,
+      destLabel: 'Put in: ' + (s.dest === '__new' ? 'a new stack' : this.where(s.dest)),
+      destExpanded: s.destOpen ? 'true' : 'false',
+      toggleDest: () => this.setState({ destOpen: !s.destOpen, pickerOpen: false }),
+      showDest: s.destOpen,
+      destOptions,
+      isSticky,
+      showPicker: isSticky && s.pickerOpen,
+      pickerExpanded: s.pickerOpen ? 'true' : 'false',
+      dotStyle: 'background: ' + s.color + ';',
+      togglePicker: () => this.setState({ pickerOpen: !s.pickerOpen, destOpen: false, hexDraft: s.color }),
+      swatches: PALETTE.map((hex) => ({
+        hex,
+        cls: 'sw' + (hex === s.color ? ' on' : ''),
+        style: 'background: ' + hex + ';',
+        pressed: hex === s.color ? 'true' : 'false',
+        pick: () => { this.setState({ color: hex, hexDraft: hex, pickerOpen: false }); this.focusInk(); },
+      })),
+      hexDraft: s.hexDraft,
+      onHex: (e) => {
+        let v = e.target.value.toLowerCase().replace(/[^#0-9a-f]/g, '');
+        if (v && v[0] !== '#') v = '#' + v.replace(/#/g, '');
+        v = v.slice(0, 7);
+        this.setState(validHex(v) ? { hexDraft: v, color: v } : { hexDraft: v });
+      },
+      onHexKey: (e) => {
+        if (e.key === 'Enter' || e.key === 'Escape') {
+          e.preventDefault();
+          this.setState({ pickerOpen: false, hexDraft: this.state.color });
+          this.focusInk();
+        }
+      },
+      draft: s.draft,
+      draftTags: s.tags.map((t) => ({
+        name: t, aria: 'Remove tag ' + t,
+        remove: () => this.setState({ tags: this.state.tags.filter((x) => x !== t) }),
+      })),
+      tagInput: s.tagInput,
+      tagPlaceholder: s.tags.length ? '+ tag' : '# tag',
+      commitTagInput: () => this.commitTag(),
+      onTagInput: (e) => {
+        const raw = e.target.value;
+        // a space or comma finishes the tag
+        if (/[\s,]$/.test(raw)) { this.commitTag(raw); return; }
+        this.setState({ tagInput: cleanTag(raw) });
+      },
+      onTagInputKey: (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); this.save(); return; }
+        if (e.key === 'Enter') { e.preventDefault(); this.commitTag(); return; }
+        if (e.key === 'Backspace' && !this.state.tagInput && this.state.tags.length) {
+          e.preventDefault();
+          this.setState({ tags: this.state.tags.slice(0, -1) });
+          return;
+        }
+        if (e.key === 'Escape') { e.preventDefault(); this.cancel(); }
+      },
+      inkRef: this.inkRef,
+      onDraft: (e) => this.setState({ draft: e.target.value }),
+      onKey,
+      cycle: () => { this.setState({ paper: (s.paper + 1) % PAPERS.length, pickerOpen: false, destOpen: false }); this.focusInk(); },
+      cancel: () => this.cancel(),
+      save: () => this.save(),
+      hasToast: !!s.toast,
+      toast: s.toast,
+      canUndo: !!s.undo,
+      noUndo: !s.undo,
+      undo: () => this.undoLast(),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 /* Tend design tokens: Clean Colors (light). Generated from the design system.
-   Fonts: install with `npm i @fontsource/montserrat @fontsource/lato @fontsource/jetbrains-mono`
+   Fonts: install with `bun add @fontsource/montserrat @fontsource/lato @fontsource/jetbrains-mono`
    and import montserrat/500.css, montserrat/600.css, lato/400.css, lato/700.css, jetbrains-mono/400.css, jetbrains-mono/500.css. */
 :root {
   /* palette */

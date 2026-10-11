@@ -57,8 +57,8 @@ src/routes/       start, notes, tasks, people, settings
 ## Verify before saying a milestone is done
 
 1. `cargo test` (in `src-tauri/`). Add tests for anything in Rust with rules: vault check, migrations, scan, name validation, folder rename/move/delete, status rules.
-2. `npm run check` (svelte-check, no errors) and `npm test` (vitest, for `src/lib/util`).
-3. `npm run tauri dev` starts. Walk through the milestone's *Done when* list by hand.
+2. `bun run check` (svelte-check, no errors) and `bun run test` (vitest, for `src/lib/util`; plain `bun test` runs Bun's own runner, not vitest).
+3. `bun run tauri dev` starts. Walk through the milestone's *Done when* list by hand.
 4. Compare the screens with `docs/design/screens/png/` and fix visible differences.
 5. Update `docs/build-plan.md`: tick the milestone and list anything you changed or deferred.
 

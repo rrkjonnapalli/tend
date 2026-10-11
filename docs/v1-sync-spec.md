@@ -46,7 +46,7 @@ The vault is the Git working tree:
     sync/
       manifest.json
       <table>/<YYYY>-<NNN>.jsonl  rows created in year YYYY, in id order, 10,000 per shard (§8)
-      <table>/fixed.jsonl       rows with natural, non-ULID ids (settings, statuses, tags, labels, 'root')
+      <table>/fixed.jsonl       rows with natural, non-ULID ids (settings, default enum rows, 'root')
   .git/
   .gitignore                    .tend/tend.db*, .tend/staging/, .DS_Store
 ```
@@ -69,9 +69,9 @@ Every synced table has:
 
 | Table kind | Shape |
 |---|---|
-| Entity tables (`tasks`, `people`, `tags`, `task_labels`, `attachments`, …) | `id` + `updated_at` |
-| Link tables (`task_tags`, `note_tags`, `task_label_links`, `my_day`, `attachment_links`) | `id`; the key pair is `UNIQUE` |
-| Name/path-keyed tables (`statuses` by value, `task_folders` / `note_folders` by path, `settings` by key) | `id` is the primary key; the old key stays `UNIQUE` |
+| Entity tables (`tasks`, `people`, `attachments`, `words`, `snaps`, `snap_stacks`, `refs`, …) | `id` + `updated_at` |
+| Link tables (`tend_links`, `my_day`) | `id`; the key is `UNIQUE` |
+| Key-unique tables (`tend_enums` by kind + value, `task_folders` / `note_folders` by path, `settings` by key, `words` by title, `refs` by url_key) | `id` is the primary key; the key stays `UNIQUE` |
 | `task_comments` | `updated_at` (no separate `edited_at`) |
 
 Renaming a folder or a status is an update of one row, not a new row.
@@ -81,9 +81,10 @@ link can always be added again. Two devices can make the same pair under differe
 merges them (§9.2).
 
 **Natural ids.** Some rows take an id every device derives the same way, so independent creation of
-"the same thing" gives one row: settings (`id` = key), statuses (`id` = value), tags (`id` = the
-tag, a slug), labels (`id` = slug of the first name, never changed), root folders (`id` =
-`'root'`).
+"the same thing" gives one row: settings (`id` = key), default enum rows (`id` = `<KIND>:<VALUE>`),
+root folders (`id` = `'root'`). Other enum rows (custom statuses, labels, tags, word kinds) get a
+ULID; two devices creating the same kind + value merge by keeping the smaller id (§9.2), and
+nothing points at an enum by id (links and tasks use the value).
 
 ### 4.2 Notes and attachments
 
@@ -101,7 +102,7 @@ attachments  id · path · name · mime_type · size_bytes · sha256 · updated_
 - Renaming a note **renames the file** (§11.2); only `attachments.path` changes. The note's `id`
   never changes, so tags, labels and links are unaffected by renames and moves.
 - Editing a note writes the file and bumps `updated_at` on both rows.
-- `attachment_links` always points at an attachment `id`. Linking a note means linking its
+- An attachment link (`tend_links`, target type `ATTACHMENT`) always points at an attachment `id`. Linking a note means linking its
   attachment.
 
 ### 4.3 Local tables (never synced)
@@ -273,12 +274,39 @@ with their content:
 
 | Collision | Rule |
 |---|---|
-| Two link rows for the same pair (`task_tags`, `note_tags`, `task_label_links`, `my_day`, `attachment_links`) | keep the smaller id; the other is deleted |
-| Two tags with the same name | cannot happen: the name is the id |
-| Two labels or statuses created with the same name or value | cannot happen: the id is derived from it |
-| Two labels renamed to the same name on different devices | keep both; the one with the larger id gets ` 2` appended to its name |
+| Two link rows for the same key (`tend_links`, `my_day`) | keep the smaller id; the other is deleted |
+| Two enum rows with the same kind + value (tags, labels, statuses, word kinds created on two devices) | keep the smaller id; the other is deleted (nothing points at an enum by id) |
+| Two enum rows of one kind renamed to the same label on different devices | keep both; the one with the larger id gets ` 2` appended to its label |
+| Two words with the same title, or two links with the same `url_key` | merge into one (`MERGE_ON_KEY`, below) |
 | Two folders with the same path (notes or tasks) | keep the smaller id (rows point at the path, so nothing moves) |
 | Two notes with the same path | keep both; the note with the larger id gets the next free suffix (`plan_1`) and its file is renamed (logged in `path_log`) |
+
+**Merging on a key (`MERGE_ON_KEY`).** Some tables merge two rows that share a key into one
+instead of keeping both. Each entry names the table, the key columns, the link tables that point at
+the row, and a merge function; another table joins by adding an entry and, if it needs one, its own
+function:
+
+```rust
+struct MergeRule {
+    table: &'static str,
+    key: &'static [&'static str],
+    links: &'static [(&'static str, &'static str)], // (link table, column pointing at the row)
+    merge: fn(&Row, &Row) -> Row,
+}
+```
+
+| Table | Key | Merge |
+|---|---|---|
+| `words` | `title` | `newest_fill_empty` |
+| `refs` | `url_key` | `newest_fill_empty` |
+
+- The smaller id survives. Links that pointed at the other row are moved to it, then the other row
+  is deleted. This runs before `KEEP_SMALLEST`, which then drops any doubled links.
+- `newest_fill_empty` takes every field from the row with the newer `updated_at` and fills its empty
+  fields from the other row. A field filled on both sides keeps the newer row's value (rows have one
+  `updated_at`, not one per field). Equal `updated_at` is broken like any other tie: by comparing
+  the serialised rows.
+- A merge function must be pure (no clock, no random ids), so every device produces the same row.
 
 ### 9.3 References after merging
 
@@ -287,8 +315,12 @@ never left dangling:
 
 | Reference | Rule |
 |---|---|
-| comment, tag/label link, contact, my_day, attachment link → deleted parent | dropped (and recorded in deletions) |
+| comment, contact, my_day → deleted parent | dropped (and recorded in deletions) |
+| `tend_links` row → deleted source row, attachment or enum | dropped (and recorded in deletions) |
 | task → deleted status | status set to the first status |
+| word → deleted word kind | kind set to `OTHER` (never `WORD`, whose lowercasing could make a new title clash) |
+| snap → deleted stack; stack → deleted parent | moved to the board root |
+| stacks nested in each other (two devices each moved one into the other) | the stack with the larger id moves to the root |
 | task → deleted assignee | unassigned |
 | task → deleted folder / parent task | moved to the root / dropped with its parent |
 | note → deleted folder | moved to the notes root; a name clash there gets a suffix (§4.4) |

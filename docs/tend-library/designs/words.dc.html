@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Words: explorer and entry</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="tend.css">
+<link rel="stylesheet" href="words.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Lato:wght@400;700&amp;family=Montserrat:wght@500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="{{ appCls }}" style="font-family: 'Lato', sans-serif; color: #303841; position: relative;">
+  <div class="body">
+    <aside class="explorer">
+      <div class="ex-tools">
+        <sc-if value="{{ standalone }}" hint-placeholder-val="{{ true }}"><button class="icon-btn" aria-label="Add" title="Add something you came across" onClick="{{ startAdd }}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button></sc-if>
+        <button class="icon-btn" aria-label="Random word" title="Random word" onClick="{{ shuffle }}"><svg viewBox="0 0 24 24"><path d="M3 7h3c4 0 6 10 10 10h5"/><path d="M3 17h3c1.6 0 2.8-1.6 4-3.5"/><path d="M14 9.5C15.2 8 16.4 7 18 7h3"/><path d="M18 4l3 3-3 3"/><path d="M18 14l3 3-3 3"/></svg></button>
+        <button class="icon-btn" aria-label="Collapse all" title="Collapse all"><svg viewBox="0 0 24 24"><path d="M8 4l4 4 4-4"/><path d="M8 20l4-4 4 4"/><path d="M5 12h14"/></svg></button>
+      </div>
+      <div class="ex-list">
+        <sc-if value="{{ adding }}" hint-placeholder-val="{{ false }}">
+          <div class="ex-row on ex-new"><svg class="ico sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>{{ newRowLabel }}</span></div>
+        </sc-if>
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+          <div class="ex-root" style="{{ g.style }}"><svg class="ico sm" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>{{ g.name }}<span class="count">{{ g.count }}</span></div>
+          <sc-for list="{{ g.rows }}" as="w" hint-placeholder-count="4">
+            <button class="{{ w.cls }}" onClick="{{ w.pick }}">{{ w.word }}</button>
+          </sc-for>
+        </sc-for>
+      </div>
+    </aside>
+
+    <main class="pane">
+      <div class="bar">
+        <span class="crumbs">{{ e.crumbKind }} / <b>{{ e.crumbName }}</b></span>
+        <div class="end">
+          <sc-if value="{{ e.isExisting }}" hint-placeholder-val="{{ true }}">
+            <button class="icon-btn" aria-label="Delete" title="Delete" onClick="{{ removeEntry }}"><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></svg></button>
+          </sc-if>
+        </div>
+      </div>
+      <div class="doc">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <input class="word-in" aria-label="Title" placeholder="Something you came across…" spellcheck="false" autocomplete="off" value="{{ e.title }}" onChange="{{ onTitle }}" onKeyDown="{{ onTitleKey }}" onBlur="{{ onTitleBlur }}" ref="{{ titleRef }}">
+          <div class="meta-row">
+            <div class="kind">
+              <button class="kind-btn" aria-haspopup="listbox" aria-expanded="{{ kindExpanded }}" aria-label="{{ e.kindAria }}" onClick="{{ toggleKind }}">{{ e.kindLabel }}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg></button>
+              <sc-if value="{{ kindOpen }}" hint-placeholder-val="{{ false }}">
+                <div class="kind-pop" role="listbox" aria-label="What is it">
+                  <sc-for list="{{ kindOptions }}" as="k" hint-placeholder-count="5">
+                    <button class="{{ k.cls }}" role="option" aria-selected="{{ k.selected }}" onClick="{{ k.pick }}"><span>{{ k.label }}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <sc-if value="{{ e.hasIpa }}" hint-placeholder-val="{{ true }}">
+              <span class="mono" style="color: #5f6b76;">{{ e.ipa }}</span>
+              <button class="icon-btn" aria-label="Play pronunciation" title="Play pronunciation" style="width: 24px; height: 24px;"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg></button>
+            </sc-if>
+            <sc-if value="{{ e.hasPos }}" hint-placeholder-val="{{ true }}"><span class="chip">{{ e.pos }}</span></sc-if>
+            <span class="tagchips" role="group" aria-label="Tags">
+              <sc-for list="{{ tagChips }}" as="t" hint-placeholder-count="1"><button class="tchip" aria-label="{{ t.aria }}" title="Remove" onClick="{{ t.remove }}">#{{ t.name }}</button></sc-for>
+              <input class="tag-in" aria-label="Add a tag" placeholder="{{ tagPlaceholder }}" maxlength="24" spellcheck="false" autocomplete="off" value="{{ tagInput }}" onChange="{{ onTagInput }}" onKeyDown="{{ onTagKey }}" onBlur="{{ commitTag }}">
+            </span>
+          </div>
+          <sc-if value="{{ e.dupe }}" hint-placeholder-val="{{ false }}">
+            <div class="dupe">Already saved. <button class="add-link link" onClick="{{ openDupe }}">Open “{{ e.dupeWord }}”</button></div>
+          </sc-if>
+        </div>
+
+        <section class="sec fold">
+          <div class="sec-head">
+            <button class="fold-btn" aria-expanded="{{ dictOpen }}" onClick="{{ toggleDict }}"><svg class="{{ dictChevron }}" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><h2 class="section-title">Dictionary</h2></button>
+            <span class="meta">{{ e.dictMeta }}</span>
+            <sc-if value="{{ e.canRefetch }}" hint-placeholder-val="{{ true }}">
+              <button class="icon-btn" aria-label="Fetch again" title="Fetch again" style="width: 24px; height: 24px;"><svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg></button>
+            </sc-if>
+          </div>
+          <sc-if value="{{ dictShown }}" hint-placeholder-val="{{ true }}">
+            <div class="fold-body">
+              <sc-if value="{{ e.fetching }}" hint-placeholder-val="{{ false }}">
+                <div class="skel" role="status" aria-label="Looking it up"><span style="width: 72%;"></span><span style="width: 54%;"></span><span style="width: 38%;"></span></div>
+              </sc-if>
+              <sc-for list="{{ e.senses }}" as="s" hint-placeholder-count="2">
+                <div class="sense">
+                  <span class="n">{{ s.n }}</span>
+                  <span class="def">{{ s.def }}</span>
+                  <span class="ex">{{ s.ex }}</span>
+                </div>
+              </sc-for>
+              <sc-if value="{{ e.hasSyn }}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+                  <span class="meta" style="width: 64px;">synonyms</span>
+                  <sc-for list="{{ e.syn }}" as="y" hint-placeholder-count="3"><span class="chip">{{ y }}</span></sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ e.hasHint }}" hint-placeholder-val="{{ false }}"><div class="lookup-hint">{{ e.hint }}</div></sc-if>
+            </div>
+          </sc-if>
+        </section>
+
+        <section class="sec fold">
+          <div class="sec-head">
+            <button class="fold-btn" aria-expanded="{{ mineOpen }}" onClick="{{ toggleMine }}"><svg class="{{ mineChevron }}" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><h2 class="section-title">What it is for me</h2></button>
+          </div>
+          <sc-if value="{{ mineShown }}" hint-placeholder-val="{{ true }}">
+            <div class="fold-body" style="gap: 16px;">
+              <sc-for list="{{ fields }}" as="f" hint-placeholder-count="3">
+                <div class="md-field">
+                  <span class="md-label">{{ f.label }}</span>
+                  <sc-if value="{{ f.editing }}" hint-placeholder-val="{{ false }}">
+                    <textarea class="md-src" aria-label="{{ f.label }}" placeholder="{{ f.placeholder }}" value="{{ f.value }}" onChange="{{ f.onChange }}" onKeyDown="{{ f.onKey }}" onBlur="{{ stopEditing }}" style="{{ f.srcStyle }}" ref="{{ focusRef }}"></textarea>
+                  </sc-if>
+                  <sc-if value="{{ f.viewing }}" hint-placeholder-val="{{ true }}">
+                    <div class="md-view" onClick="{{ f.open }}">
+                      <sc-if value="{{ f.isBlank }}" hint-placeholder-val="{{ false }}"><button class="md-empty" onClick="{{ f.start }}">{{ f.placeholder }}</button></sc-if>
+                      <sc-for list="{{ f.blocks }}" as="b" hint-placeholder-count="2">
+                        <sc-if value="{{ b.isLi }}" hint-placeholder-val="{{ false }}"><div class="md-li"><span class="dot" aria-hidden="true">•</span><span><sc-for list="{{ b.spans }}" as="sp" hint-placeholder-count="2"><sc-if value="{{ sp.isLink }}" hint-placeholder-val="{{ false }}"><a href="{{ sp.href }}" target="_blank" rel="noopener noreferrer">{{ sp.text }}</a></sc-if><sc-if value="{{ sp.isBold }}" hint-placeholder-val="{{ false }}"><b>{{ sp.text }}</b></sc-if><sc-if value="{{ sp.isCode }}" hint-placeholder-val="{{ false }}"><code>{{ sp.text }}</code></sc-if><sc-if value="{{ sp.isMeta }}" hint-placeholder-val="{{ false }}"><span class="md-meta">{{ sp.text }}</span></sc-if><sc-if value="{{ sp.isPlain }}" hint-placeholder-val="{{ true }}"><span>{{ sp.text }}</span></sc-if></sc-for></span></div></sc-if>
+                        <sc-if value="{{ b.isH }}" hint-placeholder-val="{{ false }}"><p class="md-h"><sc-for list="{{ b.spans }}" as="sp" hint-placeholder-count="2"><sc-if value="{{ sp.isLink }}" hint-placeholder-val="{{ false }}"><a href="{{ sp.href }}" target="_blank" rel="noopener noreferrer">{{ sp.text }}</a></sc-if><sc-if value="{{ sp.isBold }}" hint-placeholder-val="{{ false }}"><b>{{ sp.text }}</b></sc-if><sc-if value="{{ sp.isCode }}" hint-placeholder-val="{{ false }}"><code>{{ sp.text }}</code></sc-if><sc-if value="{{ sp.isMeta }}" hint-placeholder-val="{{ false }}"><span class="md-meta">{{ sp.text }}</span></sc-if><sc-if value="{{ sp.isPlain }}" hint-placeholder-val="{{ true }}"><span>{{ sp.text }}</span></sc-if></sc-for></p></sc-if>
+                        <sc-if value="{{ b.isQ }}" hint-placeholder-val="{{ false }}"><p class="md-q"><sc-for list="{{ b.spans }}" as="sp" hint-placeholder-count="2"><sc-if value="{{ sp.isLink }}" hint-placeholder-val="{{ false }}"><a href="{{ sp.href }}" target="_blank" rel="noopener noreferrer">{{ sp.text }}</a></sc-if><sc-if value="{{ sp.isBold }}" hint-placeholder-val="{{ false }}"><b>{{ sp.text }}</b></sc-if><sc-if value="{{ sp.isCode }}" hint-placeholder-val="{{ false }}"><code>{{ sp.text }}</code></sc-if><sc-if value="{{ sp.isMeta }}" hint-placeholder-val="{{ false }}"><span class="md-meta">{{ sp.text }}</span></sc-if><sc-if value="{{ sp.isPlain }}" hint-placeholder-val="{{ true }}"><span>{{ sp.text }}</span></sc-if></sc-for></p></sc-if>
+                        <sc-if value="{{ b.isP }}" hint-placeholder-val="{{ true }}"><p class="md-p"><sc-for list="{{ b.spans }}" as="sp" hint-placeholder-count="2"><sc-if value="{{ sp.isLink }}" hint-placeholder-val="{{ false }}"><a href="{{ sp.href }}" target="_blank" rel="noopener noreferrer">{{ sp.text }}</a></sc-if><sc-if value="{{ sp.isBold }}" hint-placeholder-val="{{ false }}"><b>{{ sp.text }}</b></sc-if><sc-if value="{{ sp.isCode }}" hint-placeholder-val="{{ false }}"><code>{{ sp.text }}</code></sc-if><sc-if value="{{ sp.isMeta }}" hint-placeholder-val="{{ false }}"><span class="md-meta">{{ sp.text }}</span></sc-if><sc-if value="{{ sp.isPlain }}" hint-placeholder-val="{{ true }}"><span>{{ sp.text }}</span></sc-if></sc-for></p></sc-if>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </section>
+
+        <sc-if value="{{ e.isNew }}" hint-placeholder-val="{{ false }}">
+          <div class="add-actions">
+            <button class="btn-primary" onClick="{{ saveNew }}" disabled="{{ e.cantSave }}">Save</button>
+            <button class="btn-ghost" onClick="{{ cancelAdd }}">Cancel</button>
+          </div>
+        </sc-if>
+      </div>
+    </main>
+  </div>
+
+  <sc-if value="{{ standalone }}" hint-placeholder-val="{{ true }}"><nav class="nav" aria-label="Main">
+    <span></span>
+    <div class="tabs">
+      <button class="tab" aria-label="Notes"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg></button>
+      <button class="tab" aria-label="Tasks"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></button>
+      <button class="tab" aria-label="People"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></button>
+      <button class="tab on" aria-label="Words"><svg viewBox="0 0 24 24"><path d="M3 5h6a3 3 0 0 1 3 3v12a2 2 0 0 0-2-2H3z"/><path d="M21 5h-6a3 3 0 0 0-3 3v12a2 2 0 0 1 2-2h7z"/></svg></button>
+      <button class="tab" aria-label="Snaps"><svg viewBox="0 0 24 24"><path d="M10 7H6a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3v1a3 3 0 0 1-3 3"/><path d="M20 7h-4a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h3v1a3 3 0 0 1-3 3"/></svg></button>
+      <button class="tab" aria-label="References"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></button>
+    </div>
+    <div class="right">
+      <span class="timer-chip"><svg class="ico sm" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 2h6"/></svg>4:31</span>
+      <button class="icon-btn" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button>
+      <button class="icon-btn" aria-label="Feedback"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h7M8.5 14.5h4"/></svg></button>
+    </div>
+  </nav></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"embedded":{"editor":null},"query":{"editor":null},"addRequest":{"editor":null},"onAddTaken":{"editor":null},"$preview":{"width":1280,"height":800}}'>
+// Words A: one page for adding and editing. The title is the only thing required.
+// Dictionary on top (collapsible), then "What it is for me" (collapsible): Meaning, Notes, References,
+// written in markdown and shown formatted; click the text to write.
+const ENTRIES = [
+  { word: 'ephemeral', kind: 'words', ipa: '/ɪˈfɛm(ə)ɹəl/', pos: 'adjective', tags: ['reading'], fetched: '3 Oct',
+    senses: [
+      { def: 'Lasting for a very short time.', ex: '“fashions are ephemeral”' },
+      { def: '(of a plant) having a very short life cycle.', ex: '' },
+    ],
+    syn: ['fleeting', 'transient', 'short-lived'],
+    meaning: 'Something that is here and then gone, like a **mood** or a **trend**. Not sad, just brief.',
+    notes: '- The morning fog was ephemeral; by nine the hills were back.\n- Most chat threads are ephemeral, so I copy the good bits into notes.\n\n> Seen in *The Remains of the Day*.',
+    refs: '- blog xyz - https://ex.com/bxyz\n- blog xyz1 - https://ex.com/bxyz1' },
+  { word: 'laconic', kind: 'words', ipa: '/ləˈkɒnɪk/', pos: 'adjective', tags: [], fetched: '28 Sep',
+    senses: [{ def: 'Using very few words.', ex: '“his laconic reply suggested a lack of interest”' }],
+    syn: ['terse', 'brief', 'curt'],
+    meaning: 'Says a lot with almost nothing. Can be cool or rude depending on tone.',
+    notes: '- Her laconic code review just said `why?` on line 40.',
+    refs: '' },
+  { word: 'mellifluous', kind: 'words', ipa: '/mɛˈlɪfluəs/', pos: 'adjective', tags: ['sound'], fetched: '20 Sep',
+    senses: [{ def: '(of a voice or words) sweet or musical; pleasant to hear.', ex: '“a mellifluous voice”' }],
+    syn: ['sweet-sounding', 'dulcet', 'smooth'],
+    meaning: 'A voice that sounds like honey.',
+    notes: '- The narrator’s mellifluous voice made the audiobook easy to finish.',
+    refs: '' },
+  { word: 'petrichor', kind: 'words', ipa: '/ˈpɛtɹɪkɔː/', pos: 'noun', tags: ['sound', 'reading'], fetched: '12 Sep',
+    senses: [{ def: 'A pleasant smell that comes with the first rain after a long period of warm, dry weather.', ex: '' }],
+    syn: [],
+    meaning: 'The smell of rain on dry ground.',
+    notes: '- Opened the window just for the petrichor.',
+    refs: '' },
+  { word: 'quixotic', kind: 'words', ipa: '/kwɪkˈsɒtɪk/', pos: 'adjective', tags: [], fetched: '5 Sep',
+    senses: [{ def: 'Exceedingly idealistic; unrealistic and impractical.', ex: '“a vast and perhaps quixotic project”' }],
+    syn: ['idealistic', 'romantic', 'unrealistic'],
+    meaning: 'A noble plan that will probably not work. From *Don Quixote*.',
+    notes: '- Rewriting the whole app in a weekend was quixotic.',
+    refs: '' },
+  { word: 'sanguine', kind: 'words', ipa: '/ˈsæŋɡwɪn/', pos: 'adjective', tags: [], fetched: '1 Sep',
+    senses: [{ def: 'Optimistic or positive, especially in a bad or difficult situation.', ex: '“he is sanguine about the prospects”' }],
+    syn: ['optimistic', 'hopeful', 'confident'],
+    meaning: 'Calmly hopeful when others are not.',
+    notes: '- The team stayed sanguine even after the release slipped.',
+    refs: '' },
+  { word: 'Chesterton\u2019s fence', kind: 'terms', ipa: '', pos: '', tags: [], fetched: '',
+    senses: [], syn: [],
+    meaning: 'Don\u2019t remove a rule until you know **why** it was put there.',
+    notes: '- Before deleting that odd retry loop, find out what it was guarding against.',
+    refs: '- G. K. Chesterton, The Thing - https://en.wikipedia.org/wiki/G._K._Chesterton%27s_fence' },
+  { word: 'bite the bullet', kind: 'idioms', ipa: '', pos: 'idiom', tags: [], fetched: '30 Sep',
+    senses: [{ def: 'To decide to do something difficult or unpleasant that one has been putting off.', ex: '“I bit the bullet and booked the dentist”' }],
+    syn: ['face the music'],
+    meaning: 'Stop delaying the hard thing and do it.',
+    notes: '- I bit the bullet and deleted the old branch.',
+    refs: '' },
+  { word: 'on the fence', kind: 'idioms', ipa: '', pos: 'idiom', tags: [], fetched: '18 Sep',
+    senses: [{ def: 'Undecided or neutral about an issue.', ex: '“she’s still on the fence about the offer”' }],
+    syn: ['undecided', 'uncommitted'],
+    meaning: 'Not choosing a side yet.',
+    notes: '- Still on the fence about moving to the new editor.',
+    refs: '' },
+];
+
+// a stand-in for the dictionary lookup (dictionaryapi.dev in the app)
+const DICT = {
+  serendipity: { ipa: '/ˌsɛɹənˈdɪpɪti/', pos: 'noun', senses: [{ def: 'The occurrence of events by chance in a happy or beneficial way.', ex: '“a fortunate stroke of serendipity”' }], syn: ['chance', 'luck', 'fluke'] },
+  liminal: { ipa: '/ˈlɪmɪn(ə)l/', pos: 'adjective', senses: [{ def: 'Relating to a transitional or initial stage of a process.', ex: '' }, { def: 'Occupying a position at, or on both sides of, a boundary or threshold.', ex: '' }], syn: ['transitional', 'in-between'] },
+  'under the weather': { ipa: '', pos: 'idiom', senses: [{ def: 'Slightly unwell or in low spirits.', ex: '“I’m feeling a bit under the weather”' }], syn: ['unwell', 'off-colour'] },
+  'hit the sack': { ipa: '', pos: 'idiom', senses: [{ def: 'To go to bed.', ex: '“I’m going to hit the sack early tonight”' }], syn: ['turn in'] },
+};
+
+// everything you come across lives here; the kind only groups it
+const KINDS = [
+  { id: 'words', one: 'word', lookup: true },
+  { id: 'idioms', one: 'idiom', lookup: true },
+  { id: 'phrases', one: 'phrase', lookup: true },
+  { id: 'terms', one: 'term / concept', lookup: false },
+  { id: 'other', one: 'something else', lookup: false },
+];
+const kindOf = (id) => KINDS.find((k) => k.id === id) || KINDS[0];
+
+function cleanTag(v) {
+  return (v || '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 24);
+}
+
+const FIELDS = [
+  { key: 'meaning', label: 'Meaning', placeholder: 'What does it mean to you?' },
+  { key: 'notes', label: 'Notes', placeholder: 'Examples, where you met it, anything else' },
+];
+
+// ---- a tiny markdown reader: enough for notes (no HTML, rendered as data) ----
+function domainOf(url) {
+  const m = url.match(/^https?:\/\/([^/]+)/);
+  return m ? m[1].replace(/^www\./, '') : url;
+}
+
+function inline(text) {
+  // "title - https://url" on its own reads as a link to that title
+  const pair = text.match(/^(.*?)\s+[-–]\s+(https?:\/\/\S+)\s*$/);
+  const out = [];
+  if (pair) { out.push({ text: pair[1], href: pair[2], isLink: true }, { text: domainOf(pair[2]), isMeta: true }); }
+  const re = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|\*\*([^*]+)\*\*|`([^`]+)`|\*([^*]+)\*|(https?:\/\/\S+)/g;
+  let last = pair ? text.length : 0;
+  let m;
+  while (!pair && (m = re.exec(text))) {
+    if (m.index > last) out.push({ text: text.slice(last, m.index), isPlain: true });
+    if (m[1]) out.push({ text: m[1], href: m[2], isLink: true });
+    else if (m[3]) out.push({ text: m[3], isBold: true });
+    else if (m[4]) out.push({ text: m[4], isCode: true });
+    else if (m[5]) out.push({ text: m[5], isPlain: true });
+    else if (m[6]) out.push({ text: domainOf(m[6]), href: m[6], isLink: true });
+    last = re.lastIndex;
+  }
+  if (last < text.length) out.push({ text: text.slice(last), isPlain: true });
+  return out.map((sp) => ({ isLink: false, isBold: false, isCode: false, isMeta: false, isPlain: false, href: '', ...sp }));
+}
+
+function blocks(md) {
+  const out = [];
+  let para = [];
+  const flush = () => { if (para.length) { out.push({ kind: 'p', text: para.join(' ') }); para = []; } };
+  md.split('\n').forEach((raw) => {
+    const line = raw.trim();
+    if (!line) { flush(); return; }
+    const li = line.match(/^[-*]\s+(.*)$/);
+    const h = line.match(/^#{1,3}\s+(.*)$/);
+    const q = line.match(/^>\s?(.*)$/);
+    if (li) { flush(); out.push({ kind: 'li', text: li[1] }); }
+    else if (h) { flush(); out.push({ kind: 'h', text: h[1] }); }
+    else if (q) { flush(); out.push({ kind: 'q', text: q[1] }); }
+    else para.push(line);
+  });
+  flush();
+  return out.map((b) => ({ isLi: b.kind === 'li', isH: b.kind === 'h', isQ: b.kind === 'q', isP: b.kind === 'p', spans: inline(b.text) }));
+}
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.titleRef = (el) => { if (el && this.wantTitleFocus) { this.wantTitleFocus = false; el.focus(); } };
+    this.focusRef = (el) => { if (el && document.activeElement !== el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } };
+    this.state = {
+      entries: ENTRIES.map((x, i) => ({ ...x, id: 'e' + i })),
+      picked: 'e0',
+      adding: null,     // the new entry: { title, kind, kindSet, phase, dict, meaning, notes, refs }
+      editing: null,    // which field is open: 'meaning' | 'notes' | 'refs'
+      kindOpen: false,
+      tagInput: '',
+      dictOpen: true,
+      mineOpen: true,
+      seq: 0,
+    };
+  }
+
+  // inside the Library: the Library's + asks this area to open its own add, maybe with text already typed
+  componentDidMount() { this.takeAdd(); }
+  componentDidUpdate() { this.takeAdd(); }
+  takeAdd() {
+    const r = this.props.addRequest;
+    if (!r || r.n === this.lastAdd) return;
+    this.lastAdd = r.n;
+    this.openFromLibrary(r.text || '');
+    if (this.props.onAddTaken) this.props.onAddTaken();
+  }
+
+  openFromLibrary(text) {
+    this.startAdd();
+    if (!text.trim()) return;
+    setTimeout(() => {
+      this.updateDraft({ title: text, kind: /\s/.test(text.trim()) ? 'phrases' : 'words', phase: 'typing', dict: null });
+      setTimeout(() => this.lookup(), 0);
+    }, 0);
+  }
+
+  componentWillUnmount() { clearTimeout(this.lookupTimer); }
+
+  current() { return this.state.entries.find((x) => x.id === this.state.picked) || this.state.entries[0]; }
+
+  updateEntry(patch) {
+    const id = this.current().id;
+    this.setState({ entries: this.state.entries.map((x) => (x.id === id ? { ...x, ...patch } : x)) });
+  }
+
+  updateDraft(patch) { this.setState({ adding: { ...this.state.adding, ...patch } }); }
+
+  dupeOf(title, exceptId) {
+    const t = title.trim().toLowerCase();
+    return t ? this.state.entries.find((x) => x.id !== exceptId && x.word.toLowerCase() === t) || null : null;
+  }
+
+  // ---------- adding: the same page as an entry, just empty ----------
+  startAdd() {
+    clearTimeout(this.lookupTimer);
+    this.wantTitleFocus = true;
+    this.setState({
+      adding: { title: '', kind: 'words', kindSet: false, phase: 'typing', dict: null, meaning: '', notes: '', tags: [] },
+      editing: null, kindOpen: false,
+    });
+  }
+
+  cancelAdd() { clearTimeout(this.lookupTimer); this.setState({ adding: null, editing: null, kindOpen: false }); }
+
+  lookup() {
+    const a = this.state.adding;
+    const t = a && a.title.trim().toLowerCase();
+    if (!t || this.dupeOf(t) || !kindOf(a.kind).lookup) return;
+    clearTimeout(this.lookupTimer);
+    this.updateDraft({ phase: 'fetching' });
+    this.lookupTimer = setTimeout(() => {
+      const cur = this.state.adding;
+      if (!cur || cur.title.trim().toLowerCase() !== t) return;
+      const dict = DICT[t] || null;
+      // the dictionary can also tell a phrase is an idiom
+      const kind = !cur.kindSet && dict && dict.pos === 'idiom' ? 'idioms' : cur.kind;
+      this.updateDraft({ kind, phase: dict ? 'found' : 'missing', dict });
+    }, 700);
+  }
+
+  saveNew() {
+    const a = this.state.adding;
+    const title = a ? a.title.trim() : '';
+    if (!title || this.dupeOf(title)) return;   // the title is the only thing required
+    const d = a.dict || {};
+    const seq = this.state.seq + 1;
+    const entry = {
+      id: 'new' + seq, word: title, kind: a.kind, ipa: d.ipa || '', pos: d.pos || '', tags: this.withPendingTag(a.tags),
+      fetched: a.dict ? 'just now' : '', senses: d.senses || [], syn: d.syn || [],
+      meaning: a.meaning, notes: a.notes,
+    };
+    clearTimeout(this.lookupTimer);
+    this.setState({ entries: this.state.entries.concat([entry]), picked: entry.id, adding: null, editing: null, kindOpen: false, seq });
+  }
+
+  removeEntry() {
+    const id = this.current().id;
+    const rest = this.state.entries.filter((x) => x.id !== id);
+    this.setState({ entries: rest, picked: rest.length ? rest[0].id : null, editing: null });
+  }
+
+  // ---------- tags: several per entry, from the shared list ----------
+  tagsNow() { return (this.state.adding ? this.state.adding.tags : this.current().tags) || []; }
+  setTags(tags) { if (this.state.adding) this.updateDraft({ tags }); else this.updateEntry({ tags }); }
+  withPendingTag(tags) {
+    const t = cleanTag(this.state.tagInput);
+    return t && tags.indexOf(t) < 0 ? tags.concat([t]) : tags;
+  }
+  commitTag(raw) {
+    const t = cleanTag(raw != null ? raw : this.state.tagInput);
+    const tags = this.tagsNow();
+    if (t && tags.indexOf(t) < 0) this.setTags(tags.concat([t]));
+    this.setState({ tagInput: '' });
+  }
+
+  groups() {
+    const q = (this.props.embedded ? this.props.query || '' : '').trim().toLowerCase();
+    const sorted = this.state.entries.slice().sort((x, y) => x.word.localeCompare(y.word))
+      .filter((x) => !q || (x.word + ' ' + (x.meaning || '')).toLowerCase().indexOf(q) > -1);
+    return KINDS.map((k) => ({
+      k,
+      rows: sorted.filter((x) => x.kind === k.id).map((x) => ({
+        word: x.word,
+        cls: !this.state.adding && x.id === this.state.picked ? 'ex-row on' : 'ex-row',
+        pick: () => this.setState({ picked: x.id, adding: null, editing: null, kindOpen: false, tagInput: '' }),
+      })),
+    })).filter((g) => g.rows.length).map((g, i) => ({
+      name: g.k.id, count: String(g.rows.length), rows: g.rows, style: i ? 'margin-top: 8px;' : '',
+    }));
+  }
+
+  renderVals() {
+    const s = this.state;
+    const a = s.adding;
+    const entry = this.current();
+    const src = a || entry;   // what the page shows: the draft or the saved entry
+    const kind = kindOf(src.kind);
+
+    // one shape for both
+    let e;
+    if (a) {
+      const d = a.dict || {};
+      const title = a.title.trim();
+      const dupe = this.dupeOf(title);
+      let hint = '';
+      if (!kind.lookup) hint = 'No dictionary for this one.';
+      else if (a.phase === 'typing') hint = title ? 'Press Enter to look up “' + title + '”.' : 'Type it above, then press Enter to look it up.';
+      else if (a.phase === 'missing') hint = 'Not in the dictionary.';
+      e = {
+        isNew: true, isExisting: false,
+        title: a.title, crumbKind: a.kind, crumbName: 'new',
+        ipa: d.ipa || '', pos: d.pos || '',
+        senses: a.phase === 'found' ? (d.senses || []) : [],
+        syn: a.phase === 'found' ? (d.syn || []) : [],
+        fetching: a.phase === 'fetching',
+        hint,
+        dictMeta: kind.lookup ? 'dictionaryapi.dev' : '',
+        canRefetch: false,
+        dupe: !!dupe, dupeWord: dupe ? dupe.word : '', dupeId: dupe ? dupe.id : null,
+        cantSave: !title || !!dupe,
+      };
+    } else {
+      const dupe = this.dupeOf(entry.word, entry.id);
+      e = {
+        isNew: false, isExisting: true,
+        title: entry.word, crumbKind: entry.kind, crumbName: entry.word || 'untitled',
+        ipa: entry.ipa, pos: entry.pos,
+        senses: entry.senses, syn: entry.syn,
+        fetching: false,
+        hint: entry.senses.length ? '' : (kind.lookup ? 'Not in the dictionary.' : 'No dictionary for this one.'),
+        dictMeta: entry.fetched ? 'dictionaryapi.dev · fetched ' + entry.fetched : (kind.lookup ? 'dictionaryapi.dev' : ''),
+        canRefetch: kind.lookup,
+        dupe: !!dupe, dupeWord: dupe ? dupe.word : '', dupeId: dupe ? dupe.id : null,
+      };
+    }
+    e.hasIpa = !!e.ipa;
+    e.hasPos = !!e.pos && e.pos !== kind.one;
+    e.hasSyn = e.syn.length > 0;
+    e.hasHint = !!e.hint;
+    e.senses = e.senses.map((x, i) => ({ ...x, n: String(i + 1) }));
+    e.kindLabel = kind.one;
+    e.kindAria = 'Kind: ' + kind.one;
+
+    const setField = (key, value) => (a ? this.updateDraft({ [key]: value }) : this.updateEntry({ [key]: value }));
+    const fields = FIELDS.map((f) => {
+      const value = src[f.key] || '';
+      const editing = s.editing === f.key;
+      const lines = Math.max(2, value.split('\n').length + 1);
+      const start = () => this.setState({ editing: f.key, kindOpen: false });
+      return {
+        label: f.label,
+        placeholder: f.placeholder,
+        value,
+        editing,
+        viewing: !editing,
+        isBlank: !value.trim(),
+        blocks: blocks(value),
+        srcStyle: 'height: ' + (lines * 24 + 8) + 'px;',
+        start,
+        // a click on the text opens it for writing; a click on a link just follows the link
+        open: (ev) => { if (!(ev && ev.target && ev.target.closest && ev.target.closest('a, button'))) start(); },
+        onChange: (ev) => setField(f.key, ev.target.value),
+        onKey: (ev) => {
+          if (ev.key === 'Escape' || ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter')) {
+            ev.preventDefault();
+            if (a && (ev.metaKey || ev.ctrlKey)) this.saveNew();
+            else this.setState({ editing: null });
+          }
+        },
+      };
+    });
+
+    const kindOptions = KINDS.map((k) => ({
+      label: k.one,
+      cls: 'kind-opt' + (k.id === src.kind ? ' on' : ''),
+      selected: k.id === src.kind ? 'true' : 'false',
+      pick: () => {
+        if (a) this.updateDraft({ kind: k.id, kindSet: true, phase: 'typing', dict: null });
+        else this.updateEntry({ kind: k.id });
+        this.setState({ kindOpen: false });
+      },
+    }));
+
+    return {
+      e,
+      fields,
+      tagChips: (src.tags || []).map((t) => ({ name: t, aria: 'Remove tag ' + t, remove: () => this.setTags(this.tagsNow().filter((x) => x !== t)) })),
+      tagInput: s.tagInput,
+      tagPlaceholder: (src.tags || []).length ? '+ tag' : '# tag',
+      commitTag: () => this.commitTag(),
+      onTagInput: (ev) => {
+        const raw = ev.target.value;
+        if (/[\s,]$/.test(raw)) { this.commitTag(raw); return; }
+        this.setState({ tagInput: cleanTag(raw) });
+      },
+      onTagKey: (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); this.commitTag(); return; }
+        if (ev.key === 'Backspace' && !this.state.tagInput && this.tagsNow().length) { ev.preventDefault(); this.setTags(this.tagsNow().slice(0, -1)); }
+      },
+      standalone: !this.props.embedded,
+      appCls: 'app w-app' + (this.props.embedded ? ' embedded' : ''),
+      kindOptions,
+      groups: this.groups(),
+      adding: !!a,
+      newRowLabel: a && a.title.trim() ? a.title.trim() : 'new ' + kind.one,
+      titleRef: this.titleRef,
+      focusRef: this.focusRef,
+      kindOpen: s.kindOpen,
+      kindExpanded: s.kindOpen ? 'true' : 'false',
+      toggleKind: () => this.setState({ kindOpen: !s.kindOpen }),
+      stopEditing: () => this.setState({ editing: null }),
+      onTitle: (ev) => {
+        const title = ev.target.value;
+        if (a) {
+          const k = a.kindSet ? a.kind : (/\s/.test(title.trim()) ? 'phrases' : 'words');
+          clearTimeout(this.lookupTimer);
+          this.updateDraft({ title, kind: k, phase: 'typing', dict: null });
+        } else {
+          if (this.titleBefore == null) this.titleBefore = entry.word;
+          this.updateEntry({ word: title });
+        }
+      },
+      onTitleBlur: () => {
+        // an existing entry keeps its old title if this one is left empty or taken
+        if (!a && this.titleBefore != null) {
+          const t = entry.word.trim();
+          if (!t || this.dupeOf(t, entry.id)) this.updateEntry({ word: this.titleBefore });
+          else this.updateEntry({ word: t });
+          this.titleBefore = null;
+        }
+      },
+      onTitleKey: (ev) => {
+        if ((ev.metaKey || ev.ctrlKey) && ev.key === 'Enter' && a) { ev.preventDefault(); this.saveNew(); return; }
+        if (ev.key === 'Escape' && a) { ev.preventDefault(); this.cancelAdd(); return; }
+        if (ev.key === 'Enter') { ev.preventDefault(); if (a) this.lookup(); else ev.target.blur(); }
+      },
+      openDupe: () => { if (e.dupeId) this.setState({ adding: null, picked: e.dupeId, editing: null }); },
+      startAdd: () => this.startAdd(),
+      cancelAdd: () => this.cancelAdd(),
+      saveNew: () => this.saveNew(),
+      removeEntry: () => this.removeEntry(),
+      dictOpen: s.dictOpen ? 'true' : 'false',
+      dictShown: s.dictOpen,
+      dictChevron: s.dictOpen ? 'open' : '',
+      toggleDict: () => this.setState({ dictOpen: !s.dictOpen }),
+      mineOpen: s.mineOpen ? 'true' : 'false',
+      mineShown: s.mineOpen,
+      mineChevron: s.mineOpen ? 'open' : '',
+      toggleMine: () => this.setState({ mineOpen: !s.mineOpen }),
+      shuffle: () => {
+        const others = s.entries.filter((x) => x.id !== s.picked);
+        if (others.length) this.setState({ picked: others[Math.floor(Math.random() * others.length)].id, adding: null, editing: null });
+      },
+    };
+  }
+}
+</script>
+
+</body>
+</html>
