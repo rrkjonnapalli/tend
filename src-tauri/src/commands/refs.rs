@@ -25,3 +25,9 @@ pub fn ref_update(state: State<AppState>, id: String, patch: refs::Patch) -> App
 pub fn ref_delete(state: State<AppState>, id: String) -> AppResult<()> {
     state.with(|db, _| refs::delete(db, &id))
 }
+
+/// The page title of a link, fetched now; `None` when the page has none.
+#[tauri::command(async)]
+pub fn ref_title(url: String) -> AppResult<Option<String>> {
+    refs::fetch_title(&url)
+}

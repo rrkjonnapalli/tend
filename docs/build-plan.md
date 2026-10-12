@@ -322,7 +322,7 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 ---
 
-## L3 · References  ☐
+## L3 · References  ☑
 
 **Read:** decisions §15 · `designs/references.dc.html`, `refs.css`
 
@@ -335,6 +335,8 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 **Done when**
 - Paste + Enter saves; the title fills in; a duplicate link blocks Save; search filters; inputs never autocorrect (check smart quotes and dashes by hand on macOS).
+
+**Status (2026-10-12):** built and checked in the app (add, title fetch, tags, list). `ref_title` runs `ureq` in an async command (Tauri's worker pool); a failed fetch leaves the title empty. A link saved before its fetch ends gets the title from that same fetch once it returns (no background job). Tags use `TagEditor` as it is (its inline input already suggests from the pool). The open-link icon sits over the Reference column through CSS subgrid. Not done: the row highlight after saving, and the "Added" header is left-aligned (`ColumnHeader` has no per-column alignment).
 
 ---
 

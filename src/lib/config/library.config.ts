@@ -7,3 +7,6 @@ export const libraryAreas: LibraryAreaItem[] = [
   { area: LIBRARY_AREA.snaps, label: 'Snaps', search: 'Search snaps' },
   { area: LIBRARY_AREA.refs, label: 'References', search: 'Search references' },
 ];
+
+/** References: how long typing must pause before a link's page title is fetched. */
+export const titleFetchDelayMs = 650;

@@ -1,6 +1,8 @@
 //! References: links and named things (a book, a film) worth keeping. Only the value is needed.
 //! A link keeps a `url_key`, its URL normalised, so the same link can't be saved twice.
 
+mod title;
+
 #[cfg(test)]
 mod tests;
 
@@ -11,6 +13,8 @@ use crate::enums::{RefKind, SourceType};
 use crate::error::{errors, AppResult};
 use crate::tags;
 use crate::util::{new_id, now_ms};
+
+pub use title::fetch as fetch_title;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]

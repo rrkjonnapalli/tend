@@ -180,6 +180,7 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
             commands::refs::ref_create,
             commands::refs::ref_update,
             commands::refs::ref_delete,
+            commands::refs::ref_title,
             commands::tasks::my_day_set,
             commands::tasks::task_folder_create,
             commands::tasks::task_folder_rename,

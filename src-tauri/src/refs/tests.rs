@@ -84,3 +84,22 @@ fn the_list_is_newest_first() {
     let ids: Vec<String> = list(&conn).unwrap().into_iter().map(|r| r.id).collect();
     assert_eq!(ids, vec![new.id, old.id]);
 }
+
+#[test]
+fn a_title_is_read_from_the_page_head() {
+    use title::title_of;
+    let page = "<!doctype html><HTML><head><meta charset=utf-8>\n<Title data-x=1>\n  What are\n runes? &amp; more &#8212; &#x2014; &bogus; </Title></head>";
+    assert_eq!(
+        title_of(page).as_deref(),
+        Some("What are runes? & more \u{2014} \u{2014} &bogus;")
+    );
+    assert_eq!(title_of("<title>  </title>"), None);
+    assert_eq!(title_of("<html><body>no title</body>"), None);
+    assert_eq!(title_of("<title>never closed"), None);
+}
+
+#[test]
+fn only_http_and_https_are_fetched() {
+    let err = fetch_title("file:///etc/passwd").unwrap_err();
+    assert!(err.is(errors::REF_TITLE_FETCH));
+}
