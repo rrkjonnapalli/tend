@@ -92,7 +92,7 @@
   }
 
   .editor.lined {
-    padding-top: 52px;
+    padding-top: 28px;
   }
 
   .editor.slip {

@@ -192,7 +192,7 @@
   .ruled {
     flex: none;
     width: calc(100% + 62px);
-    height: 168px;
+    height: 240px;
     margin: 0 -18px 0 -44px;
     padding: 0 18px 0 44px;
     background-color: var(--paper);
@@ -285,13 +285,14 @@
     left: 8px;
   }
 
-  /* On lined paper the buttons sit between two rules, like the text. */
+  /* On lined paper the buttons sit on a line of their own, like the text: the first (with the
+     pin) and the last, with the text on the ten between. */
   .lined .corner {
-    top: 22px;
+    top: 0;
   }
 
   .lined .foot {
-    bottom: 30px;
+    bottom: 6px;
   }
 
   .right {
