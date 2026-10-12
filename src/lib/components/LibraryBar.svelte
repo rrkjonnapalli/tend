@@ -12,11 +12,13 @@
   let { area }: { area: LibraryArea } = $props();
 
   const options = libraryAreas.map((a) => ({ value: a.area, label: a.label }));
+  /** Focus stays on the switch (a navigation would drop it), so the next ← → switches again. */
+  const switchTo = (to: LibraryArea) => goto(routes.libraryArea(to), { reset: false });
   const search = $derived(libraryAreas.find((a) => a.area === area)?.search ?? '');
 </script>
 
 <div class="lbar" data-zone="bar">
-  <Segmented {options} value={area} label="Library" onchange={(a) => goto(routes.libraryArea(a))} />
+  <Segmented {options} value={area} label="Library" onchange={switchTo} />
   <button class="icon-btn add" aria-label="Add to the library" title="Add" onclick={library.requestAdd}>
     <Icon name="plus" size={16} />
   </button>
