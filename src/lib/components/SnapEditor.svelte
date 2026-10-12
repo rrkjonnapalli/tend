@@ -19,6 +19,7 @@
 
   let {
     snap,
+    filled = '',
     open,
     onsave,
     ondelete,
@@ -26,6 +27,8 @@
   }: {
     /** The snap to edit; none writes a new one. */
     snap: Snap | null;
+    /** A new snap's text, handed over from Home. */
+    filled?: string;
     /** The stack the board shows: a new snap goes in it. */
     open: string | null;
     onsave: (draft: SnapDraft) => void;
@@ -36,7 +39,7 @@
   // The editor is remounted for each snap, so these start from the one it opened with.
   const start = untrack(() => snap);
   const where = untrack(() => open);
-  let text = $state(start?.text ?? '');
+  let text = $state(start?.text ?? untrack(() => filled));
   let paperAt = $state(Math.max(0, papers.findIndex((p) => p.paper === start?.paper)));
   let color = $state(start?.color ?? stickyColor);
   let stackId = $state<string | null>(start ? start.stackId : where);

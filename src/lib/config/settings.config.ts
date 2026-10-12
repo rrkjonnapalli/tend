@@ -38,7 +38,7 @@ export const settingDefaults = {
   tasksRootName: 'tasks',
   tasksHideDone: false,
   timersSound: true,
-  libraryArea: LIBRARY_AREA.words,
+  libraryArea: LIBRARY_AREA.home,
   theme: 'system',
   fileLimitMB: 30,
   confirmDelete: true,

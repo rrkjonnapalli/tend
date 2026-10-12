@@ -75,7 +75,9 @@
     return { title: 'Nothing on the board yet', hint: 'Press + to pin your first snap.' };
   });
 
-  let editing = $state<{ snap: Snap | null } | null>(null);
+  /** The open editor: `snap` null writes a new one, with `filled` (text from Home) in. */
+  const handed = library.takeHanded();
+  let editing = $state<{ snap: Snap | null; filled?: string } | null>(handed === null ? null : { snap: null, filled: handed });
   let renaming = $state<string | null>(null);
   let deleting = $state<Snap | null>(null);
   let removing = $state<Stack | null>(null);
@@ -301,7 +303,7 @@
 
   {#if editing}
     {#key editing}
-      <SnapEditor snap={editing.snap} {open} onsave={saveDraft} ondelete={deleteEditing} onclose={() => (editing = null)} />
+      <SnapEditor snap={editing.snap} filled={editing.filled} {open} onsave={saveDraft} ondelete={deleteEditing} onclose={() => (editing = null)} />
     {/key}
   {/if}
 </div>

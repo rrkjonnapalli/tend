@@ -5,19 +5,23 @@
     options,
     value,
     label,
+    small = false,
     onchange,
   }: {
     options: { value: T; label: string }[];
-    value: T;
+    /** The choice that is on; none leaves every segment off. */
+    value: T | null;
     /** Accessible name of the group. */
     label: string;
+    /** A lower switch, for inside a dialog. */
+    small?: boolean;
     onchange: (value: T) => void;
   } = $props();
 
   const name = $props.id();
 </script>
 
-<div class="seg" role="radiogroup" aria-label={label}>
+<div class="seg" class:small role="radiogroup" aria-label={label}>
   {#each options as o (o.value)}
     <label class="choice" class:on={value === o.value}>
       <input type="radio" {name} value={o.value} checked={value === o.value} onchange={() => onchange(o.value)} />
@@ -46,6 +50,12 @@
     font: var(--text-ui);
     color: var(--c-muted-2);
     cursor: pointer;
+  }
+
+  .small .choice {
+    height: 24px;
+    padding: 0 12px;
+    font: var(--text-caption);
   }
 
   .choice:hover {

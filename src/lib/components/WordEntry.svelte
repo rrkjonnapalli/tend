@@ -25,6 +25,7 @@
 
   let {
     word,
+    filled = '',
     onsaved,
     oncancel,
     onopen,
@@ -33,6 +34,8 @@
   }: {
     /** The word to edit; none adds a new one. */
     word: Word | null;
+    /** A new word's title, handed over from Home. */
+    filled?: string;
     onsaved: (id: string) => void;
     oncancel: () => void;
     onopen: (id: string) => void;
@@ -46,8 +49,9 @@
   // The page is remounted for each word, so these start from the one it opened with.
   const start = untrack(() => word);
   const isNew = start === null;
-  let title = $state(start?.title ?? '');
-  let kind = $state<string>(start?.kind ?? WORD_KIND.word);
+  const handedTitle = untrack(() => filled);
+  let title = $state(start?.title ?? handedTitle);
+  let kind = $state<string>(start?.kind ?? guessKind(handedTitle));
   let kindSet = $state(!isNew);
   let dictionary = $state<Dictionary | null>(start?.dictionary ?? null);
   /** The dictionary answered for what the title says now, and had no entry. */
@@ -108,6 +112,14 @@
       fetching = false;
     }
   }
+
+  // A title handed over from Home is looked up once the kinds are in.
+  let handed = isNew && handedTitle.trim() !== '';
+  $effect(() => {
+    if (!handed || !words.loaded) return;
+    handed = false;
+    untrack(lookup);
+  });
 
   // ---- the title and kind
 

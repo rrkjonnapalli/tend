@@ -380,7 +380,7 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 ---
 
-## L6 · Library Home  ☐
+## L6 · Library Home  ☑
 
 **Read:** decisions §15 · `designs/library.dc.html`
 
@@ -391,6 +391,8 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 **Done when**
 - Each hand-off opens the right add with the text in and starts its fetch or lookup; Home and its search show live data.
+
+**Status (2026-10-12):** built and checked in the app (Home with live data, the three hand-offs, search with and without matches). Home is `/library/home`, first in the switch and the default area for a vault that has not opened the Library yet. "Recent", "latest" and "new" all mean added last. A snap on the mini board or in the results opens its stack; a reference opens References (not its popup). The hand-off passes the text through the `library` store (`handOff` / `takeHanded`); each area's add takes it as `filled`. Empty states: a column without items says so with what to press, the mini board shows "Nothing pinned yet", and a search without matches names the text. The empty columns were not seen in the app (the test vault has items in all three).
 
 **Deferred (not in L0–L6):** Undo on deletes and moves, fetching a title in the background after save, a full-text index, the tag filter, phone layouts, the dark board, drag on touch, links between Library items.
 

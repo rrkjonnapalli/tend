@@ -15,8 +15,9 @@
 
   refs.load();
 
-  /** The open popup: `editing` null adds a new reference. */
-  let form = $state<{ editing: Ref | null } | null>(null);
+  /** The open popup: `editing` null adds a new reference, with `filled` (text from Home) in. */
+  const handed = library.takeHanded();
+  let form = $state<{ editing: Ref | null; filled?: string } | null>(handed === null ? null : { editing: null, filled: handed });
 
   const needle = $derived(searchNeedle(library.query));
   const shown = $derived(refs.refs.filter((r) => textMatches([refTitle(r), r.value, r.why], needle)));
@@ -49,7 +50,7 @@
 
 {#if form}
   {#key form}
-    <RefForm editing={form.editing} onclose={() => (form = null)} onopen={(ref) => (form = { editing: ref })} />
+    <RefForm editing={form.editing} filled={form.filled} onclose={() => (form = null)} onopen={(ref) => (form = { editing: ref })} />
   {/key}
 {/if}
 

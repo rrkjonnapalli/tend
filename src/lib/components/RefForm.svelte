@@ -23,11 +23,14 @@
 
   let {
     editing,
+    filled = '',
     onclose,
     onopen,
   }: {
     /** The reference to edit; none adds a new one. */
     editing: Ref | null;
+    /** A new reference's text, handed over from Home. */
+    filled?: string;
     onclose: () => void;
     /** Opens another reference (the one a duplicate link points at). */
     onopen: (ref: Ref) => void;
@@ -40,7 +43,8 @@
 
   // The popup is remounted for each reference, so these start from the one it opened with.
   const start = untrack(() => editing);
-  let value = $state(start?.value ?? '');
+  const handed = untrack(() => filled);
+  let value = $state(start?.value ?? handed);
   let kind = $state<RefKind>(start?.kind ?? REF_KIND.text);
   let kindSet = $state(start !== null);
   let title = $state(start?.title ?? start?.value ?? '');
@@ -174,6 +178,9 @@
     e.preventDefault();
     save();
   }
+
+  // Text handed over from Home counts as typed: it picks link or text and starts the title fetch.
+  if (handed) onvalue();
 
   const titleHint = $derived.by(() => {
     if (!isLink) return 'Same as the reference';

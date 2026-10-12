@@ -16,9 +16,11 @@
 
   words.load();
 
-  let adding = $state(false);
+  /** A title handed over from Home: the page opens adding it. */
+  const handed = library.takeHanded();
+  let adding = $state(handed !== null);
   /** The new word's title as typed, mirrored in the list's "new …" row. */
-  let draftTitle = $state('');
+  let draftTitle = $state(handed ?? '');
 
   const groups = $derived(groupWords(words.words, words.kinds, searchNeedle(library.query)));
   const requested = $derived(page.url.searchParams.get('w'));
@@ -31,8 +33,13 @@
     const adds = library.adds;
     if (adds === seenAdds) return;
     seenAdds = adds;
-    untrack(() => (adding = true));
+    untrack(startAdding);
   });
+
+  function startAdding() {
+    draftTitle = '';
+    adding = true;
+  }
 
   function show(id: string) {
     adding = false;
@@ -51,7 +58,7 @@
   <div class="words">
     <WordList {groups} selected={open?.id ?? null} adding={adding ? draftTitle.trim() || 'new word' : null} onpick={show} />
     {#if adding}
-      <WordEntry word={null} onsaved={show} oncancel={() => (adding = false)} onopen={show} ondeleted={afterDelete} ontyped={(t) => (draftTitle = t)} />
+      <WordEntry word={null} filled={draftTitle} onsaved={show} oncancel={() => (adding = false)} onopen={show} ondeleted={afterDelete} ontyped={(t) => (draftTitle = t)} />
     {:else if open}
       {#key open.id}
         <WordEntry word={open} onsaved={show} oncancel={() => {}} onopen={show} ondeleted={afterDelete} />
