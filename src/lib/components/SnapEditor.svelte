@@ -53,6 +53,7 @@
   const paper = $derived(papers[paperAt].paper);
   const next = $derived(papers[(paperAt + 1) % papers.length]);
   const isSticky = $derived(paper === PAPER.sticky);
+  const isLined = $derived(paper === PAPER.lined);
   const tree = $derived(stackTree(snaps.stacks));
   const openStack = $derived(snaps.stacks.find((s) => s.id === where));
   const destName = $derived.by(() => {
@@ -99,9 +100,9 @@
 
 <div class="veil">
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="draft" class:torn={paper === PAPER.scrap} role="dialog" aria-label={start ? 'Edit snap' : 'New snap'} tabindex="-1" {onkeydown}>
+  <div class="draft" class:torn={paper === PAPER.scrap} class:lined={isLined} role="dialog" aria-label={start ? 'Edit snap' : 'New snap'} tabindex="-1" {onkeydown}>
     <SnapPaper {paper} {color} editor>
-      <textarea use:plainText use:focusOnMount bind:this={ink} class="ink" aria-label="Snap text" placeholder="Write it down…" bind:value={text}></textarea>
+      <textarea use:plainText use:focusOnMount bind:this={ink} class="ink" class:ruled={isLined} aria-label="Snap text" placeholder="Write it down…" bind:value={text}></textarea>
       <div class="foot">
         <button class="pbtn" aria-label="Change paper to {next.name}" title="Change paper to {next.name}" onclick={rotate}><Icon name="rotate" size={17} /></button>
         <button bind:this={stackBtn} class="where" aria-label="Put in: {destName}" title="Put in: {destName}" aria-haspopup="listbox" aria-expanded={picking === 'stack'} onclick={() => (picking = picking === 'stack' ? null : 'stack')}>
@@ -186,6 +187,27 @@
     overflow-y: auto;
   }
 
+  /* Lined paper scrolls with its text: the field spans the sheet and draws the rules itself, so
+     every line of text stays sitting on one. At the top they meet the sheet's own rules. */
+  .ruled {
+    flex: none;
+    width: calc(100% + 62px);
+    height: 168px;
+    margin: 0 -18px 0 -44px;
+    padding: 0 18px 0 44px;
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(90deg, transparent 33px, var(--paper-margin) 33px, var(--paper-margin) 34px, transparent 34px),
+      repeating-linear-gradient(transparent 0 23px, var(--paper-rule) 23px 24px);
+    background-attachment: local;
+    /* No scrollbar: its gutter would cut the rules short of the paper's edge. */
+    scrollbar-width: none;
+  }
+
+  .ruled::-webkit-scrollbar {
+    display: none;
+  }
+
   .ink::placeholder {
     color: var(--board-ink-muted);
   }
@@ -261,6 +283,15 @@
 
   .left {
     left: 8px;
+  }
+
+  /* On lined paper the buttons sit between two rules, like the text. */
+  .lined .corner {
+    top: 22px;
+  }
+
+  .lined .foot {
+    bottom: 30px;
   }
 
   .right {
