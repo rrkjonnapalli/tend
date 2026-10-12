@@ -360,7 +360,7 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 ---
 
-## L5 · Snaps  ☐
+## L5 · Snaps  ☑
 
 **Read:** decisions §15 · `designs/snaps.dc.html`, `snaps.css`
 
@@ -375,6 +375,8 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 **Done when**
 - Every add, edit, pin, move, stack rename, stack removal and delete persists; the board matches the mockup.
+
+**Status (2026-10-12):** built and driven in the app (add on each paper, sticky colour picker, open a stack and its path, drag a snap onto a snap to make a stack and name it, drag onto the path to move up, delete with its confirm). Changed from the plan: the board is real columns, not CSS multi-column (WebKit split and ghosted rotated items there); each item goes into the shortest column by an estimated height (`estimateHeight`, `packColumns`), so the newest lead the top row. The stack spread puts stacks at even slots of the final order (the mockup's formula could put two side by side). The board has its own scrollbar and colour tokens (`--board-*`, `--paper-*`); it stays light in the dark theme. The editor's dimmed layer sits under popovers (20 < 30) so its pickers show. Not driven: search results with their "in …" labels, auto-scroll while dragging near the edges, removing a stack from its hover tool.
 
 ---
 

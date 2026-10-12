@@ -124,6 +124,32 @@
   --sw-red: #da0037; --sw-orange: #d57149; --sw-amber: #e8890c; --sw-yellow: #d4b106; --sw-olive: #7a8f2a;
   --sw-green: #1e7a55; --sw-mint: #62d2a2; --sw-teal: #0f8a8a; --sw-cyan: #22a6c7; --sw-brown: #8d6e63;
 
+  /* Library board (Snaps): a warm pinboard and paper. It stays light in the dark theme, so these
+     are not remapped there; --board-ink is the text on paper either way. */
+  --board-bg: #f4f0e8;
+  --board-dot: #d8cfbd;
+  --board-edge: #e4ddcf;
+  --board-ink: #303841;
+  --board-ink-muted: #55606b;
+  --board-hint: #6f6656;
+  --board-title: #7a6f5a;
+  --board-drop: #e9e3d5;
+  --paper: #fffdf8;
+  --paper-kraft: #efe3c8;
+  --paper-rule: #d6e3f0;
+  --paper-margin: #efb4b4;
+  --paper-shadow: 0 1px 2px rgba(40, 30, 10, 0.12), 0 8px 20px -12px rgba(40, 30, 10, 0.4);
+  --pin-red: radial-gradient(circle at 35% 35%, #ff8a8a, #c8323a 60%, #8f1f26);
+  --pin-brass: radial-gradient(circle at 35% 35%, #ffe7a3, #d9a92e 55%, #7d5a0c);
+  --pin-on: #8a6410;
+  --clip: linear-gradient(#3a424b, #22282e);
+  --clip-wire: #a3adb6;
+  --board-veil: rgba(244, 240, 232, 0.78);
+  --board-hover: rgba(48, 56, 65, 0.08);
+  --paper-torn-shadow: drop-shadow(0 6px 8px rgba(40, 30, 10, 0.22));
+  --pin-shadow: 1px 3px 3px rgba(40, 30, 10, 0.35);
+  --ghost-shadow: drop-shadow(0 16px 22px rgba(40, 30, 10, 0.26));
+
   /* type */
   --font-heading: 'Montserrat', sans-serif;   /* 28/36 500 page titles; 15–16 500 section titles */
   --font-ui: 'Lato', sans-serif;              /* 14/20 body UI; 13/18 captions; 12/16 meta */

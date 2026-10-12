@@ -1,9 +1,10 @@
 <script lang="ts">
-  // An empty Library area or search: one handwritten line and one hint, centred.
-  let { title, hint }: { title: string; hint: string } = $props();
+  // An empty Library area or search: one handwritten line and one hint, centred. On the Snaps
+  // board (which stays light in the dark theme) it takes the board's own colours.
+  let { title, hint, board = false }: { title: string; hint: string; board?: boolean } = $props();
 </script>
 
-<div class="empty">
+<div class="empty" class:board>
   <p class="title">{title}</p>
   <p class="hint">{hint}</p>
 </div>
@@ -29,5 +30,13 @@
     margin: 0;
     font: var(--text-ui);
     color: var(--c-muted-2);
+  }
+
+  .board .title {
+    color: var(--board-title);
+  }
+
+  .board .hint {
+    color: var(--board-hint);
   }
 </style>

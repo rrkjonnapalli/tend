@@ -19,6 +19,8 @@ export const routes = {
   libraryArea: (area: LibraryArea) => `/library/${area}`,
   /** A word open in the Words area. */
   libraryWord: (id: string) => `/library/words?w=${encodeURIComponent(id)}`,
+  /** A stack open on the Snaps board; none is the board itself. */
+  libraryStack: (id: string | null) => (id ? `/library/snaps?s=${encodeURIComponent(id)}` : '/library/snaps'),
   /** A Settings section, such as `sync`. */
   settingsSection: (id: string) => `/settings?s=${id}`,
   notesFolder: (path: string) => `/notes${folderQuery(path)}`,
