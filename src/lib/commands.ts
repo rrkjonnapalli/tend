@@ -45,6 +45,7 @@ export const commands: Command[] = [
   { id: 'go.notes', group: 'Go to', label: 'Go to Notes', keys: 'mod+1', run: () => goto(routes.notes) },
   { id: 'go.tasks', group: 'Go to', label: 'Go to Tasks', keys: 'mod+2', run: () => goto(routes.tasks) },
   { id: 'go.people', group: 'Go to', label: 'Go to People', keys: 'mod+3', run: () => goto(routes.people) },
+  { id: 'go.library', group: 'Go to', label: 'Go to Library', keys: 'mod+4', run: () => goto(routes.library) },
   { id: 'go.settings', group: 'Go to', label: 'Open Settings', keys: 'mod+,', run: () => goto(routes.settings) },
   { id: 'go.back', group: 'Go to', label: 'Back', keys: 'mod+[', run: goBack },
   { id: 'go.forward', group: 'Go to', label: 'Forward', keys: 'mod+]', run: () => history.forward() },

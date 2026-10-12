@@ -1,7 +1,8 @@
 <script lang="ts">
   import { plainText } from '#lib/actions/plain-text.action.ts';
   // A list page's search line: one row under the page bar, the field at the right end.
-  // While it's on screen, ⌘L (the "page.search" action) focuses it.
+  // While it's on screen, ⌘L (the "page.search" action) focuses it. `clearable` adds a × and lets
+  // Esc empty it.
   import Icon from './Icon.svelte';
   import { pageActions } from '#lib/stores/page-actions.svelte.ts';
 
@@ -9,11 +10,13 @@
     value = $bindable(''),
     label,
     placeholder,
+    clearable = false,
   }: {
     value?: string;
     /** Accessible name, e.g. "Search tasks". */
     label: string;
     placeholder: string;
+    clearable?: boolean;
   } = $props();
 
   let input = $state<HTMLInputElement>();
@@ -24,12 +27,28 @@
   }
 
   $effect(() => pageActions.provide({ 'page.search': focusSearch }));
+
+  function clear() {
+    value = '';
+    input?.focus();
+  }
+
+  function onkeydown(e: KeyboardEvent) {
+    const clears = clearable && e.key === 'Escape' && value !== '';
+    if (!clears) return;
+    e.preventDefault();
+    e.stopPropagation();
+    value = '';
+  }
 </script>
 
 <div class="line" data-zone="field">
   <label class="search">
     <span class="ic"><Icon name="search" size={14} /></span>
-    <input use:plainText data-row-entry bind:this={input} aria-label={label} {placeholder} bind:value />
+    <input use:plainText data-row-entry bind:this={input} aria-label={label} {placeholder} bind:value {onkeydown} />
+    {#if clearable && value}
+      <button class="icon-btn sm x" aria-label="Clear search" title="Clear" onclick={clear}><Icon name="close" size={12} /></button>
+    {/if}
   </label>
 </div>
 
@@ -61,6 +80,10 @@
   .ic {
     display: grid;
     color: var(--c-muted-2);
+  }
+
+  .x {
+    margin-right: -6px;
   }
 
   .search input {

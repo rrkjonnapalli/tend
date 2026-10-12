@@ -7,6 +7,7 @@ export const icons = {
   task: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
   taskNew: '<circle cx="12" cy="12" r="8"/><path d="M12 8.5v7M8.5 12h7"/>',
   person: '<circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+  library: '<path d="M5 4h3v16H5z"/><path d="M10 4h3v16h-3z"/><path d="M15.4 5.2l2.9-.8 3.6 15-2.9.8z"/>',
   folder: '<path d="M3 6h6l2 2h10v11H3z"/>',
   folderNew: '<path d="M3 6h6l2 2h10v11H3z"/><path d="M12 11v5M9.5 13.5h5"/>',
   sync: '<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 20v-4h-4"/>',

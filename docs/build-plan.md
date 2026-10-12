@@ -304,7 +304,7 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 ---
 
-## L2 · Library shell  ☐
+## L2 · Library shell  ☑
 
 **Read:** decisions §15 · `designs/library.dc.html`, `library.css`
 
@@ -317,6 +317,8 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 **Done when**
 - The tab switches areas and reopens on the last one; search clears as described; Library chrome follows decisions §15 (no shadows, no focus rings).
+
+**Status (2026-10-12):** built and checked in the app. Areas are routes (`/library/words`, `/library/snaps`, `/library/references`; `/library` opens the last one). The bar uses a new `Segmented` (radios underneath) and `SearchLine` with a new `clearable` (× and Esc). + bumps `library.adds`; each area opens its add on it from L3 on. Until then each area shows its empty state (`LibraryEmpty`), even if synced data exists.
 
 ---
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  // The sections bar at the bottom: Notes, Tasks, People, plus timers, sync, settings and feedback.
+  // The sections bar at the bottom: Notes, Tasks, People, Library, plus timers, sync, settings and feedback.
   import type { IconName } from '#lib/types/icon.type.ts';
   import { page } from '$app/state';
   import Icon from './Icon.svelte';
@@ -14,6 +14,7 @@
     { href: routes.notes, label: 'Notes', icon: 'note' },
     { href: routes.tasks, label: 'Tasks', icon: 'task' },
     { href: routes.people, label: 'People', icon: 'person' },
+    { href: routes.library, label: 'Library', icon: 'library' },
   ];
 
   let feedbackBtn = $state<HTMLButtonElement>();

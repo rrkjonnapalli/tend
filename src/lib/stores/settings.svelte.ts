@@ -14,7 +14,7 @@ class Settings {
     return key in this.values ? (this.values[key] as T) : fallback;
   }
 
-  /** Whether deleting a note, task or person asks first (Settings → General → Confirmations). */
+  /** Whether deleting this kind asks first (Settings → General → Confirmations). */
   asksDelete(kind: DeleteKind): boolean {
     return this.get(settingKeys.confirmDelete(kind), settingDefaults.confirmDelete);
   }

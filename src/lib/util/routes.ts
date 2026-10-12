@@ -1,4 +1,5 @@
 // URLs for every page, so links are built in one place.
+import type { LibraryArea } from '#lib/enums/library.enum.ts';
 
 /** `?f=<folder>` for a folder view; nothing for the root. */
 function folderQuery(path: string): string {
@@ -13,6 +14,9 @@ export const routes = {
   tasks: '/tasks',
   people: '/people',
   settings: '/settings',
+  /** Opens the Library on the area used last. */
+  library: '/library',
+  libraryArea: (area: LibraryArea) => `/library/${area}`,
   /** A Settings section, such as `sync`. */
   settingsSection: (id: string) => `/settings?s=${id}`,
   notesFolder: (path: string) => `/notes${folderQuery(path)}`,

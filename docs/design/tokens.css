@@ -1,5 +1,5 @@
 /* Tend design tokens: Clean Colors (light). Generated from the design system.
-   Fonts: install with `bun add @fontsource/montserrat @fontsource/lato @fontsource/jetbrains-mono`
+   Fonts: install with `bun add @fontsource/montserrat @fontsource/lato @fontsource/jetbrains-mono @fontsource/caveat`
    and import montserrat/500.css, montserrat/600.css, lato/400.css, lato/700.css, jetbrains-mono/400.css, jetbrains-mono/500.css. */
 :root {
   /* palette */
@@ -128,6 +128,7 @@
   --font-heading: 'Montserrat', sans-serif;   /* 28/36 500 page titles; 15–16 500 section titles */
   --font-ui: 'Lato', sans-serif;              /* 14/20 body UI; 13/18 captions; 12/16 meta */
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;  /* note editor 15/26, values, paths, kbd */
+  --font-hand: 'Caveat', cursive;             /* Library: sticky notes 23/28 500, stack names 30/32 600 */
 
   /* type roles: use these, not raw font values. Lato ships 400 and 700 only, so no 500 in --font-ui. */
   --text-heading:        500 28px/36px var(--font-heading);  /* page titles */

@@ -1,7 +1,7 @@
 export type Popup = 'feedback' | 'timers' | null;
 
 /** What a delete confirmation can be turned off for. */
-export type DeleteKind = 'note' | 'task' | 'person';
+export type DeleteKind = 'note' | 'task' | 'person' | 'word' | 'snap' | 'reference';
 
 export type QuickKind = 'note' | 'task' | 'folder' | 'timer';
 
