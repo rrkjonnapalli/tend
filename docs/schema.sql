@@ -249,12 +249,13 @@ BEGIN DELETE FROM tend_links WHERE source_type = 'COMMENT' AND source_id = OLD.i
 -------------------------------------------------------------------------------
 -- Word kinds are WORD_KIND rows in tend_enums; `meta.lookup` says whether the dictionary is asked.
 INSERT INTO tend_enums (id, kind, value, label, is_default, meta, created_at, updated_at) VALUES
-  ('WORD_KIND:WORD',   'WORD_KIND', 'WORD',   'word',           1, '{"lookup":true,"position":0}',  0, 0),
-  ('WORD_KIND:IDIOM',  'WORD_KIND', 'IDIOM',  'idiom',          1, '{"lookup":true,"position":1}',  0, 0),
-  ('WORD_KIND:PHRASE', 'WORD_KIND', 'PHRASE', 'phrase',         1, '{"lookup":true,"position":2}',  0, 0),
-  ('WORD_KIND:ABBR',   'WORD_KIND', 'ABBR',   'abbr',           1, '{"lookup":false,"position":3}', 0, 0),
-  ('WORD_KIND:TERM',   'WORD_KIND', 'TERM',   'term / concept', 1, '{"lookup":false,"position":4}', 0, 0),
-  ('WORD_KIND:OTHER',  'WORD_KIND', 'OTHER',  'something else', 1, '{"lookup":false,"position":5}', 0, 0);
+  ('WORD_KIND:WORD',    'WORD_KIND', 'WORD',    'word',    1, '{"lookup":true,"position":0}',  0, 0),
+  ('WORD_KIND:IDIOM',   'WORD_KIND', 'IDIOM',   'idiom',   1, '{"lookup":true,"position":1}',  0, 0),
+  ('WORD_KIND:ABBR',    'WORD_KIND', 'ABBR',    'abbr',    1, '{"lookup":false,"position":2}', 0, 0),
+  ('WORD_KIND:CONCEPT', 'WORD_KIND', 'CONCEPT', 'concept', 1, '{"lookup":false,"position":3}', 0, 0),
+  ('WORD_KIND:PHRASE',  'WORD_KIND', 'PHRASE',  'phrase',  1, '{"lookup":true,"position":4}',  0, 0),
+  ('WORD_KIND:TERM',    'WORD_KIND', 'TERM',    'term',    1, '{"lookup":false,"position":5}', 0, 0),
+  ('WORD_KIND:OTHER',   'WORD_KIND', 'OTHER',   'other',   1, '{"lookup":false,"position":6}', 0, 0);
 
 -- A title is unique by exact match; a WORD title is saved in lowercase (checked in the app).
 CREATE TABLE words (

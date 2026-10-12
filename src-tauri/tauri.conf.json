@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": "img-src 'self' data: blob:; form-action 'none'"
+      "csp": "img-src 'self' data: blob:; media-src https:; form-action 'none'"
     },
     "macOSPrivateApi": true
   },

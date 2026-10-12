@@ -325,9 +325,9 @@ The full behaviour is in `docs/tend-library-plan.md` and the mockups in `docs/te
 
 - **Tab:** the fourth bottom-nav section, Library (⌘4). A bar on top switches Home · Words · Snaps · References, holds the + button and a search scoped to the area. Library reopens on the last area used (setting `ui.library.area`, per device).
 - **Inputs:** every Library input keeps the text exactly as typed (no autocorrect, spellcheck, auto-capitalise or smart punctuation), except a `WORD` title, which is saved in lowercase.
-- **Word kinds:** `WORD_KIND` rows in `tend_enums`, edited in Settings → Library → Word kinds (add, rename, reorder, delete). Defaults: word, idiom, phrase, abbr, term, other. `WORD`, `IDIOM` and `PHRASE` look things up in the dictionary; custom kinds don't. `WORD` and `OTHER` can't be deleted; a kind in use can't be deleted.
+- **Word kinds:** `WORD_KIND` rows in `tend_enums`, edited in Settings → Library → Word kinds (add, rename, reorder, delete). Defaults, in order: word, idiom, abbr, concept, phrase, term, other. `WORD`, `IDIOM` and `PHRASE` look things up in the dictionary; custom kinds don't. `WORD` and `OTHER` can't be deleted; a kind in use can't be deleted.
 - **Word titles** are unique by exact match across all kinds. A `WORD` title is lowercased on save; other kinds keep their case, so `it` (word) and `IT` (abbr) are different entries. Changing a saved entry's kind to `WORD` lowercases its title and is refused if that title already exists.
-- **Kind guess** while adding, until a kind is picked by hand: an uppercase letter and no spaces guesses abbr, no spaces guesses word, spaces guess phrase; a dictionary hit marked idiom switches to idiom.
+- **Kind guess** while adding, until a kind is picked by hand: all capitals (two characters or more) and no spaces guesses abbr (`NASA`, but not `Petrichor`), no spaces guesses word, spaces guess phrase; a dictionary hit marked idiom switches to idiom.
 - **Words list:** grouped by kind in kind order, always open; no random or collapse buttons.
 - **Meaning and Notes** render the markdown as written; Tend adds no link syntax of its own.
 - **Pronunciation:** the dictionary's audio URL is stored with the entry and played from it (CSP `media-src https:`).

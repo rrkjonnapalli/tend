@@ -105,6 +105,25 @@ pub const CONTACT_EMPTY: ErrorDef = def("CONTACT_EMPTY", "Enter a value");
 pub const WORD_TITLE_EMPTY: ErrorDef = def("WORD_TITLE_EMPTY", "Give it a title.");
 pub const WORD_TAKEN: ErrorDef = def("WORD_TAKEN", "Already saved.");
 pub const WORD_KIND_UNKNOWN: ErrorDef = def("WORD_KIND_UNKNOWN", "Pick one of the word kinds.");
+pub const WORD_LOOKUP: ErrorDef = def("WORD_LOOKUP", "The dictionary couldn’t be reached.");
+pub const WORD_KIND_LABEL_EMPTY: ErrorDef = def("WORD_KIND_LABEL_EMPTY", "A kind needs a name.");
+pub const WORD_KIND_LABEL_TAKEN: ErrorDef = def(
+    "WORD_KIND_LABEL_TAKEN",
+    "Another kind already uses this name.",
+);
+pub const WORD_KIND_VALUE: ErrorDef = def(
+    "WORD_KIND_VALUE",
+    "Give the kind a value: capital letters and digits, words joined by _.",
+);
+pub const WORD_KIND_VALUE_TAKEN: ErrorDef = def(
+    "WORD_KIND_VALUE_TAKEN",
+    "Another kind already uses this value.",
+);
+pub const WORD_KIND_ORDER: ErrorDef =
+    def("WORD_KIND_ORDER", "The order must list every kind once.");
+pub const WORD_KIND_DEFAULT: ErrorDef =
+    def("WORD_KIND_DEFAULT", "This kind comes with Tend and stays.");
+pub const WORD_KIND_IN_USE: ErrorDef = def("WORD_KIND_IN_USE", "Some words have this kind.");
 pub const SNAP_TEXT_EMPTY: ErrorDef = def("SNAP_TEXT_EMPTY", "Write something first.");
 pub const STACK_INTO_SELF: ErrorDef = def("STACK_INTO_SELF", "A stack can’t go inside itself.");
 pub const REF_VALUE_EMPTY: ErrorDef = def("REF_VALUE_EMPTY", "Paste a link or type a name.");

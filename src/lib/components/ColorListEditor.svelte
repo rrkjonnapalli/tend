@@ -1,6 +1,7 @@
 <script lang="ts">
-  // A colour list in Settings → Tasks (statuses, labels): drag to order, colour swatch, rename
-  // inline, add with an UPPER_SNAKE value, delete (always asks; `ops.removeWarning` says what it takes).
+  // A list in Settings (statuses, labels, word kinds): drag to order, a colour swatch when the list
+  // has colours, rename inline, add with an UPPER_SNAKE value, delete (always asks;
+  // `ops.removeWarning` says what it takes).
   import { onDestroy } from 'svelte';
   import Section from './Section.svelte';
   import ColorListRow from './ColorListRow.svelte';
@@ -68,7 +69,7 @@
   }
 
   function add({ name, value }: { name: string; value: string }) {
-    const color = freeSwatch(items.map((item) => item.color));
+    const color = freeSwatch(items.flatMap((item) => (item.color ? [item.color] : [])));
     return apply(() => ops.add({ name, value, color }));
   }
 
@@ -91,7 +92,9 @@
     if (!swatchFor) return;
     const { key } = swatchFor;
     swatchFor = null;
-    await runRow(key, () => ops.recolor({ key, color }));
+    const recolor = ops.recolor;
+    if (!recolor) return;
+    await runRow(key, () => recolor({ key, color }));
   }
 
   /** Every delete in Settings asks first; one in use says what it takes with it. */

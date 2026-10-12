@@ -34,3 +34,37 @@ pub fn word_update(
 pub fn word_delete(state: State<AppState>, id: String) -> AppResult<()> {
     state.with(|db, _| words::delete(db, &id))
 }
+
+/// What the dictionary says about `title`; `None` when it doesn't have it.
+#[tauri::command(async)]
+pub fn word_lookup(title: String) -> AppResult<Option<words::Dictionary>> {
+    words::lookup(&title)
+}
+
+#[tauri::command(async)]
+pub fn word_kind_add(
+    state: State<AppState>,
+    label: String,
+    value: String,
+) -> AppResult<words::Kind> {
+    state.with(|db, _| words::kind_add(db, &label, &value))
+}
+
+#[tauri::command(async)]
+pub fn word_kind_rename(
+    state: State<AppState>,
+    value: String,
+    label: String,
+) -> AppResult<words::Kind> {
+    state.with(|db, _| words::kind_rename(db, &value, &label))
+}
+
+#[tauri::command(async)]
+pub fn word_kind_reorder(state: State<AppState>, values: Vec<String>) -> AppResult<()> {
+    state.with(|db, _| words::kind_reorder(db, &values))
+}
+
+#[tauri::command(async)]
+pub fn word_kind_delete(state: State<AppState>, value: String) -> AppResult<()> {
+    state.with(|db, _| words::kind_delete(db, &value))
+}

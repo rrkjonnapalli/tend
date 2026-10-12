@@ -9,6 +9,7 @@ mod enums;
 mod error;
 mod feedback;
 mod files;
+mod http;
 #[cfg(test)]
 mod ipc_tests;
 mod labels;
@@ -168,6 +169,11 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
             commands::words::word_create,
             commands::words::word_update,
             commands::words::word_delete,
+            commands::words::word_lookup,
+            commands::words::word_kind_add,
+            commands::words::word_kind_rename,
+            commands::words::word_kind_reorder,
+            commands::words::word_kind_delete,
             commands::snaps::snaps_board,
             commands::snaps::snap_create,
             commands::snaps::snap_update,

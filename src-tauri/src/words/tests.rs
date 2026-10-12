@@ -97,7 +97,120 @@ fn kinds_come_in_order_with_their_lookup() {
     let conn = open_memory();
     let kinds = kinds(&conn).unwrap();
     let values: Vec<&str> = kinds.iter().map(|k| k.value.as_str()).collect();
-    assert_eq!(values, ["WORD", "IDIOM", "PHRASE", "ABBR", "TERM", "OTHER"]);
+    assert_eq!(
+        values,
+        ["WORD", "IDIOM", "ABBR", "CONCEPT", "PHRASE", "TERM", "OTHER"]
+    );
     let lookups: Vec<bool> = kinds.iter().map(|k| k.lookup).collect();
-    assert_eq!(lookups, [true, true, true, false, false, false]);
+    assert_eq!(lookups, [true, true, false, false, true, false, false]);
+}
+
+const REPLY: &str = r#"[
+  {
+    "word": "ephemeral",
+    "phonetic": "",
+    "phonetics": [
+      { "text": "/ɪˈfɛm(ə)ɹəl/", "audio": "" },
+      { "text": "/əˈfɛm(ə)ɹəl/", "audio": "//ssl.gstatic.com/ephemeral.mp3" }
+    ],
+    "meanings": [
+      {
+        "partOfSpeech": "adjective",
+        "definitions": [
+          { "definition": " Lasting for a very short time. ", "example": "fashions are ephemeral", "synonyms": ["fleeting"] },
+          { "definition": "(of a plant) having a very short life cycle.", "synonyms": [] }
+        ],
+        "synonyms": ["transient", "fleeting"]
+      },
+      { "partOfSpeech": "noun", "definitions": [{ "definition": "An ephemeral plant." }] }
+    ]
+  }
+]"#;
+
+#[test]
+fn a_reply_becomes_senses_ipa_audio_and_synonyms() {
+    let d = dictionary::from_json(REPLY, 7).unwrap().unwrap();
+    assert_eq!(
+        d.ipa.as_deref(),
+        Some("/ɪˈfɛm(ə)ɹəl/"),
+        "the first phonetic text that has one"
+    );
+    assert_eq!(
+        d.audio.as_deref(),
+        Some("https://ssl.gstatic.com/ephemeral.mp3")
+    );
+    assert_eq!(d.part_of_speech.as_deref(), Some("adjective"));
+    assert_eq!(d.senses.len(), 3);
+    assert_eq!(d.senses[0].definition, "Lasting for a very short time.");
+    assert_eq!(
+        d.senses[0].example.as_deref(),
+        Some("fashions are ephemeral")
+    );
+    assert_eq!(d.senses[1].example, None);
+    assert_eq!(d.synonyms, vec!["transient", "fleeting"]);
+    assert_eq!(d.fetched_at, 7);
+    let stored = serde_json::to_value(&d).unwrap();
+    assert!(
+        stored.get("partOfSpeech").is_some(),
+        "stored in camelCase, as the UI reads it"
+    );
+}
+
+#[test]
+fn a_reply_without_definitions_is_no_entry_and_junk_is_an_error() {
+    assert_eq!(dictionary::from_json("[]", 0).unwrap(), None);
+    let err = dictionary::from_json(r#"{"title":"No Definitions Found"}"#, 0).unwrap_err();
+    assert!(err.is(errors::WORD_LOOKUP));
+}
+
+#[test]
+fn kinds_can_be_added_renamed_ordered_and_deleted_when_unused() {
+    let mut conn = open_memory();
+    let slang = kind_add(&conn, " Slang ", "SLANG").unwrap();
+    assert_eq!(
+        (slang.label.as_str(), slang.position, slang.lookup),
+        ("Slang", 7, false)
+    );
+    assert!(kind_add(&conn, "slang", "SLANG_2")
+        .unwrap_err()
+        .is(errors::WORD_KIND_LABEL_TAKEN));
+    assert!(kind_add(&conn, "Other slang", "SLANG")
+        .unwrap_err()
+        .is(errors::WORD_KIND_VALUE_TAKEN));
+    assert!(kind_add(&conn, "Odd", "odd value")
+        .unwrap_err()
+        .is(errors::WORD_KIND_VALUE));
+    assert_eq!(
+        kind_rename(&conn, "SLANG", "Street").unwrap().label,
+        "Street"
+    );
+
+    let mut order: Vec<String> = kinds(&conn).unwrap().into_iter().map(|k| k.value).collect();
+    order.rotate_right(1);
+    kind_reorder(&mut conn, &order).unwrap();
+    assert_eq!(kinds(&conn).unwrap()[0].value, "SLANG");
+    assert!(kind_reorder(&mut conn, &order[1..])
+        .unwrap_err()
+        .is(errors::WORD_KIND_ORDER));
+
+    let word = create(&conn, &new("Gnarly", Some("SLANG"))).unwrap();
+    assert!(kind_delete(&conn, "SLANG")
+        .unwrap_err()
+        .is(errors::WORD_KIND_IN_USE));
+    assert!(kind_delete(&conn, WORD)
+        .unwrap_err()
+        .is(errors::WORD_KIND_DEFAULT));
+    delete(&conn, &word.id).unwrap();
+    kind_delete(&conn, "SLANG").unwrap();
+    assert_eq!(kinds(&conn).unwrap().len(), 7);
+}
+
+#[test]
+fn a_title_is_one_url_segment() {
+    assert_eq!(
+        dictionary::segment("bite the bullet"),
+        "bite%20the%20bullet"
+    );
+    assert_eq!(dictionary::segment("café/x"), "caf%C3%A9%2Fx");
+    assert_eq!(dictionary::segment("well-being"), "well-being");
 }

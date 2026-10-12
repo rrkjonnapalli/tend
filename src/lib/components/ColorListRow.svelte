@@ -29,7 +29,8 @@
     /** The row's key for drag reordering. */
     id: string;
     name: string;
-    color: string;
+    /** No swatch when left out (word kinds). */
+    color?: string;
     /** Draw the swatch as a ring (the first status). */
     ring?: boolean;
     /** No drag handle: the row keeps its place. */
@@ -72,14 +73,16 @@
   {#if pinned}<span></span>{:else}
     <span class="handle" role="presentation" onpointerdown={ongrab}><Grip /></span>
   {/if}
-  <button
-    class="sw"
-    class:ring
-    style:--c={color}
-    aria-label="Color for {name}"
-    title="Color"
-    aria-haspopup="listbox"
-    onclick={(e) => onswatch(e.currentTarget)}></button>
+  {#if color === undefined}<span></span>{:else}
+    <button
+      class="sw"
+      class:ring
+      style:--c={color}
+      aria-label="Color for {name}"
+      title="Color"
+      aria-haspopup="listbox"
+      onclick={(e) => onswatch(e.currentTarget)}></button>
+  {/if}
   {#if editing}
     <input use:plainText class="etxt" aria-label={nameLabel} bind:value={label} onkeydown={editKeys} use:focusAndSelect />
   {:else}

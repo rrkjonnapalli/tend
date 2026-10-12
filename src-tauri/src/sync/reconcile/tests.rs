@@ -591,3 +591,27 @@ fn a_word_whose_kind_is_gone_becomes_other() {
         (Some("OTHER"), Some("Gnarly"))
     );
 }
+
+#[test]
+fn a_default_enum_row_wins_over_one_a_user_made() {
+    let empty = Snapshot::new();
+    // One device made CONCEPT by hand; the other has it as a default (a newer app's seed).
+    let made = enum_row("01ABC", EnumKind::WordKind, "CONCEPT", "concept", 3);
+    let mut seeded = enum_row(
+        "WORD_KIND:CONCEPT",
+        EnumKind::WordKind,
+        "CONCEPT",
+        "concept",
+        3,
+    );
+    seeded["is_default"] = json!(1);
+    let l = snap(&[("tend_enums", vec![made])]);
+    let r = snap(&[("tend_enums", vec![seeded])]);
+    let merged = reconcile(&Sides {
+        base: &empty,
+        local: &l,
+        remote: &r,
+    });
+    let ids: Vec<&String> = merged["tend_enums"].keys().collect();
+    assert_eq!(ids, vec!["WORD_KIND:CONCEPT"]);
+}

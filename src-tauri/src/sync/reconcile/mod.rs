@@ -151,10 +151,9 @@ fn newer<'a>(a: &'a Row, b: &'a Row) -> &'a Row {
 // ---- 2. unique keys
 
 /// Link and path tables: rows with the same key collapse into the one with the smallest id.
-/// Link, path and enum tables: rows with the same key collapse into the one with the smallest id.
-/// Nothing points at an enum or link row by id, so dropping the others leaves nothing dangling.
+/// Link and path tables: rows with the same key collapse into the one with the smallest id.
+/// Nothing points at a link row by id, so dropping the others leaves nothing dangling.
 const KEEP_SMALLEST: &[(&str, &[&str])] = &[
-    ("tend_enums", &["kind", "value"]),
     (
         "tend_links",
         &[
@@ -204,6 +203,9 @@ fn fix_unique_keys(merged: &mut Snapshot) {
     // Before KEEP_SMALLEST, which then drops links doubled by the move.
     for rule in MERGE_ON_KEY {
         merge_on_key(merged, rule);
+    }
+    if let Some(rows) = merged.get_mut("tend_enums") {
+        keep_enum_defaults(rows);
     }
     for (table, columns) in KEEP_SMALLEST {
         if let Some(rows) = merged.get_mut(table) {
@@ -319,6 +321,28 @@ fn keep_smallest(rows: &mut Rows, columns: &[&str]) {
     for id in extra {
         rows.remove(&id);
     }
+}
+
+/// Enum rows with the same kind and value collapse into one: a default row (the same fixed id on
+/// every device) beats one a user made, else the smallest id. Defaults can't be deleted, so
+/// dropping one would make the apply fail. Nothing points at an enum row by id.
+fn keep_enum_defaults(rows: &mut Rows) {
+    let is_default = |row: &Row| row.get("is_default").and_then(Value::as_i64) == Some(1);
+    let key =
+        |row: &Row| serde_json::to_string(&key_of(row, &["kind", "value"])).unwrap_or_default();
+    // Rows iterate in id order, so the first kept for a key has the smallest id.
+    let mut kept: BTreeMap<String, String> = BTreeMap::new();
+    for (id, row) in rows.iter() {
+        let current = kept.get(&key(row)).and_then(|kept_id| rows.get(kept_id));
+        let wins = match current {
+            None => true,
+            Some(current) => is_default(row) && !is_default(current),
+        };
+        if wins {
+            kept.insert(key(row), id.clone());
+        }
+    }
+    rows.retain(|id, row| kept.get(&key(row)) == Some(id));
 }
 
 fn number_duplicates(rows: &mut Rows, column: &str, group: &str) {

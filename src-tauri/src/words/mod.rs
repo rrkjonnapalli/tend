@@ -2,6 +2,7 @@
 //! unique by exact match; a `WORD` title is saved in lowercase, other kinds keep the case typed, so
 //! `it` (word) and `IT` (abbr) are different entries.
 
+mod dictionary;
 mod kinds;
 
 #[cfg(test)]
@@ -16,7 +17,11 @@ use crate::error::{errors, AppResult};
 use crate::tags;
 use crate::util::{new_id, now_ms};
 
-pub use kinds::{list as kinds, Kind};
+pub use dictionary::{lookup, Dictionary};
+pub use kinds::{
+    add as kind_add, delete as kind_delete, list as kinds, rename as kind_rename,
+    reorder as kind_reorder, Kind,
+};
 
 /// The kind whose titles are saved in lowercase; new words get it unless told otherwise.
 pub const WORD: &str = "WORD";

@@ -2,6 +2,7 @@
   import { page } from '$app/state';
   import StatusesEditor from '#lib/components/StatusesEditor.svelte';
   import LabelsEditor from '#lib/components/LabelsEditor.svelte';
+  import WordKindsEditor from '#lib/components/WordKindsEditor.svelte';
   import SettingsGeneral from '#lib/components/SettingsGeneral.svelte';
   import SettingsPalette from '#lib/components/SettingsPalette.svelte';
   import SettingsSync from '#lib/components/SettingsSync.svelte';
@@ -23,6 +24,7 @@
   const sections = [
     { id: 'general', label: 'General', sub: 'App-wide preferences.' },
     { id: 'tasks', label: 'Tasks', sub: 'Statuses, board columns and labels.' },
+    { id: 'library', label: 'Library', sub: 'Word kinds.' },
     { id: 'sync', label: 'Sync', sub: 'Keep this vault in a Git repo, and in step with your other devices.' },
     { id: 'palette', label: 'Command palette', sub: 'Every command, with its shortcut. Press ⌘K anywhere to open the palette.' },
   ] as const;
@@ -74,6 +76,8 @@
     {:else if current.id === 'tasks'}
       <StatusesEditor />
       <LabelsEditor />
+    {:else if current.id === 'library'}
+      <WordKindsEditor />
     {:else if current.id === 'sync'}
       <SettingsSync />
     {:else}

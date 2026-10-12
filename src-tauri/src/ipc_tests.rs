@@ -214,7 +214,7 @@ fn the_library_round_trips_through_ipc() {
     );
     assert_eq!(
         h.ok("word_kinds_list", json!({})).as_array().unwrap().len(),
-        6
+        7
     );
     let taken = h
         .call("word_create", json!({ "word": { "title": "PETRICHOR" } }))

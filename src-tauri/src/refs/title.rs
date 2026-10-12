@@ -1,15 +1,11 @@
 //! A link's page title: fetched over HTTP(S) and read from the page's `<title>`. Only the start of
-//! the page is read, and a slow site gives up after a few seconds.
-
-use std::io::Read;
-use std::time::Duration;
+//! the page is read.
 
 use crate::error::{errors, AppResult};
+use crate::http;
 
-const TIMEOUT: Duration = Duration::from_secs(5);
 /// The title sits in `<head>`, near the top; nothing past this is read.
 const READ_LIMIT: u64 = 64 * 1024;
-const USER_AGENT: &str = "Tend (page title)";
 
 /// The URL to fetch: as typed when it has a scheme, else https. Only http and https are fetched.
 fn fetchable(url: &str) -> AppResult<String> {
@@ -24,27 +20,11 @@ fn fetchable(url: &str) -> AppResult<String> {
     Ok(format!("https://{url}"))
 }
 
-/// The page's title, or `None` when it has none.
+/// The page's title, or `None` when it has none (or isn't there).
 pub fn fetch(url: &str) -> AppResult<Option<String>> {
     let url = fetchable(url)?;
-    let fail = |e: ureq::Error| errors::REF_TITLE_FETCH.with(e.to_string());
-    let agent: ureq::Agent = ureq::Agent::config_builder()
-        .timeout_global(Some(TIMEOUT))
-        .build()
-        .into();
-    let mut response = agent
-        .get(&url)
-        .header("User-Agent", USER_AGENT)
-        .call()
-        .map_err(fail)?;
-    let mut head = Vec::new();
-    response
-        .body_mut()
-        .as_reader()
-        .take(READ_LIMIT)
-        .read_to_end(&mut head)
-        .map_err(|e| errors::REF_TITLE_FETCH.with(e.to_string()))?;
-    Ok(title_of(&String::from_utf8_lossy(&head)))
+    let page = http::get(&url, READ_LIMIT, errors::REF_TITLE_FETCH)?;
+    Ok(page.and_then(|html| title_of(&html)))
 }
 
 /// The text of the first `<title>` element, entities decoded and spaces collapsed.

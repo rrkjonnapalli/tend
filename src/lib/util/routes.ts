@@ -17,6 +17,8 @@ export const routes = {
   /** Opens the Library on the area used last. */
   library: '/library',
   libraryArea: (area: LibraryArea) => `/library/${area}`,
+  /** A word open in the Words area. */
+  libraryWord: (id: string) => `/library/words?w=${encodeURIComponent(id)}`,
   /** A Settings section, such as `sync`. */
   settingsSection: (id: string) => `/settings?s=${id}`,
   notesFolder: (path: string) => `/notes${folderQuery(path)}`,

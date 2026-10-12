@@ -291,7 +291,7 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 **Read:** decisions §15, §16 · `tend-library-plan.md` *Data model*
 
 **Build**
-- Tables: `words (title, kind, dictionary, meaning, notes)` with `UNIQUE (title)`; `snap_stacks (parent_id, name)`; `snaps (stack_id, text, paper, color, pinned)`; `refs (type, value, title, why, url_key)` with `UNIQUE (url_key)`. Tags and word kinds go through `tend_enums` and `tend_links`; seed `WORD_KIND` with `WORD`, `IDIOM`, `PHRASE`, `ABBR`, `TERM`, `OTHER`.
+- Tables: `words (title, kind, dictionary, meaning, notes)` with `UNIQUE (title)`; `snap_stacks (parent_id, name)`; `snaps (stack_id, text, paper, color, pinned)`; `refs (type, value, title, why, url_key)` with `UNIQUE (url_key)`. Tags and word kinds go through `tend_enums` and `tend_links`; seed `WORD_KIND` with `WORD`, `IDIOM`, `ABBR`, `CONCEPT`, `PHRASE`, `TERM`, `OTHER` (the order set on 2026-10-12).
 - Modules `words/`, `snaps/` (stacks included) and `refs/` with CRUD commands.
 - Rules in Rust: a `WORD` title is lowercased on save, other kinds keep the title as typed; a stack can't move into itself or its own sub-stacks; removing a stack moves its snaps and sub-stacks up one level in one transaction; `url_key` is the normalised URL (scheme, trailing slash and case ignored).
 - Sync: the new tables in `TABLES` (`snap_stacks` before `snaps`). The new `MERGE_ON_KEY` rule (v1-sync-spec §9.2) for `words` by `title` and `refs` by `url_key`, with `newest_fill_empty`. Orphans: a snap or stack whose stack is gone goes to the board root; a word whose kind is gone becomes `OTHER`. Cycles: when two devices nest two stacks in each other, the stack with the larger id goes to the root.
@@ -340,14 +340,14 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 ---
 
-## L4 · Words  ☐
+## L4 · Words  ☑
 
 **Read:** decisions §15 · `designs/words.dc.html`, `words.css`
 
 **Build**
 - List on the left grouped by kind (always open, in kind order, only kinds with entries), alphabetical within a group; a "new …" row while adding. No random or collapse buttons.
 - Entry page: title styled as the page heading (on a saved entry, empty or duplicate on blur reverts); meta row: kind chip with a listbox, IPA + play, part of speech, tags (inline `TagEditor`); Dictionary fold; "What it is for me" fold with Meaning and Notes (markdown as written, click to edit in place, no box).
-- Kind guess while typing until picked by hand: uppercase and no spaces → `ABBR`, no spaces → `WORD`, spaces → `PHRASE`; a dictionary idiom switches to `IDIOM`.
+- Kind guess while typing until picked by hand: all capitals and no spaces → `ABBR`, no spaces → `WORD`, spaces → `PHRASE`; a dictionary idiom switches to `IDIOM`.
 - Command `word_lookup(title)` against dictionaryapi.dev (lowercase query) for kinds with `lookup`; map to our JSON (senses with examples, synonyms, IPA, part of speech, audio URL, fetched_at). Fixture test for the mapping. "Not in the dictionary." / "No dictionary for this one." / re-fetch icon.
 - Play: CSP gets `media-src https:`.
 - Adding: Save / Cancel row (⌘↵ / Esc); "Already saved. Open '<title>'" disables Save. Saved entries save as you go; delete in the top bar asks first. Changing a kind to `WORD` lowercases the title and is refused if that clashes.
@@ -355,6 +355,8 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 **Done when**
 - Add, look up, rename, change kind, edit Meaning and Notes, tags and delete all persist; word kinds editable in Settings.
+
+**Status (2026-10-12):** built and checked in the app (add, kind guess, save in lowercase, list by kind, Settings → Library → Word kinds). Both HTTP calls go through `src-tauri/src/http.rs` (`ureq`, 5 s, a read limit), and a failed fetch shows the registry message, not the transport's. The open word is in the URL (`/library/words?w=<id>`). Meaning and Notes reuse `MarkdownField` (a click on the text opens it; ✓ / ⌘↵ saves). Word kinds reuse `ColorListEditor`, whose colour is now optional. The kind guess calls a title abbr only when it is all capitals (`NASA`, not `Petrichor`). Sync keeps a default enum row over a user's row with the same value (a default can't be deleted). Not checked live: a dictionary hit and pronunciation, because dictionaryapi.dev was down (522, then timeouts); the mapping is covered by a fixture test. The empty Meaning and Notes placeholders show in mono (the shared markdown view's empty style).
 
 ---
 
