@@ -310,7 +310,7 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 **Build**
 - Fourth bottom-nav tab, Library (the books icon from the Library mockup), route `/library`, ⌘4. Library reopens on the last area (setting `ui.library.area`, per device).
-- The bar: a `Segmented` component (Words · Snaps · References; Home arrives in L6), the + icon button, and the scoped search (placeholder per area; switching area, Esc or × clears it).
+- The bar: text tabs (`ViewTabs`, the same ones as the Tasks views; Home · Words · Snaps · References), the + icon button, and the scoped search (placeholder per area; switching area, Esc or × clears it).
 - Bundle `@fontsource/caveat` (500, 600).
 - Settings → General → Confirmations: *Ask before deleting a word / a snap / a reference*, on by default.
 - `ui.library.area` and the new `confirm.delete.*` keys stay off the shared-keys list, so they never sync.

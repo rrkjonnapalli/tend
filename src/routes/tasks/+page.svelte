@@ -12,6 +12,7 @@
   import PageTitle from '#lib/components/PageTitle.svelte';
   import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import SearchLine from '#lib/components/SearchLine.svelte';
+  import ViewTabs from '#lib/components/ViewTabs.svelte';
   import AddLine from '#lib/components/AddLine.svelte';
   import { zoneNav } from '#lib/actions/zone-nav.action.ts';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
@@ -69,6 +70,7 @@
   const inView = $derived(viewTasks({ tasks: tasks.tasks, folder, view, ctx }));
   const rows = $derived(inView.filter((t) => textMatches([t.title, t.path], needle)));
   const counts = $derived(viewCounts({ tasks: tasks.tasks, folder, ctx }));
+  const viewTabs = $derived(VIEWS.map(([value, label]) => ({ value, label, count: counts[value] })));
   // Drag order is off while searching: a filtered list hides the neighbours a drop lands between.
   const manual = $derived(isManual(view) && !needle);
   const dueDays = $derived(new Set(tasks.tasks.flatMap((t) => (t.dueDate ? [t.dueDate] : []))));
@@ -155,12 +157,7 @@
   <SearchLine bind:value={query} label="Search tasks" placeholder="Search tasks" />
 
   <nav class="views" aria-label="Views" data-zone="bar">
-    {#each VIEWS as [v, label], i (v)}
-      {#if i > 0}<span class="sep" aria-hidden="true">·</span>{/if}
-      <button class="vbtn" data-pick class:on={view === v} aria-pressed={view === v} onclick={() => setView(v)}>
-        {label}<span class="vc">{counts[v]}</span>
-      </button>
-    {/each}
+    <ViewTabs options={viewTabs} value={view} onchange={setView} />
     <span class="sep" aria-hidden="true">·</span>
     <DateField mode="range" {range} active={view === 'range'} marked={dueDays} onrange={setRange} />
     <button
@@ -237,34 +234,6 @@
     flex-wrap: wrap;
     gap: 4px 8px;
     font: var(--text-ui);
-  }
-
-  .vbtn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    height: 28px;
-    padding: 2px 2px 0;
-    border: 0;
-    border-bottom: 2px solid transparent;
-    background: transparent;
-    color: var(--c-muted-2);
-    font: var(--text-ui);
-    cursor: pointer;
-  }
-
-  .vbtn:hover {
-    color: var(--text);
-  }
-
-  .vbtn.on {
-    color: var(--c-current-ink);
-    border-bottom-color: var(--c-current);
-  }
-
-  .vc {
-    font: var(--text-meta);
-    color: var(--c-muted-2);
   }
 
   .sep {
