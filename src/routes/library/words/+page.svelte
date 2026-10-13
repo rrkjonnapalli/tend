@@ -7,6 +7,7 @@
   import WordEntry from '#lib/components/WordEntry.svelte';
   import WordList from '#lib/components/WordList.svelte';
   import { LIBRARY_AREA } from '#lib/enums/library.enum.ts';
+  import { nav } from '#lib/stores/history.svelte.ts';
   import { library, onLibraryAdd } from '#lib/stores/library.svelte.ts';
   import { words } from '#lib/stores/words.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
@@ -40,6 +41,12 @@
     goto(routes.libraryWord(id));
   }
 
+  /** The list's keyboard cursor moved to this word: it replaces the open one in history (Back
+   *  doesn't step through every word passed), and the cursor keeps its row. */
+  function follow(id: string) {
+    nav.replace(routes.libraryWord(id), { keepFocus: true });
+  }
+
   function afterDelete() {
     goto(routes.libraryArea(LIBRARY_AREA.words), { replaceState: true });
   }
@@ -49,7 +56,7 @@
   <LibraryEmpty title="Nothing here yet" hint="Press + to add a word, an idiom or a phrase." />
 {:else}
   <div class="words">
-    <WordList {groups} selected={open?.id ?? null} adding={adding ? draftTitle.trim() || 'new word' : null} onpick={show} />
+    <WordList {groups} selected={open?.id ?? null} adding={adding ? draftTitle.trim() || 'new word' : null} onpick={show} onfollow={follow} />
     {#if adding}
       <WordEntry word={null} filled={draftTitle} onsaved={show} oncancel={() => (adding = false)} onopen={show} ondeleted={afterDelete} ontyped={(t) => (draftTitle = t)} />
     {:else if open}

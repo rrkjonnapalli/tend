@@ -1,6 +1,7 @@
 <script lang="ts">
   // The Words list on the left: grouped by kind (in kind order, only kinds with words),
   // alphabetical within a group. While adding, a "new …" row at the top mirrors the title.
+  // ↑↓ move through the words and the entry on the right follows the cursor.
   import type { WordGroup } from '#lib/types/word.type.ts';
 
   let {
@@ -8,13 +9,23 @@
     selected,
     adding,
     onpick,
+    onfollow,
   }: {
     groups: WordGroup[];
     selected: string | null;
     /** The new entry's row text, or null when not adding. */
     adding: string | null;
     onpick: (id: string) => void;
+    /** The keyboard cursor landed on this word: show it, without a new step in history. */
+    onfollow: (id: string) => void;
   } = $props();
+
+  /** Only a row reached with the keys (a click shows no focus ring state and is picked by its
+   *  click). Not while adding: moving the cursor mustn't drop the new word being typed. */
+  function onfocus(e: FocusEvent, id: string) {
+    const byKeyboard = (e.currentTarget as HTMLElement).matches(':focus-visible');
+    if (byKeyboard && adding === null && id !== selected) onfollow(id);
+  }
 </script>
 
 <aside class="list" aria-label="Words" data-pane="side">
@@ -23,7 +34,7 @@
     {#each groups as g (g.kind.value)}
       <div class="group">{g.kind.label}<span class="count">{g.words.length}</span></div>
       {#each g.words as w (w.id)}
-        <button class="row" class:on={adding === null && w.id === selected} data-row onclick={() => onpick(w.id)}>{w.title}</button>
+        <button class="row" class:on={adding === null && w.id === selected} data-row onfocus={(e) => onfocus(e, w.id)} onclick={() => onpick(w.id)}>{w.title}</button>
       {/each}
     {/each}
   </div>

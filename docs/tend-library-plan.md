@@ -56,7 +56,7 @@ The Home box only decides where something goes, then hands it over. It guesses a
 
 Words holds anything you came across and want to understand: a word, idiom, phrase, term or something else. One page serves both adding and editing; only the title is required.
 
-**Layout.** A list on the left grouped by kind (only kinds with entries show), alphabetical within each group. The entry page on the right.
+**Layout.** A list on the left grouped by kind (only kinds with entries show), alphabetical within each group. The entry page on the right. ↑↓ in the list move through the words and the entry follows the cursor at once, with no Enter; a click still opens a word as its own step in history, an arrow key doesn't add one.
 
 **Entry page, top to bottom**
 
