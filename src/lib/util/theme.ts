@@ -21,3 +21,7 @@ export function applyTheme(pref: ThemePref): () => void {
   media.addEventListener('change', apply);
   return () => media.removeEventListener('change', apply);
 }
+
+/** The `data-surface` of something that stays light in the dark theme (a sticky note and the
+ *  buttons on it): tokens.css gives it the light colour roles. None when it follows the theme. */
+export const lightSurface = (stays: boolean) => (stays ? 'light' : undefined);

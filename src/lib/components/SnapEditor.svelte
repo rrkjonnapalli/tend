@@ -12,6 +12,7 @@
   import TagEditor from './TagEditor.svelte';
   import { pageActions } from '#lib/stores/page-actions.svelte.ts';
   import { label as keyLabel } from '#lib/util/keys.ts';
+  import { lightSurface } from '#lib/util/theme.ts';
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { papers, stickyColor } from '#lib/config/library.config.ts';
@@ -118,7 +119,7 @@
 
 <div class="veil">
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="draft" class:torn={paper === PAPER.scrap} class:lined={isLined} role="dialog" aria-label={start ? 'Edit snap' : 'New snap'} tabindex="-1" {onkeydown}>
+  <div class="draft" class:torn={paper === PAPER.scrap} class:lined={isLined} data-surface={lightSurface(isSticky)} role="dialog" aria-label={start ? 'Edit snap' : 'New snap'} tabindex="-1" {onkeydown}>
     <SnapPaper {paper} {color} size={PAPER_SIZE.editor}>
       <textarea use:plainText use:focusOnMount bind:this={ink} class="ink" class:ruled={isLined} aria-label="Snap text" placeholder="Write it down…" bind:value={text}></textarea>
       <div class="foot">

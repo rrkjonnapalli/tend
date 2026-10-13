@@ -1,6 +1,7 @@
 <script lang="ts">
   // A snap's paper: scrap, slip, lined, plain card or sticky (tinted from its colour). Shared by
   // the board, the editor (which puts its text field inside) and Home's mini board.
+  import { lightSurface } from '#lib/util/theme.ts';
   import type { Snippet } from 'svelte';
   import { stickyColor } from '#lib/config/library.config.ts';
   import { PAPER, PAPER_SIZE, type Paper, type PaperSize } from '#lib/enums/snap.enum.ts';
@@ -25,7 +26,7 @@
 <!-- A sticky is a light surface in either theme (tokens.css): bright sheet, dark ink. -->
 <div
   class="sheet"
-  data-surface={paper === PAPER.sticky ? 'light' : undefined}
+  data-surface={lightSurface(paper === PAPER.sticky)}
   class:scrap={paper === PAPER.scrap}
   class:slip={paper === PAPER.slip}
   class:lined={paper === PAPER.lined}

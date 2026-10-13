@@ -39,7 +39,7 @@
   const pinLabel = $derived(snap.pinned ? 'Unpin from top' : 'Pin to top');
 </script>
 
-<BoardItem kind={BOARD_KIND.snap} id={snap.id} {tilt} {where} {dragging} over={pairing} label="Edit snap: {firstLine}" {onopen} {onpress}>
+<BoardItem kind={BOARD_KIND.snap} id={snap.id} {tilt} {where} {dragging} over={pairing} light={snap.paper === PAPER.sticky} label="Edit snap: {firstLine}" {onopen} {onpress}>
   <div class="spot" class:pairing>
     <div class="note" class:torn={snap.paper === PAPER.scrap}>
       <SnapPaper paper={snap.paper} color={snap.color}>

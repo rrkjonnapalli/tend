@@ -5,6 +5,7 @@
   import type { Snippet } from 'svelte';
   import { BOARD_KIND, type BoardKind } from '#lib/enums/snap.enum.ts';
   import { dropKey } from '#lib/util/snaps.ts';
+  import { lightSurface } from '#lib/util/theme.ts';
 
   let {
     kind,
@@ -19,6 +20,7 @@
     children,
     field,
     tools,
+    light = false,
   }: {
     kind: BoardKind;
     id: string;
@@ -37,6 +39,8 @@
     field?: Snippet;
     /** BoardTool buttons. */
     tools: Snippet;
+    /** A sticky's card: it stays light in the dark theme, and so do the tools on it. */
+    light?: boolean;
   } = $props();
 </script>
 
@@ -49,7 +53,7 @@
   data-drop={dropKey(kind, id)}
   style:rotate="{tilt}deg">
   {#if where}<span class="in">in {where}</span>{/if}
-  <div class="card">
+  <div class="card" data-surface={lightSurface(light)}>
     {@render children()}
     <button class="hit" aria-label={label} onclick={onopen} onpointerdown={onpress}></button>
     {@render field?.()}
