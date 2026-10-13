@@ -2,6 +2,9 @@
 import { LIBRARY_AREA, type LibraryArea } from '#lib/enums/library.enum.ts';
 import type { SettingsSection } from '#lib/enums/settings.enum.ts';
 
+/** The query parameter holding the stack the Snaps board shows (see routes.libraryStack). */
+export const STACK_PARAM = 's';
+
 /** `?f=<folder>` for a folder view; nothing for the root. */
 function folderQuery(path: string): string {
   if (!path) return '';
@@ -26,7 +29,7 @@ export const routes = {
   /** A stack open on the Snaps board; none is the board itself. */
   libraryStack: (id: string | null) => {
     const board = `${LIBRARY_ROOT}/${LIBRARY_AREA.snaps}`;
-    return id ? `${board}?s=${encodeURIComponent(id)}` : board;
+    return id ? `${board}?${STACK_PARAM}=${encodeURIComponent(id)}` : board;
   },
   /** A Settings section, such as `sync`. */
   settingsSection: (id: SettingsSection) => `/settings?s=${id}`,

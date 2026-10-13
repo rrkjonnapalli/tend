@@ -9,6 +9,7 @@
   import Toast from '#lib/components/Toast.svelte';
   import CommandPalette from '#lib/components/CommandPalette.svelte';
   import QuickCreate from '#lib/components/QuickCreate.svelte';
+  import SnapDialogs from '#lib/components/SnapDialogs.svelte';
   import { ui } from '#lib/stores/ui.svelte.ts';
   import { timers } from '#lib/stores/timers.svelte.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
@@ -201,6 +202,7 @@
 {#if settled}
   {#if ui.palette}<CommandPalette onclose={() => (ui.palette = false)} />{/if}
   {#if ui.quick}{#key ui.quick}<QuickCreate kind={ui.quick} onclose={() => (ui.quick = null)} />{/key}{/if}
+  {#if inVault}<SnapDialogs />{/if}
   <Toast />
 {/if}
 

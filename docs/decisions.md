@@ -292,6 +292,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 | ⌘⇧T | New task: path + name | opens the task page |
 | ⌘⇧N | New folder: Notes/Tasks switch (defaults to the current section) + path + name | opens the folder list |
 | ⌘T | New timer: `mm:ss` (default `01:00`, selected) + text | toast only |
+| ⌘S | New snap: the snap editor, the same one the Snaps board opens, over any page | toast only; the snap goes in the stack the board shows, else loose on the board |
 
 - **Path field:**
   - Pre-filled with the last path used for that kind.

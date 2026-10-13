@@ -157,8 +157,9 @@
 
 <style>
   /* Above the board, below popovers (45) so the stack, colour and tag pickers show over it. */
+  /* Over the whole window: the editor opens on any page. */
   .veil {
-    position: absolute;
+    position: fixed;
     inset: 0;
     z-index: 20;
     display: flex;

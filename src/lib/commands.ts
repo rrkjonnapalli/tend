@@ -5,6 +5,7 @@ import { page } from '$app/state';
 import { ui } from '#lib/stores/ui.svelte.ts';
 import { sync } from '#lib/stores/sync.svelte.ts';
 import { settings } from '#lib/stores/settings.svelte.ts';
+import { snaps } from '#lib/stores/snaps.svelte.ts';
 import { pageActions } from '#lib/stores/page-actions.svelte.ts';
 import { routes } from '#lib/util/routes.ts';
 import type { Command } from '#lib/types/command.type.ts';
@@ -54,6 +55,7 @@ export const commands: Command[] = [
   { id: 'new.task', group: 'Create', label: 'New task', keys: 'mod+shift+t', example: 'task: Write README', run: openQuick('task') },
   { id: 'new.folder', group: 'Create', label: 'New folder', keys: 'mod+shift+n', run: openQuick('folder') },
   { id: 'new.timer', group: 'Create', label: 'New timer', keys: 'mod+t', example: 'timer 10m turn off the motor', run: openQuick('timer') },
+  { id: 'new.snap', group: 'Create', label: 'New snap', keys: 'mod+s', run: snaps.write },
   { id: 'new.person', group: 'Create', label: 'New person', example: 'person: Ravi Kumar', run: () => goto(routes.newPerson) },
 
   { id: 'note.mode', group: 'Notes', label: 'Toggle read / edit', keys: 'mod+r', ...onPage('note.mode') },

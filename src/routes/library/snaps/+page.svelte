@@ -1,32 +1,29 @@
 <script lang="ts">
   // Snaps: the pinboard. It shows one level (the board, or the open stack, `?s=<id>`); while the
   // Library search has text it shows every match across all stacks instead. + or a snap opens the
-  // editor. Drag a snap or stack onto a stack to put it in, a snap onto a snap to make a stack of
+  // editor (SnapDialogs, shared by every page). Drag a snap or stack onto a stack to put it in, a snap onto a snap to make a stack of
   // the two, anything onto a step of the path to move it up.
   import { onDestroy } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import LibraryEmpty from '#lib/components/LibraryEmpty.svelte';
-  import SnapEditor from '#lib/components/SnapEditor.svelte';
   import SnapItem from '#lib/components/SnapItem.svelte';
   import StackItem from '#lib/components/StackItem.svelte';
   import StackPath from '#lib/components/StackPath.svelte';
   import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
   import { snapsAPI } from '#lib/api/snaps.ts';
   import { boardColumn, boardTilts } from '#lib/config/library.config.ts';
-  import { BOARD_KIND, DROP_KIND, PAPER, type BoardKind } from '#lib/enums/snap.enum.ts';
+  import { BOARD_KIND, DROP_KIND, type BoardKind } from '#lib/enums/snap.enum.ts';
   import { library, onLibraryAdd } from '#lib/stores/library.svelte.ts';
-  import { settings } from '#lib/stores/settings.svelte.ts';
   import { snaps } from '#lib/stores/snaps.svelte.ts';
-  import { tagPool } from '#lib/stores/tags.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import type { DragGhost } from '#lib/types/drag.type.ts';
-  import type { BoardRef, DropTarget, SavedDraft, Snap, SnapDraft, SnapEditing, Stack } from '#lib/types/snap.type.ts';
+  import type { BoardRef, DropTarget, Snap, Stack } from '#lib/types/snap.type.ts';
   import { clearDragging, markDragging, pointOf } from '#lib/util/drag-session.ts';
   import { liftGhost } from '#lib/util/drag-ghost.ts';
   import { dropTargetAt, trackDrag } from '#lib/util/explorer-drag.ts';
   import { plural } from '#lib/util/plural.ts';
-  import { routes } from '#lib/util/routes.ts';
+  import { routes, STACK_PARAM } from '#lib/util/routes.ts';
   import { searchNeedle } from '#lib/util/search.ts';
   import {
     boardItems,
@@ -37,7 +34,6 @@
     dropKey,
     isWithin,
     itemKey,
-    NEW_STACK,
     parseDrop,
     pathOf,
     snapsIn,
@@ -54,9 +50,9 @@
   snaps.load();
 
   const needle = $derived(searchNeedle(library.query));
-  const requested = $derived(page.url.searchParams.get('s'));
+  const requested = $derived(page.url.searchParams.get(STACK_PARAM));
   /** The open stack; none is the board. A stack that is gone (deleted elsewhere) shows the board. */
-  const open = $derived(snaps.stacks.some((s) => s.id === requested) ? requested : null);
+  const open = $derived(snaps.stackOr(requested));
   const level = $derived(boardLevel({ open, needle }, snaps));
   const items = $derived(boardItems(level.snaps, level.stacks));
   const path = $derived(pathOf(open, snaps.stacks));
@@ -76,11 +72,9 @@
     return { title: 'Nothing on the board yet', hint: 'Press + to pin your first snap.' };
   });
 
-  /** The open editor: `snap` null writes a new one, with `filled` (text from Home) in. */
+  // Text handed over from Home opens the editor (SnapDialogs, app-wide) with it in.
   const handed = library.takeHanded();
-  let editing = $state<SnapEditing | null>(handed === null ? null : { snap: null, filled: handed });
-  let renaming = $state<string | null>(null);
-  let deleting = $state<Snap | null>(null);
+  if (handed !== null) snaps.editing = { snap: null, filled: handed };
   let removing = $state<Stack | null>(null);
   let drag = $state<BoardRef | null>(null);
   let over = $state<string | null>(null);
@@ -89,75 +83,11 @@
   const where = (id: string | null) => whereLabel(id, snaps.stacks);
 
   // The bar's + opens a blank paper; presses from before this page opened don't.
-  onLibraryAdd(() => (editing = { snap: null }));
+  onLibraryAdd(snaps.write);
 
   function openStack(id: string | null) {
     goto(routes.libraryStack(id));
     if (board) board.scrollTop = 0;
-  }
-
-  // ---- the editor
-
-  /** The stack a saved snap goes in: the one picked, or a new one where the board is. */
-  async function targetOf(draft: SnapDraft): Promise<string | null> {
-    if (draft.stackId !== NEW_STACK) return draft.stackId;
-    const made = await snapsAPI.createStack({ parent: open, name: '' });
-    return made.id;
-  }
-
-  /** Writes the draft (a new stack first, then the snap, then its tags); resolves to its stack. */
-  async function writeDraft(draft: SnapDraft, before: Snap | null): Promise<SavedDraft> {
-    const stackId = await targetOf(draft);
-    const color = draft.paper === PAPER.sticky ? draft.color : null;
-    const input = { text: draft.text, stackId, paper: draft.paper, color, pinned: draft.pinned };
-    const saved = before ? await snapsAPI.update({ id: before.id, patch: input }) : await snapsAPI.create(input);
-    return { stackId, tagsError: await writeTags(saved, draft.tags) };
-  }
-
-  /** Saves the tags when they changed. A refusal (a tag blocked since the pool was loaded) is
-   *  returned, not thrown: the snap is saved by then, and the editor closes first. */
-  async function writeTags(saved: Snap, tags: string[]): Promise<unknown> {
-    const tagsChanged = tags.join(' ') !== saved.tags.join(' ');
-    if (!tagsChanged) return null;
-    try {
-      await snapsAPI.setTags({ id: saved.id, tags });
-      return null;
-    } catch (e) {
-      return e;
-    }
-  }
-
-  let saving = false;
-
-  async function saveDraft(draft: SnapDraft) {
-    // A second ⌘↵ while the first save runs would write the snap twice.
-    if (saving) return;
-    saving = true;
-    const before = editing?.snap ?? null;
-    let written: SavedDraft;
-    try {
-      written = await writeDraft(draft, before);
-    } finally {
-      saving = false;
-      // shortcut: a save that fails halfway can leave a new empty stack; the reload shows it. One Rust command would make it all-or-nothing.
-      await snaps.load();
-    }
-    editing = null;
-    const { stackId, tagsError } = written;
-    // Saved without the new tags: closed, so no refused chip stays and a retry can't add it twice.
-    if (tagsError) {
-      await tagPool.load();
-      throw tagsError;
-    }
-    if (draft.stackId === NEW_STACK) {
-      // Name the new stack right there.
-      renaming = stackId;
-      return;
-    }
-    const moved = before !== null && before.stackId !== stackId;
-    if (!before) toast.show(`Added to ${where(stackId)}`);
-    else if (moved) toast.show(`Saved and moved to ${where(stackId)}`);
-    else toast.show('Saved');
   }
 
   // ---- snaps and stacks
@@ -168,26 +98,8 @@
     toast.show(snap.pinned ? 'Unpinned' : 'Pinned to the top');
   }
 
-  function askDelete(snap: Snap) {
-    if (settings.asksDelete('snap')) deleting = snap;
-    else deleteSnap(snap);
-  }
-
-  function deleteEditing() {
-    const snap = editing?.snap;
-    if (snap) askDelete(snap);
-  }
-
-  async function deleteSnap(snap: Snap) {
-    deleting = null;
-    editing = null;
-    await snapsAPI.remove(snap.id);
-    await snaps.load();
-    toast.show('Snap deleted');
-  }
-
   async function rename(stack: Stack, name: string) {
-    renaming = null;
+    snaps.naming = null;
     if (name.trim() === stack.name) return;
     await snapsAPI.renameStack({ id: stack.id, name });
     await snaps.load();
@@ -225,7 +137,7 @@
       // shortcut: a move that fails leaves the new stack with one snap or none; the reload shows it.
       await snaps.load();
     }
-    renaming = stack.id;
+    snaps.naming = stack.id;
   }
 
   function drop(src: BoardRef, target: DropTarget) {
@@ -259,7 +171,7 @@
    *  pointer; less stays a click. Off while searching or writing. */
   function press({ kind, id }: BoardRef) {
     return (e: PointerEvent) => {
-      const blocked = e.button !== 0 || needle !== '' || editing !== null;
+      const blocked = e.button !== 0 || needle !== '' || snaps.editing !== null;
       const card = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-drop]');
       if (blocked || !card) return;
       let ghost: DragGhost | null = null;
@@ -325,10 +237,10 @@
                 where={needle ? where(snap.stackId) : null}
                 dragging={isDragging(BOARD_KIND.snap, snap.id)}
                 pairing={over === dropKey(DROP_KIND.snap, snap.id)}
-                onopen={() => (editing = { snap })}
+                onopen={() => (snaps.editing = { snap })}
                 onpress={press({ kind: BOARD_KIND.snap, id: snap.id })}
                 onpin={() => togglePin(snap)}
-                ondelete={() => askDelete(snap)} />
+                ondelete={() => snaps.askDelete(snap)} />
             {:else}
               {@const stack = item.stack}
               <StackItem
@@ -339,10 +251,10 @@
                 peek={stackPeek(stack, snaps)}
                 dragging={isDragging(BOARD_KIND.stack, stack.id)}
                 over={over === dropKey(DROP_KIND.stack, stack.id)}
-                renaming={renaming === stack.id}
+                renaming={snaps.naming === stack.id}
                 onopen={() => openStack(stack.id)}
                 onpress={press({ kind: BOARD_KIND.stack, id: stack.id })}
-                onstartrename={() => (renaming = stack.id)}
+                onstartrename={() => (snaps.naming = stack.id)}
                 onrename={(name) => rename(stack, name)}
                 onremove={() => (removing = stack)} />
             {/if}
@@ -352,23 +264,8 @@
     </div>
   </div>
 
-  {#if editing}
-    {#key editing}
-      <SnapEditor snap={editing.snap} filled={editing.filled} {open} onsave={saveDraft} ondelete={deleteEditing} onclose={() => (editing = null)} />
-    {/key}
-  {/if}
 </div>
 
-{#if deleting}
-  {@const snap = deleting}
-  <ConfirmDialog
-    title="Delete this snap?"
-    body="It goes from the board."
-    confirm="Delete"
-    danger
-    onconfirm={() => deleteSnap(snap)}
-    onclose={() => (deleting = null)} />
-{/if}
 {#if removing}
   {@const stack = removing}
   <ConfirmDialog
