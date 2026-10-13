@@ -3,6 +3,7 @@
   import StatusesEditor from '#lib/components/StatusesEditor.svelte';
   import LabelsEditor from '#lib/components/LabelsEditor.svelte';
   import WordKindsEditor from '#lib/components/WordKindsEditor.svelte';
+  import SettingsDictionary from '#lib/components/SettingsDictionary.svelte';
   import SettingsGeneral from '#lib/components/SettingsGeneral.svelte';
   import SettingsPalette from '#lib/components/SettingsPalette.svelte';
   import SettingsSync from '#lib/components/SettingsSync.svelte';
@@ -26,7 +27,7 @@
   const sections: { id: SettingsSection; label: string; sub: string }[] = [
     { id: SETTINGS_SECTION.general, label: 'General', sub: 'App-wide preferences.' },
     { id: SETTINGS_SECTION.tasks, label: 'Tasks', sub: 'Statuses, board columns and labels.' },
-    { id: SETTINGS_SECTION.library, label: 'Library', sub: 'Word kinds.' },
+    { id: SETTINGS_SECTION.library, label: 'Library', sub: 'The dictionary and word kinds.' },
     { id: SETTINGS_SECTION.tags, label: 'Tags', sub: 'Every tag, and the ones you blocked.' },
     { id: SETTINGS_SECTION.sync, label: 'Sync', sub: 'Keep this vault in a Git repo, and in step with your other devices.' },
     { id: SETTINGS_SECTION.palette, label: 'Command palette', sub: 'Every command, with its shortcut. Press ⌘K anywhere to open the palette.' },
@@ -80,6 +81,7 @@
       <StatusesEditor />
       <LabelsEditor />
     {:else if current.id === SETTINGS_SECTION.library}
+      <SettingsDictionary />
       <WordKindsEditor />
     {:else if current.id === SETTINGS_SECTION.tags}
       <SettingsTags />

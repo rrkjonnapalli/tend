@@ -1,4 +1,5 @@
 // Every key the app stores in the vault's settings table, in one place.
+import { DICTIONARY_SOURCE } from '#lib/enums/dictionary.enum.ts';
 import type { DeleteKind, QuickKind, Tree } from '#lib/types/ui.type.ts';
 import { LIBRARY_AREA } from '#lib/enums/library.enum.ts';
 
@@ -21,6 +22,8 @@ export const settingKeys = {
   /** The file size limit in MB (1–90), shared through sync: bigger notes aren't indexed, bigger
    *  files can't be attached, and sync never commits one. Checked again in Rust. */
   fileLimitMB: 'files.max_mb',
+  /** The dictionary new lookups ask (`DictionarySource`); kept on this device. */
+  dictionarySource: 'words.dictionary_source',
   /** The folder Quick create last used for each kind; folders keep one per tree. */
   /** Whether deleting a note, task, person, word, snap or reference asks first; kept on this device. */
   confirmDelete: (kind: DeleteKind) => `confirm.delete.${kind}`,
@@ -42,6 +45,7 @@ export const settingDefaults = {
   theme: 'system',
   fileLimitMB: 30,
   confirmDelete: true,
+  dictionarySource: DICTIONARY_SOURCE.freedictionaryapiCom,
 } as const;
 
 /** The range the file size limit may take (src-tauri/src/files.rs `LIMIT_MB_RANGE`). */

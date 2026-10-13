@@ -1,9 +1,11 @@
 <script lang="ts">
-  // A word's Dictionary section: senses with examples, synonyms, or a hint when there is nothing
+  // A word's Dictionary section: senses with examples, synonyms, antonyms and a link to the entry's
+  // own page at its source (the credit Wiktionary's licence asks for), or a hint when there is nothing
   // (not looked up yet, not in the dictionary, a kind that isn't looked up). Shimmers while asking.
   import Chip from './Chip.svelte';
   import Section from './Section.svelte';
   import Icon from './Icon.svelte';
+  import { openUrl } from '@tauri-apps/plugin-opener';
   import type { Dictionary } from '#lib/types/word.type.ts';
 
   let {
@@ -21,10 +23,16 @@
     /** Shown as a re-fetch icon when set. */
     onrefetch?: () => void;
   } = $props();
+
+  const antonyms = $derived(dictionary?.antonyms ?? []);
+  const sourceUrl = $derived(dictionary?.sourceUrl ?? null);
 </script>
 
 <Section title="Dictionary" extra={meta} indent={false}>
   {#snippet actions()}
+    {#if sourceUrl}
+      <button class="icon-btn sm" aria-label="Open this entry at its source" title="Open at the source" onclick={() => openUrl(sourceUrl)}><Icon name="open" size={13} /></button>
+    {/if}
     {#if onrefetch}
       <button class="icon-btn sm" aria-label="Fetch again" title="Fetch again" onclick={onrefetch}><Icon name="reload" size={13} /></button>
     {/if}
@@ -44,6 +52,12 @@
         <div class="syn">
           <span class="meta">synonyms</span>
           {#each dictionary.synonyms as s (s)}<Chip text={s} />{/each}
+        </div>
+      {/if}
+      {#if antonyms.length}
+        <div class="syn">
+          <span class="meta">antonyms</span>
+          {#each antonyms as a (a)}<Chip text={a} />{/each}
         </div>
       {/if}
     {:else}

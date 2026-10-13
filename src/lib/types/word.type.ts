@@ -1,3 +1,4 @@
+import type { DictionarySource } from '#lib/enums/dictionary.enum.ts';
 /** What the dictionary lookup returned, as a word stores it. */
 export type Dictionary = {
   ipa: string | null;
@@ -6,6 +7,12 @@ export type Dictionary = {
   partOfSpeech: string | null;
   senses: { definition: string; example: string | null }[];
   synonyms: string[];
+  /** Missing on an entry fetched before antonyms were kept. */
+  antonyms?: string[];
+  /** Missing on an entry fetched before sources were recorded: it came from the first one. */
+  source?: DictionarySource;
+  /** The entry's own page at the source, when it gives one. */
+  sourceUrl?: string | null;
   fetchedAt: number;
 };
 
@@ -35,9 +42,6 @@ export type NewWord = Pick<Word, 'title' | 'kind' | 'dictionary' | 'meaning' | '
 
 /** Fields an edit can change; `dictionary: null` clears the lookup. */
 export type WordPatch = Partial<NewWord>;
-
-/** A word kind as the kind picker lists it (`id` is the kind's value). */
-export type KindChoice = { id: string; label: string };
 
 /** One group of the Words list: a kind and its words, alphabetical. */
 export type WordGroup = { kind: WordKind; words: Word[] };

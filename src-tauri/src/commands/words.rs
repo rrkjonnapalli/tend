@@ -35,10 +35,13 @@ pub fn word_delete(state: State<AppState>, id: String) -> AppResult<()> {
     state.with(|db, _| words::delete(db, &id))
 }
 
-/// What the dictionary says about `title`; `None` when it doesn't have it.
+/// What the dictionary `source` says about `title`; `None` when it doesn't have it.
 #[tauri::command(async)]
-pub fn word_lookup(title: String) -> AppResult<Option<words::Dictionary>> {
-    words::lookup(&title)
+pub fn word_lookup(
+    title: String,
+    source: words::DictionarySource,
+) -> AppResult<Option<words::Dictionary>> {
+    words::lookup(&title, source)
 }
 
 #[tauri::command(async)]

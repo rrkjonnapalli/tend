@@ -18,7 +18,7 @@ use crate::error::{errors, AppError, AppResult};
 use crate::tags;
 use crate::util::{new_id, now_ms};
 
-pub use dictionary::{lookup, Dictionary};
+pub use dictionary::{lookup, Dictionary, Source as DictionarySource};
 pub use kinds::{
     add as kind_add, delete as kind_delete, list as kinds, rename as kind_rename,
     reorder as kind_reorder, Kind, Named as KindNamed,

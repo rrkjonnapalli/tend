@@ -249,6 +249,7 @@
   --radius-lg: 16px;
 
   /* layout */
+  --choice-field-w: 260px;   /* a dropdown shown as a field (ChoicePicker, in Settings) */
   --explorer-w: 232px;
   --content-w: 760px;      /* note/task page narrow width */
   --bottom-nav-h: 44px;

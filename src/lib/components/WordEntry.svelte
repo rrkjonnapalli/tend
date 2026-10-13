@@ -7,7 +7,7 @@
   import Breadcrumbs from './Breadcrumbs.svelte';
   import Chip from './Chip.svelte';
   import Icon from './Icon.svelte';
-  import KindPicker from './KindPicker.svelte';
+  import ChoicePicker from './ChoicePicker.svelte';
   import TagEditor from './TagEditor.svelte';
   import WordDictionary from './WordDictionary.svelte';
   import WordNote from './WordNote.svelte';
@@ -16,11 +16,14 @@
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import { focusWhen } from '#lib/actions/focus.action.ts';
   import { wordsAPI } from '#lib/api/words.ts';
-  import { dictionarySource, idiomPartOfSpeech } from '#lib/config/library.config.ts';
+  import { dictionarySourceLabel, idiomPartOfSpeech } from '#lib/config/library.config.ts';
+  import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
+  import type { DictionarySource } from '#lib/enums/dictionary.enum.ts';
   import { WORD_KIND } from '#lib/enums/word.enum.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { words } from '#lib/stores/words.svelte.ts';
+  import type { Choice } from '#lib/types/ui.type.ts';
   import type { Dictionary, Word, WordPatch } from '#lib/types/word.type.ts';
   import { iso, shortDate } from '#lib/util/dates.ts';
   import { guessKind, savedTitle } from '#lib/util/words.ts';
@@ -75,10 +78,13 @@
     const t = title.trim();
     return t ? `Press Enter to look up “${t}”.` : 'Type it above, then press Enter to look it up.';
   });
+  const kindChoices = $derived(words.kinds.map((k): Choice => ({ id: k.value, label: k.label })));
+  /** The dictionary a lookup asks: the one picked in Settings → Library. */
+  const askedSource = $derived(settings.get<DictionarySource>(settingKeys.dictionarySource, settingDefaults.dictionarySource));
   const meta = $derived.by(() => {
     if (!looksUp) return '';
-    if (!dictionary) return dictionarySource;
-    return `${dictionarySource} · fetched ${shortDate(iso(new Date(dictionary.fetchedAt)))}`;
+    if (!dictionary) return dictionarySourceLabel(askedSource);
+    return `${dictionarySourceLabel(dictionary.source)} · fetched ${shortDate(iso(new Date(dictionary.fetchedAt)))}`;
   });
 
   // ---- saving a saved word's changes
@@ -104,7 +110,7 @@
     if (!t || !looksUp || dupe) return;
     fetching = true;
     try {
-      const found = await wordsAPI.lookup(t);
+      const found = await wordsAPI.lookup({ title: t, source: askedSource });
       dictionary = found;
       notFound = found === null;
       idiomFrom(found);
@@ -279,7 +285,7 @@
         onkeydown={ontitlekey}
         onblur={committitle} />
       <div class="meta-row">
-        <KindPicker value={kind} kinds={words.kinds} onpick={pickKind} />
+        <ChoicePicker value={kind} choices={kindChoices} what="Kind" onpick={pickKind} />
         {#if dictionary?.ipa}
           <span class="ipa">{dictionary.ipa}</span>
           {#if dictionary.audio}

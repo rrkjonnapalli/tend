@@ -1,5 +1,6 @@
 // The Library's fixed lists: the bar's areas (with each one's search placeholder), what Home
 // shows, the snap papers and the board's tilts.
+import { DICTIONARY_SOURCE, type DictionarySource } from '#lib/enums/dictionary.enum.ts';
 import { LIBRARY_AREA } from '#lib/enums/library.enum.ts';
 import { PAPER } from '#lib/enums/snap.enum.ts';
 import type { LibraryAreaItem, MiniSpot, PaperChoice, SaveTarget } from '#lib/types/library.type.ts';
@@ -32,8 +33,20 @@ export const miniSpots: MiniSpot[] = [
 /** Home's add box: text this short, on one line, is taken for a word or phrase. */
 export const wordGuessLimit = { words: 4, chars: 40 };
 
-/** Words: where the dictionary entries come from, as the entry page names it. */
-export const dictionarySource = 'dictionaryapi.dev';
+/** Words: the dictionaries to choose from in Settings → Library, as the entry page names them. */
+export const dictionarySources: { id: DictionarySource; label: string; about: string }[] = [
+  { id: DICTIONARY_SOURCE.freedictionaryapiCom, label: 'freedictionaryapi.com', about: 'Wiktionary’s current entries: idioms, more synonyms and antonyms. No recordings.' },
+  { id: DICTIONARY_SOURCE.dictionaryapiDev, label: 'dictionaryapi.dev', about: 'Has recordings of how a word sounds. Often misses idioms and phrases.' },
+];
+
+/** The only source there was before entries recorded theirs: an entry without one came from it. */
+const UNRECORDED_SOURCE = DICTIONARY_SOURCE.dictionaryapiDev;
+
+/** How the entry page names a source. */
+export function dictionarySourceLabel(source: DictionarySource = UNRECORDED_SOURCE): string {
+  const known = dictionarySources.find((s) => s.id === source);
+  return known?.label ?? source;
+}
 
 /** Words: the part of speech that dictionary gives an idiom. */
 export const idiomPartOfSpeech = 'idiom';
