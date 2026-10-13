@@ -22,8 +22,10 @@
   const tint = $derived(paper === PAPER.sticky ? stickyTint(color ?? stickyColor) : null);
 </script>
 
+<!-- A sticky is a light surface in either theme (tokens.css): bright sheet, dark ink. -->
 <div
   class="sheet"
+  data-surface={paper === PAPER.sticky ? 'light' : undefined}
   class:scrap={paper === PAPER.scrap}
   class:slip={paper === PAPER.slip}
   class:lined={paper === PAPER.lined}

@@ -78,6 +78,14 @@
   --indigo-night-800: #2c2752;
   --scrim-light: rgba(48, 56, 65, 0.08);
   --scrim-dark: rgba(0, 0, 0, 0.45);
+}
+
+/* The light theme's colour roles. Also on anything marked data-surface="light": a sticky note
+   stays a bright sheet with dark ink in the dark theme, and everything on it (ink, buttons, the
+   tag field) reads these instead of the dark roles. */
+:root,
+[data-surface='light'] {
+  color-scheme: light;
   /* semantic */
   --bg: var(--slate-50);
   --surface: var(--white);
@@ -125,7 +133,7 @@
   --sw-green: #1e7a55; --sw-mint: #62d2a2; --sw-teal: #0f8a8a; --sw-cyan: #22a6c7; --sw-brown: #8d6e63;
 
   /* Library board (Snaps): a warm pinboard and paper; --board-ink is the text on paper. The dark
-     theme remaps these to the --board-night-* values below: a dark grey board, lighter grey sheets, light ink. */
+     theme remaps these: a dark grey board, lighter grey sheets, light ink. A sticky stays light. */
   --board-bg: #f4f0e8;
   --board-dot: #d8cfbd;
   --board-edge: #e4ddcf;
@@ -167,15 +175,21 @@
   --board-night-torn-shadow: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5));
   --board-night-pin-shadow: 1px 3px 3px rgba(0, 0, 0, 0.6);
   --board-night-ghost-shadow: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.6));
-  --sticky-night-sheet-l: 24%;
-  --sticky-night-band-l: 32%;
-  --sticky-night-sat: 0.4;
+  /* a sticky at night: still a bright sheet, a little dimmer so it doesn't glare on the dark board */
+  --sticky-night-sheet-l: 74%;
+  --sticky-night-band-l: 66%;
+  --sticky-night-sat: 0.8;
 
+}
+
+:root {
   /* type */
   --font-heading: 'Montserrat', sans-serif;   /* 28/36 500 page titles; 15–16 500 section titles */
   --font-ui: 'Lato', sans-serif;              /* 14/20 body UI; 13/18 captions; 12/16 meta */
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;  /* note editor 15/26, values, paths, kbd */
-  --font-hand: 'Caveat', cursive;             /* Library: sticky notes 23/28 500, stack names 30/32 600 */
+  --font-hand: 'Caveat', cursive;             /* Library: the empty-area line */
+  --font-stack: 'Smile Moon', var(--font-hand);     /* Library: the marker hand on stack names (one weight) */
+  --font-sticky: 'Gaegu', var(--font-hand);         /* Library: the hand on sticky notes (400) */
 
   /* type roles: use these, not raw font values. Lato ships 400 and 700 only, so no 500 in --font-ui. */
   --text-heading:        500 28px/36px var(--font-heading);  /* page titles */
@@ -215,11 +229,11 @@
   --text-snap-edit:      400 15px/24px var(--font-mono);  /* a snap's text in its editor */
   --text-snap-slip-edit: 400 14px/20px var(--font-mono);  /* a slip's text in the editor */
   --text-snap-mini:      400 12px/20px var(--font-mono);  /* a snap's text on Home's mini board */
-  --text-hand-sticky:      500 23px/28px var(--font-hand);  /* a sticky note on the board */
-  --text-hand-sticky-edit: 500 26px/30px var(--font-hand);  /* a sticky note in the editor */
-  --text-hand-sticky-mini: 500 19px/23px var(--font-hand);  /* a sticky note on Home's mini board */
-  --text-hand-stack:       600 30px/32px var(--font-hand);  /* a stack's name on its top sheet */
-  --text-hand-stack-edit:  600 28px/32px var(--font-hand);  /* a stack's name while it is typed */
+  --text-hand-sticky:      400 20px/28px var(--font-sticky);  /* a sticky note on the board */
+  --text-hand-sticky-edit: 400 22px/30px var(--font-sticky);  /* a sticky note in the editor */
+  --text-hand-sticky-mini: 400 16px/23px var(--font-sticky);  /* a sticky note on Home's mini board */
+  --text-hand-stack:       400 22px/32px var(--font-stack);  /* a stack's name on its top sheet */
+  --text-hand-stack-edit:  400 21px/32px var(--font-stack);  /* a stack's name while it is typed */
   --text-trail-here:     700 13px/24px var(--font-ui);  /* the open stack, last in the board's path */
 
   /* spacing & radius */
@@ -317,6 +331,10 @@
   --paper-torn-shadow: var(--board-night-torn-shadow);
   --pin-shadow: var(--board-night-pin-shadow);
   --ghost-shadow: var(--board-night-ghost-shadow);
+}
+
+/* A light surface inside the dark theme (a sticky note): the light roles above, dimmed. */
+:root[data-theme='dark'] [data-surface='light'] {
   --sticky-sheet-l: var(--sticky-night-sheet-l);
   --sticky-band-l: var(--sticky-night-band-l);
   --sticky-sat: var(--sticky-night-sat);

@@ -81,7 +81,7 @@ Words holds anything you came across and want to understand: a word, idiom, phra
 
 Snaps are your own short writing, pinned to a board. Stacks group them like folders and can nest. Only the text is required.
 
-**The board.** A warm surface (#f4f0e8) with a faint dot grid that scrolls with the content. In the dark theme the board is dark too: the app's own dark greys for the surface and sheets, light ink, and each sticky's hue muted at a low lightness (the `--sticky-night-*` tokens). Snaps and stacks flow into even columns (column width 250px, gap 52px): every snap shows in full, nothing overlaps, positions are not stored. Each item gets a small fixed tilt by position (±1.8° at most) and a red push-pin. Order: pinned-to-top snaps first, then last edited first; stacks are spread evenly between the rest. Empty states: "Nothing on the board yet", "Nothing in this stack yet", "Nothing matches".
+**The board.** A warm surface (#f4f0e8) with a faint dot grid that scrolls with the content. In the dark theme the board is dark too: the app's own dark greys for the surface and sheets, with light ink. A sticky stays a bright sheet with dark ink, a little dimmer than in the light theme (`data-surface="light"`, the `--sticky-night-*` tokens). Snaps and stacks flow into even columns (column width 250px, gap 52px): every snap shows in full, nothing overlaps, positions are not stored. Each item gets a small fixed tilt by position (±1.8° at most) and a red push-pin. Order: pinned-to-top snaps first, then last edited first; stacks are spread evenly between the rest. Empty states: "Nothing on the board yet", "Nothing in this stack yet", "Nothing matches".
 
 **Paper types**, cycled by the rotate button in the editor:
 

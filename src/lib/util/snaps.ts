@@ -192,7 +192,7 @@ const PAPER_METRICS: Record<Paper, { line: number; char: number; padX: number; p
   [PAPER.slip]: { line: 20, char: 7.8, padX: 36, padY: 40, min: 0 },
   [PAPER.lined]: { line: 24, char: 8.4, padX: 64, padY: 42, min: 170 },
   [PAPER.plain]: { line: 24, char: 8.4, padX: 40, padY: 42, min: 0 },
-  [PAPER.sticky]: { line: 28, char: 10, padX: 40, padY: 42, min: 220 },
+  [PAPER.sticky]: { line: 28, char: 8.4, padX: 40, padY: 42, min: 220 },
 };
 /** A snap's date line and the gap above it; a stack's pile with its clip; the space under items. */
 const FOOT_PX = 28;

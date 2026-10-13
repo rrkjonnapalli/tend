@@ -23,7 +23,7 @@ Tend is a desktop app for **notes, tasks and people** (plus simple timers), buil
 - **IDs:** ULID strings (`ulid` crate), generated in Rust. **Times:** INTEGER ms UTC. Local dates and times are `YYYY-MM-DD` / `HH:MM` text (see the conventions at the top of `schema.sql`).
 - **Plugins:** `tauri-plugin-dialog` (folder picker), `tauri-plugin-notification` (timers), `tauri-plugin-store` or the `settings` table for app prefs. The last vault path lives in the app config dir, not inside a vault.
 - **Styling:** plain CSS plus `tokens.css`, scoped `<style>` in components. No Tailwind or UI kit; the look is custom and minimal.
-- **Fonts:** `@fontsource/montserrat` (500, 600), `@fontsource/lato` (400, 700), `@fontsource/jetbrains-mono` (400, 500), bundled offline.
+- **Fonts:** `@fontsource/montserrat` (500, 600), `@fontsource/lato` (400, 700), `@fontsource/jetbrains-mono` (400, 500), bundled offline. The Library's handwriting: `@fontsource/caveat` (500, 600) and `@fontsource/gaegu` (400, sticky notes), plus `static/fonts/Smile Moon.otf` (stack names; not on Fontsource).
 - **Markdown:** `marked` (or `markdown-it`) + `DOMPurify` for rendering. The editor is a plain `<textarea>` with monospace font, as in the mockups.
 
 ## Project layout (create as you go)
