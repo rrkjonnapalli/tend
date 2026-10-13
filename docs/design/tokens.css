@@ -124,8 +124,8 @@
   --sw-red: #da0037; --sw-orange: #d57149; --sw-amber: #e8890c; --sw-yellow: #d4b106; --sw-olive: #7a8f2a;
   --sw-green: #1e7a55; --sw-mint: #62d2a2; --sw-teal: #0f8a8a; --sw-cyan: #22a6c7; --sw-brown: #8d6e63;
 
-  /* Library board (Snaps): a warm pinboard and paper. It stays light in the dark theme, so these
-     are not remapped there; --board-ink is the text on paper either way. */
+  /* Library board (Snaps): a warm pinboard and paper; --board-ink is the text on paper. The dark
+     theme remaps these to the --board-night-* values below: a dark grey board, lighter grey sheets, light ink. */
   --board-bg: #f4f0e8;
   --board-dot: #d8cfbd;
   --board-edge: #e4ddcf;
@@ -149,6 +149,27 @@
   --paper-torn-shadow: drop-shadow(0 6px 8px rgba(40, 30, 10, 0.22));
   --pin-shadow: 1px 3px 3px rgba(40, 30, 10, 0.35);
   --ghost-shadow: drop-shadow(0 16px 22px rgba(40, 30, 10, 0.26));
+  /* A sticky's sheet and top band are its picked hue at these lightnesses (util/snaps.ts
+     stickyTint); --sticky-sat scales the hue's saturation. */
+  --sticky-sheet-l: 87%;
+  --sticky-band-l: 79%;
+  --sticky-sat: 1;
+
+  /* the board at night: the app's own night greys, so it sits in the dark theme; only what has
+     no grey equivalent is listed here */
+  --board-night-kraft: #3a3833;
+  --board-night-margin: #7a4242;
+  --board-night-paper-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 20px -12px rgba(0, 0, 0, 0.8);
+  --board-night-pin-on: #e0b040;
+  --board-night-clip: linear-gradient(#5b6670, #3d454d);
+  --board-night-veil: rgba(31, 35, 40, 0.78);
+  --board-night-hover: rgba(255, 255, 255, 0.08);
+  --board-night-torn-shadow: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5));
+  --board-night-pin-shadow: 1px 3px 3px rgba(0, 0, 0, 0.6);
+  --board-night-ghost-shadow: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.6));
+  --sticky-night-sheet-l: 24%;
+  --sticky-night-band-l: 32%;
+  --sticky-night-sat: 0.4;
 
   /* type */
   --font-heading: 'Montserrat', sans-serif;   /* 28/36 500 page titles; 15–16 500 section titles */
@@ -275,4 +296,28 @@
   --c-nav-active-soft: var(--indigo-night-800);
   --c-overdue: var(--orange-night-300);
   --c-scrim: var(--scrim-dark);
+
+  --board-bg: var(--night-900);
+  --board-dot: var(--night-700);
+  --board-edge: var(--night-700);
+  --board-ink: var(--night-50);
+  --board-ink-muted: var(--night-200);
+  --board-hint: var(--night-300);
+  --board-title: var(--night-200);
+  --board-drop: var(--night-800);
+  --paper: var(--night-700);
+  --paper-kraft: var(--board-night-kraft);
+  --paper-rule: var(--night-600);
+  --paper-margin: var(--board-night-margin);
+  --paper-shadow: var(--board-night-paper-shadow);
+  --pin-on: var(--board-night-pin-on);
+  --clip: var(--board-night-clip);
+  --board-veil: var(--board-night-veil);
+  --board-hover: var(--board-night-hover);
+  --paper-torn-shadow: var(--board-night-torn-shadow);
+  --pin-shadow: var(--board-night-pin-shadow);
+  --ghost-shadow: var(--board-night-ghost-shadow);
+  --sticky-sheet-l: var(--sticky-night-sheet-l);
+  --sticky-band-l: var(--sticky-night-band-l);
+  --sticky-sat: var(--sticky-night-sat);
 }

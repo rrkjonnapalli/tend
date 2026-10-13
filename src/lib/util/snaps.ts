@@ -11,8 +11,6 @@ export const NEW_STACK = 'new';
 export const BOARD_NAME = 'Snaps';
 
 const STICKY_SATURATION_MAX = 85;
-const STICKY_BAND_LIGHTNESS = 79;
-const STICKY_SHEET_LIGHTNESS = 87;
 
 export const stackName = (stack: Stack) => stack.name.trim() || UNTITLED_STACK;
 
@@ -41,13 +39,15 @@ export function isWithin({ id, ancestor }: Nesting, stacks: Stack[]): boolean {
   return pathOf(id, stacks).some((s) => s.id === ancestor);
 }
 
-/** A sticky's paper: the picked colour's hue, light enough that dark text always reads. */
+/** A sticky's paper: the picked colour's hue, at the theme's sheet and band lightness (tokens.css
+ *  --sticky-*), so the board's ink always reads on it, light or dark. */
 export function stickyTint(hex: string): { band: string; sheet: string } {
   const { h, s } = hueAndSaturation(hex);
   const sat = Math.min(s, STICKY_SATURATION_MAX);
+  const saturation = `calc(${sat}% * var(--sticky-sat))`;
   return {
-    band: `hsl(${h} ${sat}% ${STICKY_BAND_LIGHTNESS}%)`,
-    sheet: `hsl(${h} ${sat}% ${STICKY_SHEET_LIGHTNESS}%)`,
+    band: `hsl(${h} ${saturation} var(--sticky-band-l))`,
+    sheet: `hsl(${h} ${saturation} var(--sticky-sheet-l))`,
   };
 }
 

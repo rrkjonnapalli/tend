@@ -29,13 +29,17 @@ describe('snaps', () => {
   });
 
   it('tints a sticky from the picked colour', () => {
-    expect(stickyTint('#d4b106')).toEqual({ band: 'hsl(50 85% 79%)', sheet: 'hsl(50 85% 87%)' });
-    expect(stickyTint('#7d8995').sheet).toBe('hsl(210 10% 87%)');
-    expect(stickyTint('#808080').band).toBe('hsl(0 0% 79%)');
+    const tint = (h: number, s: number) => ({
+      band: `hsl(${h} calc(${s}% * var(--sticky-sat)) var(--sticky-band-l))`,
+      sheet: `hsl(${h} calc(${s}% * var(--sticky-sat)) var(--sticky-sheet-l))`,
+    });
+    expect(stickyTint('#d4b106')).toEqual(tint(50, 85));
+    expect(stickyTint('#7d8995').sheet).toBe(tint(210, 10).sheet);
+    expect(stickyTint('#808080').band).toBe(tint(0, 0).band);
     // Green is the strongest channel.
-    expect(stickyTint('#20c040').sheet).toBe('hsl(132 71% 87%)');
+    expect(stickyTint('#20c040').sheet).toBe(tint(132, 71).sheet);
     // Red is, with less green than blue: the hue wraps past 300.
-    expect(stickyTint('#c02080').sheet).toBe('hsl(324 71% 87%)');
+    expect(stickyTint('#c02080').sheet).toBe(tint(324, 71).sheet);
   });
 
   it('labels tags, stacks and peeks', () => {
