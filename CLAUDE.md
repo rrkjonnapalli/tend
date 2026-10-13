@@ -1,6 +1,6 @@
 # Tend: instructions for Claude Code
 
-Tend is a desktop app for **notes, tasks and people** (plus simple timers), built with **Tauri 2 + SvelteKit**. The design is done. Your job is to build it milestone by milestone.
+Tend is a desktop app for **notes, tasks, people and a Library** (words, snaps, references), plus simple timers, built with **Tauri 2 + SvelteKit**. The design is done. Your job is to build it milestone by milestone.
 
 ## Read first (every session)
 
@@ -12,6 +12,8 @@ Tend is a desktop app for **notes, tasks and people** (plus simple timers), buil
    - `screens/png/*.png`: screenshots of the mockups and key states. Match these.
    - `tokens.css`: colors, type, spacing and radius as CSS variables. Use these; don't hard-code hex values in components.
    - `README.md`: an index of the screens, plus the logic in the mockups worth reusing.
+
+The Library (Words, Snaps, References) has its own plan, `docs/tend-library-plan.md`, and mockups in `docs/tend-library/`; `decisions.md` §15 says where Tend differs from them, and wins. Known gaps are in `docs/open-questions.md`.
 
 `docs/later/` is **out of scope** (calendar, events, reminders). Don't build any of it, and don't add tables for it.
 
@@ -35,13 +37,16 @@ src-tauri/src/
   db.rs           connection, migrations (embed docs/schema.sql as v1)
   notes.rs        scan, watcher, note + folder commands
   tasks.rs, people.rs, statuses.rs, attachments.rs, timers.rs, feedback.rs, settings.rs
+  enums/, links/, tags/     the shared enum table (statuses, labels, word kinds, tags) and its links
+  words/, snaps/, refs/     the Library; words/dictionary/ has one file per dictionary source
+  db/tables.rs, columns.rs  table and column names (never typed as strings elsewhere), update.rs
   names.rs        the name rule ^[a-z0-9]+(_[a-z0-9]+)*$, slugs, clash suffixes, path helpers
 src/lib/
   api/            typed wrappers around invoke() (one file per area)
   stores/         Svelte 5 state (vault, notes, tasks, people, timers, ui)
   components/     BottomNav, Explorer, Popover, MarkdownField, TagEditor, DateField, TimeField, …
   util/           order-key.ts (keyBetween), names.ts, dates.ts, timer-parse.ts
-src/routes/       start, notes, tasks, people, settings
+src/routes/       start, notes, tasks, people, library, settings
 ```
 
 ## Rules

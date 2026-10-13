@@ -394,7 +394,39 @@ Planned on 2026-10-12. Behaviour: `docs/tend-library-plan.md` (the original spec
 
 **Status (2026-10-12):** built and checked in the app (Home with live data, the three hand-offs, search with and without matches). Home is `/library/home`, first in the switch and the default area for a vault that has not opened the Library yet. "Recent", "latest" and "new" all mean added last. A snap on the mini board or in the results opens its stack; a reference opens References (not its popup). The hand-off passes the text through the `library` store (`handOff` / `takeHanded`); each area's add takes it as `filled`. Empty states: a column without items says so with what to press, the mini board shows "Nothing pinned yet", and a search without matches names the text. The empty columns were not seen in the app (the test vault has items in all three).
 
-**Deferred (not in L0–L6):** Undo on deletes and moves, fetching a title in the background after save, a full-text index, the tag filter, phone layouts, the dark board, drag on touch, links between Library items.
+**Deferred (not in L0–L6):** Undo on deletes and moves, fetching a title in the background after save, a full-text index, the tag filter, phone layouts, drag on touch, links between Library items. (The dark board was done in L7.)
+
+---
+
+## L7 · After the Library: review, tags, dictionaries, the dark board  ☑
+
+Not a planned milestone: the work that followed L0–L6, 2026-10-12 to 2026-10-14. The spec has the rules (§ numbers); this lists what was done.
+
+**Review fixes** (a rule-by-rule review of the `library` branch, then an audit of it)
+- Sync: a tag kept under another device's id keeps its links; enum rows get the id `<KIND>:<VALUE>` on every device; an enum row's `meta` merges key by key, so a recolor and a reorder on two devices both survive (§16).
+- A snap's paper and colour, and a reference's kind, are written only when an edit names them. Fetches cap redirects at five and log why they failed.
+- UI: the snap and stack confirms close; a save ignores a second press and reloads its list even when a later step fails; a late list reply can't overwrite a newer one.
+
+**Tags and enum status** (§7, §13, §16)
+- `tend_enums.status` (`ACTIVE` / `BLOCKED`) for every kind. Blocking removes the row's links; a blocked value can't be linked or used, and sync drops a use added on another device.
+- Settings → Tags: every tag as Active or Blocked with its use count, a search line, Block / Unblock, and delete (removes the tag and its links; it can be typed again).
+- A task's status must be in the list and not blocked. An enum row whose `meta` can't be read is left out of its list.
+
+**Structure**
+- Rust: table and shared column names in `db/tables.rs` and `db/columns.rs`; one `UPDATE … RETURNING` builder (`db/update.rs`), no re-read after a write, in People and Tasks too; a write that finds no row is `NOT_FOUND`; several same-typed arguments became structs.
+- UI: kind strings are enums, types live in type files, helpers with several arguments take an options object, every font is a token.
+- One popover that moves itself to `<body>` (so it is never shifted or clipped), and every option list moves with ↑↓ (`optionNav`).
+- Shared pieces: `BoardItem` (snap and stack cards), `SnapPaper` (the Home mini board too), `Pin`, `Chip` without a remove button, `ChoicePicker` (a word's kind, the Settings dictionary), `SnapDialogs` (the snap editor and delete confirm, app-wide).
+
+**Library**
+- Two dictionary sources, one file each under `src-tauri/src/words/dictionary/`, picked in Settings → Library; antonyms and a link to the entry's page (§15).
+- ↑↓ in the Words list open each word as the cursor moves.
+- ⌘S writes a snap from any page; pressed again in the open editor it turns to the next paper (§12, §15).
+- The stack picker is a search over the stacks; a word's Meaning and Notes open like every markdown field (pencil or double-click).
+- The board follows the dark theme; a sticky stays a bright sheet with dark ink in both themes (§15).
+- Hands: Gaegu on sticky notes, Smile Moon on stack names (§1).
+
+**Status (2026-10-14):** all of it is on `main`. Checked by `cargo test`, `cargo clippy`, `bun run check` and `bun run test`; looked at in the app by the user as it went (the Tags screen and tag delete, the fonts, the dark board). What is still open is in `docs/open-questions.md`.
 
 ---
 

@@ -62,7 +62,7 @@ Words holds anything you came across and want to understand: a word, idiom, phra
 
 1. Title: an input styled exactly like the page heading, no border or underline. On a saved entry it renames; empty or a duplicate on blur reverts to the old title.
 2. Meta row: kind chip, pronunciation + play (when the dictionary has it), part of speech, then tags.
-3. Dictionary (collapsible): senses with examples, synonyms, "dictionaryapi.dev · fetched <date>" and a re-fetch icon.
+3. Dictionary (collapsible): senses with examples, synonyms, antonyms, "<source> · fetched <date>", a link to the entry's own page at the source and a re-fetch icon. The source is the one picked in Settings → Library (freedictionaryapi.com by default, or dictionaryapi.dev); each fetched word keeps and names the source it came from.
 4. What it is for me (collapsible): **Meaning** and **Notes**, both markdown. Links go in Notes; there is no separate references field.
 
 **Kinds.** Word, idiom, phrase, term / concept, something else. Picked from a small chip that opens a list with a tick on the current kind. Typing guesses word (no spaces) or phrase (spaces); a dictionary hit that says idiom switches to idiom unless you picked a kind yourself. Changing kind on a saved entry moves it to that group.
@@ -91,7 +91,7 @@ Snaps are your own short writing, pinned to a board. Stacks group them like fold
 | Slip | Kraft (#efe3c8), short strip | Mono 13/20 |
 | Lined | Notebook lines, red margin rule | Mono 14/24 |
 | Plain card | Clean off-white sheet with soft shadow (the stack's top sheet) | Mono 14/24 |
-| Sticky | Tinted paper with a deeper glue band | Handwritten (Caveat) 23/28 |
+| Sticky | Tinted paper with a deeper glue band | Handwritten (Gaegu) 20/28 |
 
 Sticky colour comes from a picker: a 5 × 4 grid of the app palette plus a hex field. The picked colour sets the hue; the paper is a light tint (lightness 87%, band 79%, saturation capped at 85%) so dark text always reads.
 
@@ -100,11 +100,12 @@ Sticky colour comes from a picker: a 5 × 4 grid of the app palette plus a hex f
 - Top left: × cancels (Esc). Top right: pin to top, delete (editing only), ✓ saves (⌘↵).
 - Bottom, always in the same place: rotate (paper type), stack picker, sticky colour dot (sticky only), tags.
 - The middle is the writing area and scrolls when it overflows.
-- The stack picker lists "Snaps (loose)", every stack indented by depth, and "+ New stack". New snaps go to the stack you are in.
+- The stack picker is a search field over a list: "Snaps (loose)", "+ New stack", then every stack by its path ("Work rules / Code reviews"). Type to filter, ↑↓ and ↵ to pick; text that matches no stack picks nothing. New snaps go to the stack you are in.
+- ⌘S opens this editor from any page (the snap lands on the board), and pressed again while it is open turns to the next paper.
 
 Clicking a snap opens it in the same editor. Saving an edit moves it to the front and sets its date to "Edited now"; changing its stack moves it ("Saved and moved to …").
 
-**Stacks** are folders: a stack has a parent stack or none. On the board a stack is a small pile under a binder clip, with its name (handwritten), the first lines of its top snap, and a count ("4 snaps · 1 stack"). Opening one shows its contents with a path ("Snaps / Work rules /"); in the Library the path floats at the board's top left. Hover tools: rename (pencil) and remove (bin). Removing a stack keeps its contents and moves them up one level.
+**Stacks** are folders: a stack has a parent stack or none. On the board a stack is a small pile under a binder clip, with its name (a marker hand, Smile Moon 22/32), the first lines of its top snap, and a count ("4 snaps · 1 stack"). Opening one shows its contents with a path ("Snaps / Work rules /"); in the Library the path floats at the board's top left. Hover tools: rename (pencil) and remove (bin). Removing a stack keeps its contents and moves them up one level.
 
 **Moving things**
 
@@ -182,7 +183,7 @@ Five records; every one also carries `id`, `created_at` and `updated_at`. Stacks
 | --- | --- | --- | --- |
 | word | title | text, required | Unique, case-insensitive |
 | word | kind | enum | word, idiom, phrase, term, other |
-| word | dictionary | json, nullable | Senses, examples, synonyms, IPA, part of speech, fetched_at; null when not found or not looked up |
+| word | dictionary | json, nullable | Senses, examples, synonyms, antonyms, IPA, part of speech, audio, source, source page, fetched_at; null when not found or not looked up |
 | word | meaning | markdown | |
 | word | notes | markdown | Links live here |
 | snap | text | text, required | |
@@ -202,18 +203,16 @@ Five records; every one also carries `id`, `created_at` and `updated_at`. Stacks
 
 Ordering needs no stored positions: Snaps sort by pinned, then `updated_at`; References by `created_at`; Words alphabetically within kind.
 
-Background jobs: the dictionary lookup (dictionaryapi.dev) and the link title fetch, both retried quietly on failure.
+The dictionary lookup (one of two sources, each with its own mapper under `src-tauri/src/words/dictionary/`) and the link title fetch run only while the entry page or popup asks; nothing fetches in the background and nothing is retried.
 
 ## Out of scope for now
 
 Deliberately left for later; none of these block the first build.
 
 - Phone layouts: Snaps at one or two columns, the Words list as its own screen, References as cards, the Library switch as scrolling tabs.
-- Dark mode for the board, papers and stickies.
 - Failure messages: title fetch failed, dictionary unreachable, offline.
 - Drag on touch (long-press) and drag-to-reorder within a level.
 - Wanting-to vs done marks for books and films in References.
-- A Library Home that reads live data; the mockup uses sample content.
 
 ## Open questions
 

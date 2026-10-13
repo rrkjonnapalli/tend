@@ -6,12 +6,12 @@ Reference for building Tend (Tauri 2 + SvelteKit). The mockups in `docs/design/s
 
 ## 1. Product
 
-- **Tend**: notes, tasks and people in one desktop app, plus simple timers.
-- **v1 scope:** Notes · Tasks · People · Timers. Calendar, events and reminders come later (§14, and `docs/later/calendar-design-spec-doc.md`).
-- Light mode only for v1. Minimal, editor-like (Sublime / VS Code / JetBrains feel).
+- **Tend**: notes, tasks, people and a Library (words, snaps, references) in one desktop app, plus simple timers.
+- **v1 scope:** Notes · Tasks · People · Library (§15) · Timers. Calendar, events and reminders come later (§14, and `docs/later/calendar-design-spec-doc.md`).
+- Light and dark themes (§2 *Theme*). Minimal, editor-like (Sublime / VS Code / JetBrains feel).
 - No floating or detached panels, no shadows. Panels sit flush, separated by hairlines.
 - Design system: **Clean Colors**.
-  - Fonts: Montserrat (page and section titles), Lato (all UI text), JetBrains Mono (note editor, values, paths, keys, code). Tokens: `docs/design/tokens.css`.
+  - Fonts: Montserrat (page and section titles), Lato (all UI text), JetBrains Mono (note editor, values, paths, keys, code, snap text). The Library's hands: Gaegu (sticky notes), Smile Moon (stack names; a file in `static/fonts`, personal-use licence to check before the app is shared), Caveat (the line on an empty area). Tokens: `docs/design/tokens.css`.
   - Key colors:
 
     | Role | Hex |
@@ -310,7 +310,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 ## 13. Settings
 
 - Sections on the left: General · Tasks · Library · Tags · Sync · Command palette.
-- **Library:** word kinds (§15).
+- **Library:** the dictionary to look words up in (a field-sized dropdown) and word kinds (§15).
 - **Tags:** a search line at the top right, like the list pages, filters both columns by name. Every tag in two columns, **Active** and **Blocked**, by name; each row shows the tag and how many things use it. An active row has *Block*, a blocked row *Unblock*. Block asks first (*Block “name”?* — it comes off N things and can't be added again until unblocked); Unblock doesn't ask. Each row also has a delete icon: it always asks (*Delete “name”?* — it comes off N things), then removes the tag from the pool and from everything that carries it; unlike a blocked tag it can be typed again later. Each of the three reloads the tag pool and every list that shows tags (§7).
 - **General:** vault path as plain text, with a *Change vault folder…* link on the right. Below it, a quiet "N items skipped" line (files/folders whose names break the rule) that expands to the list.
 - **Tasks:** statuses (see §6).
@@ -321,7 +321,6 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - **Calendar, events and reminders**, including repeat rules, alerts, the notification engine, the bell, birthday and due-date alerts. The design is in `docs/later/calendar-design-spec-doc.md`, and mockups are in `docs/later/screens/`. They'll arrive as a schema migration (`schema_version` 2).
 
 - Gantt / timeline view.
-- Dark mode.
 - Per-folder status lists (statuses are app-wide).
 - Recent vaults list.
 
@@ -334,14 +333,16 @@ The full behaviour is in `docs/tend-library-plan.md` and the mockups in `docs/te
 - **Word kinds:** `WORD_KIND` rows in `tend_enums`, edited in Settings → Library → Word kinds (add, rename, reorder, delete). Defaults, in order: word, idiom, abbr, concept, phrase, term, other. `WORD`, `IDIOM` and `PHRASE` look things up in the dictionary; custom kinds don't. `WORD` and `OTHER` can't be deleted; a kind in use can't be deleted.
 - **Word titles** are unique by exact match across all kinds. A `WORD` title is lowercased on save; other kinds keep their case, so `it` (word) and `IT` (abbr) are different entries. Changing a saved entry's kind to `WORD` lowercases its title and is refused if that title already exists.
 - **Kind guess** while adding, until a kind is picked by hand: all capitals (two characters or more) and no spaces guesses abbr (`NASA`, but not `Petrichor`), no spaces guesses word, spaces guess phrase; a dictionary hit marked idiom switches to idiom.
-- **Words list:** grouped by kind in kind order, always open; no random or collapse buttons.
+- **Words list:** grouped by kind in kind order, always open; no random or collapse buttons. ↑↓ move through it and the entry on the right follows the cursor at once (no Enter, no new step in history); a click opens a word as its own step. While a new word is being typed the arrows don't switch words.
 - **Meaning and Notes** render the markdown as written; Tend adds no link syntax of its own. Each opens for writing with its pencil or a double-click, empty or not, like every markdown field (a task's description, a person's notes, a comment, a note's body); a single click never opens one.
-- **A word's kind** is picked like a person: the kind chip opens a search over the kinds (type to filter, ↑↓, ↵), with the current one ticked.
+- **A word's kind** is picked like a person: the kind chip opens a search over the kinds (type to filter, ↑↓, ↵), with the current one ticked. The chip and the Settings dictionary dropdown are one component (`ChoicePicker`; the Settings one is field-sized, with no search).
 - **Dictionary sources:** two, picked in Settings → Library → Dictionary (a plain dropdown, no search; setting `words.dictionary_source`, per device; default freedictionaryapi.com): **freedictionaryapi.com** (current Wiktionary: idioms, more synonyms and antonyms, no recordings; CC BY-SA 4.0) and **dictionaryapi.dev** (has recordings). Each has its own file under `src-tauri/src/words/dictionary/` with its URL, reply shape and mapper to Tend's `Dictionary`; adding a source is one file and one enum value. A stored entry records its `source` and, when given, its `sourceUrl` (the entry's own page, opened from the Dictionary section: the credit Wiktionary's licence asks for) and its antonyms. A fetched word keeps its entry when the setting changes; *Fetch again* asks the source now picked. An entry stored before sources were recorded counts as dictionaryapi.dev.
 - **Pronunciation:** the dictionary's audio URL is stored with the entry and played from it (CSP `media-src https:`).
 - **Tags:** the app's shared tag pool and name rule (§7), not the spec's 24-character rule. The inline chip input from the mockups is `TagEditor`'s inline style.
 - **Tag filter:** none. The mockups only show it on standalone pages, which Tend doesn't have; search covers it.
 - **Deletes ask** (§2 *Delete confirmations*); removing a stack always asks. Moves (drag or the stack picker) don't ask and show "Moved to …". Undo comes later.
+- **The snap editor is app-wide** (`SnapDialogs`, shown by the root layout): ⌘S opens a blank paper on any page, and the board opens the same one for a new or an existing snap. A snap written elsewhere lands on the board: in the stack the board shows, else loose; a new stack made that way stays untitled until it is named on the board. ⌘S again while it is open turns to the next paper. The stack picker is a search over the stacks by path (type to filter, ↑↓, ↵; "Snaps (loose)" and "+ New stack" first); text that matches no stack picks nothing.
+- **Dark theme on the board:** the board and the scrap, slip, lined and plain papers use the app's dark greys with light ink. A sticky stays a bright sheet with dark ink, a little dimmer, in both themes, and so does everything on it (the editor's buttons, the board's hover tools): it is marked `data-surface="light"`, which gives it the light colour roles (`tokens.css`).
 - **Look:** the board, papers, stacks and the drag ghost keep their shadows. Popovers, dialogs, the segmented switch and toasts follow the app: border only, no shadow. Fields show focus with their border, never a ring (§12).
 - **Stacks** have their own table (`snap_stacks`: parent id + free-text name), not the path-based folder model. A stack can't go inside itself or its sub-stacks; removing one moves its contents up one level.
 - **Title fetch and dictionary lookup** run in Rust (`ureq` on a worker thread) only while the popup or entry page asks for them. Nothing fetches in the background.
