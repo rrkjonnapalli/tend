@@ -292,7 +292,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 | ⌘⇧T | New task: path + name | opens the task page |
 | ⌘⇧N | New folder: Notes/Tasks switch (defaults to the current section) + path + name | opens the folder list |
 | ⌘T | New timer: `mm:ss` (default `01:00`, selected) + text | toast only |
-| ⌘S | New snap: the snap editor, the same one the Snaps board opens, over any page | toast only; the snap goes in the stack the board shows, else loose on the board |
+| ⌘S | New snap: the snap editor, the same one the Snaps board opens, over any page. Pressed again while it is open, it turns to the next paper (as its rotate button does) and keeps everything written | toast only; the snap goes in the stack the board shows, else loose on the board |
 
 - **Path field:**
   - Pre-filled with the last path used for that kind.
@@ -337,6 +337,7 @@ The full behaviour is in `docs/tend-library-plan.md` and the mockups in `docs/te
 - **Words list:** grouped by kind in kind order, always open; no random or collapse buttons.
 - **Meaning and Notes** render the markdown as written; Tend adds no link syntax of its own. Each opens for writing with its pencil or a double-click, empty or not, like every markdown field (a task's description, a person's notes, a comment, a note's body); a single click never opens one.
 - **A word's kind** is picked like a person: the kind chip opens a search over the kinds (type to filter, ↑↓, ↵), with the current one ticked.
+- **Dictionary sources:** two, picked in Settings → Library → Dictionary (a plain dropdown, no search; setting `words.dictionary_source`, per device; default freedictionaryapi.com): **freedictionaryapi.com** (current Wiktionary: idioms, more synonyms and antonyms, no recordings; CC BY-SA 4.0) and **dictionaryapi.dev** (has recordings). Each has its own file under `src-tauri/src/words/dictionary/` with its URL, reply shape and mapper to Tend's `Dictionary`; adding a source is one file and one enum value. A stored entry records its `source` and, when given, its `sourceUrl` (the entry's own page, opened from the Dictionary section: the credit Wiktionary's licence asks for) and its antonyms. A fetched word keeps its entry when the setting changes; *Fetch again* asks the source now picked. An entry stored before sources were recorded counts as dictionaryapi.dev.
 - **Pronunciation:** the dictionary's audio URL is stored with the entry and played from it (CSP `media-src https:`).
 - **Tags:** the app's shared tag pool and name rule (§7), not the spec's 24-character rule. The inline chip input from the mockups is `TagEditor`'s inline style.
 - **Tag filter:** none. The mockups only show it on standalone pages, which Tend doesn't have; search covers it.

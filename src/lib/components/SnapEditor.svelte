@@ -10,6 +10,8 @@
   import SnapPaper from './SnapPaper.svelte';
   import SwatchPicker from './SwatchPicker.svelte';
   import TagEditor from './TagEditor.svelte';
+  import { pageActions } from '#lib/stores/page-actions.svelte.ts';
+  import { label as keyLabel } from '#lib/util/keys.ts';
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { papers, stickyColor } from '#lib/config/library.config.ts';
@@ -71,6 +73,9 @@
     ink?.focus();
   }
 
+  // ⌘S again, while this is open, turns to the next paper (see commands.ts).
+  $effect(() => pageActions.provide({ 'snap.paper': rotate }));
+
   function toggle(picker: SnapPicker) {
     picking = picking === picker ? null : picker;
   }
@@ -117,7 +122,7 @@
     <SnapPaper {paper} {color} size={PAPER_SIZE.editor}>
       <textarea use:plainText use:focusOnMount bind:this={ink} class="ink" class:ruled={isLined} aria-label="Snap text" placeholder="Write it down…" bind:value={text}></textarea>
       <div class="foot">
-        <button class="pbtn" aria-label="Change paper to {next.name}" title="Change paper to {next.name}" onclick={rotate}><Icon name="rotate" size={17} /></button>
+        <button class="pbtn" aria-label="Change paper to {next.name}" title="Change paper to {next.name} ({keyLabel('mod+s')})" onclick={rotate}><Icon name="rotate" size={17} /></button>
         <button bind:this={stackBtn} class="where" aria-label="Put in: {destName}" title="Put in: {destName}" aria-haspopup="listbox" aria-expanded={picking === SNAP_PICKER.stack} onclick={() => toggle(SNAP_PICKER.stack)}>
           <Icon name="stack" size={15} /><span>{destName}</span>
         </button>

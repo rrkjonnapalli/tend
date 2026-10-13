@@ -26,6 +26,12 @@ const openQuick = (kind: QuickKind) => () => {
   ui.quick = kind;
 };
 
+/** ⌘S: a blank snap; pressed again while the snap editor is open, its next paper. */
+function writeSnap() {
+  if (pageActions.has('snap.paper')) pageActions.run('snap.paper');
+  else snaps.write();
+}
+
 function openPalette() {
   ui.palette = true;
 }
@@ -55,7 +61,7 @@ export const commands: Command[] = [
   { id: 'new.task', group: 'Create', label: 'New task', keys: 'mod+shift+t', example: 'task: Write README', run: openQuick('task') },
   { id: 'new.folder', group: 'Create', label: 'New folder', keys: 'mod+shift+n', run: openQuick('folder') },
   { id: 'new.timer', group: 'Create', label: 'New timer', keys: 'mod+t', example: 'timer 10m turn off the motor', run: openQuick('timer') },
-  { id: 'new.snap', group: 'Create', label: 'New snap', keys: 'mod+s', run: snaps.write },
+  { id: 'new.snap', group: 'Create', label: 'New snap', keys: 'mod+s', run: writeSnap },
   { id: 'new.person', group: 'Create', label: 'New person', example: 'person: Ravi Kumar', run: () => goto(routes.newPerson) },
 
   { id: 'note.mode', group: 'Notes', label: 'Toggle read / edit', keys: 'mod+r', ...onPage('note.mode') },
