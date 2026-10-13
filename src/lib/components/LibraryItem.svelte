@@ -40,7 +40,7 @@
   }
 
   b {
-    font: 500 15px/20px var(--font-heading);
+    font: var(--text-section);
     color: var(--text);
   }
 
@@ -54,6 +54,6 @@
   }
 
   span.mono {
-    font: 400 12px/16px var(--font-mono);
+    font: var(--text-mono-meta);
   }
 </style>

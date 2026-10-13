@@ -3,7 +3,7 @@
   // Library search has text it shows every match across all stacks instead. + or a snap opens the
   // editor. Drag a snap or stack onto a stack to put it in, a snap onto a snap to make a stack of
   // the two, anything onto a step of the path to move it up.
-  import { untrack } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import LibraryEmpty from '#lib/components/LibraryEmpty.svelte';
@@ -110,16 +110,33 @@
     return made.id;
   }
 
-  async function saveDraft(draft: SnapDraft) {
-    const before = editing?.snap ?? null;
+  /** Writes the draft (a new stack first, then the snap, then its tags); resolves to its stack. */
+  async function writeDraft(draft: SnapDraft, before: Snap | null): Promise<string | null> {
     const stackId = await targetOf(draft);
     const color = draft.paper === PAPER.sticky ? draft.color : null;
     const input = { text: draft.text, stackId, paper: draft.paper, color, pinned: draft.pinned };
     const saved = before ? await snapsAPI.update({ id: before.id, patch: input }) : await snapsAPI.create(input);
     const tagsChanged = draft.tags.join(' ') !== saved.tags.join(' ');
     if (tagsChanged) await snapsAPI.setTags({ id: saved.id, tags: draft.tags });
+    return stackId;
+  }
+
+  let saving = false;
+
+  async function saveDraft(draft: SnapDraft) {
+    // A second ⌘↵ while the first save runs would write the snap twice.
+    if (saving) return;
+    saving = true;
+    const before = editing?.snap ?? null;
+    let stackId: string | null;
+    try {
+      stackId = await writeDraft(draft, before);
+    } finally {
+      saving = false;
+      // shortcut: a save that fails halfway can leave a new empty stack; the reload shows it. One Rust command would make it all-or-nothing.
+      await snaps.load();
+    }
     editing = null;
-    await snaps.load();
     if (draft.stackId === NEW_STACK) {
       // Name the new stack right there.
       renaming = stackId;
@@ -150,6 +167,7 @@
   }
 
   async function deleteSnap(snap: Snap) {
+    deleting = null;
     editing = null;
     await snapsAPI.remove(snap.id);
     await snaps.load();
@@ -164,6 +182,7 @@
   }
 
   async function removeStack(stack: Stack) {
+    removing = null;
     const inside = snaps.snaps.filter((n) => n.stackId === stack.id).length;
     await snapsAPI.removeStack(stack.id);
     await snaps.load();
@@ -187,8 +206,12 @@
   /** A snap dropped on a snap: both go into a new stack, named right there. */
   async function pair(a: string, b: string) {
     const stack = await snapsAPI.createStack({ parent: open, name: '' });
-    for (const id of [a, b]) await snapsAPI.update({ id, patch: { stackId: stack.id } });
-    await snaps.load();
+    try {
+      for (const id of [a, b]) await snapsAPI.update({ id, patch: { stackId: stack.id } });
+    } finally {
+      // shortcut: a move that fails leaves the new stack with one snap or none; the reload shows it.
+      await snaps.load();
+    }
     renaming = stack.id;
   }
 
@@ -216,6 +239,9 @@
     else if (e.clientY < r.top + EDGE_PX) board.scrollTop -= SCROLL_STEP_PX;
   }
 
+  let cancelDrag: (() => void) | null = null;
+  onDestroy(() => cancelDrag?.());
+
   /** A press on a snap or stack: one that moves 5 px or more lifts a copy that follows the
    *  pointer; less stays a click. Off while searching or writing. */
   function press(kind: 'snap' | 'stack', id: string) {
@@ -224,7 +250,13 @@
       const card = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-drop]');
       if (blocked || !card) return;
       let ghost: DragGhost | null = null;
-      trackDrag({
+      // Leaving the page mid-drag takes the listeners, the copy and the mark with it.
+      cancelDrag = () => {
+        stop();
+        ghost?.remove();
+        clearDragging();
+      };
+      const stop = trackDrag({
         start: e,
         onstart: (ev) => {
           ghost = liftGhost(card, pointOf(e));
@@ -238,6 +270,7 @@
           scrollNear(ev);
         },
         onend: (dropped) => {
+          cancelDrag = null;
           ghost?.remove();
           clearDragging();
           const src = drag;

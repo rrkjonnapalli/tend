@@ -1,5 +1,5 @@
 //! The few HTTP GETs Tend makes (a link's page title, a dictionary entry), through one `ureq`
-//! setup: a short timeout, a user agent, and only the first `limit` bytes read.
+//! setup: a short timeout, a few redirects at most, a user agent, and only the first `limit` bytes read.
 
 use std::io::Read;
 use std::time::Duration;
@@ -7,6 +7,7 @@ use std::time::Duration;
 use crate::error::{AppResult, ErrorDef};
 
 const TIMEOUT: Duration = Duration::from_secs(5);
+const MAX_REDIRECTS: u32 = 5;
 const USER_AGENT: &str = "Tend";
 const NOT_FOUND: u16 = 404;
 
@@ -16,12 +17,13 @@ const NOT_FOUND: u16 = 404;
 pub fn get(url: &str, limit: u64, fail: ErrorDef) -> AppResult<Option<String>> {
     let agent: ureq::Agent = ureq::Agent::config_builder()
         .timeout_global(Some(TIMEOUT))
+        .max_redirects(MAX_REDIRECTS)
         .build()
         .into();
     let mut response = match agent.get(url).header("User-Agent", USER_AGENT).call() {
         Ok(response) => response,
         Err(ureq::Error::StatusCode(NOT_FOUND)) => return Ok(None),
-        Err(_) => return Err(fail.err()),
+        Err(e) => return Err(logged(url, &e, fail)),
     };
     let mut body = Vec::new();
     response
@@ -29,6 +31,12 @@ pub fn get(url: &str, limit: u64, fail: ErrorDef) -> AppResult<Option<String>> {
         .as_reader()
         .take(limit)
         .read_to_end(&mut body)
-        .map_err(|_| fail.err())?;
+        .map_err(|e| logged(url, &e, fail))?;
     Ok(Some(String::from_utf8_lossy(&body).into_owned()))
+}
+
+/// `fail`, with the cause kept in the log: the toast can't say which of timeout, DNS or TLS it was.
+fn logged(url: &str, cause: &dyn std::fmt::Display, fail: ErrorDef) -> crate::error::AppError {
+    eprintln!("tend: GET {url} failed: {cause}");
+    fail.err()
 }

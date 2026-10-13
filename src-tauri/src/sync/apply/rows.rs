@@ -9,6 +9,8 @@
 //! 4. Changed and new rows are written, parents first. A unique column that changes (a path)
 //!    first gets a placeholder, so two rows swapping values never collide.
 
+use std::collections::BTreeSet;
+
 use rusqlite::types::Value as SqlValue;
 use rusqlite::{params_from_iter, Transaction};
 use serde_json::Value;
@@ -18,6 +20,9 @@ use crate::sync::shards::{table_names, Row, Snapshot};
 
 /// Written before anything is deleted (see step 2 above), and only then.
 const FIRST: &str = "tasks";
+
+/// Its rows go with their record, attachment or enum row (the schema's `*_drop_links` triggers).
+const LINKS: &str = "tend_links";
 
 /// Columns that must stay unique and can change on an existing row.
 const UNIQUE_COLUMNS: &[(&str, &str)] = &[
@@ -85,10 +90,25 @@ fn delete_gone(
     Ok(())
 }
 
+/// The ids of the links a trigger dropped while gone rows were deleted (step 3).
+fn dropped_links(tx: &Transaction, table: &str, local: &Snapshot) -> AppResult<BTreeSet<String>> {
+    if table != LINKS {
+        return Ok(BTreeSet::new());
+    }
+    let mut left = tx.prepare(&format!("SELECT id FROM {LINKS}"))?;
+    let left: BTreeSet<String> = left
+        .query_map([], |r| r.get(0))?
+        .collect::<Result<_, _>>()?;
+    let had = rows_of(local, table).map(|(id, _)| id.clone());
+    Ok(had.filter(|id| !left.contains(id)).collect())
+}
+
 fn upsert(tx: &Transaction, table: &str, local: &Snapshot, merged: &Snapshot) -> AppResult<()> {
     let old = |id: &str| local.get(table).and_then(|rows| rows.get(id));
+    // A kept link can be unchanged and still gone: its tag came back under another device's id.
+    let dropped = dropped_links(tx, table, local)?;
     let changed: Vec<(&String, &Row)> = rows_of(merged, table)
-        .filter(|(id, row)| old(id).is_none_or(|was| was != *row))
+        .filter(|(id, row)| dropped.contains(*id) || old(id).is_none_or(|was| was != *row))
         .collect();
     let unique = UNIQUE_COLUMNS
         .iter()

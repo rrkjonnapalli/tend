@@ -374,3 +374,37 @@ fn a_word_merged_into_another_keeps_its_tags() {
         "the trigger dropped the link with w2; it is written again for w1"
     );
 }
+
+#[test]
+fn a_tag_kept_under_another_devices_id_keeps_its_links() {
+    let mut v = vault();
+    v.conn
+        .execute_batch(
+            "INSERT INTO tend_enums (id, kind, value, label, created_at, updated_at)
+               VALUES ('mine', 'TAG', 'SOUND', 'sound', 0, 0);
+             INSERT INTO words (id, title, created_at, updated_at) VALUES ('w', 'petrichor', 0, 0);
+             INSERT INTO tend_links
+               (id, source_type, source_id, target_type, target_kind, target_value, created_at, updated_at)
+               VALUES ('l', 'WORD', 'w', 'ENUM', 'TAG', 'SOUND', 0, 0);",
+        )
+        .unwrap();
+    let local = snapshot(&v.conn).unwrap();
+    // Both devices made the tag; the merge kept the other device's row.
+    let mut merged = local.clone();
+    let enums = merged.get_mut("tend_enums").unwrap();
+    let mut kept = enums.remove("mine").unwrap();
+    set(&mut kept, "id", json!("theirs"));
+    enums.insert("theirs".into(), kept);
+    let change = Change {
+        local: &local,
+        merged: &merged,
+        remote: &merged,
+    };
+    let root = v.root().to_path_buf();
+    apply(&mut v.conn, &root, &change, &Remote(HashMap::new()), no_tx).unwrap();
+    assert_eq!(
+        snapshot(&v.conn).unwrap(),
+        merged,
+        "the link is unchanged in the merge, so nothing would write it again"
+    );
+}

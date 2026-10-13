@@ -175,19 +175,32 @@
 
   async function settags(next: string[]) {
     tags = next;
-    if (start) tags = await wordsAPI.setTags({ id: start.id, tags: next });
+    if (!start) return;
+    tags = await wordsAPI.setTags({ id: start.id, tags: next });
+    // The list holds each word's tags too: this entry starts from them when it is opened again.
+    await words.load();
   }
 
   // ---- adding and deleting
 
   const canAdd = $derived(title.trim() !== '' && !dupe);
 
+  let adding = false;
+
   async function add() {
-    if (!canAdd) return;
-    const saved = await wordsAPI.create({ title, kind, dictionary, meaning, notes });
-    if (tags.length) await wordsAPI.setTags({ id: saved.id, tags });
-    await words.load();
-    onsaved(saved.id);
+    // A second ⌘↵ while the first add runs would hit the duplicate rule.
+    if (!canAdd || adding) return;
+    adding = true;
+    let saved: Word | null = null;
+    try {
+      saved = await wordsAPI.create({ title, kind, dictionary, meaning, notes });
+      if (tags.length) await wordsAPI.setTags({ id: saved.id, tags });
+    } finally {
+      adding = false;
+      await words.load();
+      // Created with only its tags missing: open it, so a retry doesn't add it twice.
+      if (saved) onsaved(saved.id);
+    }
   }
 
   async function remove() {
@@ -215,7 +228,9 @@
   }
 
   function play() {
-    if (dictionary?.audio) new Audio(dictionary.audio).play();
+    if (!dictionary?.audio) return;
+    // The recording is on the dictionary's server: offline, say so here, not as an app error.
+    new Audio(dictionary.audio).play().catch(() => toast.show('The recording couldn’t be played'));
   }
 
   const kindLabel = $derived(kindInfo?.label ?? kind.toLowerCase());
@@ -323,7 +338,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 500 28px/36px var(--font-heading);
+    font: var(--text-heading);
     color: var(--text);
     caret-color: var(--primary);
   }
@@ -340,7 +355,7 @@
   }
 
   .ipa {
-    font: 400 13px/18px var(--font-mono);
+    font: var(--text-mono);
     color: var(--text-muted);
   }
 

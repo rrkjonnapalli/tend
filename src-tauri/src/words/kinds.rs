@@ -79,7 +79,7 @@ fn check_value(conn: &Connection, value: &str) -> AppResult<String> {
 }
 
 /// Adds a kind at the end. Kinds added here aren't looked up in the dictionary.
-pub fn add(conn: &Connection, label: &str, value: &str) -> AppResult<Kind> {
+pub fn add(conn: &Connection, value: &str, label: &str) -> AppResult<Kind> {
     let label = check_label(conn, label, None)?;
     let value = check_value(conn, value)?;
     let position = list(conn)?

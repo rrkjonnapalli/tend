@@ -114,7 +114,8 @@ CREATE TABLE attachments (
 -- means linking its attachment.
 CREATE TRIGGER attachments_drop_links AFTER DELETE ON attachments
 BEGIN
-  DELETE FROM tend_links WHERE target_type = 'ATTACHMENT' AND target_value = OLD.id;
+  DELETE FROM tend_links
+  WHERE target_type = 'ATTACHMENT' AND target_kind = '' AND target_value = OLD.id;
 END;
 
 -------------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 // URLs for every page, so links are built in one place.
-import type { LibraryArea } from '#lib/enums/library.enum.ts';
+import { LIBRARY_AREA, type LibraryArea } from '#lib/enums/library.enum.ts';
 
 /** `?f=<folder>` for a folder view; nothing for the root. */
 function folderQuery(path: string): string {
@@ -18,9 +18,12 @@ export const routes = {
   library: '/library',
   libraryArea: (area: LibraryArea) => `/library/${area}`,
   /** A word open in the Words area. */
-  libraryWord: (id: string) => `/library/words?w=${encodeURIComponent(id)}`,
+  libraryWord: (id: string) => `/library/${LIBRARY_AREA.words}?w=${encodeURIComponent(id)}`,
   /** A stack open on the Snaps board; none is the board itself. */
-  libraryStack: (id: string | null) => (id ? `/library/snaps?s=${encodeURIComponent(id)}` : '/library/snaps'),
+  libraryStack: (id: string | null) => {
+    const board = `/library/${LIBRARY_AREA.snaps}`;
+    return id ? `${board}?s=${encodeURIComponent(id)}` : board;
+  },
   /** A Settings section, such as `sync`. */
   settingsSection: (id: string) => `/settings?s=${id}`,
   notesFolder: (path: string) => `/notes${folderQuery(path)}`,

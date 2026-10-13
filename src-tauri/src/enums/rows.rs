@@ -6,7 +6,7 @@ use serde_json::{Map, Value};
 
 use super::EnumKind;
 use crate::error::AppResult;
-use crate::util::{new_id, now_ms};
+use crate::util::now_ms;
 
 /// `meta` keys.
 pub const COLOR: &str = "color";
@@ -102,6 +102,12 @@ pub struct NewRow<'a> {
     pub meta: Map<String, Value>,
 }
 
+/// A row's id: the same on every device (and as the seeded defaults), so a tag made on two
+/// devices syncs as one row.
+fn row_id(kind: EnumKind, value: &str) -> String {
+    format!("{}:{value}", kind.as_str())
+}
+
 /// Adds the row; a row with the same kind and value already there is left as it is.
 pub fn insert(conn: &Connection, new: &NewRow) -> AppResult<()> {
     let meta = serde_json::to_string(&new.meta)?;
@@ -109,7 +115,7 @@ pub fn insert(conn: &Connection, new: &NewRow) -> AppResult<()> {
         "INSERT OR IGNORE INTO tend_enums (id, kind, value, label, meta, created_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)",
         params![
-            new_id(),
+            row_id(new.kind, new.value),
             new.kind.as_str(),
             new.value,
             new.label,

@@ -138,17 +138,33 @@
     });
   }
 
-  async function save() {
-    if (!canSave) return;
+  /** Writes the reference, then its tags. */
+  async function write(): Promise<Ref> {
     const input: NewRef = { kind, value: value.trim(), title: savedTitle(), why };
     const saved = start
       ? await refsAPI.update({ id: start.id, patch: input })
       : await refsAPI.create(input);
     const tagsChanged = tags.join(' ') !== saved.tags.join(' ');
     if (tagsChanged) await refsAPI.setTags({ id: saved.id, tags });
+    return saved;
+  }
+
+  let saving = false;
+
+  async function save() {
+    // A second Enter while the first save runs would write the reference twice.
+    if (!canSave || saving) return;
+    saving = true;
+    let saved: Ref;
+    try {
+      saved = await write();
+    } finally {
+      saving = false;
+      // Also after a failure: the reference may be saved with only its tags missing.
+      await refs.load();
+    }
     titleLater(saved);
     clearTimeout(timer);
-    await refs.load();
     toast.show(start ? 'Saved' : 'Saved to references');
     onclose();
   }

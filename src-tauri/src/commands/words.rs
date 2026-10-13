@@ -47,7 +47,7 @@ pub fn word_kind_add(
     label: String,
     value: String,
 ) -> AppResult<words::Kind> {
-    state.with(|db, _| words::kind_add(db, &label, &value))
+    state.with(|db, _| words::kind_add(db, &value, &label))
 }
 
 #[tauri::command(async)]

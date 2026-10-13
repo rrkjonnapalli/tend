@@ -203,6 +203,10 @@ const handlers: Record<string, Handler> = {
     Object.assign(c, { body, editedAt: Date.now() });
   },
   attachments_list: () => [],
+  refs_list: () => [],
+  snaps_board: () => ({ snaps: [], stacks: [] }),
+  words_list: () => [],
+  word_kinds_list: () => [],
   settings_all: () => settings,
   settings_set: ({ key, value }) => {
     settings[key as string] = value;

@@ -96,8 +96,10 @@ pub fn lookup(title: &str) -> AppResult<Option<Dictionary>> {
 
 /// Tend's shape of an API reply; `None` when it holds no definition.
 pub(super) fn from_json(body: &str, fetched_at: i64) -> AppResult<Option<Dictionary>> {
-    let entries: Vec<Entry> =
-        serde_json::from_str(body).map_err(|e| errors::WORD_LOOKUP.with(e.to_string()))?;
+    let entries: Vec<Entry> = serde_json::from_str(body).map_err(|e| {
+        eprintln!("tend: could not read the dictionary's reply: {e}");
+        errors::WORD_LOOKUP.err()
+    })?;
     Ok(from_entries(&entries, fetched_at))
 }
 

@@ -341,7 +341,7 @@ The full behaviour is in `docs/tend-library-plan.md` and the mockups in `docs/te
 
 ## 16. Enums and links
 
-- **`tend_enums`** holds every list the user can change: `TASK_STATUS`, `TASK_LABEL`, `WORD_KIND`, `TAG`. Columns: `id` (ULID; default rows use `<KIND>:<VALUE>`), `kind`, `value`, `label`, `is_default`, `meta` (JSON: colour, position, lookup, …), `created_at`, `updated_at`; `UNIQUE (kind, value)`.
+- **`tend_enums`** holds every list the user can change: `TASK_STATUS`, `TASK_LABEL`, `WORD_KIND`, `TAG`. Columns: `id` (`<KIND>:<VALUE>`, the same on every device, so a tag made on two devices syncs as one row), `kind`, `value`, `label`, `is_default`, `meta` (JSON: colour, position, lookup, …; sync merges it key by key, so a recolor and a reorder on two devices both survive), `created_at`, `updated_at`; `UNIQUE (kind, value)`.
   - Kinds and values are SCREAMING_SNAKE_CASE (the name rule in capitals). A value never changes; the label is what the user sees and renames.
   - `meta` is checked in the app, not in SQL. `is_default` rows can't be deleted.
   - Order within a kind is `meta.position`.

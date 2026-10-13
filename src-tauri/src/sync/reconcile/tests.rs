@@ -615,3 +615,35 @@ fn a_default_enum_row_wins_over_one_a_user_made() {
     let ids: Vec<&String> = merged["tend_enums"].keys().collect();
     assert_eq!(ids, vec!["WORD_KIND:CONCEPT"]);
 }
+
+#[test]
+fn a_recolor_and_a_reorder_of_one_label_both_survive() {
+    let label = |meta: Value, at: i64| {
+        let mut row = enum_row("TASK_LABEL:ALPHA", EnumKind::TaskLabel, "ALPHA", "Alpha", 0);
+        row["meta"] = json!(meta.to_string());
+        row["updated_at"] = json!(at);
+        row
+    };
+    let base = snap(&[(
+        "tend_enums",
+        vec![label(json!({ "color": "#111111", "position": 0 }), 0)],
+    )]);
+    let l = snap(&[(
+        "tend_enums",
+        vec![label(json!({ "color": "#222222", "position": 0 }), 5)],
+    )]);
+    let r = snap(&[(
+        "tend_enums",
+        vec![label(json!({ "color": "#111111", "position": 3 }), 9)],
+    )]);
+    let merged = reconcile(&Sides {
+        base: &base,
+        local: &l,
+        remote: &r,
+    });
+    let meta = text(&merged["tend_enums"]["TASK_LABEL:ALPHA"], "meta").unwrap();
+    assert_eq!(
+        meta,
+        json!({ "color": "#222222", "position": 3 }).to_string()
+    );
+}

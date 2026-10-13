@@ -182,7 +182,7 @@
     max-height: 60px;
     overflow: hidden;
     white-space: pre-wrap;
-    font: 400 13px/20px var(--font-mono);
+    font: var(--text-code);
     color: var(--board-ink-muted);
   }
 

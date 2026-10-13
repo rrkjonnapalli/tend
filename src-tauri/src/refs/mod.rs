@@ -176,9 +176,12 @@ pub fn update(conn: &mut Connection, id: &str, patch: &Patch) -> AppResult<Ref> 
     let value = check_value(patch.value.as_deref().unwrap_or(&current.value))?;
     let key = checked_key(conn, kind, &value, Some(id))?;
     let tx = conn.transaction()?;
-    set(&tx, id, "kind", &kind.as_str())?;
-    set(&tx, id, "value", &value)?;
-    set(&tx, id, "url_key", &key)?;
+    // Only when asked: a kind this version doesn't know must survive an edit of the note.
+    if patch.kind.is_some() || patch.value.is_some() {
+        set(&tx, id, "kind", &kind.as_str())?;
+        set(&tx, id, "value", &value)?;
+        set(&tx, id, "url_key", &key)?;
+    }
     if let Some(title) = &patch.title {
         set(&tx, id, "title", &kept_title(title.as_deref()))?;
     }

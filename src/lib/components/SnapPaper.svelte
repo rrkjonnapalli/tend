@@ -56,7 +56,7 @@
     padding: 28px 18px 12px;
     background: var(--paper-kraft);
     box-shadow: var(--paper-shadow);
-    font: 400 13px/20px var(--font-mono);
+    font: var(--text-code);
   }
 
   .lined {

@@ -149,12 +149,12 @@
 
   h1 {
     margin: 0;
-    font: 500 28px/36px var(--font-heading);
+    font: var(--text-heading);
   }
 
   h2 {
     margin: 0;
-    font: 500 15px/20px var(--font-heading);
+    font: var(--text-section);
   }
 
   .meta {

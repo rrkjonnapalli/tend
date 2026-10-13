@@ -16,13 +16,16 @@ mod tests;
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 use super::shards::{Row, Snapshot};
 use crate::enums::rows::POSITION;
 use crate::enums::{EnumKind, SourceType, TargetType};
 use crate::names;
 use crate::words;
+
+/// `tend_enums.meta`: JSON whose keys (colour, position) change independently.
+const META: &str = "meta";
 
 /// The three versions a merge works from: the last agreed state and each side's.
 #[derive(Clone, Copy)]
@@ -102,6 +105,44 @@ fn merge_row(row: Sides<Option<&Row>>) -> Option<Row> {
     }
 }
 
+/// One value from the side that changed it since the base; changed on both, the newer row's.
+fn three_way<'a, T: PartialEq>(
+    value: Sides<Option<&'a T>>,
+    winner: Option<&'a T>,
+) -> Option<&'a T> {
+    if value.local == value.base {
+        value.remote
+    } else if value.remote == value.base {
+        value.local
+    } else {
+        winner
+    }
+}
+
+/// An enum row's `meta` (JSON text) merged key by key, so a recolor on one device and a reorder
+/// on another both survive. `None` when a side isn't a JSON object: the newer row's is kept whole.
+fn merge_meta(meta: Sides<Option<&Value>>, winner: Option<&Value>) -> Option<Value> {
+    let parse =
+        |side: Option<&Value>| serde_json::from_str::<Map<String, Value>>(side?.as_str()?).ok();
+    let base = parse(meta.base)?;
+    let local = parse(meta.local)?;
+    let remote = parse(meta.remote)?;
+    let winner = parse(winner)?;
+    let keys: BTreeSet<&String> = local.keys().chain(remote.keys()).collect();
+    let mut out = Map::new();
+    for key in keys {
+        let sides = Sides {
+            base: base.get(key),
+            local: local.get(key),
+            remote: remote.get(key),
+        };
+        if let Some(value) = three_way(sides, winner.get(key)) {
+            out.insert(key.clone(), value.clone());
+        }
+    }
+    serde_json::to_string(&out).ok().map(Value::String)
+}
+
 /// Each column from the side that changed it since the base; a column both changed comes from
 /// the newer row. So a rename on one device and an edit on another both survive.
 fn merge_columns(row: Sides<&Row>) -> Row {
@@ -116,18 +157,19 @@ fn merge_columns(row: Sides<&Row>) -> Row {
     let columns: BTreeSet<&String> = row.local.keys().chain(row.remote.keys()).collect();
     let mut out = Row::new();
     for column in columns {
-        let was = row.base.get(column);
-        let mine = row.local.get(column);
-        let theirs = row.remote.get(column);
-        let value = if mine == was {
-            theirs
-        } else if theirs == was {
-            mine
+        let sides = Sides {
+            base: row.base.get(column),
+            local: row.local.get(column),
+            remote: row.remote.get(column),
+        };
+        let whole = three_way(sides, winner.get(column)).cloned();
+        let value = if column == META {
+            merge_meta(sides, winner.get(column)).or(whole)
         } else {
-            winner.get(column)
+            whole
         };
         if let Some(value) = value {
-            out.insert(column.clone(), value.clone());
+            out.insert(column.clone(), value);
         }
     }
     out

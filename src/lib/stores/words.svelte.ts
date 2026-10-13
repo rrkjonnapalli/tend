@@ -1,6 +1,7 @@
 // Every word and word kind, for the Words list and the kind pickers.
 import { wordsAPI } from '#lib/api/words.ts';
 import type { Word, WordKind } from '#lib/types/word.type.ts';
+import { latestOnly } from '#lib/util/latest.ts';
 
 class WordsStore {
   words = $state<Word[]>([]);
@@ -8,12 +9,14 @@ class WordsStore {
   /** False until the first load, so an empty list isn't shown as "Nothing here yet". */
   loaded = $state(false);
 
-  load = async () => {
-    const [words, kinds] = await Promise.all([wordsAPI.list(), wordsAPI.kinds()]);
-    this.words = words;
-    this.kinds = kinds;
-    this.loaded = true;
-  };
+  load = latestOnly(
+    () => Promise.all([wordsAPI.list(), wordsAPI.kinds()]),
+    ([words, kinds]) => {
+      this.words = words;
+      this.kinds = kinds;
+      this.loaded = true;
+    },
+  );
 
   byId = (id: string | null) => (id ? this.words.find((w) => w.id === id) : undefined);
 

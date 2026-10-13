@@ -186,8 +186,11 @@ pub fn update(conn: &mut Connection, id: &str, patch: &Patch) -> AppResult<Snap>
     if let Some(stack) = &patch.stack_id {
         set(&tx, id, "stack_id", stack)?;
     }
-    set(&tx, id, "paper", &paper.as_str())?;
-    set(&tx, id, "color", &color)?;
+    // Only when asked: a paper this version doesn't know must survive a pin or a move.
+    if patch.paper.is_some() || patch.color.is_some() {
+        set(&tx, id, "paper", &paper.as_str())?;
+        set(&tx, id, "color", &color)?;
+    }
     if let Some(pinned) = patch.pinned {
         set(&tx, id, "pinned", &pinned)?;
     }

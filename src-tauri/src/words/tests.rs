@@ -166,18 +166,18 @@ fn a_reply_without_definitions_is_no_entry_and_junk_is_an_error() {
 #[test]
 fn kinds_can_be_added_renamed_ordered_and_deleted_when_unused() {
     let mut conn = open_memory();
-    let slang = kind_add(&conn, " Slang ", "SLANG").unwrap();
+    let slang = kind_add(&conn, "SLANG", " Slang ").unwrap();
     assert_eq!(
         (slang.label.as_str(), slang.position, slang.lookup),
         ("Slang", 7, false)
     );
-    assert!(kind_add(&conn, "slang", "SLANG_2")
+    assert!(kind_add(&conn, "SLANG_2", "slang")
         .unwrap_err()
         .is(errors::WORD_KIND_LABEL_TAKEN));
-    assert!(kind_add(&conn, "Other slang", "SLANG")
+    assert!(kind_add(&conn, "SLANG", "Other slang")
         .unwrap_err()
         .is(errors::WORD_KIND_VALUE_TAKEN));
-    assert!(kind_add(&conn, "Odd", "odd value")
+    assert!(kind_add(&conn, "odd value", "Odd")
         .unwrap_err()
         .is(errors::WORD_KIND_VALUE));
     assert_eq!(

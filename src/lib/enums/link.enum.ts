@@ -1,4 +1,5 @@
-// The record a link starts from (`tend_links.source_type`). Same values as src-tauri/src/enums.
+// The records the UI attaches files to (`tend_links.source_type`). Same values as src-tauri/src/enums,
+// which also has WORD, SNAP and REF.
 export const SOURCE_TYPE = {
   task: 'TASK',
   note: 'NOTE',

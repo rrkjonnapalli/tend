@@ -4,7 +4,7 @@ import type { BoardItem, Snap, Stack } from '#lib/types/snap.type.ts';
 import { plural } from './plural.ts';
 import { textMatches } from './search.ts';
 
-export const UNTITLED_STACK = 'Untitled stack';
+const UNTITLED_STACK = 'Untitled stack';
 /** The editor's stack picker choice "+ New stack": one is made where the board is. */
 export const NEW_STACK = 'new';
 /** The board itself, as the path and the stack picker name it. */
@@ -131,8 +131,8 @@ export function stackTree(stacks: Stack[]): { stack: Stack; depth: number }[] {
   const walk = (parent: string | null, depth: number) => {
     for (const stack of stacks.filter((s) => s.parentId === parent)) {
       out.push({ stack, depth });
-      // A cycle (only mid-sync) would recurse forever; no stack appears twice.
-      if (out.filter((o) => o.stack.id === stack.id).length === 1) walk(stack.id, depth + 1);
+      // No guard needed: stacks in a cycle (only mid-sync) have no path from the board, so they are never reached.
+      walk(stack.id, depth + 1);
     }
   };
   walk(null, 1);
