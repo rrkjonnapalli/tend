@@ -53,7 +53,13 @@ pub fn task_update(
 
 #[tauri::command(async)]
 pub fn task_move(state: State<AppState>, id: String, target: String) -> AppResult<tasks::Task> {
-    state.with(|db, _| tasks::move_to(db, &id, &target))
+    state.with(|db, _| {
+        let change = tasks::Move {
+            id: &id,
+            target: &target,
+        };
+        tasks::move_to(db, &change)
+    })
 }
 
 #[tauri::command(async)]
@@ -68,7 +74,14 @@ pub fn my_day_set(
     day: String,
     included: Option<bool>,
 ) -> AppResult<()> {
-    state.with(|db, _| tasks::set_my_day(db, &id, &day, included))
+    state.with(|db, _| {
+        let choice = tasks::DayChoice {
+            id: &id,
+            day: &day,
+            included,
+        };
+        tasks::set_my_day(db, &choice)
+    })
 }
 
 #[tauri::command(async)]

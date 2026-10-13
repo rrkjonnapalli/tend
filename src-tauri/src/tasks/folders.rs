@@ -4,9 +4,13 @@
 use rusqlite::{params, Connection, OptionalExtension, Transaction};
 
 use crate::db::UNDER;
-use crate::error::{errors, AppResult};
+use crate::error::{errors, AppError, AppResult};
 use crate::names;
 use crate::util::{new_id, now_ms};
+
+fn not_found() -> AppError {
+    errors::NOT_FOUND.with("Folder was not found")
+}
 
 fn exists(conn: &Connection, path: &str) -> AppResult<bool> {
     let found = conn
@@ -90,17 +94,21 @@ pub fn move_to(conn: &mut Connection, path: &str, target: &str) -> AppResult<Str
 }
 
 fn relocate(tx: &Transaction, old: &str, new: &str) -> AppResult<()> {
-    if old.is_empty() || !exists(tx, old)? {
-        return Err(errors::NOT_FOUND.with("Folder was not found"));
+    // The root ('') is under every path, so it is never the folder meant.
+    if old.is_empty() {
+        return Err(not_found());
     }
     let now = now_ms();
-    tx.execute(
+    let moved = tx.execute(
         &format!(
             "UPDATE task_folders SET path = ?2 || substr(path, length(?1) + 1), updated_at = ?3
              WHERE {UNDER}"
         ),
         params![old, new, now],
     )?;
+    if moved == 0 {
+        return Err(not_found());
+    }
     // Tasks followed through ON UPDATE CASCADE; mark them changed so sync carries the new paths.
     tx.execute(
         &format!("UPDATE tasks SET updated_at = ?2 WHERE {UNDER}"),
@@ -116,7 +124,10 @@ pub fn delete(conn: &mut Connection, path: &str) -> AppResult<()> {
     }
     let tx = conn.transaction()?;
     tx.execute(&format!("DELETE FROM tasks WHERE {UNDER}"), [path])?;
-    tx.execute(&format!("DELETE FROM task_folders WHERE {UNDER}"), [path])?;
+    let deleted = tx.execute(&format!("DELETE FROM task_folders WHERE {UNDER}"), [path])?;
+    if deleted == 0 {
+        return Err(not_found());
+    }
     tx.commit()?;
     Ok(())
 }

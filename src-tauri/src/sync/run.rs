@@ -17,6 +17,7 @@ use super::git::{Kept, Remote, Repo};
 use super::reconcile::{reconcile, Sides};
 use super::shards::{self, Snapshot};
 use super::state;
+use crate::db::{columns, tables};
 use crate::error::{errors, AppResult};
 use crate::files;
 use crate::names;
@@ -99,9 +100,9 @@ fn managed_files(repo: &Repo, commit: Oid) -> AppResult<BTreeMap<String, String>
     }
     let rows = rows_at(repo, commit)?;
     let text = |row: &shards::Row, c: &str| row.get(c).and_then(|v| v.as_str()).map(String::from);
-    let files = rows["attachments"]
+    let files = rows[tables::ATTACHMENTS]
         .values()
-        .filter_map(|row| Some((text(row, "path")?, text(row, "sha256")?)))
+        .filter_map(|row| Some((text(row, columns::PATH)?, text(row, columns::SHA256)?)))
         .collect();
     Ok(files)
 }

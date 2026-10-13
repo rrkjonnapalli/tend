@@ -132,6 +132,8 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
             commands::notes::item_move,
             commands::notes::item_delete,
             commands::tags::tags_all,
+            commands::tags::tags_overview,
+            commands::tags::tag_set_status,
             commands::tags::note_tags_set,
             commands::labels::labels_list,
             commands::labels::label_add,

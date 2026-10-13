@@ -55,3 +55,10 @@ fn overdue_timers_show_once_after_launch() {
     assert!(finished_while_closed(&mut conn).unwrap().is_empty());
     assert_eq!(list(&conn).unwrap().len(), 1);
 }
+
+#[test]
+fn a_timer_that_isnt_there_is_not_found() {
+    let conn = open_memory();
+    assert!(add_minute(&conn, "nope").unwrap_err().is(errors::NOT_FOUND));
+    assert!(cancel(&conn, "nope").unwrap_err().is(errors::NOT_FOUND));
+}

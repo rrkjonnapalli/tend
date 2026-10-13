@@ -35,7 +35,12 @@ pub fn label(conn: &Connection, label: &str, except: Option<&str>) -> AppResult<
     if label.is_empty() {
         return Err(errors::STATUS_LABEL_EMPTY.err());
     }
-    if rows::label_taken(conn, KIND, label, except)? {
+    let wanted = rows::LabelUse {
+        kind: KIND,
+        label,
+        except,
+    };
+    if rows::label_taken(conn, &wanted)? {
         return Err(errors::STATUS_LABEL_TAKEN.err());
     }
     Ok(label.to_string())

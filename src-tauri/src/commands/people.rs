@@ -13,7 +13,13 @@ pub fn people_list(state: State<AppState>) -> AppResult<Vec<people::PersonRow>> 
 
 #[tauri::command(async)]
 pub fn person_create(state: State<AppState>, first: String, last: String) -> AppResult<String> {
-    state.with(|db, _| people::create(db, &first, &last))
+    state.with(|db, _| {
+        let new = people::NewPerson {
+            first: &first,
+            last: &last,
+        };
+        people::create(db, &new)
+    })
 }
 
 #[tauri::command(async)]
@@ -43,7 +49,15 @@ pub fn contact_add(
     value: String,
     label: String,
 ) -> AppResult<()> {
-    state.with(|db, _| people::contact_add(db, &person, &kind, &value, &label))
+    state.with(|db, _| {
+        let new = people::NewContact {
+            person: &person,
+            kind: &kind,
+            value: &value,
+            label: &label,
+        };
+        people::contact_add(db, &new)
+    })
 }
 
 #[tauri::command(async)]
@@ -53,7 +67,14 @@ pub fn contact_update(
     value: String,
     label: String,
 ) -> AppResult<()> {
-    state.with(|db, _| people::contact_update(db, &id, &value, &label))
+    state.with(|db, _| {
+        let edit = people::ContactEdit {
+            id: &id,
+            value: &value,
+            label: &label,
+        };
+        people::contact_update(db, &edit)
+    })
 }
 
 #[tauri::command(async)]

@@ -69,9 +69,9 @@ fn local_columns_and_device_settings_stay_out() {
     )
     .unwrap();
     let snap = snapshot(&conn).unwrap();
-    let settings: Vec<&String> = snap["settings"].keys().collect();
+    let settings: Vec<&String> = snap[tables::SETTINGS].keys().collect();
     assert_eq!(settings, vec!["tasks.root_name"]);
-    let root = &snap["note_folders"]["root"];
+    let root = &snap[tables::NOTE_FOLDERS]["root"];
     assert!(!root.contains_key("missing_at"));
 }
 
@@ -139,10 +139,10 @@ fn old_task_keys_are_rekeyed_as_migration_2_does() {
         ("t2".to_string(), task("U")),
         ("t3".to_string(), task("V")),
     ]);
-    snapshot.insert("tasks", tasks);
+    snapshot.insert(tables::TASKS, tasks);
     rekey_tasks(&mut snapshot);
     let key = |id: &str| {
-        snapshot["tasks"][id]["order_key"]
+        snapshot[tables::TASKS][id]["order_key"]
             .as_str()
             .unwrap()
             .to_string()

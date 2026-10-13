@@ -15,22 +15,21 @@ use rusqlite::types::Value as SqlValue;
 use rusqlite::{params_from_iter, Transaction};
 use serde_json::Value;
 
+use crate::db::columns::{ID, PATH, TITLE, URL_KEY};
+use crate::db::tables;
 use crate::error::{errors, AppResult};
 use crate::sync::shards::{table_names, Row, Snapshot};
 
 /// Written before anything is deleted (see step 2 above), and only then.
-const FIRST: &str = "tasks";
-
-/// Its rows go with their record, attachment or enum row (the schema's `*_drop_links` triggers).
-const LINKS: &str = "tend_links";
+const FIRST: &str = tables::TASKS;
 
 /// Columns that must stay unique and can change on an existing row.
 const UNIQUE_COLUMNS: &[(&str, &str)] = &[
-    ("words", "title"),
-    ("refs", "url_key"),
-    ("attachments", "path"),
-    ("note_folders", "path"),
-    ("task_folders", "path"),
+    (tables::WORDS, TITLE),
+    (tables::REFS, URL_KEY),
+    (tables::ATTACHMENTS, PATH),
+    (tables::NOTE_FOLDERS, PATH),
+    (tables::TASK_FOLDERS, PATH),
 ];
 
 /// Column names go into the SQL text, so a row from the remote may only use plain ones
@@ -90,12 +89,13 @@ fn delete_gone(
     Ok(())
 }
 
-/// The ids of the links a trigger dropped while gone rows were deleted (step 3).
+/// The ids of the links a trigger dropped while gone rows were deleted (step 3): link rows go with
+/// their record, attachment or enum row (the schema's `*_drop_links` triggers).
 fn dropped_links(tx: &Transaction, table: &str, local: &Snapshot) -> AppResult<BTreeSet<String>> {
-    if table != LINKS {
+    if table != tables::LINKS {
         return Ok(BTreeSet::new());
     }
-    let mut left = tx.prepare(&format!("SELECT id FROM {LINKS}"))?;
+    let mut left = tx.prepare(&format!("SELECT {ID} FROM {}", tables::LINKS))?;
     let left: BTreeSet<String> = left
         .query_map([], |r| r.get(0))?
         .collect::<Result<_, _>>()?;
@@ -153,7 +153,7 @@ fn park_unique(
 
 /// Returns how many rows it changed: none when the row isn't there.
 fn update(tx: &Transaction, table: &str, row: &Row) -> AppResult<usize> {
-    let columns: Vec<&String> = row.keys().filter(|c| *c != "id").collect();
+    let columns: Vec<&String> = row.keys().filter(|c| *c != ID).collect();
     let sets: Vec<String> = columns
         .iter()
         .enumerate()
@@ -165,7 +165,7 @@ fn update(tx: &Transaction, table: &str, row: &Row) -> AppResult<usize> {
         columns.len() + 1
     );
     let mut values: Vec<SqlValue> = columns.iter().map(|c| to_sql(&row[*c])).collect();
-    values.push(to_sql(&row["id"]));
+    values.push(to_sql(&row[ID]));
     Ok(tx.execute(&sql, params_from_iter(values))?)
 }
 

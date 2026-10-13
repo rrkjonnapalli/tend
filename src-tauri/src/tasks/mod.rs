@@ -5,12 +5,13 @@ mod folders;
 #[cfg(test)]
 mod tests;
 
-use rusqlite::{params, Connection, OptionalExtension, ToSql, Transaction};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
-use crate::error::{errors, AppResult};
+use crate::db::{columns, tables, Returning, Update};
+use crate::error::{errors, AppError, AppResult};
 use crate::names;
-use crate::statuses::{DONE, FIRST};
+use crate::statuses::{self, DONE, FIRST};
 use crate::util::{new_id, now_ms};
 
 pub use folders::{
@@ -95,6 +96,16 @@ fn to_task(r: &rusqlite::Row) -> rusqlite::Result<Task> {
     })
 }
 
+/// What a write to `tasks` answers with.
+const WRITTEN: Returning<Task> = Returning {
+    columns: COLS,
+    map: to_task,
+};
+
+fn not_found() -> AppError {
+    errors::NOT_FOUND.with("Task was not found")
+}
+
 pub fn get(conn: &Connection, id: &str) -> AppResult<Task> {
     conn.query_row(
         &format!("SELECT {COLS} FROM tasks WHERE id = ?1"),
@@ -102,7 +113,7 @@ pub fn get(conn: &Connection, id: &str) -> AppResult<Task> {
         to_task,
     )
     .optional()?
-    .ok_or_else(|| errors::NOT_FOUND.with("Task was not found"))
+    .ok_or_else(not_found)
 }
 
 pub fn description(conn: &Connection, id: &str) -> AppResult<String> {
@@ -160,51 +171,51 @@ pub fn create(conn: &mut Connection, new: &NewTask) -> AppResult<Task> {
         None => names::accept_path(&new.path)?,
     };
     let status = new.status.as_deref().unwrap_or(FIRST);
+    statuses::check_active(conn, status)?;
     let now = now_ms();
     let completed_at = (status == DONE).then_some(now);
-    let id = new_id();
     let tx = conn.transaction()?;
     folders::ensure(&tx, &path)?;
-    tx.execute(
-        "INSERT INTO tasks (id, path, parent_id, title, status, order_key, due_date, created_at, updated_at, completed_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, ?9)",
-        params![id, path, new.parent_id, title, status, new.order_key, new.due_date, now, completed_at],
+    let added = tx.query_row(
+        &format!(
+            "INSERT INTO tasks (id, path, parent_id, title, status, order_key, due_date,
+                                created_at, updated_at, completed_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, ?9) RETURNING {COLS}"
+        ),
+        params![
+            new_id(),
+            path,
+            new.parent_id,
+            title,
+            status,
+            new.order_key,
+            new.due_date,
+            now,
+            completed_at
+        ],
+        to_task,
     )?;
     tx.commit()?;
-    get(conn, &id)
+    Ok(added)
 }
 
-pub fn update(conn: &mut Connection, id: &str, patch: &Patch) -> AppResult<Task> {
+pub fn update(conn: &Connection, id: &str, patch: &Patch) -> AppResult<Task> {
     if let Some(title) = &patch.title {
         check_title(title)?;
     }
     check_due(new_due(patch))?;
-    let now = now_ms();
-    let tx = conn.transaction()?;
-    if let Some(title) = &patch.title {
-        set(&tx, id, "title", &title.trim())?;
-    }
+    let mut update = Update::new(tables::TASKS);
+    update.set_some(columns::TITLE, patch.title.as_deref().map(str::trim));
     if let Some(status) = &patch.status {
-        set_status(&tx, id, status, now)?;
+        statuses::check_active(conn, status)?;
+        set_status(&mut update, status);
     }
-    if let Some(text) = &patch.description {
-        set(&tx, id, "description", text)?;
-    }
-    if let Some(due) = &patch.due_date {
-        set(&tx, id, "due_date", due)?;
-    }
-    if let Some(time) = &patch.due_time {
-        set(&tx, id, "due_time", time)?;
-    }
-    if let Some(who) = &patch.assignee_id {
-        set(&tx, id, "assignee_id", who)?;
-    }
-    if let Some(key) = &patch.order_key {
-        set(&tx, id, "order_key", key)?;
-    }
-    set(&tx, id, "updated_at", &now)?;
-    tx.commit()?;
-    get(conn, id)
+    update.set_some("description", patch.description.as_ref());
+    update.set_some("due_date", patch.due_date.as_ref());
+    update.set_some("due_time", patch.due_time.as_ref());
+    update.set_some("assignee_id", patch.assignee_id.as_ref());
+    update.set_some(columns::ORDER_KEY, patch.order_key.as_ref());
+    update.run(conn, id, WRITTEN)?.ok_or_else(not_found)
 }
 
 /// The due date and time a patch sets (`None` where it leaves or clears them).
@@ -225,53 +236,63 @@ fn check_due((date, time): (Option<&str>, Option<&str>)) -> AppResult<()> {
     Ok(())
 }
 
-/// Writes one column. `column` is always one of the literals in `update`, never user input.
-fn set(tx: &Transaction, id: &str, column: &'static str, value: &dyn ToSql) -> AppResult<()> {
-    tx.execute(
-        &format!("UPDATE tasks SET {column} = ?1 WHERE id = ?2"),
-        params![value, id],
-    )?;
-    Ok(())
+/// Moving into Done stamps `completed_at` (kept if it was already done); leaving Done clears it.
+fn set_status<'a>(update: &mut Update<'a>, status: &'a str) {
+    update.set(columns::STATUS, status);
+    if status == DONE {
+        update.set_if_null("completed_at", now_ms());
+    } else {
+        update.set("completed_at", None::<i64>);
+    }
 }
 
-/// Moving into Done stamps `completed_at` (kept if it was already done); leaving Done clears it.
-fn set_status(tx: &Transaction, id: &str, status: &str, now: i64) -> AppResult<()> {
-    tx.execute(
-        "UPDATE tasks SET status = ?1,
-           completed_at = CASE WHEN ?1 = ?2 THEN coalesce(completed_at, ?3) ELSE NULL END
-         WHERE id = ?4",
-        params![status, DONE, now, id],
-    )?;
-    Ok(())
+/// A task and the folder it moves to.
+pub struct Move<'a> {
+    pub id: &'a str,
+    pub target: &'a str,
 }
 
 /// Moves a task, and all its subtasks, to another folder.
-pub fn move_to(conn: &mut Connection, id: &str, target: &str) -> AppResult<Task> {
-    let task = get(conn, id)?;
+pub fn move_to(conn: &mut Connection, change: &Move) -> AppResult<Task> {
+    // The task as it is says whether it may move: a subtask stays with its parent.
+    let task = get(conn, change.id)?;
     if task.parent_id.is_some() {
         return Err(errors::SUBTASK_MOVE.err());
     }
-    let target = names::accept_path(target)?;
+    let target = names::accept_path(change.target)?;
     let tx = conn.transaction()?;
     folders::ensure(&tx, &target)?;
     tx.execute(
         "WITH RECURSIVE tree(id) AS (
            SELECT ?1 UNION ALL SELECT t.id FROM tasks t JOIN tree ON t.parent_id = tree.id)
          UPDATE tasks SET path = ?2, updated_at = ?3 WHERE id IN (SELECT id FROM tree)",
-        params![id, target, now_ms()],
+        params![change.id, target, now_ms()],
     )?;
     tx.commit()?;
-    get(conn, id)
+    Ok(Task {
+        path: target,
+        ..task
+    })
 }
 
 pub fn delete(conn: &Connection, id: &str) -> AppResult<()> {
-    conn.execute("DELETE FROM tasks WHERE id = ?1", [id])?;
+    let deleted = conn.execute("DELETE FROM tasks WHERE id = ?1", [id])?;
+    if deleted == 0 {
+        return Err(not_found());
+    }
     Ok(())
 }
 
-/// Adds the task to My day for `day` (`Some(true)`), removes it (`Some(false)`), or drops the
-/// manual choice so the default (due today) applies again (`None`).
-pub fn set_my_day(conn: &Connection, id: &str, day: &str, included: Option<bool>) -> AppResult<()> {
+/// A task's manual My day choice for one day: in (`Some(true)`), out (`Some(false)`), or none, so
+/// the default (due today) applies again (`None`).
+pub struct DayChoice<'a> {
+    pub id: &'a str,
+    pub day: &'a str,
+    pub included: Option<bool>,
+}
+
+pub fn set_my_day(conn: &Connection, choice: &DayChoice) -> AppResult<()> {
+    let DayChoice { id, day, included } = *choice;
     match included {
         Some(include) => conn.execute(
             "INSERT INTO my_day (id, task_id, day, included, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
@@ -279,6 +300,7 @@ pub fn set_my_day(conn: &Connection, id: &str, day: &str, included: Option<bool>
                updated_at = excluded.updated_at",
             params![new_id(), id, day, include, now_ms()],
         )?,
+        // No choice to drop is fine: the default already applies.
         None => conn.execute(
             "DELETE FROM my_day WHERE task_id = ?1 AND day = ?2",
             params![id, day],

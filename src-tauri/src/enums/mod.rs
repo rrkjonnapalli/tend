@@ -6,6 +6,9 @@ pub mod rows;
 
 use serde::{Deserialize, Serialize};
 
+use crate::db::tables;
+use crate::error::{errors, AppError};
+
 #[cfg(test)]
 mod tests;
 
@@ -25,6 +28,52 @@ impl EnumKind {
             EnumKind::TaskLabel => "TASK_LABEL",
             EnumKind::WordKind => "WORD_KIND",
             EnumKind::Tag => "TAG",
+        }
+    }
+
+    /// The error for a row of this kind that isn't there.
+    pub fn not_found(self) -> AppError {
+        let message = match self {
+            EnumKind::TaskStatus => "Status was not found",
+            EnumKind::TaskLabel => "Label was not found",
+            EnumKind::WordKind => "Word kind was not found",
+            EnumKind::Tag => "Tag was not found",
+        };
+        errors::NOT_FOUND.with(message)
+    }
+
+    /// The error for using a blocked row of this kind.
+    pub fn blocked(self) -> AppError {
+        match self {
+            EnumKind::Tag => errors::TAG_BLOCKED.err(),
+            _ => errors::ENUM_BLOCKED.err(),
+        }
+    }
+}
+
+/// Whether a row can be used. A blocked row stays in its list but can't be put on anything new,
+/// and blocking it takes it off everything that carried it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum EnumStatus {
+    Active,
+    Blocked,
+}
+
+impl EnumStatus {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            EnumStatus::Active => "ACTIVE",
+            EnumStatus::Blocked => "BLOCKED",
+        }
+    }
+
+    /// A stored value; anything but blocked reads as active.
+    pub fn parse(text: &str) -> EnumStatus {
+        if text == EnumStatus::Blocked.as_str() {
+            EnumStatus::Blocked
+        } else {
+            EnumStatus::Active
         }
     }
 }
@@ -67,13 +116,13 @@ impl SourceType {
     /// The table whose rows a link of this type starts from.
     pub const fn table(self) -> &'static str {
         match self {
-            SourceType::Task => "tasks",
-            SourceType::Note => "notes",
-            SourceType::Comment => "task_comments",
-            SourceType::Person => "people",
-            SourceType::Word => "words",
-            SourceType::Snap => "snaps",
-            SourceType::Ref => "refs",
+            SourceType::Task => tables::TASKS,
+            SourceType::Note => tables::NOTES,
+            SourceType::Comment => tables::TASK_COMMENTS,
+            SourceType::Person => tables::PEOPLE,
+            SourceType::Word => tables::WORDS,
+            SourceType::Snap => tables::SNAPS,
+            SourceType::Ref => tables::REFS,
         }
     }
 

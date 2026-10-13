@@ -74,7 +74,7 @@ fn start() -> Snapshot {
     for table in super::super::shards::table_names() {
         s.insert(table, Rows::new());
     }
-    let enums = s.get_mut("tend_enums").unwrap();
+    let enums = s.get_mut(tables::ENUMS).unwrap();
     for (value, label, position) in [("NOT_STARTED", "Not started", 0), ("DONE", "Done", 1000)] {
         let id = format!("TASK_STATUS:{value}");
         let meta = json!({ "position": position }).to_string();
@@ -83,7 +83,7 @@ fn start() -> Snapshot {
             row(json!({ "id": id, "kind": EnumKind::TaskStatus.as_str(), "value": value, "label": label, "meta": meta, "updated_at": 0 })),
         );
     }
-    for table in ["task_folders", "note_folders"] {
+    for table in [tables::TASK_FOLDERS, tables::NOTE_FOLDERS] {
         let root = row(json!({ "id": "root", "path": "", "updated_at": 0 }));
         s.get_mut(table).unwrap().insert("root".into(), root);
     }
@@ -218,13 +218,13 @@ fn add_person(w: &mut World, d: usize) {
     let person = row(json!({ "id": id, "first_name": "Ann", "updated_at": at }));
     w.devices[d]
         .snap
-        .get_mut("people")
+        .get_mut(tables::PEOPLE)
         .unwrap()
         .insert(id, person);
 }
 
 fn edit_person(w: &mut World, d: usize) {
-    let ids = keys(&w.devices[d].snap, "people");
+    let ids = keys(&w.devices[d].snap, tables::PEOPLE);
     let Some(id) = w.rng.pick(&ids).cloned() else {
         return;
     };
@@ -232,7 +232,7 @@ fn edit_person(w: &mut World, d: usize) {
     let name = ["Bo", "Cy", "Di"][w.rng.below(3)];
     let p = w.devices[d]
         .snap
-        .get_mut("people")
+        .get_mut(tables::PEOPLE)
         .unwrap()
         .get_mut(&id)
         .unwrap();
@@ -241,15 +241,15 @@ fn edit_person(w: &mut World, d: usize) {
 }
 
 fn delete_person(w: &mut World, d: usize) {
-    let ids = keys(&w.devices[d].snap, "people");
+    let ids = keys(&w.devices[d].snap, tables::PEOPLE);
     let Some(id) = w.rng.pick(&ids).cloned() else {
         return;
     };
     w.deleted.insert(id.clone());
     let snap = &mut w.devices[d].snap;
-    snap.get_mut("people").unwrap().remove(&id);
+    snap.get_mut(tables::PEOPLE).unwrap().remove(&id);
     // ON DELETE SET NULL, without touching updated_at.
-    for task in snap.get_mut("tasks").unwrap().values_mut() {
+    for task in snap.get_mut(tables::TASKS).unwrap().values_mut() {
         if text(task, "assignee_id") == Some(id.as_str()) {
             task.insert("assignee_id".into(), Value::Null);
         }
@@ -260,7 +260,7 @@ const FOLDERS: [&str; 6] = ["a", "b", "c", "a/x", "b/y", "a/x/z"];
 
 fn add_task_folder(w: &mut World, d: usize) {
     let path = *w.rng.pick(&FOLDERS).unwrap();
-    let paths = texts(&w.devices[d].snap, "task_folders", "path");
+    let paths = texts(&w.devices[d].snap, tables::TASK_FOLDERS, "path");
     let parent = names::parent(path).to_string();
     if paths.contains(&path.to_string()) || !paths.contains(&parent) {
         return;
@@ -270,13 +270,13 @@ fn add_task_folder(w: &mut World, d: usize) {
     let folder = row(json!({ "id": id, "path": path, "updated_at": at }));
     w.devices[d]
         .snap
-        .get_mut("task_folders")
+        .get_mut(tables::TASK_FOLDERS)
         .unwrap()
         .insert(id, folder);
 }
 
 fn rename_task_folder(w: &mut World, d: usize) {
-    let folders: Vec<(String, String)> = w.devices[d].snap["task_folders"]
+    let folders: Vec<(String, String)> = w.devices[d].snap[tables::TASK_FOLDERS]
         .iter()
         .map(|(id, r)| (id.clone(), text(r, "path").unwrap().to_string()))
         .filter(|(_, p)| !p.is_empty())
@@ -286,7 +286,7 @@ fn rename_task_folder(w: &mut World, d: usize) {
     };
     let name = ["d", "e", "a"][w.rng.below(3)];
     let new = names::join(names::parent(&old), name);
-    let paths = texts(&w.devices[d].snap, "task_folders", "path");
+    let paths = texts(&w.devices[d].snap, tables::TASK_FOLDERS, "path");
     if paths.contains(&new) {
         return;
     }
@@ -299,7 +299,7 @@ fn rename_task_folder(w: &mut World, d: usize) {
             .map(|rest| format!("{new}/{rest}"))
     };
     let snap = &mut w.devices[d].snap;
-    for table in ["task_folders", "tasks"] {
+    for table in [tables::TASK_FOLDERS, tables::TASKS] {
         for r in snap.get_mut(table).unwrap().values_mut() {
             let Some(next) = moved(text(r, "path").unwrap()) else {
                 continue;
@@ -311,7 +311,7 @@ fn rename_task_folder(w: &mut World, d: usize) {
 }
 
 fn delete_task_folder(w: &mut World, d: usize) {
-    let paths: Vec<String> = texts(&w.devices[d].snap, "task_folders", "path")
+    let paths: Vec<String> = texts(&w.devices[d].snap, tables::TASK_FOLDERS, "path")
         .into_iter()
         .filter(|p| !p.is_empty())
         .collect();
@@ -320,18 +320,18 @@ fn delete_task_folder(w: &mut World, d: usize) {
     };
     let inside = |p: &str| names::is_under(p, &path);
     let snap = &mut w.devices[d].snap;
-    let gone_folders: Vec<String> = snap["task_folders"]
+    let gone_folders: Vec<String> = snap[tables::TASK_FOLDERS]
         .iter()
         .filter(|(_, r)| inside(text(r, "path").unwrap()))
         .map(|(id, _)| id.clone())
         .collect();
-    let gone_tasks: Vec<String> = snap["tasks"]
+    let gone_tasks: Vec<String> = snap[tables::TASKS]
         .iter()
         .filter(|(_, r)| inside(text(r, "path").unwrap()))
         .map(|(id, _)| id.clone())
         .collect();
     for id in gone_folders {
-        snap.get_mut("task_folders").unwrap().remove(&id);
+        snap.get_mut(tables::TASK_FOLDERS).unwrap().remove(&id);
         w.deleted.insert(id);
     }
     for id in gone_tasks {
@@ -341,10 +341,10 @@ fn delete_task_folder(w: &mut World, d: usize) {
 
 fn add_task(w: &mut World, d: usize) {
     let snap = &w.devices[d].snap;
-    let paths = texts(snap, "task_folders", "path");
+    let paths = texts(snap, tables::TASK_FOLDERS, "path");
     let statuses = kind_values(snap, EnumKind::TaskStatus);
-    let people = keys(snap, "people");
-    let tops: Vec<(String, String)> = snap["tasks"]
+    let people = keys(snap, tables::PEOPLE);
+    let tops: Vec<(String, String)> = snap[tables::TASKS]
         .iter()
         .filter(|(_, r)| r["parent_id"].is_null())
         .map(|(id, r)| (id.clone(), text(r, "path").unwrap().to_string()))
@@ -369,11 +369,15 @@ fn add_task(w: &mut World, d: usize) {
         "id": id, "path": path, "parent_id": parent, "title": "T", "status": status,
         "assignee_id": assignee, "order_key": "V", "updated_at": at,
     }));
-    w.devices[d].snap.get_mut("tasks").unwrap().insert(id, task);
+    w.devices[d]
+        .snap
+        .get_mut(tables::TASKS)
+        .unwrap()
+        .insert(id, task);
 }
 
 fn edit_task(w: &mut World, d: usize) {
-    let ids = keys(&w.devices[d].snap, "tasks");
+    let ids = keys(&w.devices[d].snap, tables::TASKS);
     let statuses = kind_values(&w.devices[d].snap, EnumKind::TaskStatus);
     let Some(id) = w.rng.pick(&ids).cloned() else {
         return;
@@ -383,7 +387,7 @@ fn edit_task(w: &mut World, d: usize) {
     let at = w.stamp(d);
     let t = w.devices[d]
         .snap
-        .get_mut("tasks")
+        .get_mut(tables::TASKS)
         .unwrap()
         .get_mut(&id)
         .unwrap();
@@ -394,7 +398,7 @@ fn edit_task(w: &mut World, d: usize) {
 
 /// Deletes a task, its subtasks and everything hanging off them (ON DELETE CASCADE).
 fn remove_task(deleted: &mut BTreeSet<String>, snap: &mut Snapshot, id: &str) {
-    let subs: Vec<String> = snap["tasks"]
+    let subs: Vec<String> = snap[tables::TASKS]
         .iter()
         .filter(|(_, r)| text(r, "parent_id") == Some(id))
         .map(|(id, _)| id.clone())
@@ -402,9 +406,9 @@ fn remove_task(deleted: &mut BTreeSet<String>, snap: &mut Snapshot, id: &str) {
     for sub in subs {
         remove_task(deleted, snap, &sub);
     }
-    snap.get_mut("tasks").unwrap().remove(id);
+    snap.get_mut(tables::TASKS).unwrap().remove(id);
     deleted.insert(id.to_string());
-    for child in ["task_comments", "my_day"] {
+    for child in [tables::TASK_COMMENTS, tables::MY_DAY] {
         let rows = snap.get_mut(child).unwrap();
         let gone: Vec<String> = rows
             .iter()
@@ -417,7 +421,7 @@ fn remove_task(deleted: &mut BTreeSet<String>, snap: &mut Snapshot, id: &str) {
         }
     }
     // The trigger tasks_drop_links.
-    let links = snap.get_mut("tend_links").unwrap();
+    let links = snap.get_mut(tables::LINKS).unwrap();
     let gone: Vec<String> = links
         .iter()
         .filter(|(_, r)| {
@@ -433,7 +437,7 @@ fn remove_task(deleted: &mut BTreeSet<String>, snap: &mut Snapshot, id: &str) {
 }
 
 fn delete_task(w: &mut World, d: usize) {
-    let ids = keys(&w.devices[d].snap, "tasks");
+    let ids = keys(&w.devices[d].snap, tables::TASKS);
     let Some(id) = w.rng.pick(&ids).cloned() else {
         return;
     };
@@ -441,7 +445,7 @@ fn delete_task(w: &mut World, d: usize) {
 }
 
 fn add_comment(w: &mut World, d: usize) {
-    let ids = keys(&w.devices[d].snap, "tasks");
+    let ids = keys(&w.devices[d].snap, tables::TASKS);
     let Some(task) = w.rng.pick(&ids).cloned() else {
         return;
     };
@@ -450,7 +454,7 @@ fn add_comment(w: &mut World, d: usize) {
     let comment = row(json!({ "id": id, "task_id": task, "body": "hi", "updated_at": at }));
     w.devices[d]
         .snap
-        .get_mut("task_comments")
+        .get_mut(tables::TASK_COMMENTS)
         .unwrap()
         .insert(id, comment);
 }
@@ -463,7 +467,7 @@ fn kind_values(snap: &Snapshot, kind: EnumKind) -> Vec<String> {
 }
 
 fn kind_rows(snap: &Snapshot, kind: EnumKind) -> impl Iterator<Item = (&String, &Row)> {
-    snap["tend_enums"]
+    snap[tables::ENUMS]
         .iter()
         .filter(move |(_, r)| text(r, "kind") == Some(kind.as_str()))
 }
@@ -481,14 +485,14 @@ fn ensure_enum(w: &mut World, d: usize, kind: EnumKind, value: &str, label: &str
     }));
     w.devices[d]
         .snap
-        .get_mut("tend_enums")
+        .get_mut(tables::ENUMS)
         .unwrap()
         .insert(id, r);
 }
 
 /// Links a task to an enum value unless it already is.
 fn link(w: &mut World, d: usize, task: String, kind: EnumKind, value: String) {
-    let linked = w.devices[d].snap["tend_links"].values().any(|r| {
+    let linked = w.devices[d].snap[tables::LINKS].values().any(|r| {
         text(r, "source_id") == Some(task.as_str())
             && text(r, "target_kind") == Some(kind.as_str())
             && text(r, "target_value") == Some(value.as_str())
@@ -509,13 +513,13 @@ fn link(w: &mut World, d: usize, task: String, kind: EnumKind, value: String) {
     }));
     w.devices[d]
         .snap
-        .get_mut("tend_links")
+        .get_mut(tables::LINKS)
         .unwrap()
         .insert(id, r);
 }
 
 fn tag_task(w: &mut World, d: usize) {
-    let ids = keys(&w.devices[d].snap, "tasks");
+    let ids = keys(&w.devices[d].snap, tables::TASKS);
     let Some(task) = w.rng.pick(&ids).cloned() else {
         return;
     };
@@ -526,11 +530,15 @@ fn tag_task(w: &mut World, d: usize) {
 }
 
 fn untag_task(w: &mut World, d: usize) {
-    let ids = keys(&w.devices[d].snap, "tend_links");
+    let ids = keys(&w.devices[d].snap, tables::LINKS);
     let Some(id) = w.rng.pick(&ids).cloned() else {
         return;
     };
-    w.devices[d].snap.get_mut("tend_links").unwrap().remove(&id);
+    w.devices[d]
+        .snap
+        .get_mut(tables::LINKS)
+        .unwrap()
+        .remove(&id);
     w.deleted.insert(id);
 }
 
@@ -564,7 +572,7 @@ fn rename_label(w: &mut World, d: usize) {
     let at = w.stamp(d);
     let l = w.devices[d]
         .snap
-        .get_mut("tend_enums")
+        .get_mut(tables::ENUMS)
         .unwrap()
         .get_mut(&id)
         .unwrap();
@@ -573,7 +581,7 @@ fn rename_label(w: &mut World, d: usize) {
 }
 
 fn label_task(w: &mut World, d: usize) {
-    let tasks = keys(&w.devices[d].snap, "tasks");
+    let tasks = keys(&w.devices[d].snap, tables::TASKS);
     let labels = kind_values(&w.devices[d].snap, EnumKind::TaskLabel);
     let (Some(task), Some(label)) = (w.rng.pick(&tasks).cloned(), w.rng.pick(&labels).cloned())
     else {
@@ -585,37 +593,37 @@ fn label_task(w: &mut World, d: usize) {
 fn add_note(w: &mut World, d: usize) {
     let name = ["plan", "idea", "log"][w.rng.below(3)];
     let path = format!("{name}.md");
-    if texts(&w.devices[d].snap, "attachments", "path").contains(&path) {
+    if texts(&w.devices[d].snap, tables::ATTACHMENTS, "path").contains(&path) {
         return;
     }
     let attachment = w.new_id(d, "a");
     let note = w.new_id(d, "n");
     let at = w.stamp(d);
     let snap = &mut w.devices[d].snap;
-    snap.get_mut("attachments").unwrap().insert(
+    snap.get_mut(tables::ATTACHMENTS).unwrap().insert(
         attachment.clone(),
         row(json!({ "id": attachment, "path": path, "name": path, "updated_at": at })),
     );
-    snap.get_mut("notes").unwrap().insert(
+    snap.get_mut(tables::NOTES).unwrap().insert(
         note.clone(),
         row(json!({ "id": note, "attachment_id": attachment, "updated_at": at })),
     );
 }
 
 fn rename_note(w: &mut World, d: usize) {
-    let bodies = texts(&w.devices[d].snap, "notes", "attachment_id");
+    let bodies = texts(&w.devices[d].snap, tables::NOTES, "attachment_id");
     let Some(id) = w.rng.pick(&bodies).cloned() else {
         return;
     };
     let name = ["plan", "idea", "log", "todo"][w.rng.below(4)];
     let path = format!("{name}.md");
-    if texts(&w.devices[d].snap, "attachments", "path").contains(&path) {
+    if texts(&w.devices[d].snap, tables::ATTACHMENTS, "path").contains(&path) {
         return;
     }
     let at = w.stamp(d);
     let a = w.devices[d]
         .snap
-        .get_mut("attachments")
+        .get_mut(tables::ATTACHMENTS)
         .unwrap()
         .get_mut(&id)
         .unwrap();
@@ -625,14 +633,16 @@ fn rename_note(w: &mut World, d: usize) {
 }
 
 fn delete_note(w: &mut World, d: usize) {
-    let ids = keys(&w.devices[d].snap, "notes");
+    let ids = keys(&w.devices[d].snap, tables::NOTES);
     let Some(id) = w.rng.pick(&ids).cloned() else {
         return;
     };
     let snap = &mut w.devices[d].snap;
-    let note = snap.get_mut("notes").unwrap().remove(&id).unwrap();
+    let note = snap.get_mut(tables::NOTES).unwrap().remove(&id).unwrap();
     let attachment = text(&note, "attachment_id").unwrap().to_string();
-    snap.get_mut("attachments").unwrap().remove(&attachment);
+    snap.get_mut(tables::ATTACHMENTS)
+        .unwrap()
+        .remove(&attachment);
     w.deleted.insert(id);
     w.deleted.insert(attachment);
 }
@@ -641,9 +651,9 @@ fn delete_note(w: &mut World, d: usize) {
 
 fn check_rules(s: &Snapshot) {
     let has = |table: &str, id: &str| s[table].contains_key(id);
-    let folder_paths = texts(s, "task_folders", "path");
+    let folder_paths = texts(s, tables::TASK_FOLDERS, "path");
     let statuses = kind_values(s, EnumKind::TaskStatus);
-    for t in s["tasks"].values() {
+    for t in s[tables::TASKS].values() {
         assert!(
             folder_paths.contains(&text(t, "path").unwrap().to_string()),
             "task folder: {t:?}"
@@ -653,16 +663,16 @@ fn check_rules(s: &Snapshot) {
             "task status: {t:?}"
         );
         if let Some(p) = text(t, "parent_id") {
-            assert!(has("tasks", p), "task parent: {t:?}");
+            assert!(has(tables::TASKS, p), "task parent: {t:?}");
         }
         if let Some(p) = text(t, "assignee_id") {
-            assert!(has("people", p), "task assignee: {t:?}");
+            assert!(has(tables::PEOPLE, p), "task assignee: {t:?}");
         }
     }
     for (child, column, parent) in [
-        ("task_comments", "task_id", "tasks"),
-        ("tend_links", "source_id", "tasks"),
-        ("notes", "attachment_id", "attachments"),
+        (tables::TASK_COMMENTS, "task_id", tables::TASKS),
+        (tables::LINKS, "source_id", tables::TASKS),
+        (tables::NOTES, "attachment_id", tables::ATTACHMENTS),
     ] {
         for r in s[child].values() {
             assert!(
@@ -671,26 +681,26 @@ fn check_rules(s: &Snapshot) {
             );
         }
     }
-    for f in texts(s, "task_folders", "path") {
+    for f in texts(s, tables::TASK_FOLDERS, "path") {
         let parent = names::parent(&f).to_string();
         assert!(
             f.is_empty() || folder_paths.contains(&parent),
             "folder parent: {f}"
         );
     }
-    assert_unique(&texts(s, "task_folders", "path"), "task folder paths");
-    assert_unique(&texts(s, "attachments", "path"), "attachment paths");
+    assert_unique(&texts(s, tables::TASK_FOLDERS, "path"), "task folder paths");
+    assert_unique(&texts(s, tables::ATTACHMENTS, "path"), "attachment paths");
     let lower: Vec<String> = kind_rows(s, EnumKind::TaskLabel)
         .map(|(_, r)| text(r, "label").unwrap().to_lowercase())
         .collect();
     assert_unique(&lower, "label names");
-    let enum_keys: Vec<String> = s["tend_enums"]
+    let enum_keys: Vec<String> = s[tables::ENUMS]
         .values()
         .map(|r| format!("{}|{}", text(r, "kind").unwrap(), text(r, "value").unwrap()))
         .collect();
     assert_unique(&enum_keys, "enum kind + value");
     let mut links = Vec::new();
-    for r in s["tend_links"].values() {
+    for r in s[tables::LINKS].values() {
         let kind = r["target_kind"].as_str().unwrap();
         let value = text(r, "target_value").unwrap().to_string();
         assert!(
@@ -762,7 +772,7 @@ fn run(seed: u64) {
     }
     for id in w.people.difference(&w.deleted) {
         assert!(
-            head["people"].contains_key(id),
+            head[tables::PEOPLE].contains_key(id),
             "seed {seed}: person {id} was lost"
         );
     }

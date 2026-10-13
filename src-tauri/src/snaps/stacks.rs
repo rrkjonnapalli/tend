@@ -5,7 +5,7 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde::Serialize;
 
 use crate::db::in_transaction;
-use crate::error::{errors, AppResult};
+use crate::error::{errors, AppError, AppResult};
 use crate::util::{new_id, now_ms};
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -46,29 +46,50 @@ pub fn get(conn: &Connection, id: &str) -> AppResult<Stack> {
         to_stack,
     )
     .optional()?
-    .ok_or_else(|| errors::NOT_FOUND.with("Stack was not found"))
+    .ok_or_else(not_found)
 }
 
-/// Adds a stack inside `parent` (`None`: on the board).
-pub fn create(conn: &Connection, parent: Option<&str>, name: &str) -> AppResult<Stack> {
-    if let Some(parent) = parent {
+fn not_found() -> AppError {
+    errors::NOT_FOUND.with("Stack was not found")
+}
+
+/// A stack to add inside `parent` (`None`: on the board).
+pub struct NewStack<'a> {
+    pub parent: Option<&'a str>,
+    pub name: &'a str,
+}
+
+pub fn create(conn: &Connection, new: &NewStack) -> AppResult<Stack> {
+    if let Some(parent) = new.parent {
         get(conn, parent)?;
     }
-    let id = new_id();
-    conn.execute(
-        "INSERT INTO snap_stacks (id, parent_id, name, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?4)",
-        params![id, parent, name.trim(), now_ms()],
+    let added = conn.query_row(
+        &format!(
+            "INSERT INTO snap_stacks (id, parent_id, name, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?4) RETURNING {COLS}"
+        ),
+        params![new_id(), new.parent, new.name.trim(), now_ms()],
+        to_stack,
     )?;
-    get(conn, &id)
+    Ok(added)
 }
 
-pub fn rename(conn: &Connection, id: &str, name: &str) -> AppResult<Stack> {
-    conn.execute(
-        "UPDATE snap_stacks SET name = ?1, updated_at = ?2 WHERE id = ?3",
-        params![name.trim(), now_ms(), id],
-    )?;
-    get(conn, id)
+/// A stack and the name it gets.
+pub struct Rename<'a> {
+    pub id: &'a str,
+    pub name: &'a str,
+}
+
+pub fn rename(conn: &Connection, change: &Rename) -> AppResult<Stack> {
+    conn.query_row(
+        &format!(
+            "UPDATE snap_stacks SET name = ?1, updated_at = ?2 WHERE id = ?3 RETURNING {COLS}"
+        ),
+        params![change.name.trim(), now_ms(), change.id],
+        to_stack,
+    )
+    .optional()?
+    .ok_or_else(not_found)
 }
 
 /// True when `id` is `ancestor` or sits somewhere inside it. The walk stops after as many steps as
@@ -88,19 +109,28 @@ fn is_within(conn: &Connection, id: &str, ancestor: &str) -> AppResult<bool> {
     Ok(false)
 }
 
-/// Moves the stack inside `parent` (`None`: onto the board).
-pub fn move_to(conn: &Connection, id: &str, parent: Option<&str>) -> AppResult<Stack> {
-    get(conn, id)?;
-    if let Some(parent) = parent {
-        if is_within(conn, parent, id)? {
+/// A stack and where it goes: inside `parent`, or onto the board (`None`).
+pub struct Move<'a> {
+    pub id: &'a str,
+    pub parent: Option<&'a str>,
+}
+
+pub fn move_to(conn: &Connection, change: &Move) -> AppResult<Stack> {
+    if let Some(parent) = change.parent {
+        if is_within(conn, parent, change.id)? {
             return Err(errors::STACK_INTO_SELF.err());
         }
     }
-    conn.execute(
-        "UPDATE snap_stacks SET parent_id = ?1, updated_at = ?2 WHERE id = ?3",
-        params![parent, now_ms(), id],
-    )?;
-    get(conn, id)
+    conn.query_row(
+        &format!(
+            "UPDATE snap_stacks SET parent_id = ?1, updated_at = ?2 WHERE id = ?3
+             RETURNING {COLS}"
+        ),
+        params![change.parent, now_ms(), change.id],
+        to_stack,
+    )
+    .optional()?
+    .ok_or_else(not_found)
 }
 
 /// Removes the stack. Its snaps and sub-stacks move up to its parent.

@@ -13,6 +13,7 @@ use rusqlite::{Connection, Transaction};
 use serde_json::Value;
 
 use super::shards::Snapshot;
+use crate::db::{columns, tables};
 use crate::error::AppResult;
 use crate::notes::{log_path, Moved, PathKind, Reason};
 use crate::util::now_ms;
@@ -86,19 +87,19 @@ fn log_moves(tx: &Transaction, change: &Change) -> AppResult<()> {
     let at = now_ms();
     let bodies = note_bodies(change.merged);
     for (table, kind) in [
-        ("attachments", PathKind::Note),
-        ("note_folders", PathKind::Folder),
+        (tables::ATTACHMENTS, PathKind::Note),
+        (tables::NOTE_FOLDERS, PathKind::Folder),
     ] {
         let (Some(was), Some(now)) = (change.local.get(table), change.merged.get(table)) else {
             continue;
         };
         for (id, row) in now {
-            let is_note_file = table != "attachments" || bodies.contains(id);
+            let is_note_file = table != tables::ATTACHMENTS || bodies.contains(id);
             let old = was
                 .get(id)
-                .and_then(|r| r.get("path"))
+                .and_then(|r| r.get(columns::PATH))
                 .and_then(Value::as_str);
-            let new = row.get("path").and_then(Value::as_str);
+            let new = row.get(columns::PATH).and_then(Value::as_str);
             let (Some(old), Some(new)) = (old, new) else {
                 continue;
             };
@@ -119,10 +120,10 @@ fn log_moves(tx: &Transaction, change: &Change) -> AppResult<()> {
 
 /// Attachment ids that are note bodies.
 fn note_bodies(s: &Snapshot) -> std::collections::BTreeSet<String> {
-    s.get("notes")
+    s.get(tables::NOTES)
         .map(|rows| {
             rows.values()
-                .filter_map(|r| r.get("attachment_id").and_then(Value::as_str))
+                .filter_map(|r| r.get(columns::ATTACHMENT_ID).and_then(Value::as_str))
                 .map(String::from)
                 .collect()
         })

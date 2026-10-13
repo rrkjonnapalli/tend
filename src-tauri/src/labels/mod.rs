@@ -10,10 +10,10 @@ use serde_json::{Map, Value};
 
 use crate::colors;
 use crate::db::in_transaction;
-use crate::enums::rows::{self, EnumRow, NewRow, COLOR, POSITION};
+use crate::enums::rows::{self, EnumRow, Key, MetaEntry, NewRow, COLOR, POSITION};
 use crate::enums::{EnumKind, SourceType};
 use crate::error::{errors, AppResult};
-use crate::links::{self, Source};
+use crate::links::{self, Source, Wanted};
 use crate::names;
 
 const KIND: EnumKind = EnumKind::TaskLabel;
@@ -42,10 +42,11 @@ pub fn list(conn: &Connection) -> AppResult<Vec<Label>> {
     Ok(labels)
 }
 
-fn get(conn: &Connection, id: &str) -> AppResult<Label> {
-    rows::get(conn, KIND, id)?
-        .map(to_label)
-        .ok_or_else(|| errors::NOT_FOUND.with("Label was not found"))
+fn key(id: &str) -> Key<'_> {
+    Key {
+        kind: KIND,
+        value: id,
+    }
 }
 
 /// The trimmed name, which must not be empty or another label's (ignoring case).
@@ -54,7 +55,12 @@ fn check_name(conn: &Connection, name: &str, except: Option<&str>) -> AppResult<
     if name.is_empty() {
         return Err(errors::LABEL_NAME_EMPTY.err());
     }
-    if rows::label_taken(conn, KIND, name, except)? {
+    let wanted = rows::LabelUse {
+        kind: KIND,
+        label: name,
+        except,
+    };
+    if rows::label_taken(conn, &wanted)? {
         return Err(errors::LABEL_NAME_TAKEN.err());
     }
     Ok(name.to_string())
@@ -88,36 +94,46 @@ pub fn add(conn: &Connection, new: &NewLabel) -> AppResult<Label> {
     let name = check_name(conn, new.name, None)?;
     let value = check_value(conn, new.value)?;
     colors::check(new.color)?;
-    let position = list(conn)?
-        .iter()
-        .map(|l| l.position + 1)
-        .max()
-        .unwrap_or(0);
+    let position = rows::next_position(conn, KIND, None)?;
     let mut meta = Map::new();
     meta.insert(COLOR.into(), Value::from(new.color));
     meta.insert(POSITION.into(), Value::from(position));
-    rows::insert(
-        conn,
-        &NewRow {
-            kind: KIND,
-            value: &value,
-            label: &name,
-            meta,
-        },
-    )?;
-    get(conn, &value)
+    let row = NewRow {
+        kind: KIND,
+        value: &value,
+        label: &name,
+        meta,
+    };
+    let added = rows::insert(conn, &row)?;
+    // Taken between the check and the insert.
+    let added = added.ok_or_else(|| errors::LABEL_VALUE_TAKEN.err())?;
+    Ok(to_label(added))
 }
 
-pub fn rename(conn: &Connection, id: &str, name: &str) -> AppResult<Label> {
-    let name = check_name(conn, name, Some(id))?;
-    rows::set_label(conn, KIND, id, &name)?;
-    get(conn, id)
+/// A label and the name it gets.
+pub struct Rename<'a> {
+    pub id: &'a str,
+    pub name: &'a str,
 }
 
-pub fn recolor(conn: &Connection, id: &str, color: &str) -> AppResult<Label> {
-    colors::check(color)?;
-    rows::set_meta(conn, KIND, id, COLOR, Value::from(color))?;
-    get(conn, id)
+pub fn rename(conn: &Connection, change: &Rename) -> AppResult<Label> {
+    let name = check_name(conn, change.name, Some(change.id))?;
+    rows::set_label(conn, key(change.id), &name).map(to_label)
+}
+
+/// A label and the color it gets.
+pub struct Recolor<'a> {
+    pub id: &'a str,
+    pub color: &'a str,
+}
+
+pub fn recolor(conn: &Connection, change: &Recolor) -> AppResult<Label> {
+    colors::check(change.color)?;
+    let entry = MetaEntry {
+        key: COLOR,
+        to: Value::from(change.color),
+    };
+    rows::set_meta(conn, key(change.id), &entry).map(to_label)
 }
 
 /// Sets the order; `ids` must be exactly the current labels.
@@ -132,7 +148,11 @@ pub fn reorder(conn: &mut Connection, ids: &[String]) -> AppResult<()> {
     }
     in_transaction(conn, |tx| {
         for (position, id) in ids.iter().enumerate() {
-            rows::set_meta(tx, KIND, id, POSITION, Value::from(position as i64))?;
+            let entry = MetaEntry {
+                key: POSITION,
+                to: Value::from(position as i64),
+            };
+            rows::set_meta(tx, key(id), &entry)?;
         }
         Ok(())
     })
@@ -171,17 +191,22 @@ pub fn links(conn: &Connection) -> AppResult<Vec<(String, String)>> {
     links::enum_pairs(conn, SourceType::Task, KIND)
 }
 
-/// Replaces the task's labels. Every id must be a configured label.
+/// Replaces the task's labels. Every id must be a configured label, and a blocked one can't be
+/// added.
 pub fn set_for_task(
     conn: &mut Connection,
     task_id: &str,
     ids: &[String],
 ) -> AppResult<Vec<String>> {
     for id in ids {
-        get(conn, id)?;
+        if rows::get(conn, KIND, id)?.is_none() {
+            return Err(KIND.not_found());
+        }
     }
-    in_transaction(conn, |tx| {
-        links::set_enum_values(tx, task(task_id), KIND, ids)
-    })?;
+    let wanted = Wanted {
+        kind: KIND,
+        values: ids,
+    };
+    in_transaction(conn, |tx| links::set_enum_values(tx, task(task_id), wanted))?;
     of_task(conn, task_id)
 }

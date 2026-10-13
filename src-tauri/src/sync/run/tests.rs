@@ -120,11 +120,11 @@ fn two_devices_connect_restore_and_converge() {
         title: Some("Ship v2".into()),
         ..Default::default()
     };
-    tasks::update(&mut b.vault.db(), &task, &patch).unwrap();
+    tasks::update(&b.vault.db(), &task, &patch).unwrap();
     a.sync(&remote).unwrap();
     b.sync(&remote).unwrap();
     a.sync(&remote).unwrap();
-    assert!(!b.rows()["tasks"].contains_key(&task));
+    assert!(!b.rows()[tables::TASKS].contains_key(&task));
     assert_eq!(a.rows(), b.rows());
 }
 
@@ -182,7 +182,7 @@ fn a_push_that_landed_before_a_crash_becomes_the_base() {
         .execute("DELETE FROM people WHERE id = ?1", [id])
         .unwrap();
     a.sync(&remote).unwrap();
-    assert!(!a.rows()["people"].contains_key(id));
+    assert!(!a.rows()[tables::PEOPLE].contains_key(id));
 }
 
 /// Makes the remote's first commit hold `files`, the way a host's "new repo" page (or its web

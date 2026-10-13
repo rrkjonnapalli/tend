@@ -126,12 +126,15 @@ pub fn link_copy(conn: &mut Connection, copied: &Copied) -> AppResult<()> {
         owner,
         owner_id,
     } = *copied;
-    let owner = check_owner(owner)?;
+    let source = Source {
+        kind: check_owner(owner)?,
+        id: owner_id,
+    };
     let dest = root.join(&file.path);
     let remove_copy = || {
         let _ = fs::remove_file(&dest);
     };
-    commit_or_undo(conn, remove_copy, |tx| record(tx, file, owner, owner_id))
+    commit_or_undo(conn, remove_copy, |tx| record(tx, file, source))
 }
 
 /// `.pdf` for `Invoice.PDF`; empty when the file has no extension.
@@ -149,7 +152,7 @@ fn mime_of(src: &Path) -> String {
         .to_string()
 }
 
-fn record(tx: &Transaction, file: &Stored, owner: SourceType, owner_id: &str) -> AppResult<()> {
+fn record(tx: &Transaction, file: &Stored, owner: Source) -> AppResult<()> {
     let now = now_ms();
     tx.execute(
         "INSERT INTO attachments
@@ -166,35 +169,32 @@ fn record(tx: &Transaction, file: &Stored, owner: SourceType, owner_id: &str) ->
             file.facts.mtime
         ],
     )?;
-    insert_link(tx, owner, owner_id, &file.id, now)
+    links::insert(tx, owner, Target::attachment(&file.id))
 }
 
-fn insert_link(
-    conn: &Connection,
-    owner: SourceType,
-    owner_id: &str,
-    attachment_id: &str,
-    now: i64,
-) -> AppResult<()> {
-    let source = Source {
-        kind: owner,
-        id: owner_id,
-    };
-    links::insert(conn, source, Target::attachment(attachment_id), now)
+/// A note to link to an owner.
+pub struct NoteLink<'a> {
+    /// A `SourceType` value: `TASK` or `PERSON`.
+    pub owner: &'a str,
+    pub owner_id: &'a str,
+    pub note_id: &'a str,
 }
 
 /// Links the note's body. Linking the same note twice keeps one link.
-pub fn link_note(conn: &Connection, owner: &str, owner_id: &str, note_id: &str) -> AppResult<()> {
-    let owner = check_owner(owner)?;
+pub fn link_note(conn: &Connection, link: &NoteLink) -> AppResult<()> {
+    let source = Source {
+        kind: check_owner(link.owner)?,
+        id: link.owner_id,
+    };
     let attachment_id: String = conn
         .query_row(
             "SELECT attachment_id FROM notes WHERE id = ?1",
-            [note_id],
+            [link.note_id],
             |r| r.get(0),
         )
         .optional()?
         .ok_or_else(|| errors::NOT_FOUND.with("Note was not found"))?;
-    insert_link(conn, owner, owner_id, &attachment_id, now_ms())
+    links::insert(conn, source, Target::attachment(&attachment_id))
 }
 
 fn to_link(r: &rusqlite::Row) -> rusqlite::Result<Link> {
@@ -216,8 +216,16 @@ fn to_link(r: &rusqlite::Row) -> rusqlite::Result<Link> {
     })
 }
 
-pub fn list(conn: &Connection, owner: &str, owner_id: &str) -> AppResult<Vec<Link>> {
-    let owner = check_owner(owner)?.as_str();
+/// What links are asked for: the record that carries them.
+pub struct Owner<'a> {
+    /// A `SourceType` value: `TASK` or `PERSON`.
+    pub kind: &'a str,
+    pub id: &'a str,
+}
+
+pub fn list(conn: &Connection, owner: &Owner) -> AppResult<Vec<Link>> {
+    let owner_id = owner.id;
+    let owner = check_owner(owner.kind)?.as_str();
     let rows = conn
         .prepare(
             "SELECT l.id, a.id, n.id, a.path, a.name, a.mime_type,

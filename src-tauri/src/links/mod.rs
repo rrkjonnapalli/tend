@@ -4,10 +4,12 @@
 #[cfg(test)]
 mod tests;
 
+use std::collections::HashMap;
+
 use rusqlite::{params, Connection};
 
-use crate::enums::{EnumKind, SourceType, TargetType};
-use crate::error::AppResult;
+use crate::enums::{rows, EnumKind, SourceType, TargetType};
+use crate::error::{errors, AppResult};
 use crate::util::{new_id, now_ms};
 
 /// The record a link starts from.
@@ -47,8 +49,12 @@ impl<'a> Target<'a> {
     }
 }
 
-/// Adds the link; the same link already there is left as it is.
-pub fn insert(conn: &Connection, source: Source, target: Target, now: i64) -> AppResult<()> {
+/// Adds the link; the same link already there is left as it is. An enum value that is blocked
+/// can't be linked.
+pub fn insert(conn: &Connection, source: Source, target: Target) -> AppResult<()> {
+    if let Some(kind) = target.enum_kind {
+        rows::check_active(conn, kind, target.value)?;
+    }
     conn.execute(
         "INSERT OR IGNORE INTO tend_links
            (id, source_type, source_id, target_type, target_kind, target_value, created_at, updated_at)
@@ -60,7 +66,7 @@ pub fn insert(conn: &Connection, source: Source, target: Target, now: i64) -> Ap
             target.kind.as_str(),
             target.enum_kind_str(),
             target.value,
-            now
+            now_ms()
         ],
     )?;
     Ok(())
@@ -82,7 +88,10 @@ pub fn delete(conn: &Connection, source: Source, target: Target) -> AppResult<()
 }
 
 pub fn delete_by_id(conn: &Connection, id: &str) -> AppResult<()> {
-    conn.execute("DELETE FROM tend_links WHERE id = ?1", [id])?;
+    let deleted = conn.execute("DELETE FROM tend_links WHERE id = ?1", [id])?;
+    if deleted == 0 {
+        return Err(errors::NOT_FOUND.with("Link was not found"));
+    }
     Ok(())
 }
 
@@ -107,21 +116,23 @@ pub fn enum_values(conn: &Connection, source: Source, kind: EnumKind) -> AppResu
     Ok(values)
 }
 
-/// Replaces the values of `kind` the source carries. Only links that change are written, so
+/// The values of one kind a source is to carry.
+#[derive(Clone, Copy)]
+pub struct Wanted<'a> {
+    pub kind: EnumKind,
+    pub values: &'a [String],
+}
+
+/// Replaces the values of a kind the source carries. Only links that change are written, so
 /// unchanged ones keep their ids (and aren't recorded as deleted by sync).
-pub fn set_enum_values(
-    conn: &Connection,
-    source: Source,
-    kind: EnumKind,
-    wanted: &[String],
-) -> AppResult<()> {
+pub fn set_enum_values(conn: &Connection, source: Source, wanted: Wanted) -> AppResult<()> {
+    let Wanted { kind, values } = wanted;
     let current = enum_values(conn, source, kind)?;
-    for value in current.iter().filter(|v| !wanted.contains(v)) {
+    for value in current.iter().filter(|v| !values.contains(v)) {
         delete(conn, source, Target::of_enum(kind, value))?;
     }
-    let now = now_ms();
-    for value in wanted.iter().filter(|v| !current.contains(v)) {
-        insert(conn, source, Target::of_enum(kind, value), now)?;
+    for value in values.iter().filter(|v| !current.contains(v)) {
+        insert(conn, source, Target::of_enum(kind, value))?;
     }
     Ok(())
 }
@@ -154,4 +165,18 @@ pub fn enum_usage(conn: &Connection, kind: EnumKind, value: &str) -> AppResult<i
         |r| r.get(0),
     )?;
     Ok(count)
+}
+
+/// How many records carry each value of the kind; a value nothing carries isn't listed.
+pub fn enum_usages(conn: &Connection, kind: EnumKind) -> AppResult<HashMap<String, i64>> {
+    let counts = conn
+        .prepare(
+            "SELECT target_value, count(*) FROM tend_links
+             WHERE target_type = ?1 AND target_kind = ?2 GROUP BY target_value",
+        )?
+        .query_map(params![TargetType::Enum.as_str(), kind.as_str()], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })?
+        .collect::<Result<_, _>>()?;
+    Ok(counts)
 }

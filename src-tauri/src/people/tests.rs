@@ -7,11 +7,25 @@ fn patch(json: &str) -> Patch {
 
 #[test]
 fn create_update_and_list() {
-    let mut conn = open_memory();
-    let id = create(&conn, "Ravi", "Kumar").unwrap();
-    assert!(create(&conn, "  ", "x").is_err());
+    let conn = open_memory();
+    let id = create(
+        &conn,
+        &NewPerson {
+            first: "Ravi",
+            last: "Kumar",
+        },
+    )
+    .unwrap();
+    assert!(create(
+        &conn,
+        &NewPerson {
+            first: "  ",
+            last: "x"
+        }
+    )
+    .is_err());
     let p = update(
-        &mut conn,
+        &conn,
         &id,
         &patch(r#"{"nickname":"Ravs","dob":{"year":1995,"month":10,"day":9},"tob":"06:30"}"#),
     )
@@ -23,7 +37,7 @@ fn create_update_and_list() {
     );
     assert_eq!(p.tob.as_deref(), Some("06:30"));
     let p = update(
-        &mut conn,
+        &conn,
         &id,
         &patch(r#"{"dob":{"year":null,"month":2,"day":29},"nickname":"","tob":null}"#),
     )
@@ -37,8 +51,15 @@ fn create_update_and_list() {
 
 #[test]
 fn invalid_dob_and_time_are_rejected_and_not_saved() {
-    let mut conn = open_memory();
-    let id = create(&conn, "A", "").unwrap();
+    let conn = open_memory();
+    let id = create(
+        &conn,
+        &NewPerson {
+            first: "A",
+            last: "",
+        },
+    )
+    .unwrap();
     for bad in [
         r#"{"dob":{"year":2023,"month":2,"day":29}}"#,
         r#"{"dob":{"year":null,"month":13,"day":1}}"#,
@@ -47,7 +68,7 @@ fn invalid_dob_and_time_are_rejected_and_not_saved() {
         r#"{"tob":"6:30"}"#,
     ] {
         assert!(
-            update(&mut conn, &id, &patch(bad)).is_err(),
+            update(&conn, &id, &patch(bad)).is_err(),
             "{bad} should fail"
         );
     }
@@ -58,12 +79,64 @@ fn invalid_dob_and_time_are_rejected_and_not_saved() {
 #[test]
 fn contacts_keep_order_and_feed_the_list() {
     let mut conn = open_memory();
-    let id = create(&conn, "A", "B").unwrap();
-    contact_add(&conn, &id, "phone", "+91 1", "personal").unwrap();
-    contact_add(&conn, &id, "phone", "+91 2", "work").unwrap();
-    contact_add(&conn, &id, "email", "a@b.c", "").unwrap();
-    assert!(contact_add(&conn, &id, "fax", "1", "").is_err());
-    assert!(contact_add(&conn, &id, "email", " ", "").is_err());
+    let id = create(
+        &conn,
+        &NewPerson {
+            first: "A",
+            last: "B",
+        },
+    )
+    .unwrap();
+    contact_add(
+        &conn,
+        &NewContact {
+            person: &id,
+            kind: "phone",
+            value: "+91 1",
+            label: "personal",
+        },
+    )
+    .unwrap();
+    contact_add(
+        &conn,
+        &NewContact {
+            person: &id,
+            kind: "phone",
+            value: "+91 2",
+            label: "work",
+        },
+    )
+    .unwrap();
+    contact_add(
+        &conn,
+        &NewContact {
+            person: &id,
+            kind: "email",
+            value: "a@b.c",
+            label: "",
+        },
+    )
+    .unwrap();
+    assert!(contact_add(
+        &conn,
+        &NewContact {
+            person: &id,
+            kind: "fax",
+            value: "1",
+            label: ""
+        }
+    )
+    .is_err());
+    assert!(contact_add(
+        &conn,
+        &NewContact {
+            person: &id,
+            kind: "email",
+            value: " ",
+            label: ""
+        }
+    )
+    .is_err());
     let row = &list(&conn).unwrap()[0];
     assert_eq!(
         (row.phone.as_deref(), row.email.as_deref()),
@@ -77,7 +150,15 @@ fn contacts_keep_order_and_feed_the_list() {
         .unwrap()
         .id
         .clone();
-    contact_update(&conn, &first, "+91 9", "home").unwrap();
+    contact_update(
+        &conn,
+        &ContactEdit {
+            id: &first,
+            value: "+91 9",
+            label: "home",
+        },
+    )
+    .unwrap();
     contact_delete(
         &conn,
         &p.contacts.iter().find(|c| c.value == "+91 2").unwrap().id,
@@ -100,7 +181,7 @@ fn contacts_keep_order_and_feed_the_list() {
     )
     .unwrap();
     crate::tasks::update(
-        &mut conn,
+        &conn,
         &t.id,
         &serde_json::from_str(&format!(r#"{{"assigneeId":"{id}"}}"#)).unwrap(),
     )
@@ -110,4 +191,19 @@ fn contacts_keep_order_and_feed_the_list() {
         .unwrap()
         .assignee_id
         .is_none());
+}
+
+#[test]
+fn a_person_or_contact_that_isnt_there_is_not_found() {
+    let conn = open_memory();
+    let not_found = |e: crate::error::AppError| assert!(e.is(errors::NOT_FOUND), "{e}");
+    not_found(update(&conn, "nope", &patch(r#"{"notes":"x"}"#)).unwrap_err());
+    not_found(delete(&conn, "nope").unwrap_err());
+    let edit = ContactEdit {
+        id: "nope",
+        value: "1",
+        label: "",
+    };
+    not_found(contact_update(&conn, &edit).unwrap_err());
+    not_found(contact_delete(&conn, "nope").unwrap_err());
 }

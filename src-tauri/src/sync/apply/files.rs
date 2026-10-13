@@ -10,6 +10,7 @@ use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::db::{columns, tables};
 use crate::error::{errors, AppResult};
 use crate::sync::shards::{Row, Snapshot};
 
@@ -54,7 +55,11 @@ fn text<'a>(row: &'a Row, column: &str) -> &'a str {
 
 fn paths(s: &Snapshot, table: &str) -> BTreeSet<String> {
     s.get(table)
-        .map(|rows| rows.values().map(|r| text(r, "path").to_string()).collect())
+        .map(|rows| {
+            rows.values()
+                .map(|r| text(r, columns::PATH).to_string())
+                .collect()
+        })
         .unwrap_or_default()
 }
 
@@ -67,26 +72,28 @@ pub fn check_path(path: &str) -> AppResult<()> {
 }
 
 pub fn plan(local: &Snapshot, merged: &Snapshot, remote: &Snapshot) -> AppResult<Plan> {
-    for path in paths(merged, "attachments")
+    for path in paths(merged, tables::ATTACHMENTS)
         .iter()
-        .chain(&paths(merged, "note_folders"))
+        .chain(&paths(merged, tables::NOTE_FOLDERS))
     {
         check_path(path)?;
     }
     let empty = Default::default();
-    let local_files = local.get("attachments").unwrap_or(&empty);
-    let remote_files = remote.get("attachments").unwrap_or(&empty);
-    let merged_files = merged.get("attachments").unwrap_or(&empty);
+    let local_files = local.get(tables::ATTACHMENTS).unwrap_or(&empty);
+    let remote_files = remote.get(tables::ATTACHMENTS).unwrap_or(&empty);
+    let merged_files = merged.get(tables::ATTACHMENTS).unwrap_or(&empty);
     let mut installs = Vec::new();
     for (id, want) in merged_files {
         let have = local_files.get(id);
-        let same_bytes = have.is_some_and(|h| text(h, "sha256") == text(want, "sha256"));
-        let in_place = same_bytes && have.is_some_and(|h| text(h, "path") == text(want, "path"));
+        let same_bytes =
+            have.is_some_and(|h| text(h, columns::SHA256) == text(want, columns::SHA256));
+        let in_place =
+            same_bytes && have.is_some_and(|h| text(h, columns::PATH) == text(want, columns::PATH));
         if in_place {
             continue;
         }
         let source = match have {
-            Some(h) if same_bytes => Source::Local(text(h, "path").to_string()),
+            Some(h) if same_bytes => Source::Local(text(h, columns::PATH).to_string()),
             _ => match remote_path(id, want, remote_files) {
                 Some(path) => Source::Remote(path),
                 // The remote has the row but not the file (too big, or gone from disk there):
@@ -95,26 +102,26 @@ pub fn plan(local: &Snapshot, merged: &Snapshot, remote: &Snapshot) -> AppResult
             },
         };
         installs.push(Install {
-            target: text(want, "path").to_string(),
+            target: text(want, columns::PATH).to_string(),
             source,
         });
     }
-    let targets = paths(merged, "attachments");
-    let removals = paths(local, "attachments")
+    let targets = paths(merged, tables::ATTACHMENTS);
+    let removals = paths(local, tables::ATTACHMENTS)
         .difference(&targets)
         .cloned()
         .collect();
-    let folders: Vec<String> = paths(merged, "note_folders").into_iter().collect();
-    let gone_folders = paths(local, "note_folders")
-        .difference(&paths(merged, "note_folders"))
+    let folders: Vec<String> = paths(merged, tables::NOTE_FOLDERS).into_iter().collect();
+    let gone_folders = paths(local, tables::NOTE_FOLDERS)
+        .difference(&paths(merged, tables::NOTE_FOLDERS))
         .cloned()
         .collect();
     let expected = local_files
         .values()
         .map(|row| {
             (
-                text(row, "path").to_string(),
-                text(row, "sha256").to_string(),
+                text(row, columns::PATH).to_string(),
+                text(row, columns::SHA256).to_string(),
             )
         })
         .collect();
@@ -135,8 +142,8 @@ fn remote_path(
 ) -> Option<String> {
     remote
         .get(id)
-        .filter(|r| text(r, "sha256") == text(want, "sha256"))
-        .map(|r| text(r, "path").to_string())
+        .filter(|r| text(r, columns::SHA256) == text(want, columns::SHA256))
+        .map(|r| text(r, columns::PATH).to_string())
 }
 
 /// The file side of an apply that has been staged: written to `PENDING_FILE` too, so an apply cut

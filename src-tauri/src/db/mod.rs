@@ -1,6 +1,10 @@
 //! SQLite connection and migrations, run by `rusqlite_migration`. `docs/schema.sql` is migration 1;
 //! later changes are new entries in `STEPS`. The schema version lives in `PRAGMA user_version`.
 
+pub mod columns;
+pub mod tables;
+mod update;
+
 #[cfg(test)]
 mod tests;
 
@@ -10,6 +14,8 @@ use rusqlite::{Connection, OpenFlags, OptionalExtension, Transaction, Transactio
 use rusqlite_migration::{Migrations, M};
 
 use crate::error::{errors, AppError, AppResult};
+
+pub use update::{Returning, Update};
 
 pub const APP_ID: &str = "tend";
 

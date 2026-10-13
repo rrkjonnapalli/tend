@@ -36,12 +36,24 @@ pub fn stack_create(
     parent: Option<String>,
     name: String,
 ) -> AppResult<snaps::Stack> {
-    state.with(|db, _| snaps::stack_create(db, parent.as_deref(), &name))
+    state.with(|db, _| {
+        let new = snaps::NewStack {
+            parent: parent.as_deref(),
+            name: &name,
+        };
+        snaps::stack_create(db, &new)
+    })
 }
 
 #[tauri::command(async)]
 pub fn stack_rename(state: State<AppState>, id: String, name: String) -> AppResult<snaps::Stack> {
-    state.with(|db, _| snaps::stack_rename(db, &id, &name))
+    state.with(|db, _| {
+        let change = snaps::StackRename {
+            id: &id,
+            name: &name,
+        };
+        snaps::stack_rename(db, &change)
+    })
 }
 
 #[tauri::command(async)]
@@ -50,7 +62,13 @@ pub fn stack_move(
     id: String,
     parent: Option<String>,
 ) -> AppResult<snaps::Stack> {
-    state.with(|db, _| snaps::stack_move(db, &id, parent.as_deref()))
+    state.with(|db, _| {
+        let change = snaps::StackMove {
+            id: &id,
+            parent: parent.as_deref(),
+        };
+        snaps::stack_move(db, &change)
+    })
 }
 
 /// Removes the stack; its snaps and sub-stacks move up a level.

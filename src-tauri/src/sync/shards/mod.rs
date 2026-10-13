@@ -16,7 +16,7 @@ use rusqlite::Connection;
 use serde_json::{json, Map, Number, Value};
 use ulid::Ulid;
 
-use crate::db;
+use crate::db::{self, columns, tables};
 use crate::error::{errors, AppResult};
 use crate::settings;
 use crate::vault::SYNC_DIR;
@@ -54,30 +54,30 @@ const fn table(name: &'static str) -> Table {
 const TABLES: &[Table] = &[
     Table {
         only: Some(("key", settings::SHARED_KEYS)),
-        ..table("settings")
+        ..table(tables::SETTINGS)
     },
-    table("tend_enums"),
+    table(tables::ENUMS),
     Table {
         local_columns: &["mtime", "missing_at"],
-        ..table("attachments")
+        ..table(tables::ATTACHMENTS)
     },
     Table {
         local_columns: &["missing_at"],
-        ..table("note_folders")
+        ..table(tables::NOTE_FOLDERS)
     },
-    table("notes"),
-    table("people"),
-    table("person_contacts"),
-    table("task_folders"),
-    table("tasks"),
-    table("my_day"),
-    table("task_comments"),
-    table("words"),
-    table("snap_stacks"),
-    table("snaps"),
-    table("refs"),
+    table(tables::NOTES),
+    table(tables::PEOPLE),
+    table(tables::PERSON_CONTACTS),
+    table(tables::TASK_FOLDERS),
+    table(tables::TASKS),
+    table(tables::MY_DAY),
+    table(tables::TASK_COMMENTS),
+    table(tables::WORDS),
+    table(tables::SNAP_STACKS),
+    table(tables::SNAPS),
+    table(tables::REFS),
     // Last: links point at rows of every table above.
-    table("tend_links"),
+    table(tables::LINKS),
 ];
 
 /// The names of the synced tables, in apply order.
@@ -125,7 +125,7 @@ fn is_shared(t: &Table, row: &Row) -> bool {
 }
 
 fn row_id(table: &str, row: &Row) -> AppResult<String> {
-    match row.get("id").and_then(Value::as_str) {
+    match row.get(columns::ID).and_then(Value::as_str) {
         Some(id) => Ok(id.to_string()),
         None => Err(errors::DB.with(format!("A {table} row has no text id"))),
     }
@@ -255,11 +255,11 @@ const KEY_DIGITS: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnop
 /// Gives the tasks of a snapshot written before `ORDER_KEYS_SCHEMA` new order keys, exactly as
 /// migration 2 does to a local database: ranked by old key, then id.
 pub fn rekey_tasks(snapshot: &mut Snapshot) {
-    let Some(tasks) = snapshot.get_mut("tasks") else {
+    let Some(tasks) = snapshot.get_mut(tables::TASKS) else {
         return;
     };
     let key_of = |row: &Row| {
-        row.get("order_key")
+        row.get(columns::ORDER_KEY)
             .and_then(Value::as_str)
             .unwrap_or_default()
             .to_string()
@@ -271,7 +271,7 @@ pub fn rekey_tasks(snapshot: &mut Snapshot) {
     ranked.sort();
     for (n, (_, id)) in ranked.iter().enumerate() {
         if let Some(row) = tasks.get_mut(id) {
-            row.insert("order_key".into(), Value::String(order_key(n)));
+            row.insert(columns::ORDER_KEY.into(), Value::String(order_key(n)));
         }
     }
 }

@@ -51,18 +51,33 @@ pub fn list(conn: &Connection, task: &str) -> AppResult<Vec<Comment>> {
     Ok(rows)
 }
 
-pub fn add(conn: &Connection, task: &str, body: &str) -> AppResult<()> {
+/// A comment to write on a task.
+pub struct NewComment<'a> {
+    pub task: &'a str,
+    pub body: &'a str,
+}
+
+pub fn add(conn: &Connection, new: &NewComment) -> AppResult<()> {
     conn.execute(
         "INSERT INTO task_comments (id, task_id, body, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?4)",
-        params![new_id(), task, check(body)?, now_ms()],
+        params![new_id(), new.task, check(new.body)?, now_ms()],
     )?;
     Ok(())
 }
 
-pub fn edit(conn: &Connection, id: &str, body: &str) -> AppResult<()> {
-    conn.execute(
+/// A comment and the text it gets.
+pub struct Edit<'a> {
+    pub id: &'a str,
+    pub body: &'a str,
+}
+
+pub fn edit(conn: &Connection, change: &Edit) -> AppResult<()> {
+    let edited = conn.execute(
         "UPDATE task_comments SET body = ?1, updated_at = max(?2, created_at + 1) WHERE id = ?3",
-        params![check(body)?, now_ms(), id],
+        params![check(change.body)?, now_ms(), change.id],
     )?;
+    if edited == 0 {
+        return Err(errors::NOT_FOUND.with("Comment was not found"));
+    }
     Ok(())
 }

@@ -61,7 +61,7 @@ fn reorder_writes_only_the_moved_key() {
     .unwrap();
     let after_a = "a2".to_string();
     update(
-        &mut conn,
+        &conn,
         &b.id,
         &Patch {
             order_key: Some(after_a),
@@ -85,7 +85,7 @@ fn done_sets_and_clears_completed_at() {
     )
     .unwrap();
     let done = update(
-        &mut conn,
+        &conn,
         &t.id,
         &Patch {
             status: Some(DONE.into()),
@@ -95,7 +95,7 @@ fn done_sets_and_clears_completed_at() {
     .unwrap();
     assert!(done.completed_at.is_some());
     let back = update(
-        &mut conn,
+        &conn,
         &t.id,
         &Patch {
             status: Some("IN_PROGRESS".into()),
@@ -118,13 +118,13 @@ fn patch_clears_optional_fields_with_null() {
     )
     .unwrap();
     let p: Patch = serde_json::from_str(r#"{"dueDate":"2026-10-10","dueTime":"17:30"}"#).unwrap();
-    let t2 = update(&mut conn, &t.id, &p).unwrap();
+    let t2 = update(&conn, &t.id, &p).unwrap();
     assert_eq!(
         (t2.due_date.as_deref(), t2.due_time.as_deref()),
         (Some("2026-10-10"), Some("17:30"))
     );
     let p: Patch = serde_json::from_str(r#"{"dueTime":null}"#).unwrap();
-    let t3 = update(&mut conn, &t.id, &p).unwrap();
+    let t3 = update(&conn, &t.id, &p).unwrap();
     assert_eq!(
         (t3.due_date.as_deref(), t3.due_time),
         (Some("2026-10-10"), None)
@@ -190,9 +190,23 @@ fn moving_a_task_moves_its_subtasks() {
     )
     .unwrap();
     assert_eq!(s.path, "work", "subtasks live in the parent's folder");
-    move_to(&mut conn, &p.id, "home").unwrap();
+    move_to(
+        &mut conn,
+        &Move {
+            id: &p.id,
+            target: "home",
+        },
+    )
+    .unwrap();
     assert_eq!(get(&conn, &s.id).unwrap().path, "home");
-    assert!(move_to(&mut conn, &s.id, "work").is_err());
+    assert!(move_to(
+        &mut conn,
+        &Move {
+            id: &s.id,
+            target: "work"
+        }
+    )
+    .is_err());
 }
 
 #[test]
@@ -233,17 +247,41 @@ fn my_day_overrides() {
         },
     )
     .unwrap();
-    set_my_day(&conn, &t.id, "2026-10-04", Some(true)).unwrap();
+    set_my_day(
+        &conn,
+        &DayChoice {
+            id: &t.id,
+            day: "2026-10-04",
+            included: Some(true),
+        },
+    )
+    .unwrap();
     assert_eq!(
         data(&conn, "2026-10-04").unwrap().my_day,
         vec![(t.id.clone(), true)]
     );
-    set_my_day(&conn, &t.id, "2026-10-04", Some(false)).unwrap();
+    set_my_day(
+        &conn,
+        &DayChoice {
+            id: &t.id,
+            day: "2026-10-04",
+            included: Some(false),
+        },
+    )
+    .unwrap();
     assert_eq!(
         data(&conn, "2026-10-04").unwrap().my_day,
         vec![(t.id.clone(), false)]
     );
-    set_my_day(&conn, &t.id, "2026-10-04", None).unwrap();
+    set_my_day(
+        &conn,
+        &DayChoice {
+            id: &t.id,
+            day: "2026-10-04",
+            included: None,
+        },
+    )
+    .unwrap();
     assert!(data(&conn, "2026-10-04").unwrap().my_day.is_empty());
     assert!(data(&conn, "2026-10-05").unwrap().my_day.is_empty());
 }
@@ -334,11 +372,80 @@ fn a_due_date_or_time_that_does_not_exist_is_refused() {
         due_time: Some(Some(time.into())),
         ..Default::default()
     };
-    assert!(update(&mut conn, &t.id, &due("2026-02-31", "09:00"))
+    assert!(update(&conn, &t.id, &due("2026-02-31", "09:00"))
         .unwrap_err()
         .is(errors::DUE_DATE_INVALID));
-    assert!(update(&mut conn, &t.id, &due("2026-02-28", "29:59"))
+    assert!(update(&conn, &t.id, &due("2026-02-28", "29:59"))
         .unwrap_err()
         .is(errors::DUE_TIME_INVALID));
-    assert!(update(&mut conn, &t.id, &due("2026-02-28", "17:30")).is_ok());
+    assert!(update(&conn, &t.id, &due("2026-02-28", "17:30")).is_ok());
+}
+
+fn titled(conn: &mut Connection, status: Option<&str>) -> AppResult<Task> {
+    let new = NewTask {
+        title: "T".into(),
+        status: status.map(String::from),
+        order_key: "a0".into(),
+        ..Default::default()
+    };
+    create(conn, &new)
+}
+
+#[test]
+fn a_blocked_status_cant_be_given_to_a_task() {
+    let mut conn = open_memory();
+    conn.execute(
+        "UPDATE tend_enums SET status = 'BLOCKED' WHERE value = 'IN_PROGRESS'",
+        [],
+    )
+    .unwrap();
+    let refused = titled(&mut conn, Some("IN_PROGRESS")).unwrap_err();
+    assert!(refused.is(errors::ENUM_BLOCKED));
+    let task = titled(&mut conn, None).unwrap();
+    let patch = Patch {
+        status: Some("IN_PROGRESS".into()),
+        ..Default::default()
+    };
+    assert!(update(&conn, &task.id, &patch)
+        .unwrap_err()
+        .is(errors::ENUM_BLOCKED));
+    assert_eq!(get(&conn, &task.id).unwrap().status, FIRST);
+}
+
+#[test]
+fn an_update_answers_with_the_task_as_written() {
+    let mut conn = open_memory();
+    let task = titled(&mut conn, None).unwrap();
+    let patch = Patch {
+        title: Some("  Renamed ".into()),
+        status: Some(DONE.into()),
+        ..Default::default()
+    };
+    let done = update(&conn, &task.id, &patch).unwrap();
+    assert_eq!(done.title, "Renamed");
+    assert!(done.completed_at.is_some());
+    assert_eq!(done, get(&conn, &task.id).unwrap());
+    // Only the title: the status and its stamp stay.
+    let patch = Patch {
+        title: Some("Again".into()),
+        ..Default::default()
+    };
+    let again = update(&conn, &task.id, &patch).unwrap();
+    assert_eq!(again.completed_at, done.completed_at);
+    assert_eq!(again.status, DONE);
+}
+
+#[test]
+fn a_task_or_folder_that_isnt_there_is_not_found() {
+    let mut conn = open_memory();
+    let not_found = |e: crate::error::AppError| assert!(e.is(errors::NOT_FOUND), "{e}");
+    not_found(update(&conn, "nope", &Patch::default()).unwrap_err());
+    not_found(delete(&conn, "nope").unwrap_err());
+    let change = Move {
+        id: "nope",
+        target: "work",
+    };
+    not_found(move_to(&mut conn, &change).unwrap_err());
+    not_found(folder_delete(&mut conn, "nope").unwrap_err());
+    not_found(folder_rename(&mut conn, "nope", "other").unwrap_err());
 }

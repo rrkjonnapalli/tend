@@ -6,14 +6,16 @@ mod contacts;
 #[cfg(test)]
 mod tests;
 
-use rusqlite::{params, Connection, OptionalExtension, ToSql, Transaction};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
-use crate::error::{errors, AppResult};
+use crate::db::{columns, tables, Returning, Update};
+use crate::error::{errors, AppError, AppResult};
 use crate::util::{new_id, now_ms};
 
 pub use contacts::{
-    add as contact_add, delete as contact_delete, update as contact_update, Contact,
+    add as contact_add, delete as contact_delete, update as contact_update, Contact, ContactEdit,
+    NewContact,
 };
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -96,72 +98,120 @@ pub fn list(conn: &Connection) -> AppResult<Vec<PersonRow>> {
     Ok(rows)
 }
 
-fn row(conn: &Connection, id: &str) -> AppResult<PersonRow> {
-    conn.query_row(&format!("{ROW_SQL} WHERE p.id = ?1"), [id], to_row)
-        .optional()?
-        .ok_or_else(|| errors::NOT_FOUND.with("Person was not found"))
+fn not_found() -> AppError {
+    errors::NOT_FOUND.with("Person was not found")
+}
+
+/// A person to add.
+pub struct NewPerson<'a> {
+    pub first: &'a str,
+    pub last: &'a str,
 }
 
 /// Returns the new person's id.
-pub fn create(conn: &Connection, first: &str, last: &str) -> AppResult<String> {
-    let first = checks::first_name(first)?;
+pub fn create(conn: &Connection, new: &NewPerson) -> AppResult<String> {
+    let first = checks::first_name(new.first)?;
     let id = new_id();
     conn.execute(
         "INSERT INTO people (id, first_name, last_name, created_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?4)",
-        params![id, first, last.trim(), now_ms()],
+        params![id, first, new.last.trim(), now_ms()],
     )?;
     Ok(id)
 }
 
-pub fn get(conn: &Connection, id: &str) -> AppResult<Person> {
-    let row = row(conn, id)?;
-    let (tob, notes) =
-        conn.query_row("SELECT tob, notes FROM people WHERE id = ?1", [id], |r| {
-            Ok((r.get(0)?, r.get(1)?))
-        })?;
-    let contacts = contacts::of(conn, id)?;
+/// A person's own columns: everything of `Person` but the contacts.
+struct Own {
+    id: String,
+    first_name: String,
+    last_name: String,
+    nickname: Option<String>,
+    dob_year: Option<i64>,
+    dob_month: Option<i64>,
+    dob_day: Option<i64>,
+    tob: Option<String>,
+    notes: String,
+}
+
+const OWN_COLS: &str =
+    "id, first_name, last_name, nickname, dob_year, dob_month, dob_day, tob, notes";
+
+fn to_own(r: &rusqlite::Row) -> rusqlite::Result<Own> {
+    Ok(Own {
+        id: r.get(0)?,
+        first_name: r.get(1)?,
+        last_name: r.get(2)?,
+        nickname: r.get(3)?,
+        dob_year: r.get(4)?,
+        dob_month: r.get(5)?,
+        dob_day: r.get(6)?,
+        tob: r.get(7)?,
+        notes: r.get(8)?,
+    })
+}
+
+/// What a write to `people` answers with.
+const WRITTEN: Returning<Own> = Returning {
+    columns: OWN_COLS,
+    map: to_own,
+};
+
+/// The person with their contacts (one more query: they live in their own table).
+fn with_contacts(conn: &Connection, own: Own) -> AppResult<Person> {
+    let contacts = contacts::of(conn, &own.id)?;
+    // Contacts come in order within each kind, so the first of a kind is the one the list shows.
+    let first = |kind: &str| {
+        let found = contacts.iter().find(|c| c.kind == kind);
+        found.map(|c| c.value.clone())
+    };
+    let row = PersonRow {
+        phone: first(contacts::PHONE),
+        email: first(contacts::EMAIL),
+        id: own.id,
+        first_name: own.first_name,
+        last_name: own.last_name,
+        nickname: own.nickname,
+        dob_year: own.dob_year,
+        dob_month: own.dob_month,
+        dob_day: own.dob_day,
+    };
     Ok(Person {
         row,
-        tob,
-        notes,
+        tob: own.tob,
+        notes: own.notes,
         contacts,
     })
 }
 
-pub fn update(conn: &mut Connection, id: &str, p: &Patch) -> AppResult<Person> {
-    checks::patch(p)?;
-    let tx = conn.transaction()?;
-    if let Some(first) = &p.first_name {
-        set(&tx, id, "first_name", &first.trim())?;
-    }
-    if let Some(last) = &p.last_name {
-        set(&tx, id, "last_name", &last.trim())?;
-    }
-    if let Some(nickname) = &p.nickname {
-        set(&tx, id, "nickname", &clean_nickname(nickname.as_deref()))?;
-    }
-    if let Some(dob) = &p.dob {
-        set_dob(&tx, id, dob.as_ref())?;
-    }
-    if let Some(tob) = &p.tob {
-        set(&tx, id, "tob", tob)?;
-    }
-    if let Some(notes) = &p.notes {
-        set(&tx, id, "notes", notes)?;
-    }
-    set(&tx, id, "updated_at", &now_ms())?;
-    tx.commit()?;
-    get(conn, id)
+pub fn get(conn: &Connection, id: &str) -> AppResult<Person> {
+    let own = conn
+        .query_row(
+            &format!("SELECT {OWN_COLS} FROM people WHERE id = ?1"),
+            [id],
+            to_own,
+        )
+        .optional()?
+        .ok_or_else(not_found)?;
+    with_contacts(conn, own)
 }
 
-/// Writes one column. `column` is always one of the literals in `update`, never user input.
-fn set(tx: &Transaction, id: &str, column: &'static str, value: &dyn ToSql) -> AppResult<()> {
-    tx.execute(
-        &format!("UPDATE people SET {column} = ?1 WHERE id = ?2"),
-        params![value, id],
-    )?;
-    Ok(())
+pub fn update(conn: &Connection, id: &str, p: &Patch) -> AppResult<Person> {
+    checks::patch(p)?;
+    let mut update = Update::new(tables::PEOPLE);
+    update.set_some("first_name", p.first_name.as_deref().map(str::trim));
+    update.set_some("last_name", p.last_name.as_deref().map(str::trim));
+    if let Some(nickname) = &p.nickname {
+        update.set("nickname", clean_nickname(nickname.as_deref()));
+    }
+    if let Some(dob) = &p.dob {
+        update.set("dob_year", dob.and_then(|d| d.year));
+        update.set("dob_month", dob.map(|d| d.month));
+        update.set("dob_day", dob.map(|d| d.day));
+    }
+    update.set_some("tob", p.tob.as_ref());
+    update.set_some(columns::NOTES, p.notes.as_ref());
+    let own = update.run(conn, id, WRITTEN)?.ok_or_else(not_found)?;
+    with_contacts(conn, own)
 }
 
 /// A blank nickname is stored as none.
@@ -169,19 +219,11 @@ fn clean_nickname(nickname: Option<&str>) -> Option<&str> {
     nickname.map(str::trim).filter(|n| !n.is_empty())
 }
 
-fn set_dob(tx: &Transaction, id: &str, dob: Option<&Dob>) -> AppResult<()> {
-    let year = dob.and_then(|d| d.year);
-    let month = dob.map(|d| d.month);
-    let day = dob.map(|d| d.day);
-    tx.execute(
-        "UPDATE people SET dob_year = ?1, dob_month = ?2, dob_day = ?3 WHERE id = ?4",
-        params![year, month, day, id],
-    )?;
-    Ok(())
-}
-
 /// Deleting a person unassigns their tasks (ON DELETE SET NULL) and drops their contacts.
 pub fn delete(conn: &Connection, id: &str) -> AppResult<()> {
-    conn.execute("DELETE FROM people WHERE id = ?1", [id])?;
+    let deleted = conn.execute("DELETE FROM people WHERE id = ?1", [id])?;
+    if deleted == 0 {
+        return Err(not_found());
+    }
     Ok(())
 }

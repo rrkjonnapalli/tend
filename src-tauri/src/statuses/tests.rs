@@ -141,18 +141,51 @@ fn add_rules() {
 fn rename_and_recolor() {
     let conn = open_memory();
     assert_eq!(
-        rename(&conn, "NOT_STARTED", "Ready").unwrap().label,
+        rename(
+            &conn,
+            &Rename {
+                value: "NOT_STARTED",
+                label: "Ready"
+            }
+        )
+        .unwrap()
+        .label,
         "Ready"
     );
     assert!(fails_with(
-        rename(&conn, "IN_PROGRESS", "ready"),
+        rename(
+            &conn,
+            &Rename {
+                value: "IN_PROGRESS",
+                label: "ready"
+            }
+        ),
         errors::STATUS_LABEL_TAKEN
     ));
     assert_eq!(
-        rename(&conn, "IN_PROGRESS", "In Progress").unwrap().label,
+        rename(
+            &conn,
+            &Rename {
+                value: "IN_PROGRESS",
+                label: "In Progress"
+            }
+        )
+        .unwrap()
+        .label,
         "In Progress"
     );
-    assert_eq!(recolor(&conn, "DONE", "#62d2a2").unwrap().color, "#62d2a2");
+    assert_eq!(
+        recolor(
+            &conn,
+            &Recolor {
+                value: "DONE",
+                color: "#62d2a2"
+            }
+        )
+        .unwrap()
+        .color,
+        "#62d2a2"
+    );
 }
 
 #[test]

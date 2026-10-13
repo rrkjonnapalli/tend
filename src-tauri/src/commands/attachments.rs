@@ -12,7 +12,13 @@ pub fn attachments_list(
     owner: String,
     id: String,
 ) -> AppResult<Vec<attachments::Link>> {
-    state.with(|db, _| attachments::list(db, &owner, &id))
+    state.with(|db, _| {
+        let owner = attachments::Owner {
+            kind: &owner,
+            id: &id,
+        };
+        attachments::list(db, &owner)
+    })
 }
 
 /// Copies each file into the vault and links it. Every file is checked before any is copied, so
@@ -55,7 +61,14 @@ pub fn attachment_link_note(
     id: String,
     note: String,
 ) -> AppResult<()> {
-    state.with(|db, _| attachments::link_note(db, &owner, &id, &note))
+    state.with(|db, _| {
+        let link = attachments::NoteLink {
+            owner: &owner,
+            owner_id: &id,
+            note_id: &note,
+        };
+        attachments::link_note(db, &link)
+    })
 }
 
 #[tauri::command(async)]

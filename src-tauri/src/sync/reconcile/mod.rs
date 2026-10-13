@@ -19,13 +19,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde_json::{Map, Value};
 
 use super::shards::{Row, Snapshot};
-use crate::enums::rows::POSITION;
-use crate::enums::{EnumKind, SourceType, TargetType};
+use crate::db::{columns, tables};
+use crate::enums::rows;
+use crate::enums::{EnumKind, EnumStatus, SourceType, TargetType};
 use crate::names;
 use crate::words;
-
-/// `tend_enums.meta`: JSON whose keys (colour, position) change independently.
-const META: &str = "meta";
 
 /// The three versions a merge works from: the last agreed state and each side's.
 #[derive(Clone, Copy)]
@@ -163,7 +161,8 @@ fn merge_columns(row: Sides<&Row>) -> Row {
             remote: row.remote.get(column),
         };
         let whole = three_way(sides, winner.get(column)).cloned();
-        let value = if column == META {
+        // `tend_enums.meta` is JSON whose keys (colour, position) change independently.
+        let value = if column == columns::META {
             merge_meta(sides, winner.get(column)).or(whole)
         } else {
             whole
@@ -178,7 +177,11 @@ fn merge_columns(row: Sides<&Row>) -> Row {
 /// The row with the later `updated_at`; equal times pick the line that sorts higher, so every
 /// device picks the same one.
 fn newer<'a>(a: &'a Row, b: &'a Row) -> &'a Row {
-    let at = |row: &Row| row.get("updated_at").and_then(Value::as_i64).unwrap_or(0);
+    let at = |row: &Row| {
+        row.get(columns::UPDATED_AT)
+            .and_then(Value::as_i64)
+            .unwrap_or(0)
+    };
     if at(a) != at(b) {
         return if at(a) > at(b) { a } else { b };
     }
@@ -193,50 +196,58 @@ fn newer<'a>(a: &'a Row, b: &'a Row) -> &'a Row {
 // ---- 2. unique keys
 
 /// Link and path tables: rows with the same key collapse into the one with the smallest id.
-/// Link and path tables: rows with the same key collapse into the one with the smallest id.
 /// Nothing points at a link row by id, so dropping the others leaves nothing dangling.
 const KEEP_SMALLEST: &[(&str, &[&str])] = &[
     (
-        "tend_links",
+        tables::LINKS,
         &[
-            "source_type",
-            "source_id",
-            "target_type",
-            "target_kind",
-            "target_value",
+            columns::SOURCE_TYPE,
+            columns::SOURCE_ID,
+            columns::TARGET_TYPE,
+            columns::TARGET_KIND,
+            columns::TARGET_VALUE,
         ],
     ),
-    ("my_day", &["task_id", "day"]),
-    ("note_folders", &["path"]),
-    ("task_folders", &["path"]),
+    (tables::MY_DAY, &[columns::TASK_ID, "day"]),
+    (tables::NOTE_FOLDERS, &[columns::PATH]),
+    (tables::TASK_FOLDERS, &[columns::PATH]),
 ];
 
-/// Display names unique ignoring case within a group: a later row gets " 2", " 3", … so both
-/// stay. (table, name column, group column)
-const UNIQUE_NAMES: &[(&str, &str, &str)] = &[("tend_enums", "label", "kind")];
+/// A display name unique ignoring case within a group: a later row gets " 2", " 3", … so both
+/// stay.
+struct UniqueName {
+    table: &'static str,
+    /// The name column.
+    column: &'static str,
+    /// The column whose value names the group a name is unique in.
+    group: &'static str,
+}
 
-/// A table whose rows sharing a key become one row: the smallest id is kept, `merge` makes its
+const UNIQUE_NAMES: &[UniqueName] = &[UniqueName {
+    table: tables::ENUMS,
+    column: columns::LABEL,
+    group: columns::KIND,
+}];
+
+/// Records whose rows sharing a key become one row: the smallest id is kept, `merge` makes its
 /// fields from the two rows, and the links (`tend_links`) of the others move to it. `merge` must be
 /// pure, so every device makes the same row.
 struct MergeRule {
-    table: &'static str,
-    key: &'static [&'static str],
-    /// The link source type of this table's rows.
+    /// The records, as a link source: its table holds the rows.
     source: SourceType,
+    key: &'static [&'static str],
     merge: fn(&Row, &Row) -> Row,
 }
 
 const MERGE_ON_KEY: &[MergeRule] = &[
     MergeRule {
-        table: "words",
-        key: &["title"],
         source: SourceType::Word,
+        key: &[columns::TITLE],
         merge: newest_fill_empty,
     },
     MergeRule {
-        table: "refs",
-        key: &["url_key"],
         source: SourceType::Ref,
+        key: &[columns::URL_KEY],
         merge: newest_fill_empty,
     },
 ];
@@ -246,7 +257,7 @@ fn fix_unique_keys(merged: &mut Snapshot) {
     for rule in MERGE_ON_KEY {
         merge_on_key(merged, rule);
     }
-    if let Some(rows) = merged.get_mut("tend_enums") {
+    if let Some(rows) = merged.get_mut(tables::ENUMS) {
         keep_enum_defaults(rows);
     }
     for (table, columns) in KEEP_SMALLEST {
@@ -254,12 +265,12 @@ fn fix_unique_keys(merged: &mut Snapshot) {
             keep_smallest(rows, columns);
         }
     }
-    for (table, column, group) in UNIQUE_NAMES {
-        if let Some(rows) = merged.get_mut(table) {
-            number_duplicates(rows, column, group);
+    for rule in UNIQUE_NAMES {
+        if let Some(rows) = merged.get_mut(rule.table) {
+            number_duplicates(rows, rule);
         }
     }
-    if let Some(rows) = merged.get_mut("attachments") {
+    if let Some(rows) = merged.get_mut(tables::ATTACHMENTS) {
         suffix_clashing_paths(rows);
     }
 }
@@ -313,7 +324,7 @@ fn shared_keys(rows: &Rows, columns: &[&str]) -> Vec<Vec<String>> {
 }
 
 fn merge_on_key(merged: &mut Snapshot, rule: &MergeRule) {
-    let Some(rows) = merged.get_mut(rule.table) else {
+    let Some(rows) = merged.get_mut(rule.source.table()) else {
         return;
     };
     // Dropped id → the id kept.
@@ -325,7 +336,7 @@ fn merge_on_key(merged: &mut Snapshot, rule: &MergeRule) {
             row = (rule.merge)(&row, &rows[other]);
             moved.insert(other.clone(), keep.clone());
         }
-        row.insert("id".into(), Value::String(keep.clone()));
+        row.insert(columns::ID.into(), Value::String(keep.clone()));
         for other in &ids[1..] {
             rows.remove(other);
         }
@@ -336,16 +347,18 @@ fn merge_on_key(merged: &mut Snapshot, rule: &MergeRule) {
 
 /// Points the links of `source` rows at the row each was merged into.
 fn move_links(merged: &mut Snapshot, source: SourceType, moved: &BTreeMap<String, String>) {
-    let Some(links) = merged.get_mut("tend_links") else {
+    let Some(links) = merged.get_mut(tables::LINKS) else {
         return;
     };
     for row in links.values_mut() {
-        if text(row, "source_type") != Some(source.as_str()) {
+        if text(row, columns::SOURCE_TYPE) != Some(source.as_str()) {
             continue;
         }
-        let kept = text(row, "source_id").and_then(|id| moved.get(id)).cloned();
+        let kept = text(row, columns::SOURCE_ID)
+            .and_then(|id| moved.get(id))
+            .cloned();
         if let Some(kept) = kept {
-            row.insert("source_id".into(), Value::String(kept));
+            row.insert(columns::SOURCE_ID.into(), Value::String(kept));
         }
     }
 }
@@ -370,8 +383,9 @@ fn keep_smallest(rows: &mut Rows, columns: &[&str]) {
 /// dropping one would make the apply fail. Nothing points at an enum row by id.
 fn keep_enum_defaults(rows: &mut Rows) {
     let is_default = |row: &Row| row.get("is_default").and_then(Value::as_i64) == Some(1);
-    let key =
-        |row: &Row| serde_json::to_string(&key_of(row, &["kind", "value"])).unwrap_or_default();
+    let key = |row: &Row| {
+        serde_json::to_string(&key_of(row, &[columns::KIND, columns::VALUE])).unwrap_or_default()
+    };
     // Rows iterate in id order, so the first kept for a key has the smallest id.
     let mut kept: BTreeMap<String, String> = BTreeMap::new();
     for (id, row) in rows.iter() {
@@ -387,15 +401,15 @@ fn keep_enum_defaults(rows: &mut Rows) {
     rows.retain(|id, row| kept.get(&key(row)) == Some(id));
 }
 
-fn number_duplicates(rows: &mut Rows, column: &str, group: &str) {
+fn number_duplicates(rows: &mut Rows, rule: &UniqueName) {
     let mut seen: BTreeSet<(String, String)> = BTreeSet::new();
     let ids: Vec<String> = rows.keys().cloned().collect();
     for id in ids {
         let Some(row) = rows.get_mut(&id) else {
             continue;
         };
-        let name = text(row, column).unwrap_or_default().to_string();
-        let set = text(row, group).unwrap_or_default().to_string();
+        let name = text(row, rule.column).unwrap_or_default().to_string();
+        let set = text(row, rule.group).unwrap_or_default().to_string();
         let mut candidate = name.clone();
         let mut n = 2;
         while seen.contains(&(set.clone(), candidate.to_lowercase())) {
@@ -404,7 +418,7 @@ fn number_duplicates(rows: &mut Rows, column: &str, group: &str) {
         }
         seen.insert((set, candidate.to_lowercase()));
         if candidate != name {
-            row.insert(column.to_string(), Value::String(candidate));
+            row.insert(rule.column.to_string(), Value::String(candidate));
         }
     }
 }
@@ -419,7 +433,7 @@ fn suffix_clashing_paths(rows: &mut Rows) {
         let Some(row) = rows.get_mut(&id) else {
             continue;
         };
-        let path = text(row, "path").unwrap_or_default().to_string();
+        let path = text(row, columns::PATH).unwrap_or_default().to_string();
         if taken.insert(path.clone()) {
             continue;
         }
@@ -457,8 +471,11 @@ fn with_id(path: &str, id: &str) -> String {
 }
 
 fn set_path(row: &mut Row, path: &str) {
-    row.insert("path".into(), Value::String(path.to_string()));
-    row.insert("name".into(), Value::String(names::base(path).to_string()));
+    row.insert(columns::PATH.into(), Value::String(path.to_string()));
+    row.insert(
+        columns::NAME.into(),
+        Value::String(names::base(path).to_string()),
+    );
 }
 
 // ---- 3. references
@@ -499,14 +516,14 @@ fn values(merged: &Snapshot, table: &str, column: &str) -> BTreeSet<String> {
 /// One pass over every rule. Returns true when anything changed.
 fn fix_pass(merged: &mut Snapshot) -> bool {
     let mut changed = false;
-    changed |= drop_orphan_folders(merged, "note_folders");
-    changed |= drop_orphan_folders(merged, "task_folders");
-    changed |= drop_missing(merged, "notes", "attachment_id", "attachments");
+    changed |= drop_orphan_folders(merged, tables::NOTE_FOLDERS);
+    changed |= drop_orphan_folders(merged, tables::TASK_FOLDERS);
+    changed |= drop_missing(merged, &NOTE_BODY);
     changed |= move_homeless_notes(merged);
-    changed |= drop_missing(merged, "person_contacts", "person_id", "people");
+    changed |= drop_missing(merged, &CONTACT_PERSON);
     changed |= fix_tasks(merged);
-    for child in ["my_day", "task_comments"] {
-        changed |= drop_missing(merged, child, "task_id", "tasks");
+    for child in &TASK_CHILDREN {
+        changed |= drop_missing(merged, child);
     }
     changed |= fix_words(merged);
     changed |= fix_stacks(merged);
@@ -514,26 +531,58 @@ fn fix_pass(merged: &mut Snapshot) -> bool {
     changed
 }
 
-/// Drops rows of `table` whose `column` names a row `parent` no longer has.
-fn drop_missing(merged: &mut Snapshot, table: &str, column: &str, parent: &str) -> bool {
-    let alive = ids(merged, parent);
-    let Some(rows) = merged.get_mut(table) else {
+/// Rows of `table` that can't be without the row of `parent` their `column` names.
+struct Child {
+    table: &'static str,
+    column: &'static str,
+    parent: &'static str,
+}
+
+const NOTE_BODY: Child = Child {
+    table: tables::NOTES,
+    column: columns::ATTACHMENT_ID,
+    parent: tables::ATTACHMENTS,
+};
+
+const CONTACT_PERSON: Child = Child {
+    table: tables::PERSON_CONTACTS,
+    column: "person_id",
+    parent: tables::PEOPLE,
+};
+
+const TASK_CHILDREN: [Child; 2] = [
+    Child {
+        table: tables::MY_DAY,
+        column: columns::TASK_ID,
+        parent: tables::TASKS,
+    },
+    Child {
+        table: tables::TASK_COMMENTS,
+        column: columns::TASK_ID,
+        parent: tables::TASKS,
+    },
+];
+
+/// Drops the child rows whose parent row is gone.
+fn drop_missing(merged: &mut Snapshot, child: &Child) -> bool {
+    let alive = ids(merged, child.parent);
+    let Some(rows) = merged.get_mut(child.table) else {
         return false;
     };
     let before = rows.len();
-    rows.retain(|_, row| text(row, column).is_some_and(|id| alive.contains(id)));
+    rows.retain(|_, row| text(row, child.column).is_some_and(|id| alive.contains(id)));
     rows.len() != before
 }
 
 /// A folder whose parent folder is gone goes too (its tasks move to the root, its notes too).
 fn drop_orphan_folders(merged: &mut Snapshot, table: &str) -> bool {
-    let paths = values(merged, table, "path");
+    let paths = values(merged, table, columns::PATH);
     let Some(rows) = merged.get_mut(table) else {
         return false;
     };
     let before = rows.len();
     rows.retain(|_, row| {
-        let path = text(row, "path").unwrap_or_default();
+        let path = text(row, columns::PATH).unwrap_or_default();
         let parent = names::parent(path);
         path.is_empty() || parent.is_empty() || paths.contains(parent)
     });
@@ -542,14 +591,14 @@ fn drop_orphan_folders(merged: &mut Snapshot, table: &str) -> bool {
 
 /// A note body whose folder is gone moves to the notes root, with a suffix if the name is taken.
 fn move_homeless_notes(merged: &mut Snapshot) -> bool {
-    let folders = values(merged, "note_folders", "path");
-    let bodies: BTreeSet<String> = values(merged, "notes", "attachment_id");
-    let Some(rows) = merged.get_mut("attachments") else {
+    let folders = values(merged, tables::NOTE_FOLDERS, columns::PATH);
+    let bodies: BTreeSet<String> = values(merged, tables::NOTES, columns::ATTACHMENT_ID);
+    let Some(rows) = merged.get_mut(tables::ATTACHMENTS) else {
         return false;
     };
     let mut taken: BTreeSet<String> = rows
         .values()
-        .filter_map(|r| text(r, "path"))
+        .filter_map(|r| text(r, columns::PATH))
         .map(String::from)
         .collect();
     let mut changed = false;
@@ -557,7 +606,7 @@ fn move_homeless_notes(merged: &mut Snapshot) -> bool {
         if !bodies.contains(id) {
             continue;
         }
-        let path = text(row, "path").unwrap_or_default().to_string();
+        let path = text(row, columns::PATH).unwrap_or_default().to_string();
         let folder = names::parent(&path);
         if folder.is_empty() || folders.contains(folder) {
             continue;
@@ -575,21 +624,21 @@ fn move_homeless_notes(merged: &mut Snapshot) -> bool {
 /// Tasks: a missing parent drops the task; a missing folder moves it to the root; a missing status
 /// becomes the first status; a missing assignee is cleared.
 fn fix_tasks(merged: &mut Snapshot) -> bool {
-    let tasks = ids(merged, "tasks");
-    let folders = values(merged, "task_folders", "path");
-    let people = ids(merged, "people");
+    let tasks = ids(merged, tables::TASKS);
+    let folders = values(merged, tables::TASK_FOLDERS, columns::PATH);
+    let people = ids(merged, tables::PEOPLE);
     let statuses = enum_values(merged, EnumKind::TaskStatus);
     let first = first_status(merged);
-    let Some(rows) = merged.get_mut("tasks") else {
+    let Some(rows) = merged.get_mut(tables::TASKS) else {
         return false;
     };
     let before = rows.len();
-    rows.retain(|_, row| text(row, "parent_id").is_none_or(|p| tasks.contains(p)));
+    rows.retain(|_, row| text(row, columns::PARENT_ID).is_none_or(|p| tasks.contains(p)));
     let mut changed = rows.len() != before;
     for row in rows.values_mut() {
         changed |= fix_column(
             row,
-            "path",
+            columns::PATH,
             |p| folders.contains(p),
             Value::String(String::new()),
         );
@@ -597,7 +646,7 @@ fn fix_tasks(merged: &mut Snapshot) -> bool {
         if let Some(first) = &first {
             changed |= fix_column(
                 row,
-                "status",
+                columns::STATUS,
                 |s| statuses.contains(s),
                 Value::String(first.clone()),
             );
@@ -622,13 +671,13 @@ fn fix_column(row: &mut Row, column: &str, valid: impl Fn(&str) -> bool, fallbac
 /// clash after the unique keys were settled.
 fn fix_words(merged: &mut Snapshot) -> bool {
     let kinds = enum_values(merged, EnumKind::WordKind);
-    let Some(rows) = merged.get_mut("words") else {
+    let Some(rows) = merged.get_mut(tables::WORDS) else {
         return false;
     };
     let mut changed = false;
     for row in rows.values_mut() {
         let fallback = Value::String(words::OTHER.into());
-        changed |= fix_column(row, "kind", |k| kinds.contains(k), fallback);
+        changed |= fix_column(row, columns::KIND, |k| kinds.contains(k), fallback);
     }
     changed
 }
@@ -636,9 +685,12 @@ fn fix_words(merged: &mut Snapshot) -> bool {
 /// Snaps and stacks whose stack is gone go to the board; stacks nested in each other (each moved
 /// into the other on a different device) are untangled by moving the one with the larger id out.
 fn fix_stacks(merged: &mut Snapshot) -> bool {
-    let stacks = ids(merged, "snap_stacks");
+    let stacks = ids(merged, tables::SNAP_STACKS);
     let mut changed = false;
-    for (table, column) in [("snaps", "stack_id"), ("snap_stacks", "parent_id")] {
+    for (table, column) in [
+        (tables::SNAPS, columns::STACK_ID),
+        (tables::SNAP_STACKS, columns::PARENT_ID),
+    ] {
         let Some(rows) = merged.get_mut(table) else {
             continue;
         };
@@ -652,10 +704,10 @@ fn fix_stacks(merged: &mut Snapshot) -> bool {
 /// The parent of each stack that has one.
 fn stack_parents(merged: &Snapshot) -> BTreeMap<String, String> {
     let rows = merged
-        .get("snap_stacks")
+        .get(tables::SNAP_STACKS)
         .into_iter()
         .flat_map(BTreeMap::iter);
-    rows.filter_map(|(id, r)| Some((id.clone(), text(r, "parent_id")?.to_string())))
+    rows.filter_map(|(id, r)| Some((id.clone(), text(r, columns::PARENT_ID)?.to_string())))
         .collect()
 }
 
@@ -689,39 +741,35 @@ fn break_stack_cycle(merged: &mut Snapshot) -> bool {
         return false;
     };
     let row = merged
-        .get_mut("snap_stacks")
+        .get_mut(tables::SNAP_STACKS)
         .and_then(|rows| rows.get_mut(last));
     let Some(row) = row else {
         return false;
     };
-    row.insert("parent_id".into(), Value::Null);
+    row.insert(columns::PARENT_ID.into(), Value::Null);
     true
 }
 
 /// The values of one enum kind.
 fn enum_values(merged: &Snapshot, kind: EnumKind) -> BTreeSet<String> {
     enum_rows(merged, kind)
-        .filter_map(|r| text(r, "value"))
+        .filter_map(|r| text(r, columns::VALUE))
         .map(String::from)
         .collect()
 }
 
 fn enum_rows(merged: &Snapshot, kind: EnumKind) -> impl Iterator<Item = &Row> {
     let rows = merged
-        .get("tend_enums")
+        .get(tables::ENUMS)
         .into_iter()
         .flat_map(BTreeMap::values);
-    rows.filter(move |r| text(r, "kind") == Some(kind.as_str()))
+    rows.filter(move |r| text(r, columns::KIND) == Some(kind.as_str()))
 }
 
-/// An enum row's `meta.position` (its JSON text parsed); missing sorts last.
+/// An enum row's place in its list, from its `meta` (JSON text); one with none sorts last.
 fn position(row: &Row) -> i64 {
-    let meta: Option<Value> = text(row, "meta").and_then(|m| serde_json::from_str(m).ok());
-    let position = meta
-        .as_ref()
-        .and_then(|m| m.get(POSITION))
-        .and_then(Value::as_i64);
-    position.unwrap_or(i64::MAX)
+    let meta = text(row, columns::META).and_then(|m| serde_json::from_str(m).ok());
+    rows::position(&meta.unwrap_or_default())
 }
 
 /// The status with the lowest position (ties: the smaller value).
@@ -730,44 +778,59 @@ fn first_status(merged: &Snapshot) -> Option<String> {
         .min_by_key(|r| {
             (
                 position(r),
-                text(r, "value").unwrap_or_default().to_string(),
+                text(r, columns::VALUE).unwrap_or_default().to_string(),
             )
         })
-        .and_then(|r| text(r, "value"))
+        .and_then(|r| text(r, columns::VALUE))
         .map(String::from)
 }
 
-/// Links whose source row, attachment or enum value is gone.
+/// The (kind, value) of every enum row a link may point at: blocked ones are left out, so a tag
+/// blocked on one device comes off a record another device put it on meanwhile.
+fn linkable_enums(merged: &Snapshot) -> BTreeSet<(String, String)> {
+    let rows = merged
+        .get(tables::ENUMS)
+        .into_iter()
+        .flat_map(BTreeMap::values);
+    let blocked = |r: &Row| text(r, columns::STATUS) == Some(EnumStatus::Blocked.as_str());
+    rows.filter(|r| !blocked(r))
+        .map(|r| {
+            let kind = text(r, columns::KIND).unwrap_or_default().to_string();
+            (
+                kind,
+                text(r, columns::VALUE).unwrap_or_default().to_string(),
+            )
+        })
+        .collect()
+}
+
+/// Links whose source row, attachment or enum value is gone, or whose enum value is blocked.
 fn drop_dangling_links(merged: &mut Snapshot) -> bool {
     let sources: BTreeMap<&str, BTreeSet<String>> = SourceType::ALL
         .into_iter()
         .map(|s| (s.as_str(), ids(merged, s.table())))
         .collect();
-    let attachments = ids(merged, "attachments");
-    let enums: BTreeSet<(String, String)> = merged
-        .get("tend_enums")
-        .into_iter()
-        .flat_map(BTreeMap::values)
-        .map(|r| {
-            let kind = text(r, "kind").unwrap_or_default().to_string();
-            (kind, text(r, "value").unwrap_or_default().to_string())
-        })
-        .collect();
+    let attachments = ids(merged, tables::ATTACHMENTS);
+    let enums = linkable_enums(merged);
     let target_alive = |row: &Row| {
-        let kind = text(row, "target_kind").unwrap_or_default().to_string();
-        let value = text(row, "target_value").unwrap_or_default().to_string();
-        match text(row, "target_type") {
+        let kind = text(row, columns::TARGET_KIND)
+            .unwrap_or_default()
+            .to_string();
+        let value = text(row, columns::TARGET_VALUE)
+            .unwrap_or_default()
+            .to_string();
+        match text(row, columns::TARGET_TYPE) {
             Some(t) if t == TargetType::Enum.as_str() => enums.contains(&(kind, value)),
             Some(t) if t == TargetType::Attachment.as_str() => attachments.contains(&value),
             _ => false,
         }
     };
     let source_alive = |row: &Row| {
-        let alive = text(row, "source_type").and_then(|t| sources.get(t));
-        let id = text(row, "source_id").unwrap_or_default();
+        let alive = text(row, columns::SOURCE_TYPE).and_then(|t| sources.get(t));
+        let id = text(row, columns::SOURCE_ID).unwrap_or_default();
         alive.is_some_and(|ids| ids.contains(id))
     };
-    let Some(rows) = merged.get_mut("tend_links") else {
+    let Some(rows) = merged.get_mut(tables::LINKS) else {
         return false;
     };
     let before = rows.len();

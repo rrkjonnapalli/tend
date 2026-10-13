@@ -42,7 +42,7 @@ fn tag_link(id: &str, task: &str, tag: &str, at: i64) -> Value {
 }
 
 fn names_of(s: &Snapshot) -> Vec<String> {
-    s["people"]
+    s[tables::PEOPLE]
         .values()
         .map(|r| text(r, "first_name").unwrap().to_string())
         .collect()
@@ -50,9 +50,9 @@ fn names_of(s: &Snapshot) -> Vec<String> {
 
 #[test]
 fn a_change_on_one_side_wins_without_looking_at_the_clock() {
-    let base = snap(&[("people", vec![person("p", "Ann", 10)])]);
-    let local = snap(&[("people", vec![person("p", "Ann", 10)])]);
-    let remote = snap(&[("people", vec![person("p", "Anna", 1)])]);
+    let base = snap(&[(tables::PEOPLE, vec![person("p", "Ann", 10)])]);
+    let local = snap(&[(tables::PEOPLE, vec![person("p", "Ann", 10)])]);
+    let remote = snap(&[(tables::PEOPLE, vec![person("p", "Anna", 1)])]);
     assert_eq!(
         names_of(&reconcile(&Sides {
             base: &base,
@@ -73,9 +73,9 @@ fn a_change_on_one_side_wins_without_looking_at_the_clock() {
 
 #[test]
 fn both_changed_newer_wins_and_ties_are_the_same_everywhere() {
-    let base = snap(&[("people", vec![person("p", "Ann", 1)])]);
-    let a = snap(&[("people", vec![person("p", "Anna", 5)])]);
-    let b = snap(&[("people", vec![person("p", "Annie", 9)])]);
+    let base = snap(&[(tables::PEOPLE, vec![person("p", "Ann", 1)])]);
+    let a = snap(&[(tables::PEOPLE, vec![person("p", "Anna", 5)])]);
+    let b = snap(&[(tables::PEOPLE, vec![person("p", "Annie", 9)])]);
     assert_eq!(
         names_of(&reconcile(&Sides {
             base: &base,
@@ -84,8 +84,8 @@ fn both_changed_newer_wins_and_ties_are_the_same_everywhere() {
         })),
         vec!["Annie"]
     );
-    let tie_a = snap(&[("people", vec![person("p", "Anna", 5)])]);
-    let tie_b = snap(&[("people", vec![person("p", "Annie", 5)])]);
+    let tie_a = snap(&[(tables::PEOPLE, vec![person("p", "Anna", 5)])]);
+    let tie_b = snap(&[(tables::PEOPLE, vec![person("p", "Annie", 5)])]);
     assert_eq!(
         reconcile(&Sides {
             base: &base,
@@ -103,10 +103,10 @@ fn both_changed_newer_wins_and_ties_are_the_same_everywhere() {
 
 #[test]
 fn a_delete_beats_an_edit_and_adds_are_kept() {
-    let base = snap(&[("people", vec![person("p", "Ann", 1)])]);
-    let local = snap(&[("people", vec![person("n", "New", 3)])]);
+    let base = snap(&[(tables::PEOPLE, vec![person("p", "Ann", 1)])]);
+    let local = snap(&[(tables::PEOPLE, vec![person("n", "New", 3)])]);
     let remote = snap(&[(
-        "people",
+        tables::PEOPLE,
         vec![person("p", "Edited", 9), person("r", "Remote", 2)],
     )]);
     let merged = reconcile(&Sides {
@@ -114,7 +114,7 @@ fn a_delete_beats_an_edit_and_adds_are_kept() {
         local: &local,
         remote: &remote,
     });
-    let ids: Vec<&String> = merged["people"].keys().collect();
+    let ids: Vec<&String> = merged[tables::PEOPLE].keys().collect();
     assert_eq!(ids, vec!["n", "r"]);
 }
 
@@ -122,41 +122,41 @@ fn a_delete_beats_an_edit_and_adds_are_kept() {
 fn colliding_links_and_folders_collapse_to_the_smallest_id() {
     let tables = [
         (
-            "tasks",
+            tables::TASKS,
             vec![json!({ "id": "t", "path": "", "status": "NOT_STARTED", "updated_at": 0 })],
         ),
         (
-            "tend_enums",
+            tables::ENUMS,
             vec![
                 enum_row("T1", EnumKind::Tag, "OPS", "ops", 0),
                 enum_row("S1", EnumKind::TaskStatus, "NOT_STARTED", "Not started", 0),
             ],
         ),
         (
-            "task_folders",
+            tables::TASK_FOLDERS,
             vec![json!({ "id": "root", "path": "", "updated_at": 0 })],
         ),
     ];
     let base = snap(&tables);
     let mut l = snap(&[
-        ("tend_links", vec![tag_link("b", "t", "OPS", 1)]),
+        (tables::LINKS, vec![tag_link("b", "t", "OPS", 1)]),
         (
-            "tend_enums",
+            tables::ENUMS,
             vec![enum_row("T3", EnumKind::Tag, "Q4", "q4", 0)],
         ),
         (
-            "task_folders",
+            tables::TASK_FOLDERS,
             vec![json!({ "id": "f2", "path": "work", "updated_at": 1 })],
         ),
     ]);
     let mut r = snap(&[
-        ("tend_links", vec![tag_link("a", "t", "OPS", 1)]),
+        (tables::LINKS, vec![tag_link("a", "t", "OPS", 1)]),
         (
-            "tend_enums",
+            tables::ENUMS,
             vec![enum_row("T2", EnumKind::Tag, "Q4", "q4", 0)],
         ),
         (
-            "task_folders",
+            tables::TASK_FOLDERS,
             vec![json!({ "id": "f1", "path": "work", "updated_at": 1 })],
         ),
     ]);
@@ -169,14 +169,14 @@ fn colliding_links_and_folders_collapse_to_the_smallest_id() {
         local: &l,
         remote: &r,
     });
-    assert_eq!(merged["tend_links"].keys().collect::<Vec<_>>(), vec!["a"]);
-    let enums: Vec<&String> = merged["tend_enums"].keys().collect();
+    assert_eq!(merged[tables::LINKS].keys().collect::<Vec<_>>(), vec!["a"]);
+    let enums: Vec<&String> = merged[tables::ENUMS].keys().collect();
     assert_eq!(
         enums,
         vec!["S1", "T1", "T2"],
         "the same tag made twice keeps the smaller id"
     );
-    let folders: Vec<&String> = merged["task_folders"].keys().collect();
+    let folders: Vec<&String> = merged[tables::TASK_FOLDERS].keys().collect();
     assert_eq!(folders, vec!["f1", "root"]);
 }
 
@@ -185,20 +185,20 @@ fn equal_label_names_get_numbered_and_clashing_note_paths_a_suffix() {
     let empty = Snapshot::new();
     let l = snap(&[
         (
-            "tend_enums",
+            tables::ENUMS,
             vec![
                 enum_row("x", EnumKind::TaskLabel, "REVIEW", "Review", 0),
                 enum_row("z", EnumKind::TaskStatus, "REVIEW", "review", 0),
             ],
         ),
         (
-            "attachments",
+            tables::ATTACHMENTS,
             vec![json!({ "id": "a1", "path": "plan.md", "name": "plan.md", "updated_at": 1 })],
         ),
     ]);
     let r = snap(&[
         (
-            "tend_enums",
+            tables::ENUMS,
             vec![enum_row(
                 "y",
                 EnumKind::TaskLabel,
@@ -208,7 +208,7 @@ fn equal_label_names_get_numbered_and_clashing_note_paths_a_suffix() {
             )],
         ),
         (
-            "attachments",
+            tables::ATTACHMENTS,
             vec![json!({ "id": "a2", "path": "plan.md", "name": "plan.md", "updated_at": 1 })],
         ),
     ]);
@@ -217,7 +217,7 @@ fn equal_label_names_get_numbered_and_clashing_note_paths_a_suffix() {
         local: &l,
         remote: &r,
     });
-    let labels: Vec<&str> = merged["tend_enums"]
+    let labels: Vec<&str> = merged[tables::ENUMS]
         .values()
         .map(|r| text(r, "label").unwrap())
         .collect();
@@ -226,13 +226,13 @@ fn equal_label_names_get_numbered_and_clashing_note_paths_a_suffix() {
         vec!["Review", "review 2", "review"],
         "numbered within a kind; a status may share a label's name"
     );
-    let paths: Vec<&str> = merged["attachments"]
+    let paths: Vec<&str> = merged[tables::ATTACHMENTS]
         .values()
         .map(|r| text(r, "path").unwrap())
         .collect();
     assert_eq!(paths, vec!["plan.md", "plan_1.md"]);
     assert_eq!(
-        text(&merged["attachments"]["a2"], "name"),
+        text(&merged[tables::ATTACHMENTS]["a2"], "name"),
         Some("plan_1.md")
     );
 }
@@ -240,23 +240,23 @@ fn equal_label_names_get_numbered_and_clashing_note_paths_a_suffix() {
 #[test]
 fn references_to_gone_rows_are_fixed_or_dropped_in_cascade() {
     let base = snap(&[
-        ("people", vec![person("p", "Ann", 0)]),
+        (tables::PEOPLE, vec![person("p", "Ann", 0)]),
         (
-            "tend_enums",
+            tables::ENUMS,
             vec![
                 enum_row("TODO", EnumKind::TaskStatus, "TODO", "To do", 0),
                 enum_row("HOLD", EnumKind::TaskStatus, "HOLD", "Hold", 5),
             ],
         ),
         (
-            "task_folders",
+            tables::TASK_FOLDERS,
             vec![
                 json!({ "id": "root", "path": "", "updated_at": 0 }),
                 json!({ "id": "w", "path": "work", "updated_at": 0 }),
             ],
         ),
         (
-            "tasks",
+            tables::TASKS,
             vec![
                 json!({ "id": "parent", "path": "", "parent_id": null, "status": "TODO", "assignee_id": null, "updated_at": 0 }),
             ],
@@ -264,28 +264,28 @@ fn references_to_gone_rows_are_fixed_or_dropped_in_cascade() {
     ]);
     // Local deletes the person, the HOLD status and the folder; remote adds work that uses them.
     let mut local = base.clone();
-    local.get_mut("people").unwrap().clear();
-    local.get_mut("tend_enums").unwrap().remove("HOLD");
-    local.get_mut("task_folders").unwrap().remove("w");
-    local.get_mut("tasks").unwrap().remove("parent");
+    local.get_mut(tables::PEOPLE).unwrap().clear();
+    local.get_mut(tables::ENUMS).unwrap().remove("HOLD");
+    local.get_mut(tables::TASK_FOLDERS).unwrap().remove("w");
+    local.get_mut(tables::TASKS).unwrap().remove("parent");
     let mut remote = base.clone();
-    remote.get_mut("tasks").unwrap().insert(
+    remote.get_mut(tables::TASKS).unwrap().insert(
         "t".into(),
         row(json!({ "id": "t", "path": "work", "parent_id": null, "status": "HOLD", "assignee_id": "p", "updated_at": 1 })),
     );
-    remote.get_mut("tasks").unwrap().insert(
+    remote.get_mut(tables::TASKS).unwrap().insert(
         "sub".into(),
         row(json!({ "id": "sub", "path": "", "parent_id": "parent", "status": "TODO", "assignee_id": null, "updated_at": 1 })),
     );
     remote.insert(
-        "task_comments",
+        tables::TASK_COMMENTS,
         BTreeMap::from([(
             "c".into(),
             row(json!({ "id": "c", "task_id": "sub", "updated_at": 1 })),
         )]),
     );
     remote.insert(
-        "tend_links",
+        tables::LINKS,
         BTreeMap::from([
             ("l1".into(), row(tag_link("l1", "sub", "OPS", 1))),
             ("l2".into(), row(tag_link("l2", "t", "GONE", 1))),
@@ -296,19 +296,19 @@ fn references_to_gone_rows_are_fixed_or_dropped_in_cascade() {
         local: &local,
         remote: &remote,
     });
-    let tasks: Vec<&String> = merged["tasks"].keys().collect();
+    let tasks: Vec<&String> = merged[tables::TASKS].keys().collect();
     assert_eq!(tasks, vec!["t"], "the subtask went with its parent");
-    let t = &merged["tasks"]["t"];
+    let t = &merged[tables::TASKS]["t"];
     assert_eq!(
         (text(t, "path"), text(t, "status"), t.get("assignee_id")),
         (Some(""), Some("TODO"), Some(&Value::Null))
     );
     assert!(
-        merged["task_comments"].is_empty(),
+        merged[tables::TASK_COMMENTS].is_empty(),
         "the comment went with the subtask"
     );
     assert!(
-        merged["tend_links"].is_empty(),
+        merged[tables::LINKS].is_empty(),
         "links to a gone task or a missing tag are dropped"
     );
 }
@@ -317,29 +317,29 @@ fn references_to_gone_rows_are_fixed_or_dropped_in_cascade() {
 fn a_note_whose_folder_is_gone_moves_to_the_root() {
     let base = snap(&[
         (
-            "note_folders",
+            tables::NOTE_FOLDERS,
             vec![
                 json!({ "id": "root", "path": "", "updated_at": 0 }),
                 json!({ "id": "f", "path": "ai", "updated_at": 0 }),
             ],
         ),
         (
-            "attachments",
+            tables::ATTACHMENTS,
             vec![json!({ "id": "a0", "path": "x.md", "name": "x.md", "updated_at": 0 })],
         ),
         (
-            "notes",
+            tables::NOTES,
             vec![json!({ "id": "n0", "attachment_id": "a0", "updated_at": 0 })],
         ),
     ]);
     let mut local = base.clone();
-    local.get_mut("note_folders").unwrap().remove("f");
+    local.get_mut(tables::NOTE_FOLDERS).unwrap().remove("f");
     let mut remote = base.clone();
-    remote.get_mut("attachments").unwrap().insert(
+    remote.get_mut(tables::ATTACHMENTS).unwrap().insert(
         "a1".into(),
         row(json!({ "id": "a1", "path": "ai/x.md", "name": "x.md", "updated_at": 1 })),
     );
-    remote.get_mut("notes").unwrap().insert(
+    remote.get_mut(tables::NOTES).unwrap().insert(
         "n1".into(),
         row(json!({ "id": "n1", "attachment_id": "a1", "updated_at": 1 })),
     );
@@ -348,12 +348,15 @@ fn a_note_whose_folder_is_gone_moves_to_the_root() {
         local: &local,
         remote: &remote,
     });
-    assert_eq!(text(&merged["attachments"]["a1"], "path"), Some("x_1.md"));
+    assert_eq!(
+        text(&merged[tables::ATTACHMENTS]["a1"], "path"),
+        Some("x_1.md")
+    );
 }
 
 #[test]
 fn merging_a_merge_changes_nothing() {
-    let s = snap(&[("people", vec![person("p", "Ann", 1)])]);
+    let s = snap(&[(tables::PEOPLE, vec![person("p", "Ann", 1)])]);
     assert_eq!(
         reconcile(&Sides {
             base: &s,
@@ -367,15 +370,15 @@ fn merging_a_merge_changes_nothing() {
 #[test]
 fn a_rename_on_one_side_and_an_edit_on_the_other_both_survive() {
     let body = |path: &str, sha: &str, at: i64| json!({ "id": "a", "path": path, "sha256": sha, "updated_at": at });
-    let base = snap(&[("attachments", vec![body("plan.md", "old", 1)])]);
-    let edited = snap(&[("attachments", vec![body("plan.md", "new", 5)])]);
-    let renamed = snap(&[("attachments", vec![body("plan_v2.md", "old", 9)])]);
+    let base = snap(&[(tables::ATTACHMENTS, vec![body("plan.md", "old", 1)])]);
+    let edited = snap(&[(tables::ATTACHMENTS, vec![body("plan.md", "new", 5)])]);
+    let renamed = snap(&[(tables::ATTACHMENTS, vec![body("plan_v2.md", "old", 9)])]);
     let merged = reconcile(&Sides {
         base: &base,
         local: &edited,
         remote: &renamed,
     });
-    let a = &merged["attachments"]["a"];
+    let a = &merged[tables::ATTACHMENTS]["a"];
     assert_eq!(
         (text(a, "path"), text(a, "sha256")),
         (Some("plan_v2.md"), Some("new"))
@@ -404,7 +407,7 @@ fn a_path_with_every_suffix_taken_gets_the_row_id() {
 fn a_fallback_the_rules_refuse_too_is_not_a_change_every_pass() {
     // No root folder row: a task moved to the root still fails the folder rule.
     let task = json!({ "id": "t", "path": "gone", "title": "T", "updated_at": 1 });
-    let mut merged = snap(&[("tasks", vec![task]), ("task_folders", vec![])]);
+    let mut merged = snap(&[(tables::TASKS, vec![task]), (tables::TASK_FOLDERS, vec![])]);
     assert!(fix_pass(&mut merged));
     assert!(
         !fix_pass(&mut merged),
@@ -429,7 +432,7 @@ fn word_tag(id: &str, word: &str, tag: &str) -> Value {
 #[test]
 fn the_same_word_added_on_two_devices_becomes_one() {
     let base = snap(&[(
-        "tend_enums",
+        tables::ENUMS,
         vec![
             word_kinds(),
             enum_row("T1", EnumKind::Tag, "READING", "reading", 0),
@@ -438,23 +441,23 @@ fn the_same_word_added_on_two_devices_becomes_one() {
     )]);
     let mut local = base.clone();
     local.insert(
-        "words",
+        tables::WORDS,
         BTreeMap::from([("w1".into(), row(word("w1", "petrichor", "", "rain", 5)))]),
     );
     local.insert(
-        "tend_links",
+        tables::LINKS,
         BTreeMap::from([("l1".into(), row(word_tag("l1", "w1", "READING")))]),
     );
     let mut remote = base.clone();
     remote.insert(
-        "words",
+        tables::WORDS,
         BTreeMap::from([(
             "w2".into(),
             row(word("w2", "petrichor", "smell of rain", "", 9)),
         )]),
     );
     remote.insert(
-        "tend_links",
+        tables::LINKS,
         BTreeMap::from([
             ("l2".into(), row(word_tag("l2", "w2", "READING"))),
             ("l3".into(), row(word_tag("l3", "w2", "SOUND"))),
@@ -465,15 +468,15 @@ fn the_same_word_added_on_two_devices_becomes_one() {
         local: &local,
         remote: &remote,
     });
-    let words: Vec<&String> = merged["words"].keys().collect();
+    let words: Vec<&String> = merged[tables::WORDS].keys().collect();
     assert_eq!(words, vec!["w1"], "the smaller id is kept");
-    let w = &merged["words"]["w1"];
+    let w = &merged[tables::WORDS]["w1"];
     assert_eq!(
-        (text(w, "meaning"), text(w, "notes")),
+        (text(w, "meaning"), text(w, tables::NOTES)),
         (Some("smell of rain"), Some("rain")),
         "the newer row's fields, an empty one filled from the other"
     );
-    let tags: Vec<(&str, &str)> = merged["tend_links"]
+    let tags: Vec<(&str, &str)> = merged[tables::LINKS]
         .values()
         .map(|l| {
             (
@@ -500,37 +503,37 @@ fn the_same_link_saved_on_two_devices_becomes_one() {
     let link = |id: &str, why: &str, at: i64| json!({ "id": id, "kind": "LINK", "value": "https://svelte.dev", "title": null, "why": why, "url_key": "svelte.dev", "updated_at": at });
     let text_ref = json!({ "id": "r9", "kind": "TEXT", "value": "Perfect Days", "title": null, "why": "", "url_key": null, "updated_at": 1 });
     let empty = Snapshot::new();
-    let l = snap(&[("refs", vec![link("r1", "runes", 1), text_ref.clone()])]);
+    let l = snap(&[(tables::REFS, vec![link("r1", "runes", 1), text_ref.clone()])]);
     let mut text_twin = text_ref.clone();
     text_twin["id"] = json!("r8");
-    let r = snap(&[("refs", vec![link("r2", "", 2), text_twin])]);
+    let r = snap(&[(tables::REFS, vec![link("r2", "", 2), text_twin])]);
     let merged = reconcile(&Sides {
         base: &empty,
         local: &l,
         remote: &r,
     });
-    let ids: Vec<&String> = merged["refs"].keys().collect();
+    let ids: Vec<&String> = merged[tables::REFS].keys().collect();
     assert_eq!(
         ids,
         vec!["r1", "r8", "r9"],
         "text references have no key and both stay"
     );
-    assert_eq!(text(&merged["refs"]["r1"], "why"), Some("runes"));
+    assert_eq!(text(&merged[tables::REFS]["r1"], "why"), Some("runes"));
 }
 
 #[test]
 fn snaps_and_stacks_whose_stack_is_gone_go_to_the_board() {
     let stack = |id: &str, parent: Option<&str>| json!({ "id": id, "parent_id": parent, "name": id, "updated_at": 0 });
-    let base = snap(&[("snap_stacks", vec![stack("s1", None)])]);
+    let base = snap(&[(tables::SNAP_STACKS, vec![stack("s1", None)])]);
     let mut local = base.clone();
-    local.get_mut("snap_stacks").unwrap().remove("s1");
+    local.get_mut(tables::SNAP_STACKS).unwrap().remove("s1");
     let mut remote = base.clone();
     remote
-        .get_mut("snap_stacks")
+        .get_mut(tables::SNAP_STACKS)
         .unwrap()
         .insert("s2".into(), row(stack("s2", Some("s1"))));
     remote.insert(
-        "snaps",
+        tables::SNAPS,
         BTreeMap::from([(
             "n".into(),
             row(json!({ "id": "n", "stack_id": "s1", "text": "x", "updated_at": 1 })),
@@ -541,24 +544,24 @@ fn snaps_and_stacks_whose_stack_is_gone_go_to_the_board() {
         local: &local,
         remote: &remote,
     });
-    assert_eq!(merged["snap_stacks"]["s2"]["parent_id"], Value::Null);
-    assert_eq!(merged["snaps"]["n"]["stack_id"], Value::Null);
+    assert_eq!(merged[tables::SNAP_STACKS]["s2"]["parent_id"], Value::Null);
+    assert_eq!(merged[tables::SNAPS]["n"]["stack_id"], Value::Null);
 }
 
 #[test]
 fn stacks_nested_in_each_other_are_untangled() {
     let stack = |id: &str, parent: Option<&str>, at: i64| json!({ "id": id, "parent_id": parent, "name": id, "updated_at": at });
     let base = snap(&[(
-        "snap_stacks",
+        tables::SNAP_STACKS,
         vec![stack("a", None, 0), stack("b", None, 0)],
     )]);
     // One device moves a into b, the other b into a.
     let local = snap(&[(
-        "snap_stacks",
+        tables::SNAP_STACKS,
         vec![stack("a", Some("b"), 1), stack("b", None, 0)],
     )]);
     let remote = snap(&[(
-        "snap_stacks",
+        tables::SNAP_STACKS,
         vec![stack("a", None, 0), stack("b", Some("a"), 1)],
     )]);
     let merged = reconcile(&Sides {
@@ -566,26 +569,32 @@ fn stacks_nested_in_each_other_are_untangled() {
         local: &local,
         remote: &remote,
     });
-    let parent = |id: &str| merged["snap_stacks"][id]["parent_id"].clone();
+    let parent = |id: &str| merged[tables::SNAP_STACKS][id]["parent_id"].clone();
     assert_eq!((parent("a"), parent("b")), (json!("b"), Value::Null));
 }
 
 #[test]
 fn a_word_whose_kind_is_gone_becomes_other() {
     let slang = enum_row("K", EnumKind::WordKind, "SLANG", "slang", 6);
-    let base = snap(&[("tend_enums", vec![word_kinds(), slang]), ("words", vec![])]);
+    let base = snap(&[
+        (tables::ENUMS, vec![word_kinds(), slang]),
+        (tables::WORDS, vec![]),
+    ]);
     let mut local = base.clone();
-    local.get_mut("tend_enums").unwrap().remove("K");
+    local.get_mut(tables::ENUMS).unwrap().remove("K");
     let mut remote = base.clone();
     let mut w = word("w", "Gnarly", "", "", 1);
     w["kind"] = json!("SLANG");
-    remote.get_mut("words").unwrap().insert("w".into(), row(w));
+    remote
+        .get_mut(tables::WORDS)
+        .unwrap()
+        .insert("w".into(), row(w));
     let merged = reconcile(&Sides {
         base: &base,
         local: &local,
         remote: &remote,
     });
-    let w = &merged["words"]["w"];
+    let w = &merged[tables::WORDS]["w"];
     assert_eq!(
         (text(w, "kind"), text(w, "title")),
         (Some("OTHER"), Some("Gnarly"))
@@ -605,14 +614,14 @@ fn a_default_enum_row_wins_over_one_a_user_made() {
         3,
     );
     seeded["is_default"] = json!(1);
-    let l = snap(&[("tend_enums", vec![made])]);
-    let r = snap(&[("tend_enums", vec![seeded])]);
+    let l = snap(&[(tables::ENUMS, vec![made])]);
+    let r = snap(&[(tables::ENUMS, vec![seeded])]);
     let merged = reconcile(&Sides {
         base: &empty,
         local: &l,
         remote: &r,
     });
-    let ids: Vec<&String> = merged["tend_enums"].keys().collect();
+    let ids: Vec<&String> = merged[tables::ENUMS].keys().collect();
     assert_eq!(ids, vec!["WORD_KIND:CONCEPT"]);
 }
 
@@ -625,15 +634,15 @@ fn a_recolor_and_a_reorder_of_one_label_both_survive() {
         row
     };
     let base = snap(&[(
-        "tend_enums",
+        tables::ENUMS,
         vec![label(json!({ "color": "#111111", "position": 0 }), 0)],
     )]);
     let l = snap(&[(
-        "tend_enums",
+        tables::ENUMS,
         vec![label(json!({ "color": "#222222", "position": 0 }), 5)],
     )]);
     let r = snap(&[(
-        "tend_enums",
+        tables::ENUMS,
         vec![label(json!({ "color": "#111111", "position": 3 }), 9)],
     )]);
     let merged = reconcile(&Sides {
@@ -641,9 +650,64 @@ fn a_recolor_and_a_reorder_of_one_label_both_survive() {
         local: &l,
         remote: &r,
     });
-    let meta = text(&merged["tend_enums"]["TASK_LABEL:ALPHA"], "meta").unwrap();
+    let meta = text(&merged[tables::ENUMS]["TASK_LABEL:ALPHA"], "meta").unwrap();
     assert_eq!(
         meta,
         json!({ "color": "#222222", "position": 3 }).to_string()
+    );
+}
+
+#[test]
+fn a_tag_blocked_on_one_device_comes_off_what_another_put_it_on() {
+    let tag = |value: &str, status: &str, at: i64| {
+        let mut row = enum_row(value, EnumKind::Tag, value, value, 0);
+        row[columns::STATUS] = json!(status);
+        row[columns::UPDATED_AT] = json!(at);
+        row
+    };
+    let tasks = (tables::TASKS, vec![json!({ "id": "t", "updated_at": 0 })]);
+    let active = vec![tag("OPS", "ACTIVE", 0), tag("Q4", "ACTIVE", 0)];
+    let base = snap(&[tasks.clone(), (tables::ENUMS, active.clone())]);
+    // This device tags the task; the other blocks one of the two tags meanwhile.
+    let links = vec![tag_link("l1", "t", "OPS", 5), tag_link("l2", "t", "Q4", 5)];
+    let local = snap(&[
+        tasks.clone(),
+        (tables::ENUMS, active),
+        (tables::LINKS, links),
+    ]);
+    let blocked = vec![tag("OPS", "BLOCKED", 9), tag("Q4", "ACTIVE", 0)];
+    let remote = snap(&[tasks, (tables::ENUMS, blocked)]);
+    let merged = reconcile(&Sides {
+        base: &base,
+        local: &local,
+        remote: &remote,
+    });
+    assert_eq!(
+        text(&merged[tables::ENUMS]["OPS"], columns::STATUS),
+        Some("BLOCKED")
+    );
+    let kept: Vec<&String> = merged[tables::LINKS].keys().collect();
+    assert_eq!(kept, vec!["l2"], "only the link to the blocked tag goes");
+}
+
+#[test]
+fn a_status_without_a_position_is_never_the_first_status() {
+    let mut unplaced = enum_row("AAA", EnumKind::TaskStatus, "AAA", "Aaa", 0);
+    unplaced[columns::META] = json!("{}");
+    let placed = enum_row("TODO", EnumKind::TaskStatus, "TODO", "To do", 7);
+    let task = json!({ "id": "t", "status": "GONE", "updated_at": 0 });
+    let local = snap(&[
+        (tables::ENUMS, vec![unplaced, placed]),
+        (tables::TASKS, vec![task]),
+    ]);
+    let empty = Snapshot::new();
+    let merged = reconcile(&Sides {
+        base: &empty,
+        local: &local,
+        remote: &empty,
+    });
+    assert_eq!(
+        text(&merged[tables::TASKS]["t"], columns::STATUS),
+        Some("TODO")
     );
 }

@@ -61,7 +61,7 @@ fn set(row: &mut Row, column: &str, value: serde_json::Value) {
 }
 
 fn files_of(s: &mut Snapshot) -> &mut std::collections::BTreeMap<String, Row> {
-    s.get_mut("attachments").unwrap()
+    s.get_mut(tables::ATTACHMENTS).unwrap()
 }
 
 fn no_tx(_: &Transaction) -> AppResult<()> {
@@ -85,13 +85,13 @@ fn rows_become_the_merged_rows_whatever_the_order_rules() {
     let local = snapshot(&v.conn).unwrap();
     let mut merged = local.clone();
     // The status and the folder go away while the task that used them moves off them...
-    merged.get_mut("tend_enums").unwrap().remove("h");
-    merged.get_mut("task_folders").unwrap().remove("w");
-    let task = merged.get_mut("tasks").unwrap().get_mut("t").unwrap();
+    merged.get_mut(tables::ENUMS).unwrap().remove("h");
+    merged.get_mut(tables::TASK_FOLDERS).unwrap().remove("w");
+    let task = merged.get_mut(tables::TASKS).unwrap().get_mut("t").unwrap();
     set(task, "status", json!("NOT_STARTED"));
     set(task, "path", json!(""));
     // ...and two labels swap names.
-    let labels = merged.get_mut("tend_enums").unwrap();
+    let labels = merged.get_mut(tables::ENUMS).unwrap();
     set(labels.get_mut("a").unwrap(), "label", json!("Beta"));
     set(labels.get_mut("b").unwrap(), "label", json!("Alpha"));
     let change = Change {
@@ -127,7 +127,7 @@ fn files_follow_the_rows_moved_swapped_fetched_and_removed() {
     set(idea_row, "path", json!("plan.md"));
     set(idea_row, "sha256", json!("remote-sha"));
     files_of(&mut merged).remove(&gone_a);
-    merged.get_mut("notes").unwrap().remove(&gone);
+    merged.get_mut(tables::NOTES).unwrap().remove(&gone);
     let remote = merged.clone();
     let blobs = Remote(HashMap::from([(
         "plan.md".to_string(),
@@ -167,7 +167,11 @@ fn a_file_the_remote_lacks_lets_its_row_in_and_leaves_the_old_file() {
     let mut merged = local.clone();
     let a = v.attachment_of(&plan);
     set(
-        merged.get_mut("attachments").unwrap().get_mut(&a).unwrap(),
+        merged
+            .get_mut(tables::ATTACHMENTS)
+            .unwrap()
+            .get_mut(&a)
+            .unwrap(),
         "sha256",
         json!("new"),
     );
@@ -190,7 +194,7 @@ fn a_folder_that_cannot_be_made_rolls_the_apply_back() {
     let mut merged = local.clone();
     // A plain file sits where the incoming folder must go.
     fs::write(v.root().join("ideas"), "not a folder").unwrap();
-    merged.get_mut("note_folders").unwrap().insert(
+    merged.get_mut(tables::NOTE_FOLDERS).unwrap().insert(
         "f1".into(),
         json!({ "id": "f1", "path": "ideas", "created_at": 0, "updated_at": 0 })
             .as_object()
@@ -259,7 +263,7 @@ fn new_tasks_are_written_once() {
         "description": "", "status": "NOT_STARTED", "due_date": null, "due_time": null,
         "assignee_id": null, "order_key": "V", "created_at": 1, "updated_at": 1, "completed_at": null,
     });
-    merged.get_mut("tasks").unwrap().insert(
+    merged.get_mut(tables::TASKS).unwrap().insert(
         task["id"].as_str().unwrap().into(),
         task.as_object().unwrap().clone(),
     );
@@ -355,11 +359,11 @@ fn a_word_merged_into_another_keeps_its_tags() {
     let local = snapshot(&v.conn).unwrap();
     // The merge kept the other device's w1 and moved the tag to it.
     let mut merged = local.clone();
-    let words = merged.get_mut("words").unwrap();
+    let words = merged.get_mut(tables::WORDS).unwrap();
     let mut kept = words.remove("w2").unwrap();
     set(&mut kept, "id", json!("w1"));
     words.insert("w1".into(), kept);
-    let link = merged.get_mut("tend_links").unwrap().get_mut("l").unwrap();
+    let link = merged.get_mut(tables::LINKS).unwrap().get_mut("l").unwrap();
     set(link, "source_id", json!("w1"));
     let change = Change {
         local: &local,
@@ -391,7 +395,7 @@ fn a_tag_kept_under_another_devices_id_keeps_its_links() {
     let local = snapshot(&v.conn).unwrap();
     // Both devices made the tag; the merge kept the other device's row.
     let mut merged = local.clone();
-    let enums = merged.get_mut("tend_enums").unwrap();
+    let enums = merged.get_mut(tables::ENUMS).unwrap();
     let mut kept = enums.remove("mine").unwrap();
     set(&mut kept, "id", json!("theirs"));
     enums.insert("theirs".into(), kept);

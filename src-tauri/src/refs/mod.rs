@@ -6,11 +6,12 @@ mod title;
 #[cfg(test)]
 mod tests;
 
-use rusqlite::{params, Connection, OptionalExtension, ToSql, Transaction};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
+use crate::db::{columns, tables, Returning, Update};
 use crate::enums::{RefKind, SourceType};
-use crate::error::{errors, AppResult};
+use crate::error::{errors, AppError, AppResult};
 use crate::tags;
 use crate::util::{new_id, now_ms};
 
@@ -68,6 +69,16 @@ pub fn url_key(url: &str) -> String {
 
 const COLS: &str = "id, kind, value, title, why, url_key, created_at, updated_at";
 
+/// What a write to `refs` answers with.
+const WRITTEN: Returning<Ref> = Returning {
+    columns: COLS,
+    map: to_ref,
+};
+
+fn not_found() -> AppError {
+    errors::NOT_FOUND.with("Reference was not found")
+}
+
 fn to_ref(r: &rusqlite::Row) -> rusqlite::Result<Ref> {
     let kind: String = r.get(1)?;
     Ok(Ref {
@@ -98,19 +109,6 @@ pub fn list(conn: &Connection) -> AppResult<Vec<Ref>> {
     Ok(refs)
 }
 
-pub fn get(conn: &Connection, id: &str) -> AppResult<Ref> {
-    let mut r = conn
-        .query_row(
-            &format!("SELECT {COLS} FROM refs WHERE id = ?1"),
-            [id],
-            to_ref,
-        )
-        .optional()?
-        .ok_or_else(|| errors::NOT_FOUND.with("Reference was not found"))?;
-    r.tags = tags::of(conn, SourceType::Ref, id)?;
-    Ok(r)
-}
-
 fn check_value(value: &str) -> AppResult<String> {
     let value = value.trim();
     if value.is_empty() {
@@ -125,22 +123,24 @@ fn kept_title(title: Option<&str>) -> Option<String> {
     title.map(String::from)
 }
 
-/// The key a link is checked by; text has none. Refuses a link another reference (not
-/// `except`) already has.
-fn checked_key(
-    conn: &Connection,
+/// A kind and value a reference is to have. `except` is that reference's id when it already
+/// exists (an edit), so its own link doesn't count as taken.
+struct Wanted<'a> {
     kind: RefKind,
-    value: &str,
-    except: Option<&str>,
-) -> AppResult<Option<String>> {
-    if kind != RefKind::Link {
+    value: &'a str,
+    except: Option<&'a str>,
+}
+
+/// The key a link is checked by; text has none. Refuses a link another reference already has.
+fn checked_key(conn: &Connection, wanted: &Wanted) -> AppResult<Option<String>> {
+    if wanted.kind != RefKind::Link {
         return Ok(None);
     }
-    let key = url_key(value);
+    let key = url_key(wanted.value);
     let taken = conn
         .query_row(
             "SELECT 1 FROM refs WHERE url_key = ?1 AND id IS NOT ?2",
-            params![key, except],
+            params![key, wanted.except],
             |_| Ok(()),
         )
         .optional()?;
@@ -152,13 +152,19 @@ fn checked_key(
 
 pub fn create(conn: &Connection, new: &NewRef) -> AppResult<Ref> {
     let value = check_value(&new.value)?;
-    let key = checked_key(conn, new.kind, &value, None)?;
-    let id = new_id();
-    conn.execute(
-        "INSERT INTO refs (id, kind, value, title, why, url_key, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)",
+    let wanted = Wanted {
+        kind: new.kind,
+        value: &value,
+        except: None,
+    };
+    let key = checked_key(conn, &wanted)?;
+    let added = conn.query_row(
+        &format!(
+            "INSERT INTO refs (id, kind, value, title, why, url_key, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7) RETURNING {COLS}"
+        ),
         params![
-            id,
+            new_id(),
             new.kind.as_str(),
             value,
             kept_title(new.title.as_deref()),
@@ -166,44 +172,71 @@ pub fn create(conn: &Connection, new: &NewRef) -> AppResult<Ref> {
             key,
             now_ms()
         ],
+        to_ref,
     )?;
-    get(conn, &id)
+    // A new reference carries no tags yet.
+    Ok(added)
 }
 
-pub fn update(conn: &mut Connection, id: &str, patch: &Patch) -> AppResult<Ref> {
-    let current = get(conn, id)?;
-    let kind = patch.kind.unwrap_or(current.kind);
-    let value = check_value(patch.value.as_deref().unwrap_or(&current.value))?;
-    let key = checked_key(conn, kind, &value, Some(id))?;
-    let tx = conn.transaction()?;
+/// What a reference is after a patch that names its kind or value.
+struct Identity {
+    kind: RefKind,
+    value: String,
+    url_key: Option<String>,
+}
+
+/// The kind, value and key after `patch`. The key depends on both the kind and the value, so
+/// whichever the patch leaves out comes from the reference as it is.
+fn checked_identity(conn: &Connection, id: &str, patch: &Patch) -> AppResult<Identity> {
+    let current: Option<(String, String)> = conn
+        .query_row("SELECT kind, value FROM refs WHERE id = ?1", [id], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })
+        .optional()?;
+    let (current_kind, current_value) = current.ok_or_else(not_found)?;
+    let kind = patch.kind.unwrap_or(RefKind::parse(&current_kind));
+    let value = check_value(patch.value.as_deref().unwrap_or(&current_value))?;
+    let wanted = Wanted {
+        kind,
+        value: &value,
+        except: Some(id),
+    };
+    let url_key = checked_key(conn, &wanted)?;
+    Ok(Identity {
+        kind,
+        value,
+        url_key,
+    })
+}
+
+pub fn update(conn: &Connection, id: &str, patch: &Patch) -> AppResult<Ref> {
     // Only when asked: a kind this version doesn't know must survive an edit of the note.
-    if patch.kind.is_some() || patch.value.is_some() {
-        set(&tx, id, "kind", &kind.as_str())?;
-        set(&tx, id, "value", &value)?;
-        set(&tx, id, "url_key", &key)?;
+    let names_identity = patch.kind.is_some() || patch.value.is_some();
+    let identity = if names_identity {
+        Some(checked_identity(conn, id, patch)?)
+    } else {
+        None
+    };
+    let mut update = Update::new(tables::REFS);
+    if let Some(identity) = &identity {
+        update.set(columns::KIND, identity.kind.as_str());
+        update.set(columns::VALUE, &identity.value);
+        update.set(columns::URL_KEY, &identity.url_key);
     }
     if let Some(title) = &patch.title {
-        set(&tx, id, "title", &kept_title(title.as_deref()))?;
+        update.set(columns::TITLE, kept_title(title.as_deref()));
     }
-    if let Some(why) = &patch.why {
-        set(&tx, id, "why", why)?;
-    }
-    set(&tx, id, "updated_at", &now_ms())?;
-    tx.commit()?;
-    get(conn, id)
-}
-
-/// Writes one column. `column` is always one of the literals in `update`, never user input.
-fn set(tx: &Transaction, id: &str, column: &'static str, value: &dyn ToSql) -> AppResult<()> {
-    tx.execute(
-        &format!("UPDATE refs SET {column} = ?1 WHERE id = ?2"),
-        params![value, id],
-    )?;
-    Ok(())
+    update.set_some("why", patch.why.as_ref());
+    let mut updated = update.run(conn, id, WRITTEN)?.ok_or_else(not_found)?;
+    updated.tags = tags::of(conn, SourceType::Ref, id)?;
+    Ok(updated)
 }
 
 /// Deletes the reference; its tags come off with it (trigger `refs_drop_links`).
 pub fn delete(conn: &Connection, id: &str) -> AppResult<()> {
-    conn.execute("DELETE FROM refs WHERE id = ?1", [id])?;
+    let deleted = conn.execute("DELETE FROM refs WHERE id = ?1", [id])?;
+    if deleted == 0 {
+        return Err(not_found());
+    }
     Ok(())
 }

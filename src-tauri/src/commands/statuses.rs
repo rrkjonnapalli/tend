@@ -36,7 +36,13 @@ pub fn status_rename(
     value: String,
     label: String,
 ) -> AppResult<statuses::Status> {
-    state.with(|db, _| statuses::rename(db, &value, &label))
+    state.with(|db, _| {
+        let change = statuses::Rename {
+            value: &value,
+            label: &label,
+        };
+        statuses::rename(db, &change)
+    })
 }
 
 #[tauri::command(async)]
@@ -45,7 +51,13 @@ pub fn status_recolor(
     value: String,
     color: String,
 ) -> AppResult<statuses::Status> {
-    state.with(|db, _| statuses::recolor(db, &value, &color))
+    state.with(|db, _| {
+        let change = statuses::Recolor {
+            value: &value,
+            color: &color,
+        };
+        statuses::recolor(db, &change)
+    })
 }
 
 #[tauri::command(async)]

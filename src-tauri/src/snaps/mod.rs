@@ -6,18 +6,19 @@ mod stacks;
 #[cfg(test)]
 mod tests;
 
-use rusqlite::{params, Connection, OptionalExtension, ToSql, Transaction};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 
 use crate::colors;
+use crate::db::{columns, tables, Returning, Update};
 use crate::enums::{Paper, SourceType};
-use crate::error::{errors, AppResult};
+use crate::error::{errors, AppError, AppResult};
 use crate::tags;
 use crate::util::{new_id, now_ms};
 
 pub use stacks::{
     create as stack_create, move_to as stack_move, remove as stack_remove, rename as stack_rename,
-    Stack,
+    Move as StackMove, NewStack, Rename as StackRename, Stack,
 };
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -70,6 +71,16 @@ pub struct Patch {
 
 const COLS: &str = "id, stack_id, text, paper, color, pinned, created_at, updated_at";
 
+/// What a write to `snaps` answers with.
+const WRITTEN: Returning<Snap> = Returning {
+    columns: COLS,
+    map: to_snap,
+};
+
+fn not_found() -> AppError {
+    errors::NOT_FOUND.with("Snap was not found")
+}
+
 fn to_snap(r: &rusqlite::Row) -> rusqlite::Result<Snap> {
     let paper: String = r.get(3)?;
     Ok(Snap {
@@ -103,19 +114,6 @@ pub fn board(conn: &Connection) -> AppResult<Board> {
     })
 }
 
-pub fn get(conn: &Connection, id: &str) -> AppResult<Snap> {
-    let mut snap = conn
-        .query_row(
-            &format!("SELECT {COLS} FROM snaps WHERE id = ?1"),
-            [id],
-            to_snap,
-        )
-        .optional()?
-        .ok_or_else(|| errors::NOT_FOUND.with("Snap was not found"))?;
-    snap.tags = tags::of(conn, SourceType::Snap, id)?;
-    Ok(snap)
-}
-
 /// Text with nothing but spaces is refused; the text is kept exactly as written.
 fn check_text(text: &str) -> AppResult<()> {
     if text.trim().is_empty() {
@@ -142,12 +140,13 @@ pub fn create(conn: &Connection, new: &NewSnap) -> AppResult<Snap> {
         stacks::get(conn, stack)?;
     }
     let color = kept_color(new.paper, new.color.as_deref())?;
-    let id = new_id();
-    conn.execute(
-        "INSERT INTO snaps (id, stack_id, text, paper, color, pinned, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)",
+    let added = conn.query_row(
+        &format!(
+            "INSERT INTO snaps (id, stack_id, text, paper, color, pinned, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7) RETURNING {COLS}"
+        ),
         params![
-            id,
+            new_id(),
             new.stack_id,
             new.text,
             new.paper.as_str(),
@@ -155,61 +154,62 @@ pub fn create(conn: &Connection, new: &NewSnap) -> AppResult<Snap> {
             new.pinned,
             now_ms()
         ],
+        to_snap,
     )?;
-    get(conn, &id)
+    // A new snap carries no tags yet.
+    Ok(added)
 }
 
-/// The paper and colour after `patch`: a paper that isn't sticky drops the colour.
-fn look_after(current: &Snap, patch: &Patch) -> AppResult<(Paper, Option<String>)> {
-    let paper = patch.paper.unwrap_or(current.paper);
+/// The paper and colour after a `patch` that names either: a paper that isn't sticky drops the
+/// colour, so whichever the patch leaves out comes from the snap as it is.
+fn look_after(conn: &Connection, id: &str, patch: &Patch) -> AppResult<(Paper, Option<String>)> {
+    let current: Option<(String, Option<String>)> = conn
+        .query_row("SELECT paper, color FROM snaps WHERE id = ?1", [id], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })
+        .optional()?;
+    let (current_paper, current_color) = current.ok_or_else(not_found)?;
+    let paper = patch.paper.unwrap_or(Paper::parse(&current_paper));
     let color = match &patch.color {
         Some(color) => color.clone(),
-        None => current.color.clone(),
+        None => current_color,
     };
     Ok((paper, kept_color(paper, color.as_deref())?))
 }
 
 /// Saves an edit; the snap moves to the front of its level (its `updated_at` is now).
-pub fn update(conn: &mut Connection, id: &str, patch: &Patch) -> AppResult<Snap> {
-    let current = get(conn, id)?;
+pub fn update(conn: &Connection, id: &str, patch: &Patch) -> AppResult<Snap> {
     if let Some(text) = &patch.text {
         check_text(text)?;
     }
     if let Some(Some(stack)) = &patch.stack_id {
         stacks::get(conn, stack)?;
     }
-    let (paper, color) = look_after(&current, patch)?;
-    let tx = conn.transaction()?;
-    if let Some(text) = &patch.text {
-        set(&tx, id, "text", text)?;
-    }
-    if let Some(stack) = &patch.stack_id {
-        set(&tx, id, "stack_id", stack)?;
-    }
     // Only when asked: a paper this version doesn't know must survive a pin or a move.
-    if patch.paper.is_some() || patch.color.is_some() {
-        set(&tx, id, "paper", &paper.as_str())?;
-        set(&tx, id, "color", &color)?;
+    let names_look = patch.paper.is_some() || patch.color.is_some();
+    let look = if names_look {
+        Some(look_after(conn, id, patch)?)
+    } else {
+        None
+    };
+    let mut update = Update::new(tables::SNAPS);
+    update.set_some("text", patch.text.as_ref());
+    update.set_some(columns::STACK_ID, patch.stack_id.as_ref());
+    if let Some((paper, color)) = &look {
+        update.set("paper", paper.as_str());
+        update.set("color", color);
     }
-    if let Some(pinned) = patch.pinned {
-        set(&tx, id, "pinned", &pinned)?;
-    }
-    set(&tx, id, "updated_at", &now_ms())?;
-    tx.commit()?;
-    get(conn, id)
-}
-
-/// Writes one column. `column` is always one of the literals in `update`, never user input.
-fn set(tx: &Transaction, id: &str, column: &'static str, value: &dyn ToSql) -> AppResult<()> {
-    tx.execute(
-        &format!("UPDATE snaps SET {column} = ?1 WHERE id = ?2"),
-        params![value, id],
-    )?;
-    Ok(())
+    update.set_some("pinned", patch.pinned);
+    let mut updated = update.run(conn, id, WRITTEN)?.ok_or_else(not_found)?;
+    updated.tags = tags::of(conn, SourceType::Snap, id)?;
+    Ok(updated)
 }
 
 /// Deletes the snap; its tags come off with it (trigger `snaps_drop_links`).
 pub fn delete(conn: &Connection, id: &str) -> AppResult<()> {
-    conn.execute("DELETE FROM snaps WHERE id = ?1", [id])?;
+    let deleted = conn.execute("DELETE FROM snaps WHERE id = ?1", [id])?;
+    if deleted == 0 {
+        return Err(not_found());
+    }
     Ok(())
 }

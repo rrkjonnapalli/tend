@@ -8,19 +8,20 @@ mod kinds;
 #[cfg(test)]
 mod tests;
 
-use rusqlite::{params, Connection, OptionalExtension, ToSql, Transaction};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::db::{columns, tables, Returning, Update};
 use crate::enums::SourceType;
-use crate::error::{errors, AppResult};
+use crate::error::{errors, AppError, AppResult};
 use crate::tags;
 use crate::util::{new_id, now_ms};
 
 pub use dictionary::{lookup, Dictionary};
 pub use kinds::{
     add as kind_add, delete as kind_delete, list as kinds, rename as kind_rename,
-    reorder as kind_reorder, Kind,
+    reorder as kind_reorder, Kind, Named as KindNamed,
 };
 
 /// The kind whose titles are saved in lowercase; new words get it unless told otherwise.
@@ -69,6 +70,16 @@ pub struct Patch {
 }
 
 const COLS: &str = "id, title, kind, dictionary, meaning, notes, created_at, updated_at";
+
+/// What a write to `words` answers with.
+const WRITTEN: Returning<Stored> = Returning {
+    columns: COLS,
+    map: to_stored,
+};
+
+fn not_found() -> AppError {
+    errors::NOT_FOUND.with("Word was not found")
+}
 
 /// A row as stored: `dictionary` still JSON text, tags not read yet.
 type Stored = (
@@ -129,23 +140,17 @@ pub fn list(conn: &Connection) -> AppResult<Vec<Word>> {
         .collect()
 }
 
-pub fn get(conn: &Connection, id: &str) -> AppResult<Word> {
-    let stored = conn
-        .query_row(
-            &format!("SELECT {COLS} FROM words WHERE id = ?1"),
-            [id],
-            to_stored,
-        )
-        .optional()?
-        .ok_or_else(|| errors::NOT_FOUND.with("Word was not found"))?;
-    to_word(stored, tags::of(conn, SourceType::Word, id)?)
-}
-
 fn check_kind(conn: &Connection, kind: &str) -> AppResult<()> {
     if !kinds::exists(conn, kind)? {
         return Err(errors::WORD_KIND_UNKNOWN.err());
     }
     Ok(())
+}
+
+/// A kind a word is being given: one of the kinds, and not a blocked one.
+fn check_new_kind(conn: &Connection, kind: &str) -> AppResult<()> {
+    check_kind(conn, kind)?;
+    kinds::check_active(conn, kind)
 }
 
 /// The title as saved: trimmed, and lowercase for a `WORD`.
@@ -181,15 +186,16 @@ fn json_text(value: &Option<Value>) -> AppResult<Option<String>> {
 
 pub fn create(conn: &Connection, new: &NewWord) -> AppResult<Word> {
     let kind = new.kind.as_deref().unwrap_or(WORD);
-    check_kind(conn, kind)?;
+    check_new_kind(conn, kind)?;
     let title = saved_title(&new.title, kind)?;
     check_free(conn, &title, None)?;
-    let id = new_id();
-    conn.execute(
-        "INSERT INTO words (id, title, kind, dictionary, meaning, notes, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7)",
+    let stored = conn.query_row(
+        &format!(
+            "INSERT INTO words (id, title, kind, dictionary, meaning, notes, created_at, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7) RETURNING {COLS}"
+        ),
         params![
-            id,
+            new_id(),
             title,
             kind,
             json_text(&new.dictionary)?,
@@ -197,54 +203,66 @@ pub fn create(conn: &Connection, new: &NewWord) -> AppResult<Word> {
             new.notes,
             now_ms()
         ],
+        to_stored,
     )?;
-    get(conn, &id)
+    // A new word carries no tags yet.
+    to_word(stored, Vec::new())
 }
 
-/// The title and kind after `patch`: a new kind or title is checked, and a title that changes
-/// (lowercased by a move to `WORD`, say) must be free.
-fn checked_naming(conn: &Connection, current: &Word, patch: &Patch) -> AppResult<(String, String)> {
-    let kind = patch.kind.clone().unwrap_or_else(|| current.kind.clone());
-    check_kind(conn, &kind)?;
-    let typed = patch.title.as_deref().unwrap_or(&current.title);
+/// The title and kind after a `patch` that names either: the title depends on the kind (a `WORD`
+/// is lowercase), so both come from the word as it is. A kind the patch gives is checked as a
+/// new one, and a title that changes (lowercased by a move to `WORD`, say) must be free.
+fn checked_naming(conn: &Connection, id: &str, patch: &Patch) -> AppResult<(String, String)> {
+    let current: Option<(String, String)> = conn
+        .query_row("SELECT title, kind FROM words WHERE id = ?1", [id], |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })
+        .optional()?;
+    let (current_title, current_kind) = current.ok_or_else(not_found)?;
+    let kind = match &patch.kind {
+        Some(kind) => {
+            check_new_kind(conn, kind)?;
+            kind.clone()
+        }
+        None => {
+            check_kind(conn, &current_kind)?;
+            current_kind
+        }
+    };
+    let typed = patch.title.as_deref().unwrap_or(&current_title);
     let title = saved_title(typed, &kind)?;
-    if title != current.title {
-        check_free(conn, &title, Some(&current.id))?;
+    if title != current_title {
+        check_free(conn, &title, Some(id))?;
     }
     Ok((title, kind))
 }
 
-pub fn update(conn: &mut Connection, id: &str, patch: &Patch) -> AppResult<Word> {
-    let current = get(conn, id)?;
-    let (title, kind) = checked_naming(conn, &current, patch)?;
-    let tx = conn.transaction()?;
-    set(&tx, id, "title", &title)?;
-    set(&tx, id, "kind", &kind)?;
+pub fn update(conn: &Connection, id: &str, patch: &Patch) -> AppResult<Word> {
+    let names_either = patch.title.is_some() || patch.kind.is_some();
+    let naming = if names_either {
+        Some(checked_naming(conn, id, patch)?)
+    } else {
+        None
+    };
+    let mut update = Update::new(tables::WORDS);
+    if let Some((title, kind)) = &naming {
+        update.set(columns::TITLE, title);
+        update.set(columns::KIND, kind);
+    }
     if let Some(dictionary) = &patch.dictionary {
-        set(&tx, id, "dictionary", &json_text(dictionary)?)?;
+        update.set("dictionary", json_text(dictionary)?);
     }
-    if let Some(meaning) = &patch.meaning {
-        set(&tx, id, "meaning", meaning)?;
-    }
-    if let Some(notes) = &patch.notes {
-        set(&tx, id, "notes", notes)?;
-    }
-    set(&tx, id, "updated_at", &now_ms())?;
-    tx.commit()?;
-    get(conn, id)
-}
-
-/// Writes one column. `column` is always one of the literals in `update`, never user input.
-fn set(tx: &Transaction, id: &str, column: &'static str, value: &dyn ToSql) -> AppResult<()> {
-    tx.execute(
-        &format!("UPDATE words SET {column} = ?1 WHERE id = ?2"),
-        params![value, id],
-    )?;
-    Ok(())
+    update.set_some("meaning", patch.meaning.as_ref());
+    update.set_some(columns::NOTES, patch.notes.as_ref());
+    let stored = update.run(conn, id, WRITTEN)?.ok_or_else(not_found)?;
+    to_word(stored, tags::of(conn, SourceType::Word, id)?)
 }
 
 /// Deletes the word; its tags come off with it (trigger `words_drop_links`).
 pub fn delete(conn: &Connection, id: &str) -> AppResult<()> {
-    conn.execute("DELETE FROM words WHERE id = ?1", [id])?;
+    let deleted = conn.execute("DELETE FROM words WHERE id = ?1", [id])?;
+    if deleted == 0 {
+        return Err(not_found());
+    }
     Ok(())
 }

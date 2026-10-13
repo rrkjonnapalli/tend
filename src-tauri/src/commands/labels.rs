@@ -32,7 +32,13 @@ pub fn label_add(
 
 #[tauri::command(async)]
 pub fn label_rename(state: State<AppState>, id: String, name: String) -> AppResult<labels::Label> {
-    state.with(|db, _| labels::rename(db, &id, &name))
+    state.with(|db, _| {
+        let change = labels::Rename {
+            id: &id,
+            name: &name,
+        };
+        labels::rename(db, &change)
+    })
 }
 
 #[tauri::command(async)]
@@ -41,7 +47,13 @@ pub fn label_recolor(
     id: String,
     color: String,
 ) -> AppResult<labels::Label> {
-    state.with(|db, _| labels::recolor(db, &id, &color))
+    state.with(|db, _| {
+        let change = labels::Recolor {
+            id: &id,
+            color: &color,
+        };
+        labels::recolor(db, &change)
+    })
 }
 
 #[tauri::command(async)]

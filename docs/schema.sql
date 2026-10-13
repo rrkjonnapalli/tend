@@ -48,13 +48,16 @@ CREATE TABLE settings (
 -------------------------------------------------------------------------------
 -- Every list the user can change: task statuses, task labels, word kinds, tags. `value` never
 -- changes; `label` is what the user sees. `meta` holds the rest (color, position, lookup) as JSON,
--- checked by the app. Default rows can't be deleted.
+-- checked by the app. Default rows can't be deleted. A BLOCKED row stays in its list but can't be
+-- put on anything new; the app removes its links (tend_links) when it blocks it, and unblocking
+-- brings none of them back.
 CREATE TABLE tend_enums (
   id         TEXT PRIMARY KEY,
   kind       TEXT NOT NULL,              -- TASK_STATUS, TASK_LABEL, WORD_KIND, TAG
   value      TEXT NOT NULL,              -- SCREAMING_SNAKE_CASE
   label      TEXT NOT NULL,
   is_default INTEGER NOT NULL DEFAULT 0 CHECK (is_default IN (0, 1)),
+  status     TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'BLOCKED')),
   meta       TEXT NOT NULL DEFAULT '{}',
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,

@@ -47,7 +47,13 @@ pub fn word_kind_add(
     label: String,
     value: String,
 ) -> AppResult<words::Kind> {
-    state.with(|db, _| words::kind_add(db, &value, &label))
+    state.with(|db, _| {
+        let kind = words::KindNamed {
+            value: &value,
+            label: &label,
+        };
+        words::kind_add(db, &kind)
+    })
 }
 
 #[tauri::command(async)]
@@ -56,7 +62,13 @@ pub fn word_kind_rename(
     value: String,
     label: String,
 ) -> AppResult<words::Kind> {
-    state.with(|db, _| words::kind_rename(db, &value, &label))
+    state.with(|db, _| {
+        let kind = words::KindNamed {
+            value: &value,
+            label: &label,
+        };
+        words::kind_rename(db, &kind)
+    })
 }
 
 #[tauri::command(async)]

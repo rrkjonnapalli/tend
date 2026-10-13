@@ -32,6 +32,8 @@ pub const JSON: ErrorDef = def("JSON", "That data couldn’t be read");
 pub const COLOR_INVALID: ErrorDef = def("COLOR_INVALID", "Colors are #rrggbb.");
 pub const OPEN_FAILED: ErrorDef = def("OPEN_FAILED", "The file couldn’t be opened");
 pub const FILE_TOO_BIG: ErrorDef = def("FILE_TOO_BIG", "This file is over the size limit.");
+pub const ENUM_BLOCKED: ErrorDef = def("ENUM_BLOCKED", "This one is blocked.");
+pub const TAG_BLOCKED: ErrorDef = def("TAG_BLOCKED", "This tag is blocked.");
 pub const FILE_LIMIT: ErrorDef = def("FILE_LIMIT", "The size limit is 1 to 90 MB.");
 
 // ---- names and folders

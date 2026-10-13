@@ -221,6 +221,21 @@ fn the_library_round_trips_through_ipc() {
         .unwrap_err();
     assert_eq!(taken["key"], "WORD_TAKEN");
 
+    let blocked = json!({ "name": "sound", "status": "BLOCKED" });
+    h.ok("tag_set_status", blocked);
+    assert_eq!(h.ok("tags_all", json!({})), json!([]));
+    assert_eq!(
+        h.ok("tags_overview", json!({})),
+        json!([{ "name": "sound", "status": "BLOCKED", "uses": 0 }])
+    );
+    let refused = h
+        .call("word_tags_set", json!({ "id": id, "tags": ["sound"] }))
+        .unwrap_err();
+    assert_eq!(refused["key"], "TAG_BLOCKED");
+    let active = json!({ "name": "sound", "status": "ACTIVE" });
+    h.ok("tag_set_status", active);
+    assert_eq!(h.ok("tags_all", json!({})), json!(["sound"]));
+
     let stack = h.ok("stack_create", json!({ "parent": null, "name": "Haiku" }));
     let snap = h.ok(
         "snap_create",

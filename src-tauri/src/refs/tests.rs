@@ -25,7 +25,7 @@ fn url_keys_ignore_scheme_trailing_slash_and_case() {
 
 #[test]
 fn a_link_can_be_saved_once_text_any_number_of_times() {
-    let mut conn = open_memory();
+    let conn = open_memory();
     let first = create(&conn, &link("https://svelte.dev/blog/runes")).unwrap();
     assert_eq!(first.url_key.as_deref(), Some("svelte.dev/blog/runes"));
     assert!(create(&conn, &link("svelte.dev/blog/runes/"))
@@ -45,7 +45,7 @@ fn a_link_can_be_saved_once_text_any_number_of_times() {
         value: Some("https://svelte.dev/blog/runes".into()),
         ..Default::default()
     };
-    assert!(update(&mut conn, &again.id, &to_link)
+    assert!(update(&conn, &again.id, &to_link)
         .unwrap_err()
         .is(errors::REF_LINK_TAKEN));
     assert!(create(&conn, &link("   "))
@@ -55,7 +55,7 @@ fn a_link_can_be_saved_once_text_any_number_of_times() {
 
 #[test]
 fn titles_are_trimmed_and_blank_means_none() {
-    let mut conn = open_memory();
+    let conn = open_memory();
     let r = create(
         &conn,
         &NewRef {
@@ -70,7 +70,7 @@ fn titles_are_trimmed_and_blank_means_none() {
         why: Some("$state in one page".into()),
         ..Default::default()
     };
-    let r = update(&mut conn, &r.id, &blank).unwrap();
+    let r = update(&conn, &r.id, &blank).unwrap();
     assert_eq!((r.title, r.why.as_str()), (None, "$state in one page"));
 }
 
@@ -102,4 +102,24 @@ fn a_title_is_read_from_the_page_head() {
 fn only_http_and_https_are_fetched() {
     let err = fetch_title("file:///etc/passwd").unwrap_err();
     assert!(err.is(errors::REF_TITLE_FETCH));
+}
+
+#[test]
+fn a_reference_that_isnt_there_is_not_found() {
+    let conn = open_memory();
+    let why = Patch {
+        why: Some("x".into()),
+        ..Default::default()
+    };
+    let value = Patch {
+        value: Some("x".into()),
+        ..Default::default()
+    };
+    assert!(update(&conn, "nope", &why)
+        .unwrap_err()
+        .is(errors::NOT_FOUND));
+    assert!(update(&conn, "nope", &value)
+        .unwrap_err()
+        .is(errors::NOT_FOUND));
+    assert!(delete(&conn, "nope").unwrap_err().is(errors::NOT_FOUND));
 }

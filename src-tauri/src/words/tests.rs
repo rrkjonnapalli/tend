@@ -39,18 +39,18 @@ fn titles_are_unique_by_exact_match() {
 
 #[test]
 fn moving_to_word_lowercases_and_refuses_a_clash() {
-    let mut conn = open_memory();
+    let conn = open_memory();
     create(&conn, &new("nasa", None)).unwrap();
     let abbr = create(&conn, &new("NASA", Some("ABBR"))).unwrap();
     let to_word = Patch {
         kind: Some(WORD.into()),
         ..Default::default()
     };
-    assert!(update(&mut conn, &abbr.id, &to_word)
+    assert!(update(&conn, &abbr.id, &to_word)
         .unwrap_err()
         .is(errors::WORD_TAKEN));
     let other = create(&conn, &new("Petrichor", Some("TERM"))).unwrap();
-    let moved = update(&mut conn, &other.id, &to_word).unwrap();
+    let moved = update(&conn, &other.id, &to_word).unwrap();
     assert_eq!(moved.title, "petrichor");
 }
 
@@ -72,18 +72,19 @@ fn an_edit_keeps_what_it_leaves_out_and_the_list_carries_tags() {
         notes: Some("- seen in a book".into()),
         ..Default::default()
     };
-    let edited = update(&mut conn, &word.id, &patch).unwrap();
+    let edited = update(&conn, &word.id, &patch).unwrap();
     assert_eq!(edited.meaning, "brief");
     assert_eq!(edited.dictionary, Some(dictionary));
     let cleared = Patch {
         dictionary: Some(None),
         ..Default::default()
     };
-    assert_eq!(
-        update(&mut conn, &word.id, &cleared).unwrap().dictionary,
-        None
-    );
-    crate::tags::set(&mut conn, SourceType::Word, &word.id, &["Reading".into()]).unwrap();
+    assert_eq!(update(&conn, &word.id, &cleared).unwrap().dictionary, None);
+    let source = crate::links::Source {
+        kind: SourceType::Word,
+        id: &word.id,
+    };
+    crate::tags::set(&mut conn, source, &["Reading".into()]).unwrap();
     assert_eq!(list(&conn).unwrap()[0].tags, vec!["reading"]);
     delete(&conn, &word.id).unwrap();
     let links: i64 = conn
@@ -166,22 +167,55 @@ fn a_reply_without_definitions_is_no_entry_and_junk_is_an_error() {
 #[test]
 fn kinds_can_be_added_renamed_ordered_and_deleted_when_unused() {
     let mut conn = open_memory();
-    let slang = kind_add(&conn, "SLANG", " Slang ").unwrap();
+    let slang = kind_add(
+        &conn,
+        &KindNamed {
+            value: "SLANG",
+            label: " Slang ",
+        },
+    )
+    .unwrap();
     assert_eq!(
         (slang.label.as_str(), slang.position, slang.lookup),
         ("Slang", 7, false)
     );
-    assert!(kind_add(&conn, "SLANG_2", "slang")
-        .unwrap_err()
-        .is(errors::WORD_KIND_LABEL_TAKEN));
-    assert!(kind_add(&conn, "SLANG", "Other slang")
-        .unwrap_err()
-        .is(errors::WORD_KIND_VALUE_TAKEN));
-    assert!(kind_add(&conn, "odd value", "Odd")
-        .unwrap_err()
-        .is(errors::WORD_KIND_VALUE));
+    assert!(kind_add(
+        &conn,
+        &KindNamed {
+            value: "SLANG_2",
+            label: "slang"
+        }
+    )
+    .unwrap_err()
+    .is(errors::WORD_KIND_LABEL_TAKEN));
+    assert!(kind_add(
+        &conn,
+        &KindNamed {
+            value: "SLANG",
+            label: "Other slang"
+        }
+    )
+    .unwrap_err()
+    .is(errors::WORD_KIND_VALUE_TAKEN));
+    assert!(kind_add(
+        &conn,
+        &KindNamed {
+            value: "odd value",
+            label: "Odd"
+        }
+    )
+    .unwrap_err()
+    .is(errors::WORD_KIND_VALUE));
     assert_eq!(
-        kind_rename(&conn, "SLANG", "Street").unwrap().label,
+        kind_rename(
+            &conn,
+            &KindNamed {
+                value: "SLANG",
+                label: "Street"
+            }
+        )
+        .unwrap()
+        .label,
         "Street"
     );
 
@@ -213,4 +247,52 @@ fn a_title_is_one_url_segment() {
     );
     assert_eq!(dictionary::segment("café/x"), "caf%C3%A9%2Fx");
     assert_eq!(dictionary::segment("well-being"), "well-being");
+}
+
+#[test]
+fn a_blocked_kind_cant_be_given_to_a_word() {
+    let conn = open_memory();
+    let word = create(&conn, &new("ephemeral", None)).unwrap();
+    conn.execute(
+        "UPDATE tend_enums SET status = 'BLOCKED' WHERE kind = 'WORD_KIND' AND value = 'ABBR'",
+        [],
+    )
+    .unwrap();
+    let refused = create(&conn, &new("IT", Some("ABBR"))).unwrap_err();
+    assert!(refused.is(errors::ENUM_BLOCKED));
+    let patch = Patch {
+        kind: Some("ABBR".into()),
+        ..Default::default()
+    };
+    assert!(update(&conn, &word.id, &patch)
+        .unwrap_err()
+        .is(errors::ENUM_BLOCKED));
+}
+
+#[test]
+fn a_word_or_kind_that_isnt_there_is_not_found() {
+    let conn = open_memory();
+    let notes = Patch {
+        notes: Some("x".into()),
+        ..Default::default()
+    };
+    let title = Patch {
+        title: Some("x".into()),
+        ..Default::default()
+    };
+    assert!(update(&conn, "nope", &notes)
+        .unwrap_err()
+        .is(errors::NOT_FOUND));
+    assert!(update(&conn, "nope", &title)
+        .unwrap_err()
+        .is(errors::NOT_FOUND));
+    assert!(delete(&conn, "nope").unwrap_err().is(errors::NOT_FOUND));
+    let kind = KindNamed {
+        value: "NOPE",
+        label: "Nope",
+    };
+    assert!(kind_rename(&conn, &kind).unwrap_err().is(errors::NOT_FOUND));
+    assert!(kind_delete(&conn, "NOPE")
+        .unwrap_err()
+        .is(errors::NOT_FOUND));
 }

@@ -227,6 +227,8 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 ## 7. Tags
 - One shared pool for notes, tasks, words, snaps and references: `TAG` rows in `tend_enums`, linked through `tend_links` (§16).
 - **A tag is its name**, under the name rule (`^[a-z0-9]+(_[a-z0-9]+)*$`). What is typed becomes its slug ("UI Design" → `ui_design`, "C++" → `c`), the same on every device. The slug is the tag's label; its value is the slug in capitals (`UI_DESIGN`). Tags are never renamed.
+- **One editor everywhere** (`TagEditor`): chips with a red ✕ and an inline field whose list suggests the pool's active tags and offers *Create “x”* for a new one (↑↓ move, Enter, comma or Tab add, Esc closes). The list floats above everything, so a dialog or the snap editor can't cut it off. Notes, tasks and saved words save each change at once and show the tags the save answered with; a new word, the reference popup and the snap editor keep them until Save.
+- **Blocked tags:** a tag is active or blocked. Blocking one (Settings → Tags, §13) takes it off everything that carries it, and it can't be added again until it is unblocked: it is never suggested, and typed by hand the list says it is blocked and the chips stay as they were. The backend refuses it too (`TAG_BLOCKED`, for a tag blocked on another device since the pool was loaded): nothing is added, the message is shown, and the pool is loaded again. When that happens on Save, the word or reference is saved without the new tags. Unblocking only makes the tag usable again; it doesn't put it back on anything.
 
 ## 8. Attachments
 
@@ -298,17 +300,19 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - Minutes ≥ 0 with no upper limit; seconds 0–59; total > 0.
   - A bare number means minutes.
 - **Shortcuts:** ⌘1 Notes · ⌘2 Tasks · ⌘3 People · ⌘4 Library · ⌘, Settings · ⌘K palette · ⌘D toggle the dock (bottom bar).
+- **Dropdowns:** every list of choices in a popover takes ↑↓ (and Home / End), ↵ picks (Space too, where it ticks), Esc closes; ↓ from the button that opened it enters the list. The choice with the cursor has the cursor fill, like a list row. When a dropdown closes with the focus inside, the focus returns to what opened it. A picker with a search field (people, a note to link, a word's kind) filters as you type, and only a listed item can be picked.
 - **Keyboard focus** is never an outline or ring. A focused button or link gets the hover fill, a list row the cursor fill, a field its border colour, a filled button its hover colour.
 - **Arrow keys across a page (zones):** a list page is a stack of zones: page bar · (task views) · search · add field · rows (or the board). ↑ / ↓ leave a zone for the one above or below (a list is left with ↑ only from its first row; empty zones are skipped). ← / → move along a horizontal zone (page bar, task views); moving onto a task view switches to it, like the Settings sections. Fields keep ←→ for typing. **⌘← / ⌘→** jump between the side pane (the explorer, opened if hidden, or the Settings sections) and the page, returning to where you were. On a row, ← / → step through its own controls (edit, My day, assignee…), Enter opens, F2 renames. Task and person pages are zones too: page bar · title · fields (↑↓ between lines, ←→ along a line) · each section's head (←→ to its edit pencil) · its body (subtasks, contacts, attachments and comments as rows; the add fields and an open editor as fields). A multi-line field is left with ↑ / ↓ only from its first or last character; the Markdown editor keeps all its arrows. Space presses whatever has focus, like Enter (rows, links, the dock, board cards). **⌘⇧↓** syncs now (when the vault is connected; not inside a field, where it selects). **⌘↓** goes to the dock (opening it if hidden) on the current section; ← / → move along it, Enter opens, ↑ / Esc / ⌘↑ return to the page. **⌘[ / ⌘]** go back and forward (Back falls back to the parent page when there is no history).
 - **Lists and the explorer:** ↓ from the search or add field enters the list · ↑↓ Home End move the cursor (a slightly darker row) · ↵ opens · F2 renames · → / ← open and close a folder in the explorer. The explorer's F2, ⌘⇧M and ⌫ act on the row with the cursor, else on the open item. On the task board: ↑↓ within a column, ←→ across columns (skipping empty ones), ⇧← ⇧→ move the card to the previous or next status (to the end of that column), ↵ opens. The Settings sections, a task's subtasks and a person's tasks take ↑↓ too.
 
 ## 13. Settings
 
-- Sections on the left: General · Notes · Tasks · People · Library · Command palette.
+- Sections on the left: General · Tasks · Library · Tags · Sync · Command palette.
 - **Library:** word kinds (§15).
+- **Tags:** every tag in two columns, **Active** and **Blocked**, by name; each row shows the tag and how many things use it. An active row has *Block*, a blocked row *Unblock*. Block asks first (*Block “name”?* — it comes off N things and can't be added again until unblocked); Unblock doesn't ask. Either one reloads the tag pool and every list that shows tags (§7).
 - **General:** vault path as plain text, with a *Change vault folder…* link on the right. Below it, a quiet "N items skipped" line (files/folders whose names break the rule) that expands to the list.
 - **Tasks:** statuses (see §6).
-- Notes and People settings come later; their sections are empty in v1.
+- Notes and People settings come later; they have no section yet.
 
 ## 14. Out of scope for v1
 
@@ -329,7 +333,8 @@ The full behaviour is in `docs/tend-library-plan.md` and the mockups in `docs/te
 - **Word titles** are unique by exact match across all kinds. A `WORD` title is lowercased on save; other kinds keep their case, so `it` (word) and `IT` (abbr) are different entries. Changing a saved entry's kind to `WORD` lowercases its title and is refused if that title already exists.
 - **Kind guess** while adding, until a kind is picked by hand: all capitals (two characters or more) and no spaces guesses abbr (`NASA`, but not `Petrichor`), no spaces guesses word, spaces guess phrase; a dictionary hit marked idiom switches to idiom.
 - **Words list:** grouped by kind in kind order, always open; no random or collapse buttons.
-- **Meaning and Notes** render the markdown as written; Tend adds no link syntax of its own.
+- **Meaning and Notes** render the markdown as written; Tend adds no link syntax of its own. An empty one shows its prompt as a button that opens it for writing; one with text opens with its pencil or a double-click, like a task's description.
+- **A word's kind** is picked like a person: the kind chip opens a search over the kinds (type to filter, ↑↓, ↵), with the current one ticked.
 - **Pronunciation:** the dictionary's audio URL is stored with the entry and played from it (CSP `media-src https:`).
 - **Tags:** the app's shared tag pool and name rule (§7), not the spec's 24-character rule. The inline chip input from the mockups is `TagEditor`'s inline style.
 - **Tag filter:** none. The mockups only show it on standalone pages, which Tend doesn't have; search covers it.
@@ -341,14 +346,16 @@ The full behaviour is in `docs/tend-library-plan.md` and the mockups in `docs/te
 
 ## 16. Enums and links
 
-- **`tend_enums`** holds every list the user can change: `TASK_STATUS`, `TASK_LABEL`, `WORD_KIND`, `TAG`. Columns: `id` (`<KIND>:<VALUE>`, the same on every device, so a tag made on two devices syncs as one row), `kind`, `value`, `label`, `is_default`, `meta` (JSON: colour, position, lookup, …; sync merges it key by key, so a recolor and a reorder on two devices both survive), `created_at`, `updated_at`; `UNIQUE (kind, value)`.
+- **`tend_enums`** holds every list the user can change: `TASK_STATUS`, `TASK_LABEL`, `WORD_KIND`, `TAG`. Columns: `id` (`<KIND>:<VALUE>`, the same on every device, so a tag made on two devices syncs as one row), `kind`, `value`, `label`, `is_default`, `status` (`ACTIVE` or `BLOCKED`), `meta` (JSON: colour, position, lookup, …; sync merges it key by key, so a recolor and a reorder on two devices both survive), `created_at`, `updated_at`; `UNIQUE (kind, value)`.
   - Kinds and values are SCREAMING_SNAKE_CASE (the name rule in capitals). A value never changes; the label is what the user sees and renames.
   - `meta` is checked in the app, not in SQL. `is_default` rows can't be deleted.
-  - Order within a kind is `meta.position`.
+  - Order within a kind is `meta.position`, then value; a row without a position sorts last.
+  - **Blocked rows** (every kind): a `BLOCKED` row stays in its list but can't be put on anything new. Linking it is refused (`ENUM_BLOCKED`; for a tag `TAG_BLOCKED`), and so is giving a task a blocked status or a word a blocked kind. Blocking a row removes every link to it in the same transaction; unblocking restores none. Only tags can be blocked from the UI so far (§7): `tags_all` lists the active tags, `tags_overview` every tag with its status and how many records carry it, `tag_set_status` blocks or unblocks one.
 - **`tend_links`** joins any record to an enum or an attachment: `id`, `source_type`, `source_id`, `target_type`, `target_kind`, `target_value`, `created_at`, `updated_at`; `UNIQUE (source_type, source_id, target_type, target_kind, target_value)`.
   - `target_type` `ENUM`: `target_kind` is the enum kind, `target_value` the enum value.
   - `target_type` `ATTACHMENT`: `target_kind` is `''` (not NULL, so the unique key holds), `target_value` the attachment id.
   - Sources: `TASK`, `NOTE`, `COMMENT`, `PERSON`, `WORD`, `SNAP`, `REF`.
+- **Table names** live in one place too (`src-tauri/src/db/tables.rs`), with the column names that are passed around as data (`db/columns.rs`): sync rules, snapshot keys and SQL built at run time take them from there.
 - **Code enums, not rows:** `TEND_SOURCE_TYPE`, `TEND_TARGET_TYPE` and `TEND_TARGET_KIND` change only with a release, so they live in code: `src-tauri/src/enums/` and `src/lib/enums/*.enum.ts`, same values on both sides. No enum kind, value or type is typed inline anywhere else.
 - **Integrity in the app:** an enum in use can't be deleted where the rules say so (statuses, word kinds); the check is not atomic. Triggers remove links when their source row, attachment or enum row is deleted. Deleting a label or tag removes it from everything that carries it.
-- **Sync:** duplicates by `(kind, value)` and by the link key keep the smaller id (v1-sync-spec §9.2).
+- **Sync:** duplicates by `(kind, value)` and by the link key keep the smaller id (v1-sync-spec §9.2). `status` syncs like any other column; after a merge, links whose enum row is blocked are dropped (a tag blocked on one device while another device put it on something).

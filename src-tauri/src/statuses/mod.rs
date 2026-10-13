@@ -10,7 +10,7 @@ use rusqlite::Connection;
 use serde::Serialize;
 use serde_json::{Map, Value};
 
-use crate::enums::rows::{self, EnumRow, NewRow, COLOR, POSITION};
+use crate::enums::rows::{self, EnumRow, Key, MetaEntry, NewRow, COLOR, POSITION};
 use crate::enums::EnumKind;
 use crate::error::{errors, AppResult};
 
@@ -58,39 +58,61 @@ pub fn add(conn: &Connection, new: &NewStatus) -> AppResult<Status> {
     let value = checks::new_value(conn, new.value)?;
     let label = checks::label(conn, new.label, None)?;
     crate::colors::check(new.color)?;
-    let before_done = list(conn)?.into_iter().filter(|s| s.value != DONE);
-    let position = before_done.map(|s| s.position + 1).max().unwrap_or(0);
+    let position = rows::next_position(conn, KIND, Some(DONE))?;
     let mut meta = Map::new();
     meta.insert(COLOR.into(), Value::from(new.color));
     meta.insert(POSITION.into(), Value::from(position));
-    rows::insert(
-        conn,
-        &NewRow {
-            kind: KIND,
-            value,
-            label: &label,
-            meta,
-        },
-    )?;
-    get(conn, value)
+    let row = NewRow {
+        kind: KIND,
+        value,
+        label: &label,
+        meta,
+    };
+    let added = rows::insert(conn, &row)?;
+    // Taken between the check and the insert.
+    let added = added.ok_or_else(|| errors::STATUS_VALUE_TAKEN.err())?;
+    Ok(to_status(added))
+}
+
+/// Refuses a status that is blocked: no task can be given it.
+pub fn check_active(conn: &Connection, value: &str) -> AppResult<()> {
+    rows::check_active(conn, KIND, value)
+}
+
+fn key(value: &str) -> Key<'_> {
+    Key { kind: KIND, value }
 }
 
 fn get(conn: &Connection, value: &str) -> AppResult<Status> {
     rows::get(conn, KIND, value)?
         .map(to_status)
-        .ok_or_else(|| errors::NOT_FOUND.with("Status was not found"))
+        .ok_or_else(|| KIND.not_found())
 }
 
-pub fn rename(conn: &Connection, value: &str, label: &str) -> AppResult<Status> {
-    let label = checks::label(conn, label, Some(value))?;
-    rows::set_label(conn, KIND, value, &label)?;
-    get(conn, value)
+/// A status and the label it gets.
+pub struct Rename<'a> {
+    pub value: &'a str,
+    pub label: &'a str,
 }
 
-pub fn recolor(conn: &Connection, value: &str, color: &str) -> AppResult<Status> {
-    crate::colors::check(color)?;
-    rows::set_meta(conn, KIND, value, COLOR, Value::from(color))?;
-    get(conn, value)
+pub fn rename(conn: &Connection, change: &Rename) -> AppResult<Status> {
+    let label = checks::label(conn, change.label, Some(change.value))?;
+    rows::set_label(conn, key(change.value), &label).map(to_status)
+}
+
+/// A status and the color it gets.
+pub struct Recolor<'a> {
+    pub value: &'a str,
+    pub color: &'a str,
+}
+
+pub fn recolor(conn: &Connection, change: &Recolor) -> AppResult<Status> {
+    crate::colors::check(change.color)?;
+    let entry = MetaEntry {
+        key: COLOR,
+        to: Value::from(change.color),
+    };
+    rows::set_meta(conn, key(change.value), &entry).map(to_status)
 }
 
 /// Sets the order. Not started stays first and Done stays last.
@@ -99,7 +121,11 @@ pub fn reorder(conn: &mut Connection, values: &[String]) -> AppResult<()> {
     // Done keeps its position, so only the others are renumbered.
     crate::db::in_transaction(conn, |tx| {
         for (i, v) in values.iter().enumerate().take(values.len() - 1) {
-            rows::set_meta(tx, KIND, v, POSITION, Value::from(i as i64))?;
+            let entry = MetaEntry {
+                key: POSITION,
+                to: Value::from(i as i64),
+            };
+            rows::set_meta(tx, key(v), &entry)?;
         }
         Ok(())
     })

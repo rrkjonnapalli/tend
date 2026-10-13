@@ -75,16 +75,38 @@ fn add_rename_recolor_and_order() {
     )
     .unwrap_err()
     .is(errors::COLOR_INVALID));
-    assert!(rename(&conn, &review.id, "SCRIPT")
-        .unwrap_err()
-        .is(errors::LABEL_NAME_TAKEN));
+    assert!(rename(
+        &conn,
+        &Rename {
+            id: &review.id,
+            name: "SCRIPT"
+        }
+    )
+    .unwrap_err()
+    .is(errors::LABEL_NAME_TAKEN));
 
     assert_eq!(
-        rename(&conn, &script.id, "scripts").unwrap().name,
+        rename(
+            &conn,
+            &Rename {
+                id: &script.id,
+                name: "scripts"
+            }
+        )
+        .unwrap()
+        .name,
         "scripts"
     );
     assert_eq!(
-        recolor(&conn, &script.id, "#1e7a55").unwrap().color,
+        recolor(
+            &conn,
+            &Recolor {
+                id: &script.id,
+                color: "#1e7a55"
+            }
+        )
+        .unwrap()
+        .color,
         "#1e7a55"
     );
 
@@ -178,9 +200,58 @@ fn a_label_value_is_its_id_and_never_changes() {
             "{bad}"
         );
     }
-    let renamed = rename(&conn, "PR_REVIEW", "Code review").unwrap();
+    let renamed = rename(
+        &conn,
+        &Rename {
+            id: "PR_REVIEW",
+            name: "Code review",
+        },
+    )
+    .unwrap();
     assert_eq!(
         (renamed.id.as_str(), renamed.name.as_str()),
         ("PR_REVIEW", "Code review")
     );
+}
+
+#[test]
+fn a_blocked_label_cant_be_put_on_a_task() {
+    let mut conn = open_memory();
+    let t = task(&mut conn);
+    let new = NewLabel {
+        name: "script",
+        value: "SCRIPT",
+        color: "#1259d3",
+    };
+    add(&conn, &new).unwrap();
+    set_for_task(&mut conn, &t, &["SCRIPT".into()]).unwrap();
+    in_transaction(&mut conn, |tx| {
+        rows::set_status(tx, key("SCRIPT"), crate::enums::EnumStatus::Blocked)
+    })
+    .unwrap();
+    assert!(of_task(&conn, &t).unwrap().is_empty());
+    let refused = set_for_task(&mut conn, &t, &["SCRIPT".into()]).unwrap_err();
+    assert!(refused.is(errors::ENUM_BLOCKED));
+}
+
+#[test]
+fn a_label_that_isnt_there_is_not_found() {
+    let conn = open_memory();
+    let rename = rename(
+        &conn,
+        &Rename {
+            id: "NOPE",
+            name: "Nope",
+        },
+    );
+    let recolor = recolor(
+        &conn,
+        &Recolor {
+            id: "NOPE",
+            color: "#1259d3",
+        },
+    );
+    assert!(rename.unwrap_err().is(errors::NOT_FOUND));
+    assert!(recolor.unwrap_err().is(errors::NOT_FOUND));
+    assert!(delete(&conn, "NOPE").unwrap_err().is(errors::NOT_FOUND));
 }

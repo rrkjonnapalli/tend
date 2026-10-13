@@ -6,7 +6,7 @@ use serde::Serialize;
 use serde_json::{Map, Value};
 
 use crate::db::in_transaction;
-use crate::enums::rows::{self, EnumRow, NewRow, POSITION};
+use crate::enums::rows::{self, EnumRow, Key, MetaEntry, NewRow, POSITION};
 use crate::enums::EnumKind;
 use crate::error::{errors, AppResult};
 use crate::names;
@@ -47,10 +47,25 @@ pub fn exists(conn: &Connection, value: &str) -> AppResult<bool> {
     Ok(rows::get(conn, KIND, value)?.is_some())
 }
 
+/// Refuses a kind that is blocked: no word can be given it.
+pub fn check_active(conn: &Connection, value: &str) -> AppResult<()> {
+    rows::check_active(conn, KIND, value)
+}
+
 fn get(conn: &Connection, value: &str) -> AppResult<Kind> {
     rows::get(conn, KIND, value)?
         .map(to_kind)
-        .ok_or_else(|| errors::NOT_FOUND.with("Word kind was not found"))
+        .ok_or_else(|| KIND.not_found())
+}
+
+fn key(value: &str) -> Key<'_> {
+    Key { kind: KIND, value }
+}
+
+/// A kind's value and the name shown for it: a kind to add, or the new name of one.
+pub struct Named<'a> {
+    pub value: &'a str,
+    pub label: &'a str,
 }
 
 /// The trimmed name, not empty and not another kind's (ignoring case).
@@ -59,7 +74,12 @@ fn check_label(conn: &Connection, label: &str, except: Option<&str>) -> AppResul
     if label.is_empty() {
         return Err(errors::WORD_KIND_LABEL_EMPTY.err());
     }
-    if rows::label_taken(conn, KIND, label, except)? {
+    let wanted = rows::LabelUse {
+        kind: KIND,
+        label,
+        except,
+    };
+    if rows::label_taken(conn, &wanted)? {
         return Err(errors::WORD_KIND_LABEL_TAKEN.err());
     }
     Ok(label.to_string())
@@ -79,14 +99,10 @@ fn check_value(conn: &Connection, value: &str) -> AppResult<String> {
 }
 
 /// Adds a kind at the end. Kinds added here aren't looked up in the dictionary.
-pub fn add(conn: &Connection, value: &str, label: &str) -> AppResult<Kind> {
-    let label = check_label(conn, label, None)?;
-    let value = check_value(conn, value)?;
-    let position = list(conn)?
-        .iter()
-        .map(|k| k.position + 1)
-        .max()
-        .unwrap_or(0);
+pub fn add(conn: &Connection, kind: &Named) -> AppResult<Kind> {
+    let label = check_label(conn, kind.label, None)?;
+    let value = check_value(conn, kind.value)?;
+    let position = rows::next_position(conn, KIND, None)?;
     let mut meta = Map::new();
     meta.insert(LOOKUP.into(), Value::Bool(false));
     meta.insert(POSITION.into(), Value::from(position));
@@ -96,14 +112,15 @@ pub fn add(conn: &Connection, value: &str, label: &str) -> AppResult<Kind> {
         label: &label,
         meta,
     };
-    rows::insert(conn, &new)?;
-    get(conn, &value)
+    let added = rows::insert(conn, &new)?;
+    // Taken between the check and the insert.
+    let added = added.ok_or_else(|| errors::WORD_KIND_VALUE_TAKEN.err())?;
+    Ok(to_kind(added))
 }
 
-pub fn rename(conn: &Connection, value: &str, label: &str) -> AppResult<Kind> {
-    let label = check_label(conn, label, Some(value))?;
-    rows::set_label(conn, KIND, value, &label)?;
-    get(conn, value)
+pub fn rename(conn: &Connection, kind: &Named) -> AppResult<Kind> {
+    let label = check_label(conn, kind.label, Some(kind.value))?;
+    rows::set_label(conn, key(kind.value), &label).map(to_kind)
 }
 
 /// Sets the order; `values` must be exactly the current kinds.
@@ -118,7 +135,11 @@ pub fn reorder(conn: &mut Connection, values: &[String]) -> AppResult<()> {
     }
     in_transaction(conn, |tx| {
         for (position, value) in values.iter().enumerate() {
-            rows::set_meta(tx, KIND, value, POSITION, Value::from(position as i64))?;
+            let entry = MetaEntry {
+                key: POSITION,
+                to: Value::from(position as i64),
+            };
+            rows::set_meta(tx, key(value), &entry)?;
         }
         Ok(())
     })
