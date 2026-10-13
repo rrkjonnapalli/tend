@@ -1,9 +1,13 @@
 <script lang="ts">
-  import Chip from './Chip.svelte';
-  import { plainText } from '#lib/actions/plain-text.action.ts';
   // Tag chips with a red ✕ each, and an inline input that suggests tags from the shared pool.
+  // The same editor for notes, tasks, words, snaps and references. A blocked tag is never
+  // suggested and can't be added: typed by hand, the list says so and the chips stay as they were.
+  import Chip from './Chip.svelte';
   import Popover from './Popover.svelte';
+  import { plainText } from '#lib/actions/plain-text.action.ts';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
+  import { toAppError } from '#lib/errors/app-error.ts';
+  import { errors } from '#lib/errors/registry.ts';
   import { slug } from '#lib/util/names.ts';
   import { tagPool } from '#lib/stores/tags.svelte.ts';
   import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
@@ -12,7 +16,13 @@
     tags,
     onchange,
     addLabel = '+ tag',
-  }: { tags: string[]; onchange: (tags: string[]) => void; addLabel?: string } = $props();
+  }: {
+    tags: string[];
+    /** Takes the new tags. A caller that saves at once returns its promise and sets `tags` from
+     *  the answer, so a refused tag never shows as a chip. */
+    onchange: (tags: string[]) => unknown;
+    addLabel?: string;
+  } = $props();
 
   const MAX = 6;
   const PICK_KEYS = ['Enter', ',', 'Tab'];
@@ -24,26 +34,42 @@
   // A tag is its slug ("UI Design" → ui_design), the same on every device.
   const query = $derived(slug(draft));
   const have = $derived(new Set(tags));
+  const blocked = $derived(tagPool.isBlocked(query));
 
   const options = $derived.by(() => {
     const isSuggestion = (t: string) => !have.has(t) && (!query || t.includes(query));
     const matches = tagPool.names.filter(isSuggestion).slice(0, MAX);
     const out = matches.map((t) => ({ label: t, value: t, isNew: false }));
     const exists = tagPool.names.includes(query) || have.has(query);
-    if (query && !exists) out.push({ label: `Create “${query}”`, value: query, isNew: true });
+    const creatable = query !== '' && !exists && !blocked;
+    if (creatable) out.push({ label: `Create “${query}”`, value: query, isNew: true });
     return out;
   });
 
-  function add(value: string) {
+  /** Hands the caller the new tags. A refusal for a tag blocked since the pool was loaded
+   *  (TAG_BLOCKED) means the pool is stale: it is loaded again, and the error goes on to the
+   *  global handler. */
+  async function change(next: string[]) {
+    try {
+      await onchange(next);
+    } catch (e) {
+      if (toAppError(e).is(errors.TAG_BLOCKED)) await tagPool.load();
+      throw e;
+    }
+  }
+
+  async function add(value: string) {
     const v = slug(value);
+    // A blocked tag keeps its text in the field, under which the list says why.
+    if (tagPool.isBlocked(v)) return;
     clearDraft();
     if (!v || have.has(v)) return;
+    await change([...tags, v]);
     tagPool.learn([v]);
-    onchange([...tags, v]);
   }
 
   function remove(tag: string) {
-    onchange(tags.filter((t) => t !== tag));
+    return change(tags.filter((t) => t !== tag));
   }
 
   export function start() {
@@ -64,8 +90,8 @@
   /** Takes the highlighted suggestion, or the typed text when there is none. */
   function pick() {
     if (!options.length) return add(draft);
-    const highlighted = options[Math.min(hi, options.length - 1)];
-    add(highlighted.value);
+    const highlighted = options[hi] ?? options[options.length - 1];
+    return add(highlighted.value);
   }
 
   function onkeydown(e: KeyboardEvent) {
@@ -84,7 +110,7 @@
       e.preventDefault();
       pick();
     } else if (e.key === 'Backspace' && !draft && tags.length) {
-      onchange(tags.slice(0, -1));
+      change(tags.slice(0, -1));
     }
   }
 
@@ -117,9 +143,10 @@
       {onkeydown}
       onblur={stop}
       use:focusOnMount />
-    {#if options.length}
+    {#if options.length || blocked}
       <Popover anchor={input} role="listbox" label="Tag suggestions" pad onclose={stop}>
         <div class="sugg">
+          {#if blocked}<span class="refused" role="alert">{errors.TAG_BLOCKED.message}</span>{/if}
           {#each options as o, i (o.value + o.isNew)}
             <button
               class="opt"
@@ -145,7 +172,6 @@
     gap: 6px;
     min-height: 26px;
   }
-
 
   .in {
     width: 96px;
@@ -182,5 +208,11 @@
     min-width: 160px;
     display: flex;
     flex-direction: column;
+  }
+
+  .refused {
+    padding: 4px 12px;
+    font: var(--text-meta);
+    color: var(--danger);
   }
 </style>

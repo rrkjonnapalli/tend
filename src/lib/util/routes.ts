@@ -1,11 +1,15 @@
 // URLs for every page, so links are built in one place.
 import { LIBRARY_AREA, type LibraryArea } from '#lib/enums/library.enum.ts';
+import type { SettingsSection } from '#lib/enums/settings.enum.ts';
 
 /** `?f=<folder>` for a folder view; nothing for the root. */
 function folderQuery(path: string): string {
   if (!path) return '';
   return `?f=${encodeURIComponent(path)}`;
 }
+
+/** Where the Library's pages live; each area is the segment after it. */
+const LIBRARY_ROOT = '/library';
 
 export const routes = {
   home: '/',
@@ -15,17 +19,17 @@ export const routes = {
   people: '/people',
   settings: '/settings',
   /** Opens the Library on the area used last. */
-  library: '/library',
-  libraryArea: (area: LibraryArea) => `/library/${area}`,
+  library: LIBRARY_ROOT,
+  libraryArea: (area: LibraryArea) => `${LIBRARY_ROOT}/${area}`,
   /** A word open in the Words area. */
-  libraryWord: (id: string) => `/library/${LIBRARY_AREA.words}?w=${encodeURIComponent(id)}`,
+  libraryWord: (id: string) => `${LIBRARY_ROOT}/${LIBRARY_AREA.words}?w=${encodeURIComponent(id)}`,
   /** A stack open on the Snaps board; none is the board itself. */
   libraryStack: (id: string | null) => {
-    const board = `/library/${LIBRARY_AREA.snaps}`;
+    const board = `${LIBRARY_ROOT}/${LIBRARY_AREA.snaps}`;
     return id ? `${board}?s=${encodeURIComponent(id)}` : board;
   },
   /** A Settings section, such as `sync`. */
-  settingsSection: (id: string) => `/settings?s=${id}`,
+  settingsSection: (id: SettingsSection) => `/settings?s=${id}`,
   notesFolder: (path: string) => `/notes${folderQuery(path)}`,
   note: (id: string, { edit = false }: { edit?: boolean } = {}) => `/notes/${id}${edit ? '?edit=1' : ''}`,
   tasksFolder: (path: string) => `/tasks${folderQuery(path)}`,
@@ -35,3 +39,9 @@ export const routes = {
   /** The People page with the add field open. */
   newPerson: '/people?add=1',
 };
+
+/** The Library area a route is (`/library/<area>`); none for `/library` itself or any other page. */
+export function libraryAreaOf(routeId: string | null): LibraryArea | null {
+  const area = Object.values(LIBRARY_AREA).find((a) => routes.libraryArea(a) === routeId);
+  return area ?? null;
+}

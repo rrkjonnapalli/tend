@@ -4,10 +4,13 @@ import { syncAPI } from '#lib/api/sync.ts';
 import type { SyncLive, SyncSetup, SyncState, SyncStatus } from '#lib/types/sync.type.ts';
 import { notes } from './notes.svelte.ts';
 import { people } from './people.svelte.ts';
+import { refs } from './refs.svelte.ts';
 import { settings } from './settings.svelte.ts';
+import { snaps } from './snaps.svelte.ts';
 import { tagPool } from './tags.svelte.ts';
 import { tasks } from './tasks.svelte.ts';
 import { toast } from './toast.svelte.ts';
+import { words } from './words.svelte.ts';
 
 const OK = 'ok';
 /** Most runs take under a second; "Syncing…" stays at least this long so it can be read. */
@@ -91,9 +94,11 @@ class SyncStore {
   }
 }
 
-/** Every store that shows a vault's rows (after a sync brought changes, or another vault opened). */
+/** Every store that shows a vault's rows (after a sync brought changes, another vault opened, or
+ *  a tag was blocked and came off everything). */
 export async function reloadAll() {
-  await Promise.all([notes.load(), tasks.load(), people.load(), settings.load(), tagPool.load()]);
+  const lists = [notes.load(), tasks.load(), people.load(), words.load(), snaps.load(), refs.load()];
+  await Promise.all([...lists, settings.load(), tagPool.load()]);
 }
 
 export const sync = new SyncStore();

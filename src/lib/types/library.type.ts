@@ -1,4 +1,5 @@
 import type { LibraryArea, SaveArea } from '#lib/enums/library.enum.ts';
+import type { Paper } from '#lib/enums/snap.enum.ts';
 
 /** One area of the Library bar's switch. */
 export type LibraryAreaItem = {
@@ -27,6 +28,22 @@ export type LibraryHit = {
   plain?: boolean;
   /** Monospace second line (a link). */
   mono?: boolean;
+};
+
+/** One paper the snap editor's rotate button cycles through. */
+export type PaperChoice = { paper: Paper; name: string };
+
+/** One of Home's three columns: its head, and its list. */
+export type HomeColumn = {
+  area: SaveArea;
+  title: string;
+  /** What the column shows of the area: "recent", "latest", "new". */
+  note: string;
+  /** The link to the whole area: "All →". */
+  more: string;
+  /** The items listed, with the line shown when there are none; left out by the snaps column,
+   *  which shows the mini board. */
+  list?: { hits: LibraryHit[]; loaded: boolean; empty: string };
 };
 
 /** One group of Home's search results. */

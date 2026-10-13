@@ -13,9 +13,12 @@
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { refsAPI } from '#lib/api/refs.ts';
   import { titleFetchDelayMs } from '#lib/config/library.config.ts';
+  import { toAppError } from '#lib/errors/app-error.ts';
+  import { errors } from '#lib/errors/registry.ts';
   import { REF_KIND, type RefKind } from '#lib/enums/ref.enum.ts';
   import { refs } from '#lib/stores/refs.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
+  import { tagPool } from '#lib/stores/tags.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import type { NewRef, Ref } from '#lib/types/ref.type.ts';
   import { iso, shortDate } from '#lib/util/dates.ts';
@@ -55,7 +58,7 @@
   let confirming = $state(false);
 
   const isLink = $derived(kind === REF_KIND.link);
-  const dupe = $derived(isLink && value.trim() ? refs.withKey(urlKey(value), start?.id) : undefined);
+  const dupe = $derived(isLink && value.trim() ? refs.withKey({ key: urlKey(value), except: start?.id }) : undefined);
   const canSave = $derived(value.trim() !== '' && !dupe);
 
   // ---- the page title
@@ -127,26 +130,42 @@
     return null;
   }
 
+  /** Stores a title that arrived late. The reference may be deleted by then: nothing to do. */
+  async function storeTitle({ id, title: fetched }: { id: string; title: string }) {
+    try {
+      await refsAPI.update({ id, patch: { title: fetched } });
+    } catch (e) {
+      if (toAppError(e).is(errors.NOT_FOUND)) return;
+      throw e;
+    }
+    await refs.load();
+  }
+
   /** A link saved before its title arrived gets it when the fetch ends. */
   function titleLater(saved: Ref) {
     if (!isLink || saved.title) return;
     const late = pending ?? fetchTitle(saved.value);
-    late.then(async (fetched) => {
-      if (!fetched) return;
-      await refsAPI.update({ id: saved.id, patch: { title: fetched } });
-      await refs.load();
+    late.then((fetched) => {
+      if (fetched) return storeTitle({ id: saved.id, title: fetched });
     });
   }
 
-  /** Writes the reference, then its tags. */
-  async function write(): Promise<Ref> {
+  function write(): Promise<Ref> {
     const input: NewRef = { kind, value: value.trim(), title: savedTitle(), why };
-    const saved = start
-      ? await refsAPI.update({ id: start.id, patch: input })
-      : await refsAPI.create(input);
+    return start ? refsAPI.update({ id: start.id, patch: input }) : refsAPI.create(input);
+  }
+
+  /** Saves the tags when they changed. A refusal (a tag blocked since the pool was loaded) is
+   *  returned, not thrown: the reference is saved by then, and the popup closes first. */
+  async function writeTags(saved: Ref): Promise<unknown> {
     const tagsChanged = tags.join(' ') !== saved.tags.join(' ');
-    if (tagsChanged) await refsAPI.setTags({ id: saved.id, tags });
-    return saved;
+    if (!tagsChanged) return null;
+    try {
+      await refsAPI.setTags({ id: saved.id, tags });
+      return null;
+    } catch (e) {
+      return e;
+    }
   }
 
   let saving = false;
@@ -156,17 +175,23 @@
     if (!canSave || saving) return;
     saving = true;
     let saved: Ref;
+    let tagsError: unknown;
     try {
       saved = await write();
+      tagsError = await writeTags(saved);
     } finally {
       saving = false;
-      // Also after a failure: the reference may be saved with only its tags missing.
       await refs.load();
     }
     titleLater(saved);
     clearTimeout(timer);
-    toast.show(start ? 'Saved' : 'Saved to references');
     onclose();
+    // Saved without the new tags: closed, so no refused chip stays and a retry can't add it twice.
+    if (tagsError) {
+      await tagPool.load();
+      throw tagsError;
+    }
+    toast.show(start ? 'Saved' : 'Saved to references');
   }
 
   async function remove() {
@@ -219,11 +244,11 @@
       onkeydown={onvaluekey} />
     <div class="under"><Segmented options={KINDS} value={kind} label="Type" onchange={setKind} /></div>
     {#if dupe}
-      <p class="dupe">You saved this link on {savedOn}. <button class="link" onclick={() => onopen(dupe)}>Open it</button></p>
+      <p class="dupe">You saved this link on {savedOn}. <button class="link-btn inline" onclick={() => onopen(dupe)}>Open it</button></p>
     {/if}
 
     <label class="field">
-      <span class="lbl">Title</span>
+      <span class="field-label">Title</span>
       <span class="title-row">
         <input use:plainText class="title" placeholder={titleHint} bind:value={title} oninput={ontitle} />
         {#if fetching}<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>{/if}
@@ -237,12 +262,12 @@
     </label>
 
     <label class="field">
-      <span class="lbl">Why I kept it</span>
+      <span class="field-label">Why I kept it</span>
       <textarea use:plainText class="why" rows="2" placeholder="Optional. A few words now saves a mystery later." bind:value={why}></textarea>
     </label>
 
     <div class="field">
-      <span class="lbl">Tags</span>
+      <span class="field-label">Tags</span>
       <TagEditor {tags} onchange={(next) => (tags = next)} />
     </div>
 
@@ -282,7 +307,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 500 20px/28px var(--font-heading);
+    font: var(--text-form-main);
     color: var(--text);
     caret-color: var(--primary);
   }
@@ -303,31 +328,10 @@
     color: var(--text-muted);
   }
 
-  .link {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    font: inherit;
-    color: var(--primary);
-    cursor: pointer;
-  }
-
-  .link:hover,
-  .link:focus-visible {
-    color: var(--primary-hover);
-  }
-
   .field {
     display: flex;
     flex-direction: column;
     gap: 4px;
-  }
-
-  .lbl {
-    font: 700 12px/16px var(--font-ui);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-muted);
   }
 
   .title-row {
@@ -344,7 +348,7 @@
     border: 0;
     outline: none;
     background: transparent;
-    font: 400 15px/24px var(--font-ui);
+    font: var(--text-form);
     color: var(--text);
   }
 

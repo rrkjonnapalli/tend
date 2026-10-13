@@ -27,7 +27,7 @@
     /** Tags come with the task detail; the editor waits for them. */
     tagsLoaded: boolean;
     onpatch: (patch: TaskPatch) => void;
-    ontags: (tags: string[]) => void;
+    ontags: (tags: string[]) => void | Promise<void>;
     /** The tasks root folder's display name, for the location. */
     rootName: string;
     /** Opens Move to…; the location button calls it. */

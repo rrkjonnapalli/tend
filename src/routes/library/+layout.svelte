@@ -5,19 +5,15 @@
   import { page } from '$app/state';
   import LibraryBar from '#lib/components/LibraryBar.svelte';
   import { zoneNav } from '#lib/actions/zone-nav.action.ts';
-  import { LIBRARY_AREA, type LibraryArea } from '#lib/enums/library.enum.ts';
   import { library } from '#lib/stores/library.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { settingKeys } from '#lib/config/settings.config.ts';
+  import { libraryAreaOf } from '#lib/util/routes.ts';
 
   let { children }: { children: Snippet } = $props();
 
-  const areas: string[] = Object.values(LIBRARY_AREA);
-  /** The area in the URL (`/library/<area>`); none on `/library` itself. */
-  const area = $derived.by(() => {
-    const segment = page.url.pathname.split('/')[2] ?? '';
-    return areas.includes(segment) ? (segment as LibraryArea) : null;
-  });
+  /** The open area; none on `/library` itself. */
+  const area = $derived(libraryAreaOf(page.route.id));
 
   $effect(() => {
     const now = area;

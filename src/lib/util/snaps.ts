@@ -1,6 +1,6 @@
 // Snaps: stack paths and names, the board's order, a sticky's tint, and the small labels on paper.
-import { PAPER, type Paper } from '#lib/enums/snap.enum.ts';
-import type { BoardItem, Snap, Stack } from '#lib/types/snap.type.ts';
+import { BOARD_KIND, DROP_KIND, PAPER, type DropKind, type Paper } from '#lib/enums/snap.enum.ts';
+import type { Board, BoardColumn, BoardItem, BoardView, DropTarget, Nesting, Packing, Placed, Snap, Stack, StackChoice } from '#lib/types/snap.type.ts';
 import { plural } from './plural.ts';
 import { textMatches } from './search.ts';
 
@@ -37,7 +37,7 @@ export function whereLabel(id: string | null, stacks: Stack[]): string {
 }
 
 /** True when `id` is `ancestor` or sits inside it. */
-export function isWithin(id: string | null, ancestor: string, stacks: Stack[]): boolean {
+export function isWithin({ id, ancestor }: Nesting, stacks: Stack[]): boolean {
   return pathOf(id, stacks).some((s) => s.id === ancestor);
 }
 
@@ -74,91 +74,115 @@ export function tagLabel(tags: string[]): string {
   return `#${tags[0]}${more}`;
 }
 
-const snapsIn = (id: string, snaps: Snap[]) => snaps.filter((n) => n.stackId === id);
-const stacksIn = (id: string, stacks: Stack[]) => stacks.filter((s) => s.parentId === id);
+/** The snaps right in a stack (`null`: loose on the board). */
+export const snapsIn = (id: string | null, snaps: Snap[]) => snaps.filter((n) => n.stackId === id);
+/** The stacks right in a stack (`null`: on the board). */
+export const stacksIn = (id: string | null, stacks: Stack[]) => stacks.filter((s) => s.parentId === id);
 
 /** "4 snaps · 1 stack" */
-export function stackSummary(stack: Stack, snaps: Snap[], stacks: Stack[]): string {
-  const parts = [plural(snapsIn(stack.id, snaps).length, 'snap')];
-  const kids = stacksIn(stack.id, stacks).length;
+export function stackSummary(stack: Stack, board: Board): string {
+  const parts = [plural(snapsIn(stack.id, board.snaps).length, 'snap')];
+  const kids = stacksIn(stack.id, board.stacks).length;
   if (kids > 0) parts.push(plural(kids, 'stack'));
   return parts.join(' · ');
 }
 
 /** What shows on a stack's top sheet: its latest snap's text, else its sub-stacks' names. */
-export function stackPeek(stack: Stack, snaps: Snap[], stacks: Stack[]): string {
-  const top = snapsIn(stack.id, snaps)[0];
+export function stackPeek(stack: Stack, board: Board): string {
+  const top = snapsIn(stack.id, board.snaps)[0];
   if (top) return top.text;
-  return stacksIn(stack.id, stacks).map(stackName).join('\n');
+  return stacksIn(stack.id, board.stacks).map(stackName).join('\n');
 }
 
 /** What one level of the board holds, or, while searching, every match across all stacks. */
-export function boardLevel(open: string | null, snaps: Snap[], stacks: Stack[], needle: string): { snaps: Snap[]; stacks: Stack[] } {
+export function boardLevel({ open, needle }: BoardView, board: Board): Board {
   if (needle) {
     return {
-      snaps: snaps.filter((n) => textMatches([n.text], needle)),
-      stacks: stacks.filter((s) => textMatches([s.name], needle)),
+      snaps: board.snaps.filter((n) => textMatches([n.text], needle)),
+      stacks: board.stacks.filter((s) => textMatches([s.name], needle)),
     };
   }
-  return { snaps: snaps.filter((n) => n.stackId === open), stacks: stacks.filter((s) => s.parentId === open) };
+  return { snaps: snapsIn(open, board.snaps), stacks: stacksIn(open, board.stacks) };
+}
+
+/** Where stack `nth` (from 0) of `count` goes among the `rest` unpinned snaps: the end of part
+ *  nth+1 when the final run (those snaps and the stacks together) is cut in count+1 equal parts,
+ *  but never past the items already there. */
+function stackSlot({ nth, count, rest }: { nth: number; count: number; rest: number }): number {
+  const run = rest + count;
+  const parts = count + 1;
+  const even = Math.round(((nth + 1) * (run + 1)) / parts) - 1;
+  const placed = rest + nth;
+  return Math.max(0, Math.min(placed, even));
 }
 
 /** The board's order: snaps as given (pinned first, then the latest edit), with the stacks spread
  *  evenly between the unpinned ones. */
 export function boardItems(levelSnaps: Snap[], levelStacks: Stack[]): BoardItem[] {
-  const items: BoardItem[] = levelSnaps.map((snap) => ({ kind: 'snap', snap }));
+  const items: BoardItem[] = levelSnaps.map((snap) => ({ kind: BOARD_KIND.snap, snap }));
   const pinned = levelSnaps.filter((n) => n.pinned).length;
   const rest = levelSnaps.length - pinned;
   const count = levelStacks.length;
-  levelStacks.forEach((stack, i) => {
-    // Slot i+1 of count+1 equal parts of the final run (unpinned snaps and stacks together).
-    const even = Math.round(((i + 1) * (rest + count + 1)) / (count + 1)) - 1;
-    const at = pinned + Math.min(rest + i, even);
-    items.splice(Math.max(0, at), 0, { kind: 'stack', stack });
-  });
+  for (let nth = 0; nth < count; nth += 1) {
+    const at = pinned + stackSlot({ nth, count, rest });
+    items.splice(at, 0, { kind: BOARD_KIND.stack, stack: levelStacks[nth] });
+  }
   return items;
 }
 
 /** A board item's key: its snap's or stack's id. */
 export function itemKey(item: BoardItem): string {
-  if (item.kind === 'snap') return item.snap.id;
+  if (item.kind === BOARD_KIND.snap) return item.snap.id;
   return item.stack.id;
 }
 
 /** Every stack, depth-first under its parent, for the editor's stack picker. */
-export function stackTree(stacks: Stack[]): { stack: Stack; depth: number }[] {
-  const out: { stack: Stack; depth: number }[] = [];
-  const walk = (parent: string | null, depth: number) => {
-    for (const stack of stacks.filter((s) => s.parentId === parent)) {
-      out.push({ stack, depth });
+export function stackTree(stacks: Stack[]): Stack[] {
+  const out: Stack[] = [];
+  const walk = (parent: string | null) => {
+    for (const stack of stacksIn(parent, stacks)) {
+      out.push(stack);
       // No guard needed: stacks in a cycle (only mid-sync) have no path from the board, so they are never reached.
-      walk(stack.id, depth + 1);
+      walk(stack.id);
     }
   };
-  walk(null, 1);
+  walk(null);
   return out;
 }
 
-/** What can be dropped on: a snap (pair them), a stack (put it in), a step of the path (move up). */
-export type DropTarget = { kind: 'snap' | 'stack' | 'crumb'; id: string | null };
-
 const BOARD_KEY = 'root';
 
+/** The editor's stack picker: the board, a new stack where the board is (`open`), then every
+ *  stack by its path. */
+export function stackChoices(stacks: Stack[], open: string | null): StackChoice[] {
+  const board: StackChoice = { id: BOARD_KEY, stackId: null, label: `${BOARD_NAME} (loose)` };
+  const openStack = stacks.find((s) => s.id === open);
+  const inside = openStack ? ` in ${stackName(openStack)}` : '';
+  const fresh: StackChoice = { id: NEW_STACK, stackId: NEW_STACK, label: `+ New stack${inside}` };
+  const nested = stackTree(stacks).map((s) => ({ id: s.id, stackId: s.id, label: whereLabel(s.id, stacks) }));
+  return [board, fresh, ...nested];
+}
+
+/** True when the choice's line contains the lower-cased query. */
+export const stackChoiceMatches = (choice: StackChoice, query: string) => textMatches([choice.label], query);
+
 /** The `data-drop` key of a drop target, as the board's items and the path carry it. */
-export function dropKey(kind: DropTarget['kind'], id: string | null): string {
+export function dropKey(kind: DropKind, id: string | null): string {
   return `${kind}:${id ?? BOARD_KEY}`;
 }
 
+const DROP_KINDS: readonly string[] = Object.values(DROP_KIND);
+const isDropKind = (kind: string): kind is DropKind => DROP_KINDS.includes(kind);
+
 export function parseDrop(key: string): DropTarget | null {
   const [kind, id] = key.split(':');
-  const known = kind === 'snap' || kind === 'stack' || kind === 'crumb';
-  if (!known || !id) return null;
+  if (!isDropKind(kind) || !id) return null;
   return { kind, id: id === BOARD_KEY ? null : id };
 }
 
-/** How many columns of `column` px, `gap` px apart, fit in `width` px (always at least one). */
-export function columnCount(width: number, column: number, gap: number): number {
-  return Math.max(1, Math.floor((width + gap) / (column + gap)));
+/** How many columns fit in `width` px (always at least one). */
+export function columnCount(width: number, { minWidth, gap }: BoardColumn): number {
+  return Math.max(1, Math.floor((width + gap) / (minWidth + gap)));
 }
 
 /** How each paper sets text, for estimating heights: line height, average character width and
@@ -175,12 +199,21 @@ const FOOT_PX = 28;
 const STACK_PX = 230;
 const ITEM_GAP_PX = 44;
 
+/** How many lines `text` takes when a line holds `perLine` characters. */
+function wrappedLines(text: string, perLine: number): number {
+  let lines = 0;
+  for (const line of text.split('\n')) {
+    lines += Math.max(1, Math.ceil(line.length / perLine));
+  }
+  return lines;
+}
+
 /** About how tall an item is in a column `width` px wide. */
 export function estimateHeight(item: BoardItem, width: number): number {
-  if (item.kind === 'stack') return STACK_PX + ITEM_GAP_PX;
+  if (item.kind === BOARD_KIND.stack) return STACK_PX + ITEM_GAP_PX;
   const m = PAPER_METRICS[item.snap.paper];
   const perLine = Math.max(1, Math.floor((width - m.padX) / m.char));
-  const lines = item.snap.text.split('\n').reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / perLine)), 0);
+  const lines = wrappedLines(item.snap.text, perLine);
   const sheet = Math.max(m.min, m.padY + lines * m.line + FOOT_PX);
   return sheet + ITEM_GAP_PX;
 }
@@ -188,8 +221,8 @@ export function estimateHeight(item: BoardItem, width: number): number {
 /** The items in order, each put in the shortest of `count` columns (the leftmost on a tie), so
  *  the board fills evenly and the newest lead the top row. Each keeps its place in the full order
  *  (for its tilt). */
-export function packColumns<T>(items: T[], count: number, heightOf: (item: T) => number): { item: T; at: number }[][] {
-  const columns: { item: T; at: number }[][] = Array.from({ length: count }, () => []);
+export function packColumns<T>({ items, count, heightOf }: Packing<T>): Placed<T>[][] {
+  const columns: Placed<T>[][] = Array.from({ length: count }, () => []);
   const heights = new Array<number>(count).fill(0);
   items.forEach((item, at) => {
     const shortest = heights.indexOf(Math.min(...heights));

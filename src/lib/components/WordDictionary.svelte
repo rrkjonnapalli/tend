@@ -1,6 +1,7 @@
 <script lang="ts">
   // A word's Dictionary section: senses with examples, synonyms, or a hint when there is nothing
   // (not looked up yet, not in the dictionary, a kind that isn't looked up). Shimmers while asking.
+  import Chip from './Chip.svelte';
   import Section from './Section.svelte';
   import Icon from './Icon.svelte';
   import type { Dictionary } from '#lib/types/word.type.ts';
@@ -42,7 +43,7 @@
       {#if dictionary.synonyms.length}
         <div class="syn">
           <span class="meta">synonyms</span>
-          {#each dictionary.synonyms as s (s)}<span class="chip">{s}</span>{/each}
+          {#each dictionary.synonyms as s (s)}<Chip text={s} />{/each}
         </div>
       {/if}
     {:else}
@@ -65,12 +66,12 @@
   }
 
   .n {
-    font: 400 13px/22px var(--font-mono);
+    font: var(--text-read-mono);
     color: var(--c-muted-2);
   }
 
   .def {
-    font: 400 14px/22px var(--font-ui);
+    font: var(--text-read);
   }
 
   .ex {
@@ -92,18 +93,9 @@
     color: var(--c-muted-2);
   }
 
-  .chip {
-    height: 22px;
-    padding: 0 8px;
-    border-radius: var(--radius-sm);
-    background: var(--c-chip);
-    font: var(--text-caption);
-    line-height: 22px;
-  }
-
   .hint {
     margin: 0;
-    font: 400 14px/22px var(--font-ui);
+    font: var(--text-read);
     color: var(--text-muted);
   }
 

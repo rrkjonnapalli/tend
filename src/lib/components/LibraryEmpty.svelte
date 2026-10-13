@@ -22,7 +22,7 @@
 
   .title {
     margin: 0;
-    font: 600 36px/40px var(--font-hand);
+    font: var(--text-hand-lg);
     color: var(--c-muted-2);
   }
 

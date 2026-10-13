@@ -19,8 +19,8 @@ describe('words', () => {
   });
 
   it('saves a WORD in lowercase and other kinds as typed', () => {
-    expect(savedTitle('  Ephemeral ', WORD_KIND.word)).toBe('ephemeral');
-    expect(savedTitle(' IT ', WORD_KIND.abbr)).toBe('IT');
+    expect(savedTitle({ title: '  Ephemeral ', kind: WORD_KIND.word })).toBe('ephemeral');
+    expect(savedTitle({ title: ' IT ', kind: WORD_KIND.abbr })).toBe('IT');
   });
 
   it('takes the first line without markdown markers', () => {
@@ -32,12 +32,12 @@ describe('words', () => {
   it('groups by kind in kind order, alphabetical, filtered', () => {
     const kinds = [kind(WORD_KIND.word, 0), kind(WORD_KIND.idiom, 1), kind(WORD_KIND.phrase, 2)];
     const words = [word('sanguine', 'WORD'), word('Bite the bullet', 'IDIOM'), word('ephemeral', 'WORD', 'brief'), word('gnarly', 'SLANG')];
-    const groups = groupWords(words, kinds, '');
+    const groups = groupWords({ words, kinds, needle: '' });
     expect(groups.map((g) => [g.kind.value, g.words.map((w) => w.title)])).toEqual([
       ['WORD', ['ephemeral', 'sanguine']],
       ['IDIOM', ['Bite the bullet']],
       ['SLANG', ['gnarly']],
     ]);
-    expect(groupWords(words, kinds, 'brief').map((g) => g.words[0].title)).toEqual(['ephemeral']);
+    expect(groupWords({ words, kinds, needle: 'brief' }).map((g) => g.words[0].title)).toEqual(['ephemeral']);
   });
 });

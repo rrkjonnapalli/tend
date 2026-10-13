@@ -1,5 +1,6 @@
 <script lang="ts">
-  // A small removable chip (tags, labels): optional color dot · text (cut off with …) · red ✕.
+  // A small chip (tags, labels, a word's synonyms): optional color dot · text (cut off with …) ·
+  // red ✕ when it can be removed.
   import Icon from './Icon.svelte';
 
   let {
@@ -12,17 +13,20 @@
     /** A label's color, shown as a dot before the text. */
     color?: string;
     /** Accessible name of the ✕, e.g. "Remove tag ci". */
-    removeLabel: string;
-    onremove: () => void;
+    removeLabel?: string;
+    /** Leave it out for a chip that is only read: no ✕. */
+    onremove?: () => void;
   } = $props();
 </script>
 
-<span class="chip" title={text}>
+<span class="chip" class:fixed={!onremove} title={text}>
   {#if color}<span class="dot" style:background={color}></span>{/if}
   <span class="tl">{text}</span>
-  <button class="x" aria-label={removeLabel} title="Remove" onclick={onremove}>
-    <Icon name="close" size={9} stroke={3} />
-  </button>
+  {#if onremove}
+    <button class="x" aria-label={removeLabel} title="Remove" onclick={onremove}>
+      <Icon name="close" size={9} stroke={3} />
+    </button>
+  {/if}
 </span>
 
 <style>
@@ -36,6 +40,11 @@
     background: var(--c-hover);
     color: var(--text-muted);
     font: var(--text-caption);
+  }
+
+  /* Without the ✕ the text sits in the middle. */
+  .fixed {
+    padding-right: 8px;
   }
 
   .dot {

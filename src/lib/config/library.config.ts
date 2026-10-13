@@ -1,8 +1,8 @@
 // The Library's fixed lists: the bar's areas (with each one's search placeholder), what Home
 // shows, the snap papers and the board's tilts.
 import { LIBRARY_AREA } from '#lib/enums/library.enum.ts';
-import { PAPER, type Paper } from '#lib/enums/snap.enum.ts';
-import type { LibraryAreaItem, MiniSpot, SaveTarget } from '#lib/types/library.type.ts';
+import { PAPER } from '#lib/enums/snap.enum.ts';
+import type { LibraryAreaItem, MiniSpot, PaperChoice, SaveTarget } from '#lib/types/library.type.ts';
 
 export const libraryAreas: LibraryAreaItem[] = [
   { area: LIBRARY_AREA.home, label: 'Home', search: 'Search the library' },
@@ -32,11 +32,17 @@ export const miniSpots: MiniSpot[] = [
 /** Home's add box: text this short, on one line, is taken for a word or phrase. */
 export const wordGuessLimit = { words: 4, chars: 40 };
 
+/** Words: where the dictionary entries come from, as the entry page names it. */
+export const dictionarySource = 'dictionaryapi.dev';
+
+/** Words: the part of speech that dictionary gives an idiom. */
+export const idiomPartOfSpeech = 'idiom';
+
 /** References: how long typing must pause before a link's page title is fetched. */
 export const titleFetchDelayMs = 650;
 
 /** Snaps: the papers in the order the editor's rotate button cycles through them. */
-export const papers: { paper: Paper; name: string }[] = [
+export const papers: PaperChoice[] = [
   { paper: PAPER.scrap, name: 'scrap' },
   { paper: PAPER.slip, name: 'slip' },
   { paper: PAPER.lined, name: 'lined paper' },

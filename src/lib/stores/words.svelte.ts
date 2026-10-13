@@ -20,8 +20,8 @@ class WordsStore {
 
   byId = (id: string | null) => (id ? this.words.find((w) => w.id === id) : undefined);
 
-  /** Another word with exactly this title (`except`: the one being edited). */
-  withTitle = (title: string, except?: string) => this.words.find((w) => w.title === title && w.id !== except);
+  /** Another word with exactly this title (`except`: the id of the one being edited). */
+  withTitle = ({ title, except }: { title: string; except?: string }) => this.words.find((w) => w.title === title && w.id !== except);
 
   kindOf = (value: string) => this.kinds.find((k) => k.value === value);
 }

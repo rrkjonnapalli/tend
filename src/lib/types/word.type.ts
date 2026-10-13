@@ -36,5 +36,8 @@ export type NewWord = Pick<Word, 'title' | 'kind' | 'dictionary' | 'meaning' | '
 /** Fields an edit can change; `dictionary: null` clears the lookup. */
 export type WordPatch = Partial<NewWord>;
 
+/** A word kind as the kind picker lists it (`id` is the kind's value). */
+export type KindChoice = { id: string; label: string };
+
 /** One group of the Words list: a kind and its words, alphabetical. */
 export type WordGroup = { kind: WordKind; words: Word[] };

@@ -2,11 +2,14 @@
   // One stack on the board: a small pile under a binder clip, with its name (handwritten), the
   // first lines of its latest snap and a count. A click opens it; a press that moves drags it.
   // Hover shows rename and remove. Held over by something being dragged, its sheets fan out.
-  import Icon from './Icon.svelte';
+  import BoardFoot from './BoardFoot.svelte';
+  import BoardItem from './BoardItem.svelte';
+  import BoardTool from './BoardTool.svelte';
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import { focusAndSelect } from '#lib/actions/focus.action.ts';
+  import { BOARD_KIND } from '#lib/enums/snap.enum.ts';
   import type { Stack } from '#lib/types/snap.type.ts';
-  import { dropKey, stackName } from '#lib/util/snaps.ts';
+  import { stackName } from '#lib/util/snaps.ts';
 
   let {
     stack,
@@ -25,7 +28,7 @@
   }: {
     stack: Stack;
     tilt: number;
-    /** "in Work rules", while searching across stacks. */
+    /** "Work rules", while searching across stacks. */
     where: string | null;
     /** "4 snaps · 1 stack" */
     summary: string;
@@ -46,6 +49,11 @@
   // svelte-ignore state_referenced_locally
   let draft = $state(stack.name);
 
+  function startRename() {
+    draft = stack.name;
+    onstartrename();
+  }
+
   function onkeydown(e: KeyboardEvent) {
     if (e.key !== 'Enter' && e.key !== 'Escape') return;
     e.preventDefault();
@@ -54,55 +62,32 @@
   }
 </script>
 
-<div class="item" class:dragging data-drop={dropKey('stack', stack.id)} style:rotate="{tilt}deg">
-  {#if where}<span class="in">in {where}</span>{/if}
-  <div class="stack" class:over>
+<BoardItem kind={BOARD_KIND.stack} id={stack.id} {tilt} {where} {dragging} {over} label="Open stack {name}, {summary}" {onopen} {onpress}>
+  <span class="pile" class:over>
     <span class="under u2"></span>
     <span class="under u1"></span>
     <span class="top">
       {#if renaming}<span class="name-space"></span>{:else}<span class="name">{name}</span>{/if}
       <span class="peek">{peek}</span>
-      <span class="foot"><span>{summary}</span><span class="tag">stack</span></span>
+      <BoardFoot note={summary} tag="stack" />
     </span>
     <span class="clip" aria-hidden="true"></span>
-    <button class="hit" aria-label="Open stack {name}, {summary}" onclick={onopen} onpointerdown={onpress}></button>
+  </span>
+  {#snippet field()}
     {#if renaming}
       <input use:plainText use:focusAndSelect class="rename" aria-label="Stack name" placeholder="Name this stack" maxlength="40" bind:value={draft} {onkeydown} onblur={() => onrename(draft)} />
     {/if}
-    <span class="tools">
-      <button class="tool" aria-label="Rename stack {name}" title="Rename" onclick={() => { draft = stack.name; onstartrename(); }}><Icon name="edit" size={13} /></button>
-      <button class="tool del" aria-label="Remove stack {name}, keeping its snaps" title="Remove stack (keeps its snaps)" onclick={onremove}><Icon name="trash" size={13} /></button>
-    </span>
-  </div>
-</div>
+  {/snippet}
+  {#snippet tools()}
+    <BoardTool icon="edit" label="Rename stack {name}" title="Rename" onclick={startRename} />
+    <BoardTool icon="trash" label="Remove stack {name}, keeping its snaps" title="Remove stack (keeps its snaps)" danger onclick={onremove} />
+  {/snippet}
+</BoardItem>
 
 <style>
-  .item {
+  .pile {
     position: relative;
-    display: flow-root;
-    margin: 0 0 30px;
-    padding-top: 30px;
-    touch-action: pan-y;
-  }
-
-  .item.dragging {
-    opacity: 0.3;
-  }
-
-  /* The lifted copy that follows the pointer (util/drag-ghost.ts). */
-  .item:global(.ghost) {
-    filter: var(--ghost-shadow);
-  }
-
-  .in {
     display: block;
-    margin: 0 0 8px 2px;
-    font: var(--text-meta);
-    color: var(--board-hint);
-  }
-
-  .stack {
-    position: relative;
     height: 200px;
     color: var(--board-ink);
   }
@@ -118,15 +103,18 @@
     inset: 0;
   }
 
+  /* On hover the card (BoardItem) lifts the top sheet and fans the two under it. */
   .u1 {
     background: var(--paper-kraft);
     transform: rotate(4deg) translate(6px, 5px);
+    translate: var(--card-fan) 0;
     box-shadow: var(--paper-shadow);
   }
 
   .u2 {
     background: var(--paper);
     transform: rotate(-4deg) translate(-5px, 8px);
+    translate: calc(-1 * var(--card-fan)) 0;
     box-shadow: var(--paper-shadow);
   }
 
@@ -138,20 +126,8 @@
     gap: 6px;
     padding: 30px 18px 14px;
     background: var(--paper);
+    translate: 0 var(--card-lift);
     box-shadow: var(--paper-shadow);
-  }
-
-  .stack:hover .top,
-  .stack:has(.hit:focus-visible) .top {
-    translate: 0 -3px;
-  }
-
-  .stack:hover .u1 {
-    translate: 8px 0;
-  }
-
-  .stack:hover .u2 {
-    translate: -8px 0;
   }
 
   /* Something held over it: the top sheet lifts, the sheets under it fan out. */
@@ -171,7 +147,7 @@
   }
 
   .name {
-    font: 600 30px/32px var(--font-hand);
+    font: var(--text-hand-stack);
   }
 
   .name-space {
@@ -184,18 +160,6 @@
     white-space: pre-wrap;
     font: var(--text-code);
     color: var(--board-ink-muted);
-  }
-
-  .foot {
-    display: flex;
-    gap: 8px;
-    margin-top: auto;
-    font: var(--text-meta);
-    color: var(--board-ink-muted);
-  }
-
-  .tag {
-    margin-left: auto;
   }
 
   .clip {
@@ -230,16 +194,6 @@
     right: 7px;
   }
 
-  .hit {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    cursor: pointer;
-  }
-
   .rename {
     position: absolute;
     top: 28px;
@@ -252,54 +206,7 @@
     border-bottom: 1px solid var(--board-ink);
     background: transparent;
     outline: none;
-    font: 600 28px/32px var(--font-hand);
+    font: var(--text-hand-stack-edit);
     color: var(--board-ink);
-  }
-
-  .tools {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    z-index: 4;
-    display: flex;
-    opacity: 0;
-    transition: opacity 0.12s ease;
-  }
-
-  .stack:hover .tools,
-  .tools:focus-within,
-  .hit:focus-visible ~ .tools {
-    opacity: 1;
-  }
-
-  @media (hover: none) {
-    .tools {
-      opacity: 1;
-    }
-  }
-
-  .tool {
-    width: 22px;
-    height: 22px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--board-ink-muted);
-    cursor: pointer;
-  }
-
-  .tool:hover,
-  .tool:focus-visible {
-    background: var(--board-hover);
-    color: var(--board-ink);
-  }
-
-  .del:hover,
-  .del:focus-visible {
-    color: var(--danger);
   }
 </style>

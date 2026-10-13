@@ -18,5 +18,8 @@ export type Ref = {
 
 export type NewRef = { kind: RefKind; value: string; title: string | null; why: string };
 
+/** The open reference popup: `editing` null adds a new one, with `filled` (text from Home) in. */
+export type RefFormState = { editing: Ref | null; filled?: string };
+
 /** Fields an edit can change; `title: null` clears it. */
 export type RefPatch = Partial<NewRef>;

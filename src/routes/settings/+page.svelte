@@ -6,6 +6,7 @@
   import SettingsGeneral from '#lib/components/SettingsGeneral.svelte';
   import SettingsPalette from '#lib/components/SettingsPalette.svelte';
   import SettingsSync from '#lib/components/SettingsSync.svelte';
+  import SettingsTags from '#lib/components/SettingsTags.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
   import { hasLayers } from '#lib/util/layers.ts';
   import { isTypingTarget } from '#lib/util/keys.ts';
@@ -14,6 +15,7 @@
   import PageTitle from '#lib/components/PageTitle.svelte';
   import { nav } from '#lib/stores/history.svelte.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { SETTINGS_SECTION, type SettingsSection } from '#lib/enums/settings.enum.ts';
 
   /** The Settings root in breadcrumbs, lowercase like `notes`, `tasks` and `people`. */
   const SETTINGS_ROOT_NAME = 'settings';
@@ -21,20 +23,21 @@
   /** The query parameter holding the open section (see routes.settingsSection). */
   const SECTION_PARAM = 's';
 
-  const sections = [
-    { id: 'general', label: 'General', sub: 'App-wide preferences.' },
-    { id: 'tasks', label: 'Tasks', sub: 'Statuses, board columns and labels.' },
-    { id: 'library', label: 'Library', sub: 'Word kinds.' },
-    { id: 'sync', label: 'Sync', sub: 'Keep this vault in a Git repo, and in step with your other devices.' },
-    { id: 'palette', label: 'Command palette', sub: 'Every command, with its shortcut. Press ⌘K anywhere to open the palette.' },
-  ] as const;
+  const sections: { id: SettingsSection; label: string; sub: string }[] = [
+    { id: SETTINGS_SECTION.general, label: 'General', sub: 'App-wide preferences.' },
+    { id: SETTINGS_SECTION.tasks, label: 'Tasks', sub: 'Statuses, board columns and labels.' },
+    { id: SETTINGS_SECTION.library, label: 'Library', sub: 'Word kinds.' },
+    { id: SETTINGS_SECTION.tags, label: 'Tags', sub: 'Every tag, and the ones you blocked.' },
+    { id: SETTINGS_SECTION.sync, label: 'Sync', sub: 'Keep this vault in a Git repo, and in step with your other devices.' },
+    { id: SETTINGS_SECTION.palette, label: 'Command palette', sub: 'Every command, with its shortcut. Press ⌘K anywhere to open the palette.' },
+  ];
 
   const requested = $derived(page.url.searchParams.get(SECTION_PARAM));
   const current = $derived(sections.find((s) => s.id === requested) ?? sections[0]);
 
   let navEl = $state<HTMLElement>();
 
-  function show(id: string) {
+  function show(id: SettingsSection) {
     return nav.replace(routes.settingsSection(id), { keepFocus: true });
   }
 
@@ -71,14 +74,16 @@
   <article class="detail-body">
     <PageTitle title={current.label} meta={current.sub} />
 
-    {#if current.id === 'general'}
+    {#if current.id === SETTINGS_SECTION.general}
       <SettingsGeneral />
-    {:else if current.id === 'tasks'}
+    {:else if current.id === SETTINGS_SECTION.tasks}
       <StatusesEditor />
       <LabelsEditor />
-    {:else if current.id === 'library'}
+    {:else if current.id === SETTINGS_SECTION.library}
       <WordKindsEditor />
-    {:else if current.id === 'sync'}
+    {:else if current.id === SETTINGS_SECTION.tags}
+      <SettingsTags />
+    {:else if current.id === SETTINGS_SECTION.sync}
       <SettingsSync />
     {:else}
       <SettingsPalette />

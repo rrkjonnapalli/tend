@@ -94,7 +94,7 @@
   }
 
   .po.on {
-    background: var(--c-hover);
+    background: var(--c-cursor);
   }
 
   .po :global(.sub) {

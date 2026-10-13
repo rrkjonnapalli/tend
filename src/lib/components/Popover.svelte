@@ -1,8 +1,12 @@
 <script lang="ts">
   // A floating panel anchored to an element or a point. It flips to stay inside the window,
-  // closes on Esc and on a click outside, and never grows the page.
+  // closes on Esc and on a click outside, and never grows the page. It is moved to <body>, so a
+  // transformed or clipping parent (a dialog, a rotated paper) can't shift or cut it. Its choices
+  // (options, menu items) take ↑↓, and focus left inside returns to the anchor when it closes.
   import type { Anchor, Placement } from '#lib/types/popover.type.ts';
   import type { Snippet } from 'svelte';
+  import { optionNav } from '#lib/actions/option-nav.action.ts';
+  import { portal } from '#lib/actions/portal.action.ts';
   import { pushLayer } from '#lib/util/layers.ts';
   import { positionFor } from '#lib/util/popover-position.ts';
 
@@ -63,6 +67,8 @@
 
   $effect(() => pushLayer(() => onclose()));
 
+  const opener = () => (anchor instanceof HTMLElement ? anchor : null);
+
   function onpointerdown(e: PointerEvent) {
     const target = e.target as Node;
     if (el?.contains(target)) return;
@@ -73,14 +79,15 @@
 
 <svelte:window onpointerdowncapture={onpointerdown} />
 
-<div bind:this={el} class="popover" class:pad {role} aria-label={label} style:left="{pos.left}px" style:top="{pos.top}px">
+<div bind:this={el} use:portal={opener} use:optionNav class="popover" class:pad {role} aria-label={label} style:left="{pos.left}px" style:top="{pos.top}px">
   {@render children()}
 </div>
 
 <style>
   .popover {
     position: fixed;
-    z-index: 30;
+    /* Above a dialog (41), below a toast (50). */
+    z-index: 45;
     max-height: calc(100vh - 16px);
     overflow: auto;
     background: var(--c-page);

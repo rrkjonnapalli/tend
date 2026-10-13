@@ -114,7 +114,7 @@
         {@const r = props.range}
         <div class="presets">
           {#each presets as p (p.name)}
-            <button class="pre" class:on={isPresetOn(r, p.range)} onclick={() => preset(p.range)}>{p.name}</button>
+            <button class="pre" class:on={isPresetOn(r, p.range)} data-option onclick={() => preset(p.range)}>{p.name}</button>
           {/each}
         </div>
         <div class="body">

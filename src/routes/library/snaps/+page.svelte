@@ -3,7 +3,7 @@
   // Library search has text it shows every match across all stacks instead. + or a snap opens the
   // editor. Drag a snap or stack onto a stack to put it in, a snap onto a snap to make a stack of
   // the two, anything onto a step of the path to move it up.
-  import { onDestroy, untrack } from 'svelte';
+  import { onDestroy } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import LibraryEmpty from '#lib/components/LibraryEmpty.svelte';
@@ -14,13 +14,14 @@
   import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
   import { snapsAPI } from '#lib/api/snaps.ts';
   import { boardColumn, boardTilts } from '#lib/config/library.config.ts';
-  import { PAPER } from '#lib/enums/snap.enum.ts';
-  import { library } from '#lib/stores/library.svelte.ts';
+  import { BOARD_KIND, DROP_KIND, PAPER, type BoardKind } from '#lib/enums/snap.enum.ts';
+  import { library, onLibraryAdd } from '#lib/stores/library.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { snaps } from '#lib/stores/snaps.svelte.ts';
+  import { tagPool } from '#lib/stores/tags.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import type { DragGhost } from '#lib/types/drag.type.ts';
-  import type { Snap, SnapDraft, Stack } from '#lib/types/snap.type.ts';
+  import type { BoardRef, DropTarget, SavedDraft, Snap, SnapDraft, SnapEditing, Stack } from '#lib/types/snap.type.ts';
   import { clearDragging, markDragging, pointOf } from '#lib/util/drag-session.ts';
   import { liftGhost } from '#lib/util/drag-ghost.ts';
   import { dropTargetAt, trackDrag } from '#lib/util/explorer-drag.ts';
@@ -39,11 +40,11 @@
     NEW_STACK,
     parseDrop,
     pathOf,
+    snapsIn,
     stackName,
     stackPeek,
     stackSummary,
     whereLabel,
-    type DropTarget,
   } from '#lib/util/snaps.ts';
 
   /** How close to the board's top or bottom edge (px) a drag scrolls it, and by how much. */
@@ -56,7 +57,7 @@
   const requested = $derived(page.url.searchParams.get('s'));
   /** The open stack; none is the board. A stack that is gone (deleted elsewhere) shows the board. */
   const open = $derived(snaps.stacks.some((s) => s.id === requested) ? requested : null);
-  const level = $derived(boardLevel(open, snaps.snaps, snaps.stacks, needle));
+  const level = $derived(boardLevel({ open, needle }, snaps));
   const items = $derived(boardItems(level.snaps, level.stacks));
   const path = $derived(pathOf(open, snaps.stacks));
 
@@ -64,9 +65,9 @@
   let surfaceWidth = $state(0);
   const columns = $derived.by(() => {
     const inner = surfaceWidth - 2 * boardColumn.gap;
-    const count = columnCount(inner, boardColumn.minWidth, boardColumn.gap);
+    const count = columnCount(inner, boardColumn);
     const width = (inner - (count - 1) * boardColumn.gap) / count;
-    return packColumns(items, count, (item) => estimateHeight(item, width));
+    return packColumns({ items, count, heightOf: (item) => estimateHeight(item, width) });
   });
 
   const empty = $derived.by(() => {
@@ -77,24 +78,18 @@
 
   /** The open editor: `snap` null writes a new one, with `filled` (text from Home) in. */
   const handed = library.takeHanded();
-  let editing = $state<{ snap: Snap | null; filled?: string } | null>(handed === null ? null : { snap: null, filled: handed });
+  let editing = $state<SnapEditing | null>(handed === null ? null : { snap: null, filled: handed });
   let renaming = $state<string | null>(null);
   let deleting = $state<Snap | null>(null);
   let removing = $state<Stack | null>(null);
-  let drag = $state<{ kind: 'snap' | 'stack'; id: string } | null>(null);
+  let drag = $state<BoardRef | null>(null);
   let over = $state<string | null>(null);
   let board = $state<HTMLElement>();
 
   const where = (id: string | null) => whereLabel(id, snaps.stacks);
 
   // The bar's + opens a blank paper; presses from before this page opened don't.
-  let seenAdds = library.adds;
-  $effect(() => {
-    const adds = library.adds;
-    if (adds === seenAdds) return;
-    seenAdds = adds;
-    untrack(() => (editing = { snap: null }));
-  });
+  onLibraryAdd(() => (editing = { snap: null }));
 
   function openStack(id: string | null) {
     goto(routes.libraryStack(id));
@@ -111,14 +106,25 @@
   }
 
   /** Writes the draft (a new stack first, then the snap, then its tags); resolves to its stack. */
-  async function writeDraft(draft: SnapDraft, before: Snap | null): Promise<string | null> {
+  async function writeDraft(draft: SnapDraft, before: Snap | null): Promise<SavedDraft> {
     const stackId = await targetOf(draft);
     const color = draft.paper === PAPER.sticky ? draft.color : null;
     const input = { text: draft.text, stackId, paper: draft.paper, color, pinned: draft.pinned };
     const saved = before ? await snapsAPI.update({ id: before.id, patch: input }) : await snapsAPI.create(input);
-    const tagsChanged = draft.tags.join(' ') !== saved.tags.join(' ');
-    if (tagsChanged) await snapsAPI.setTags({ id: saved.id, tags: draft.tags });
-    return stackId;
+    return { stackId, tagsError: await writeTags(saved, draft.tags) };
+  }
+
+  /** Saves the tags when they changed. A refusal (a tag blocked since the pool was loaded) is
+   *  returned, not thrown: the snap is saved by then, and the editor closes first. */
+  async function writeTags(saved: Snap, tags: string[]): Promise<unknown> {
+    const tagsChanged = tags.join(' ') !== saved.tags.join(' ');
+    if (!tagsChanged) return null;
+    try {
+      await snapsAPI.setTags({ id: saved.id, tags });
+      return null;
+    } catch (e) {
+      return e;
+    }
   }
 
   let saving = false;
@@ -128,15 +134,21 @@
     if (saving) return;
     saving = true;
     const before = editing?.snap ?? null;
-    let stackId: string | null;
+    let written: SavedDraft;
     try {
-      stackId = await writeDraft(draft, before);
+      written = await writeDraft(draft, before);
     } finally {
       saving = false;
       // shortcut: a save that fails halfway can leave a new empty stack; the reload shows it. One Rust command would make it all-or-nothing.
       await snaps.load();
     }
     editing = null;
+    const { stackId, tagsError } = written;
+    // Saved without the new tags: closed, so no refused chip stays and a retry can't add it twice.
+    if (tagsError) {
+      await tagPool.load();
+      throw tagsError;
+    }
     if (draft.stackId === NEW_STACK) {
       // Name the new stack right there.
       renaming = stackId;
@@ -183,7 +195,7 @@
 
   async function removeStack(stack: Stack) {
     removing = null;
-    const inside = snaps.snaps.filter((n) => n.stackId === stack.id).length;
+    const inside = snapsIn(stack.id, snaps.snaps).length;
     await snapsAPI.removeStack(stack.id);
     await snaps.load();
     const moved = inside > 0 ? `, ${plural(inside, 'snap')} moved to ${where(stack.parentId)}` : '';
@@ -192,12 +204,13 @@
 
   // ---- moving
 
-  async function moveTo(src: { kind: 'snap' | 'stack'; id: string }, stackId: string | null) {
-    if (src.kind === 'stack' && stackId && isWithin(stackId, src.id, snaps.stacks)) {
+  async function moveTo(src: BoardRef, stackId: string | null) {
+    const intoItself = src.kind === BOARD_KIND.stack && isWithin({ id: stackId, ancestor: src.id }, snaps.stacks);
+    if (intoItself) {
       toast.show('A stack can’t go inside itself');
       return;
     }
-    if (src.kind === 'snap') await snapsAPI.update({ id: src.id, patch: { stackId } });
+    if (src.kind === BOARD_KIND.snap) await snapsAPI.update({ id: src.id, patch: { stackId } });
     else await snapsAPI.moveStack({ id: src.id, parent: stackId });
     await snaps.load();
     toast.show(`Moved to ${where(stackId)}`);
@@ -215,8 +228,8 @@
     renaming = stack.id;
   }
 
-  function drop(src: { kind: 'snap' | 'stack'; id: string }, target: DropTarget) {
-    if (target.kind === 'snap' && target.id) pair(src.id, target.id);
+  function drop(src: BoardRef, target: DropTarget) {
+    if (target.kind === DROP_KIND.snap && target.id) pair(src.id, target.id);
     else moveTo(src, target.id);
   }
 
@@ -227,7 +240,7 @@
     if (!key || !drag) return null;
     if (key === dropKey(drag.kind, drag.id)) return null;
     const target = parseDrop(key);
-    const pairsOnlySnaps = target?.kind === 'snap' && drag.kind !== 'snap';
+    const pairsOnlySnaps = target?.kind === DROP_KIND.snap && drag.kind !== BOARD_KIND.snap;
     return pairsOnlySnaps ? null : key;
   }
 
@@ -244,7 +257,7 @@
 
   /** A press on a snap or stack: one that moves 5 px or more lifts a copy that follows the
    *  pointer; less stays a click. Off while searching or writing. */
-  function press(kind: 'snap' | 'stack', id: string) {
+  function press({ kind, id }: BoardRef) {
     return (e: PointerEvent) => {
       const blocked = e.button !== 0 || needle !== '' || editing !== null;
       const card = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-drop]');
@@ -283,8 +296,13 @@
     };
   }
 
-  const isDragging = (kind: 'snap' | 'stack', id: string) => drag?.kind === kind && drag.id === id;
-  const tiltAt = (i: number) => boardTilts[i % boardTilts.length];
+  const isDragging = (kind: BoardKind, id: string) => drag?.kind === kind && drag.id === id;
+
+  /** The tilts repeat down the board's order. */
+  function tiltAt(at: number): number {
+    const slot = at % boardTilts.length;
+    return boardTilts[slot];
+  }
 </script>
 
 <div class="snaps">
@@ -299,16 +317,16 @@
       {#each columns as column, c (c)}
         <div class="column">
           {#each column as { item, at: i } (itemKey(item))}
-            {#if item.kind === 'snap'}
+            {#if item.kind === BOARD_KIND.snap}
               {@const snap = item.snap}
               <SnapItem
                 {snap}
                 tilt={tiltAt(i)}
                 where={needle ? where(snap.stackId) : null}
-                dragging={isDragging('snap', snap.id)}
-                pairing={over === dropKey('snap', snap.id)}
+                dragging={isDragging(BOARD_KIND.snap, snap.id)}
+                pairing={over === dropKey(DROP_KIND.snap, snap.id)}
                 onopen={() => (editing = { snap })}
-                onpress={press('snap', snap.id)}
+                onpress={press({ kind: BOARD_KIND.snap, id: snap.id })}
                 onpin={() => togglePin(snap)}
                 ondelete={() => askDelete(snap)} />
             {:else}
@@ -317,13 +335,13 @@
                 {stack}
                 tilt={tiltAt(i)}
                 where={needle ? where(stack.parentId) : null}
-                summary={stackSummary(stack, snaps.snaps, snaps.stacks)}
-                peek={stackPeek(stack, snaps.snaps, snaps.stacks)}
-                dragging={isDragging('stack', stack.id)}
-                over={over === dropKey('stack', stack.id)}
+                summary={stackSummary(stack, snaps)}
+                peek={stackPeek(stack, snaps)}
+                dragging={isDragging(BOARD_KIND.stack, stack.id)}
+                over={over === dropKey(DROP_KIND.stack, stack.id)}
                 renaming={renaming === stack.id}
                 onopen={() => openStack(stack.id)}
-                onpress={press('stack', stack.id)}
+                onpress={press({ kind: BOARD_KIND.stack, id: stack.id })}
                 onstartrename={() => (renaming = stack.id)}
                 onrename={(name) => rename(stack, name)}
                 onremove={() => (removing = stack)} />

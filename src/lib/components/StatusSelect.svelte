@@ -5,6 +5,7 @@
   import Popover from './Popover.svelte';
   import StatusDot from './StatusDot.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
+  import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
 
   let {
     value,
@@ -38,18 +39,14 @@
     if (v !== value) onchange(v);
   }
 
-  /** Moves the highlight by `by`, stopping at the first and last status. */
-  function moveHighlight(by: number) {
-    const last = tasks.statuses.length - 1;
-    const next = hi + by;
-    hi = Math.max(0, Math.min(last, next));
-  }
-
   function onkeydown(e: KeyboardEvent) {
     if (!open) return;
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
-      moveHighlight(e.key === 'ArrowDown' ? 1 : -1);
+      hi = nextIndex(hi, tasks.statuses.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      hi = prevIndex(hi);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       choose(tasks.statuses[hi].value);
@@ -96,7 +93,7 @@
 {#if open}
   <Popover anchor={button} role="listbox" label="Status" pad onclose={() => (open = false)}>
     {#each tasks.statuses as s, i (s.value)}
-      <button class="opt st" class:on={i === hi} role="option" aria-selected={s.value === value} onclick={(e) => pick(e, s.value)}>
+      <button class="opt st" class:on={i === hi} role="option" aria-selected={s.value === value} onclick={(e) => pick(e, s.value)} onmouseenter={() => (hi = i)}>
         <StatusDot value={s.value} />{s.label}
         {#if s.value === value}<span class="ck"><Icon name="check" size={12} stroke={2.5} /></span>{/if}
       </button>

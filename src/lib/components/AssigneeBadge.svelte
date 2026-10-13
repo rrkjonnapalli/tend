@@ -73,7 +73,7 @@
     border-radius: 50%;
     background: var(--c-chip);
     color: var(--c-muted-2);
-    font: 700 9px/1 var(--font-ui);
+    font: var(--text-badge);
   }
 
   .unassign {

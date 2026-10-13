@@ -15,7 +15,7 @@ export function guessKind(title: string): string {
 }
 
 /** Trimmed, and lowercase for a `WORD`: what the title is saved as. */
-export function savedTitle(title: string, kind: string): string {
+export function savedTitle({ title, kind }: { title: string; kind: string }): string {
   const t = title.trim();
   return kind === WORD_KIND.word ? t.toLowerCase() : t;
 }
@@ -28,7 +28,7 @@ export function firstLine(markdown: string): string {
 
 /** The words matching `needle` (title or meaning), grouped by kind in kind order; empty kinds
  *  are left out. Words whose kind isn't listed go to the end under their own value. */
-export function groupWords(words: Word[], kinds: WordKind[], needle: string): WordGroup[] {
+export function groupWords({ words, kinds, needle }: { words: Word[]; kinds: WordKind[]; needle: string }): WordGroup[] {
   const shown = words
     .filter((w) => textMatches([w.title, w.meaning], needle))
     .sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));

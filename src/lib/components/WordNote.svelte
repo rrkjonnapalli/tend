@@ -1,6 +1,7 @@
 <script lang="ts">
-  // One of a word's markdown fields (Meaning, Notes): shown formatted; a click on the text (not a
-  // link) opens it for writing. ⌘↵ or ✓ saves, Esc or ✕ cancels.
+  // One of a word's markdown fields (Meaning, Notes), shown formatted. Empty, its prompt is a
+  // button that opens it for writing; with text, the pencil or a double-click does. ⌘↵ or ✓ saves,
+  // Esc or ✕ cancels.
   import MarkdownField from './MarkdownField.svelte';
   import EditControls from './EditControls.svelte';
 
@@ -14,20 +15,19 @@
   let field = $state<MarkdownField>();
   let editing = $state(false);
 
-  function openOnClick(e: MouseEvent) {
-    const onLink = (e.target as HTMLElement).closest('a, button');
-    if (!editing && !onLink) field?.edit();
-  }
+  const blank = $derived(!editing && value.trim() === '');
 </script>
 
 <div class="note">
   <div class="head">
-    <span class="lbl">{label}</span>
+    <span class="field-label">{label}</span>
     <EditControls {editing} what={label.toLowerCase()} onedit={() => field?.edit()} oncancel={() => field?.cancel()} onsave={() => field?.save()} />
   </div>
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-  <div onclick={openOnClick}>
-    <MarkdownField bind:this={field} bind:editing {value} {onsave} {placeholder} empty={placeholder} minHeight={72} {label} />
+  {#if blank}
+    <button class="prompt" onclick={() => field?.edit()}>{placeholder}</button>
+  {/if}
+  <div hidden={blank}>
+    <MarkdownField bind:this={field} bind:editing {value} {onsave} {placeholder} minHeight={72} {label} />
   </div>
 </div>
 
@@ -45,10 +45,14 @@
     min-height: 24px;
   }
 
-  .lbl {
-    font: 700 12px/16px var(--font-ui);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-muted);
+  .prompt {
+    align-self: flex-start;
+    padding: 6px 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font: var(--text-editor-sm);
+    color: var(--c-muted-2);
+    cursor: text;
   }
 </style>

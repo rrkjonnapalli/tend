@@ -4,18 +4,20 @@
   // Bottom: rotate the paper, pick the stack, the sticky's colour, tags. Only the text is needed.
   import { untrack } from 'svelte';
   import Icon from './Icon.svelte';
+  import Pin from './Pin.svelte';
   import Popover from './Popover.svelte';
+  import SearchPicker from './SearchPicker.svelte';
   import SnapPaper from './SnapPaper.svelte';
   import SwatchPicker from './SwatchPicker.svelte';
   import TagEditor from './TagEditor.svelte';
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { papers, stickyColor } from '#lib/config/library.config.ts';
-  import { PAPER } from '#lib/enums/snap.enum.ts';
+  import { PAPER, PAPER_SIZE, SNAP_PICKER, type SnapPicker } from '#lib/enums/snap.enum.ts';
   import { snaps } from '#lib/stores/snaps.svelte.ts';
-  import type { Snap, SnapDraft } from '#lib/types/snap.type.ts';
+  import type { Snap, SnapDraft, StackChoice } from '#lib/types/snap.type.ts';
   import { pushLayer } from '#lib/util/layers.ts';
-  import { BOARD_NAME, NEW_STACK, stackName, stackTree } from '#lib/util/snaps.ts';
+  import { NEW_STACK, stackChoiceMatches, stackChoices, whereLabel } from '#lib/util/snaps.ts';
 
   let {
     snap,
@@ -45,41 +47,52 @@
   let stackId = $state<string | null>(start ? start.stackId : where);
   let pinned = $state(start?.pinned ?? false);
   let tags = $state<string[]>(start?.tags ?? []);
-  let picking = $state<'stack' | 'color' | null>(null);
+  let picking = $state<SnapPicker | null>(null);
   let stackBtn = $state<HTMLButtonElement>();
   let colorBtn = $state<HTMLButtonElement>();
   let ink = $state<HTMLTextAreaElement>();
 
   const paper = $derived(papers[paperAt].paper);
-  const next = $derived(papers[(paperAt + 1) % papers.length]);
+  const nextAt = $derived((paperAt + 1) % papers.length);
+  const next = $derived(papers[nextAt]);
   const isSticky = $derived(paper === PAPER.sticky);
   const isLined = $derived(paper === PAPER.lined);
-  const tree = $derived(stackTree(snaps.stacks));
-  const openStack = $derived(snaps.stacks.find((s) => s.id === where));
+  const choices = $derived(stackChoices(snaps.stacks, where));
   const destName = $derived.by(() => {
     if (stackId === NEW_STACK) return 'New stack';
-    const s = snaps.stacks.find((st) => st.id === stackId);
-    return s ? stackName(s) : BOARD_NAME;
+    return whereLabel(stackId, snaps.stacks);
   });
 
   // Esc closes the editor once its pickers are closed (they are layers above it).
   $effect(() => pushLayer(() => onclose()));
 
   function rotate() {
-    paperAt = (paperAt + 1) % papers.length;
+    paperAt = nextAt;
     ink?.focus();
   }
 
-  function pickStack(id: string | null) {
-    stackId = id;
+  function toggle(picker: SnapPicker) {
+    picking = picking === picker ? null : picker;
+  }
+
+  /** Closing a picker hands the keyboard back to the text, so Esc and ⌘↵ keep working. */
+  function closePicker() {
     picking = null;
     ink?.focus();
+  }
+
+  function pickStack(choice: StackChoice) {
+    stackId = choice.stackId;
+    closePicker();
   }
 
   function pickColor(hex: string) {
     color = hex;
-    picking = null;
-    ink?.focus();
+    closePicker();
+  }
+
+  function setTags(next: string[]) {
+    tags = next;
   }
 
   function save() {
@@ -101,22 +114,22 @@
 <div class="veil">
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="draft" class:torn={paper === PAPER.scrap} class:lined={isLined} role="dialog" aria-label={start ? 'Edit snap' : 'New snap'} tabindex="-1" {onkeydown}>
-    <SnapPaper {paper} {color} editor>
+    <SnapPaper {paper} {color} size={PAPER_SIZE.editor}>
       <textarea use:plainText use:focusOnMount bind:this={ink} class="ink" class:ruled={isLined} aria-label="Snap text" placeholder="Write it down…" bind:value={text}></textarea>
       <div class="foot">
         <button class="pbtn" aria-label="Change paper to {next.name}" title="Change paper to {next.name}" onclick={rotate}><Icon name="rotate" size={17} /></button>
-        <button bind:this={stackBtn} class="where" aria-label="Put in: {destName}" title="Put in: {destName}" aria-haspopup="listbox" aria-expanded={picking === 'stack'} onclick={() => (picking = picking === 'stack' ? null : 'stack')}>
+        <button bind:this={stackBtn} class="where" aria-label="Put in: {destName}" title="Put in: {destName}" aria-haspopup="listbox" aria-expanded={picking === SNAP_PICKER.stack} onclick={() => toggle(SNAP_PICKER.stack)}>
           <Icon name="stack" size={15} /><span>{destName}</span>
         </button>
         {#if isSticky}
-          <button bind:this={colorBtn} class="pbtn" aria-label="Sticky colour" title="Sticky colour" aria-expanded={picking === 'color'} onclick={() => (picking = picking === 'color' ? null : 'color')}>
+          <button bind:this={colorBtn} class="pbtn" aria-label="Sticky colour" title="Sticky colour" aria-expanded={picking === SNAP_PICKER.color} onclick={() => toggle(SNAP_PICKER.color)}>
             <span class="dot" style:background={color}></span>
           </button>
         {/if}
-        <div class="tags"><TagEditor {tags} onchange={(t) => (tags = t)} /></div>
+        <div class="tags"><TagEditor {tags} onchange={setTags} /></div>
       </div>
     </SnapPaper>
-    <span class="pin" aria-hidden="true"></span>
+    <Pin />
     <button class="pbtn corner left" aria-label="Cancel" title="Cancel (Esc)" onclick={onclose}><Icon name="close" size={17} /></button>
     <span class="corner right">
       <button class="pbtn" class:on={pinned} aria-label="Pin to top" title={pinned ? 'Pinned to top' : 'Pin to top'} aria-pressed={pinned} onclick={() => (pinned = !pinned)}><Icon name="pin" size={16} /></button>
@@ -128,25 +141,22 @@
   </div>
 </div>
 
-{#if picking === 'stack'}
-  <Popover anchor={stackBtn} placement="top-start" role="presentation" pad onclose={() => (picking = null)}>
-    <div class="menu" role="listbox" aria-label="Put in stack">
-      <button class="opt" class:on={stackId === null} role="option" aria-selected={stackId === null} onclick={() => pickStack(null)}>{BOARD_NAME} (loose)</button>
-      {#each tree as { stack, depth } (stack.id)}
-        <button class="opt" class:on={stackId === stack.id} role="option" aria-selected={stackId === stack.id} style:padding-left="{10 + depth * 14}px" onclick={() => pickStack(stack.id)}>{stackName(stack)}</button>
-      {/each}
-      <button class="opt new" class:on={stackId === NEW_STACK} role="option" aria-selected={stackId === NEW_STACK} onclick={() => pickStack(NEW_STACK)}>
-        + New stack{openStack ? ` in ${stackName(openStack)}` : ''}
-      </button>
-    </div>
+{#if picking === SNAP_PICKER.stack}
+  <Popover anchor={stackBtn} placement="top-start" label="Put in stack" onclose={closePicker}>
+    <SearchPicker items={choices} match={stackChoiceMatches} onpick={pickStack} placeholder="Search stacks…" label="Put in stack" empty="No stack by that name">
+      {#snippet row(choice)}
+        <span class="choice" class:new={choice.id === NEW_STACK}>{choice.label}</span>
+        {#if choice.stackId === stackId}<span class="sub"><Icon name="check" size={14} /></span>{/if}
+      {/snippet}
+    </SearchPicker>
   </Popover>
 {/if}
-{#if picking === 'color' && colorBtn}
-  <SwatchPicker anchor={colorBtn} {color} label="Sticky colour" onpick={pickColor} onclose={() => (picking = null)} />
+{#if picking === SNAP_PICKER.color && colorBtn}
+  <SwatchPicker anchor={colorBtn} {color} label="Sticky colour" onpick={pickColor} onclose={closePicker} />
 {/if}
 
 <style>
-  /* Above the board, below popovers (30) so the stack, colour and tag pickers show over it. */
+  /* Above the board, below popovers (45) so the stack, colour and tag pickers show over it. */
   .veil {
     position: absolute;
     inset: 0;
@@ -228,18 +238,6 @@
     min-width: 0;
     max-width: 170px;
     overflow: hidden;
-  }
-
-  .pin {
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    width: 14px;
-    height: 14px;
-    margin-left: -7px;
-    border-radius: 50%;
-    background: var(--pin-red);
-    box-shadow: var(--pin-shadow);
   }
 
   .pbtn {
@@ -334,44 +332,15 @@
     box-shadow: inset 0 0 0 1px var(--border);
   }
 
-  .menu {
-    width: 250px;
-    max-height: 220px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .opt {
-    height: 30px;
-    flex: none;
-    padding: 0 10px;
-    border: 0;
-    border-radius: var(--radius-control);
-    background: transparent;
-    text-align: left;
-    font: var(--text-caption);
-    color: var(--text);
-    white-space: nowrap;
+  /* A long stack path is cut short, not wrapped. */
+  .choice {
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
-    cursor: pointer;
+    white-space: nowrap;
   }
 
-  .opt:hover,
-  .opt:focus-visible {
-    background: var(--c-hover);
-  }
-
-  .opt.on {
-    background: var(--c-selected);
-    color: var(--c-current-ink);
-  }
-
-  .opt.new {
-    margin-top: 4px;
-    border-top: 1px solid var(--border);
-    border-radius: 0 0 var(--radius-control) var(--radius-control);
+  .new {
     color: var(--primary);
   }
 </style>

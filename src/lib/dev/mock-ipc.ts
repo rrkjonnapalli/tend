@@ -1,6 +1,9 @@
 // Dev only: lets the UI run in a plain browser (vite dev without Tauri) for layout checks.
 // Commands answer from in-memory fixtures. Add `?vault=0` to the URL to see the start page, `?vault=denied` for the error screen.
 import { mockIPC, mockWindows } from '@tauri-apps/api/mocks';
+import { ENUM_STATUS } from '#lib/enums/status.enum.ts';
+import { errors } from '#lib/errors/registry.ts';
+import type { TagRow } from '#lib/types/tag.type.ts';
 import { addDays, today } from '#lib/util/dates.ts';
 
 type Handler = (args: Record<string, unknown>) => unknown;
@@ -24,6 +27,25 @@ const texts: Record<string, string> = {
   wc: '# Window config\n\nHide native decorations. One **hairline** is the only chrome.\n\n## Checklist\n\n- [x] decorations: false\n- [ ] drag region on the explorer toolbar\n- [ ] global shortcut for capture\n\n> Closing hides the window, so timers keep running.\n\n```json\n"decorations": false,\n"minWidth": 900\n```',
 };
 const noteTags: Record<string, string[]> = { wc: ['tauri', 'ui'] };
+const TAG_NAMES = ['ci', 'docs', 'home', 'reading', 'release', 'tauri', 'ui', 'v0.1'];
+const tagRows: TagRow[] = TAG_NAMES.map((name) => ({ name, status: ENUM_STATUS.active, uses: 1 }));
+const isBlockedTag = (name: string) => tagRows.some((r) => r.name === name && r.status === ENUM_STATUS.blocked);
+
+/** Blocking takes the tag off every note, like the backend. */
+function setTagStatus(name: string, status: TagRow['status']) {
+  const row = tagRows.find((r) => r.name === name);
+  if (!row) return;
+  row.status = status;
+  if (status !== ENUM_STATUS.blocked) return;
+  row.uses = 0;
+  for (const id of Object.keys(noteTags)) noteTags[id] = noteTags[id].filter((t) => t !== name);
+}
+
+function setNoteTags(id: string, tags: string[]) {
+  if (tags.some(isBlockedTag)) throw errors.TAG_BLOCKED;
+  noteTags[id] = tags;
+  return tags;
+}
 
 /** Today plus `n` days, as YYYY-MM-DD. */
 const day = (n: number) => addDays(today(), n);
@@ -104,7 +126,9 @@ const handlers: Record<string, Handler> = {
   'plugin:window|close': () => null,
   'plugin:window|minimize': () => null,
   'plugin:window|toggle_maximize': () => null,
-  tags_all: () => ['ci', 'docs', 'home', 'reading', 'release', 'tauri', 'ui', 'v0.1'],
+  tags_all: () => tagRows.filter((r) => r.status === ENUM_STATUS.active).map((r) => r.name),
+  tags_overview: () => tagRows,
+  tag_set_status: ({ name, status }) => setTagStatus(name as string, status as TagRow['status']),
   notes_tree: () => ({ folders: ['home', 'work', 'work/tauri'], notes }),
   item_rename: ({ item, name }) => {
     const target = item as { kind: string; id?: string; path?: string };
@@ -118,7 +142,7 @@ const handlers: Record<string, Handler> = {
     texts[id as string] = text as string;
     return notes.find((n) => n.id === id);
   },
-  note_tags_set: ({ id, tags }) => (noteTags[id as string] = tags as string[]),
+  note_tags_set: ({ id, tags }) => setNoteTags(id as string, tags as string[]),
   statuses_list: () => statuses,
   timers_list: () => timerList,
   timers_finished_while_closed: () => [],

@@ -5,6 +5,7 @@
   import { untrack } from 'svelte';
   import PageBar from './PageBar.svelte';
   import Breadcrumbs from './Breadcrumbs.svelte';
+  import Chip from './Chip.svelte';
   import Icon from './Icon.svelte';
   import KindPicker from './KindPicker.svelte';
   import TagEditor from './TagEditor.svelte';
@@ -15,11 +16,12 @@
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import { focusWhen } from '#lib/actions/focus.action.ts';
   import { wordsAPI } from '#lib/api/words.ts';
+  import { dictionarySource, idiomPartOfSpeech } from '#lib/config/library.config.ts';
   import { WORD_KIND } from '#lib/enums/word.enum.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { words } from '#lib/stores/words.svelte.ts';
-  import type { Dictionary, Word } from '#lib/types/word.type.ts';
+  import type { Dictionary, Word, WordPatch } from '#lib/types/word.type.ts';
   import { iso, shortDate } from '#lib/util/dates.ts';
   import { guessKind, savedTitle } from '#lib/util/words.ts';
 
@@ -37,14 +39,13 @@
     /** A new word's title, handed over from Home. */
     filled?: string;
     onsaved: (id: string) => void;
-    oncancel: () => void;
+    /** Drops a new word (Cancel, Esc); a saved word has nothing to cancel. */
+    oncancel?: () => void;
     onopen: (id: string) => void;
     ondeleted: () => void;
     /** A new word's title as it is typed. */
     ontyped?: (title: string) => void;
   } = $props();
-
-  const SOURCE = 'dictionaryapi.dev';
 
   // The page is remounted for each word, so these start from the one it opened with.
   const start = untrack(() => word);
@@ -64,7 +65,7 @@
 
   const kindInfo = $derived(words.kindOf(kind));
   const looksUp = $derived(kindInfo?.lookup ?? false);
-  const dupe = $derived(title.trim() ? words.withTitle(savedTitle(title, kind), start?.id) : undefined);
+  const dupe = $derived(title.trim() ? words.withTitle({ title: savedTitle({ title, kind }), except: start?.id }) : undefined);
 
   const hint = $derived.by(() => {
     if (!looksUp) return 'No dictionary for this one.';
@@ -76,13 +77,13 @@
   });
   const meta = $derived.by(() => {
     if (!looksUp) return '';
-    if (!dictionary) return SOURCE;
-    return `${SOURCE} · fetched ${shortDate(iso(new Date(dictionary.fetchedAt)))}`;
+    if (!dictionary) return dictionarySource;
+    return `${dictionarySource} · fetched ${shortDate(iso(new Date(dictionary.fetchedAt)))}`;
   });
 
   // ---- saving a saved word's changes
 
-  async function patch(change: Parameters<typeof wordsAPI.update>[0]['patch']) {
+  async function patch(change: WordPatch) {
     if (!start) return;
     const saved = await wordsAPI.update({ id: start.id, patch: change });
     title = saved.title;
@@ -94,7 +95,7 @@
 
   /** An idiom the dictionary knows as one becomes an idiom, unless the kind was picked. */
   function idiomFrom(found: Dictionary | null) {
-    const saysIdiom = found?.partOfSpeech === 'idiom';
+    const saysIdiom = found?.partOfSpeech === idiomPartOfSpeech;
     if (saysIdiom && !kindSet) kind = WORD_KIND.idiom;
   }
 
@@ -134,7 +135,7 @@
   /** A saved word's title, on leaving the field: empty or taken goes back to what it was. */
   async function committitle() {
     if (!start) return;
-    const next = savedTitle(title, kind);
+    const next = savedTitle({ title, kind });
     const keep = !next || dupe !== undefined;
     if (keep) {
       title = start.title;
@@ -173,9 +174,12 @@
     await patch({ notes: text });
   }
 
+  /** A saved word's chips follow the answer: a refused tag (a blocked one) never shows. */
   async function settags(next: string[]) {
-    tags = next;
-    if (!start) return;
+    if (!start) {
+      tags = next;
+      return;
+    }
     tags = await wordsAPI.setTags({ id: start.id, tags: next });
     // The list holds each word's tags too: this entry starts from them when it is opened again.
     await words.load();
@@ -187,20 +191,34 @@
 
   let adding = false;
 
+  /** Saves the new word's tags. A refusal is returned, not thrown: the word exists by then and
+   *  is opened first. */
+  async function addTags(id: string): Promise<unknown> {
+    if (!tags.length) return null;
+    try {
+      await wordsAPI.setTags({ id, tags });
+      return null;
+    } catch (e) {
+      return e;
+    }
+  }
+
   async function add() {
     // A second ⌘↵ while the first add runs would hit the duplicate rule.
     if (!canAdd || adding) return;
     adding = true;
-    let saved: Word | null = null;
+    let saved: Word;
+    let tagsError: unknown;
     try {
       saved = await wordsAPI.create({ title, kind, dictionary, meaning, notes });
-      if (tags.length) await wordsAPI.setTags({ id: saved.id, tags });
+      tagsError = await addTags(saved.id);
     } finally {
       adding = false;
       await words.load();
-      // Created with only its tags missing: open it, so a retry doesn't add it twice.
-      if (saved) onsaved(saved.id);
     }
+    // Also when only its tags were refused: the word is open, so a retry can't add it twice.
+    onsaved(saved.id);
+    if (tagsError) throw tagsError;
   }
 
   async function remove() {
@@ -223,7 +241,7 @@
       e.preventDefault();
       add();
     } else if (e.key === 'Escape' && !e.defaultPrevented) {
-      oncancel();
+      oncancel?.();
     }
   }
 
@@ -268,11 +286,11 @@
             <button class="icon-btn sm" aria-label="Play pronunciation" title="Play pronunciation" onclick={play}><Icon name="sound" size={14} /></button>
           {/if}
         {/if}
-        {#if showPos}<span class="chip">{dictionary?.partOfSpeech}</span>{/if}
+        {#if showPos && dictionary?.partOfSpeech}<Chip text={dictionary.partOfSpeech} />{/if}
         <TagEditor {tags} onchange={settags} />
       </div>
       {#if dupe}
-        <p class="dupe">Already saved. <button class="link" onclick={() => onopen(dupe.id)}>Open “{dupe.title}”</button></p>
+        <p class="dupe">Already saved. <button class="link-btn inline" onclick={() => onopen(dupe.id)}>Open “{dupe.title}”</button></p>
       {/if}
     </div>
 
@@ -359,33 +377,10 @@
     color: var(--text-muted);
   }
 
-  .chip {
-    height: 22px;
-    padding: 0 8px;
-    border-radius: var(--radius-sm);
-    background: var(--c-chip);
-    font: var(--text-caption);
-    line-height: 22px;
-  }
-
   .dupe {
     margin: 0;
     font: var(--text-caption);
     color: var(--text-muted);
-  }
-
-  .link {
-    padding: 0;
-    border: 0;
-    background: transparent;
-    font: inherit;
-    color: var(--primary);
-    cursor: pointer;
-  }
-
-  .link:hover,
-  .link:focus-visible {
-    color: var(--primary-hover);
   }
 
   .notes {

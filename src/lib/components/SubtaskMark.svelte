@@ -21,7 +21,7 @@
     border-radius: 50%;
     background: var(--success-soft);
     color: var(--success);
-    font: 700 9px/1 var(--font-ui);
+    font: var(--text-badge);
     vertical-align: 1px;
     cursor: default;
   }

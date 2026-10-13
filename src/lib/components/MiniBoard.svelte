@@ -1,13 +1,14 @@
 <script lang="ts">
-  // Home's small pinboard: the latest snaps, each pinned at a fixed spot. A snap opens the board
-  // where it is.
+  // Home's small pinboard: the latest snaps, each pinned at a fixed spot on its own paper. A snap
+  // opens the board where it is.
   import { goto } from '$app/navigation';
   import LibraryEmpty from './LibraryEmpty.svelte';
-  import { miniSpots, stickyColor } from '#lib/config/library.config.ts';
-  import { PAPER } from '#lib/enums/snap.enum.ts';
+  import Pin from './Pin.svelte';
+  import SnapPaper from './SnapPaper.svelte';
+  import { miniSpots } from '#lib/config/library.config.ts';
+  import { PAPER, PAPER_SIZE } from '#lib/enums/snap.enum.ts';
   import type { Snap } from '#lib/types/snap.type.ts';
   import { routes } from '#lib/util/routes.ts';
-  import { stickyTint } from '#lib/util/snaps.ts';
 
   let {
     snaps,
@@ -19,28 +20,22 @@
     loaded: boolean;
   } = $props();
 
-  const pinned = $derived(
-    snaps.slice(0, miniSpots.length).map((snap, i) => {
-      const sticky = snap.paper === PAPER.sticky;
-      return { snap, spot: miniSpots[i], sticky, tint: sticky ? stickyTint(snap.color ?? stickyColor) : null };
-    }),
-  );
+  const pinned = $derived(snaps.slice(0, miniSpots.length).map((snap, i) => ({ snap, spot: miniSpots[i] })));
 </script>
 
 <div class="mini">
-  {#each pinned as { snap, spot, sticky, tint } (snap.id)}
+  {#each pinned as { snap, spot } (snap.id)}
     <button
       class="paper"
-      class:sticky
-      class:slip={snap.paper === PAPER.slip}
+      class:torn={snap.paper === PAPER.scrap}
       style:left="{spot.left}px"
       style:top="{spot.top}px"
       style:rotate="{spot.tilt}deg"
-      style:--band={tint?.band}
-      style:--tint={tint?.sheet}
       onclick={() => goto(routes.libraryStack(snap.stackId))}>
-      <span class="pin" aria-hidden="true"></span>
-      <span class="text">{snap.text}</span>
+      <SnapPaper paper={snap.paper} color={snap.color} size={PAPER_SIZE.mini}>
+        <span class="text">{snap.text}</span>
+      </SnapPaper>
+      <Pin mini />
     </button>
   {/each}
   {#if loaded && pinned.length === 0}
@@ -64,21 +59,23 @@
   .paper {
     position: absolute;
     width: 150px;
-    padding: 22px 14px 10px;
+    padding: 0;
     border: 0;
-    background: var(--paper);
-    box-shadow: var(--paper-shadow);
-    color: var(--board-ink);
+    background: transparent;
     text-align: left;
     cursor: pointer;
+    transition: translate 0.15s ease;
   }
 
-  .slip {
-    background: var(--paper-kraft);
+  /* Hover and keyboard focus: the paper lifts, as on the board (the focus fill is hidden behind
+     it); never a ring. */
+  .paper:hover,
+  .paper:focus-visible {
+    translate: 0 -3px;
   }
 
-  .sticky {
-    background: linear-gradient(var(--band) 0 12px, var(--tint) 12px);
+  .torn {
+    filter: var(--paper-torn-shadow);
   }
 
   /* A long snap shows its first lines only. */
@@ -90,22 +87,5 @@
     overflow: hidden;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    font: 400 12px/20px var(--font-mono);
-  }
-
-  .sticky .text {
-    font: 500 19px/23px var(--font-hand);
-  }
-
-  .pin {
-    position: absolute;
-    top: 7px;
-    left: 50%;
-    width: 11px;
-    height: 11px;
-    margin-left: -5px;
-    border-radius: 50%;
-    background: var(--pin-red);
-    box-shadow: var(--pin-shadow);
   }
 </style>

@@ -2,19 +2,19 @@
   // Library Home: the recent words, the latest snaps on a small board and the newest references.
   // While the Library search has text it shows every match instead, grouped by area. + asks what
   // the thing is and hands it to its area.
-  import { untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import LibraryAdd from '#lib/components/LibraryAdd.svelte';
   import LibraryEmpty from '#lib/components/LibraryEmpty.svelte';
   import LibraryItem from '#lib/components/LibraryItem.svelte';
   import MiniBoard from '#lib/components/MiniBoard.svelte';
+  import PageTitle from '#lib/components/PageTitle.svelte';
   import { homeCounts } from '#lib/config/library.config.ts';
   import { LIBRARY_AREA, type SaveArea } from '#lib/enums/library.enum.ts';
-  import { library } from '#lib/stores/library.svelte.ts';
+  import { library, onLibraryAdd } from '#lib/stores/library.svelte.ts';
   import { refs } from '#lib/stores/refs.svelte.ts';
   import { snaps } from '#lib/stores/snaps.svelte.ts';
   import { words } from '#lib/stores/words.svelte.ts';
-  import type { LibraryGroup } from '#lib/types/library.type.ts';
+  import type { HomeColumn, LibraryGroup } from '#lib/types/library.type.ts';
   import { newest, refHit, snapHit, wordHit } from '#lib/util/library.ts';
   import { plural } from '#lib/util/plural.ts';
   import { refTitle } from '#lib/util/refs.ts';
@@ -36,6 +36,24 @@
   const latestSnaps = $derived(newest(snaps.snaps, homeCounts.snaps));
   const newRefs = $derived(newest(refs.refs, homeCounts.refs).map(refHit));
 
+  const columns = $derived<HomeColumn[]>([
+    {
+      area: LIBRARY_AREA.words,
+      title: 'Words',
+      note: 'recent',
+      more: 'All →',
+      list: { hits: recentWords, loaded: words.loaded, empty: 'No words yet. Press + and type one.' },
+    },
+    { area: LIBRARY_AREA.snaps, title: 'Snaps', note: 'latest', more: 'Board →' },
+    {
+      area: LIBRARY_AREA.refs,
+      title: 'References',
+      note: 'new',
+      more: 'All →',
+      list: { hits: newRefs, loaded: refs.loaded, empty: 'No references yet. Press + and paste a link.' },
+    },
+  ]);
+
   /** Every match of the search, by area; areas without one are left out. */
   const groups = $derived.by((): LibraryGroup[] => {
     const all: LibraryGroup[] = [
@@ -47,14 +65,8 @@
   });
   const loaded = $derived(words.loaded && snaps.loaded && refs.loaded);
 
-  // The bar's + opens the add box; presses from before this page opened don't.
-  let seenAdds = library.adds;
-  $effect(() => {
-    const adds = library.adds;
-    if (adds === seenAdds) return;
-    seenAdds = adds;
-    untrack(() => (adding = true));
-  });
+  // The bar's + opens the add box.
+  onLibraryAdd(() => (adding = true));
 
   const open = (area: SaveArea) => goto(routes.libraryArea(area));
 </script>
@@ -79,45 +91,27 @@
 {:else}
   <div class="scroll">
     <div class="home">
-      <div>
-        <h1>Library</h1>
-        <span class="meta">{counts}</span>
-      </div>
+      <PageTitle title="Library" meta={counts} />
       <div class="cols">
-        <section class="col">
-          <div class="head">
-            <h2>Words</h2>
-            <span class="meta">recent</span>
-            <button class="more" onclick={() => open(LIBRARY_AREA.words)}>All →</button>
-          </div>
-          {#each recentWords as hit (hit.id)}
-            <LibraryItem {hit} />
-          {/each}
-          {#if words.loaded && recentWords.length === 0}
-            <p class="none">No words yet. Press + and type one.</p>
-          {/if}
-        </section>
-        <section class="col">
-          <div class="head">
-            <h2>Snaps</h2>
-            <span class="meta">latest</span>
-            <button class="more" onclick={() => open(LIBRARY_AREA.snaps)}>Board →</button>
-          </div>
-          <MiniBoard snaps={latestSnaps} loaded={snaps.loaded} />
-        </section>
-        <section class="col">
-          <div class="head">
-            <h2>References</h2>
-            <span class="meta">new</span>
-            <button class="more" onclick={() => open(LIBRARY_AREA.refs)}>All →</button>
-          </div>
-          {#each newRefs as hit (hit.id)}
-            <LibraryItem {hit} />
-          {/each}
-          {#if refs.loaded && newRefs.length === 0}
-            <p class="none">No references yet. Press + and paste a link.</p>
-          {/if}
-        </section>
+        {#each columns as column (column.area)}
+          <section class="col">
+            <div class="head">
+              <h2>{column.title}</h2>
+              <span class="meta">{column.note}</span>
+              <button class="link-btn more" onclick={() => open(column.area)}>{column.more}</button>
+            </div>
+            {#if column.list}
+              {#each column.list.hits as hit (hit.id)}
+                <LibraryItem {hit} />
+              {/each}
+              {#if column.list.loaded && column.list.hits.length === 0}
+                <p class="none">{column.list.empty}</p>
+              {/if}
+            {:else}
+              <MiniBoard snaps={latestSnaps} loaded={snaps.loaded} />
+            {/if}
+          </section>
+        {/each}
       </div>
     </div>
   </div>
@@ -141,15 +135,10 @@
     width: 100%;
     max-width: 1140px;
     margin: 0 auto;
-    padding: 26px 32px 24px;
+    padding: 22px 32px 24px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-  }
-
-  h1 {
-    margin: 0;
-    font: var(--text-heading);
+    gap: 12px;
   }
 
   h2 {
@@ -184,17 +173,7 @@
 
   .more {
     margin-left: auto;
-    padding: 0;
-    border: 0;
-    background: transparent;
     font: var(--text-caption);
-    color: var(--primary);
-    cursor: pointer;
-  }
-
-  .more:hover,
-  .more:focus-visible {
-    color: var(--primary-hover);
   }
 
   .none {

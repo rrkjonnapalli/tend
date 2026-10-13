@@ -69,7 +69,7 @@ textarea,
 }
 
 /* A `data-pick` control (a task view) is selected as it takes focus; its own mark is enough. */
-html :is(button, a, [role='button']):focus-visible:not(.btn-primary, .btn-danger, [data-row], [data-pick], .link-btn, .text-btn, .crumb, a:not([class])) {
+html :is(button, a, [role='button']):focus-visible:not(.btn-primary, .btn-danger, [data-row], [data-pick], [role='option'], [role='menuitem'], [data-option], .link-btn, .text-btn, .crumb, a:not([class])) {
   background-color: var(--c-hover);
 }
 
@@ -254,12 +254,25 @@ html :is(.link-btn, .text-btn, .crumb, a:not([class])):focus-visible {
   text-decoration: underline;
 }
 
+/* Inside a sentence it takes the sentence's type. */
+.link-btn.inline {
+  font: inherit;
+}
+
 .link-btn.lead {
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 34px;
   align-self: flex-start;
+}
+
+/* A field's small uppercase label, above it (a reference's Title, a word's Meaning). */
+.field-label {
+  font: var(--text-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
 /* A bordered text field. `.mono` for values (paths, dates, tokens); `.bad` when it's invalid. */
@@ -390,9 +403,11 @@ kbd {
   background: var(--c-hover);
 }
 
-/* The option ↑↓ is on. */
-.opt.on {
-  background: var(--c-selected);
+/* The option ↑↓ is on: filled like a list row with the keyboard cursor, whether the dropdown
+   moves a highlight (`.on`) or the focus itself (see the optionNav action). */
+.opt.on,
+html :is([role='option'], [role='menuitem'], [data-option]):focus-visible {
+  background-color: var(--c-cursor);
 }
 
 .opt.new {
@@ -403,8 +418,9 @@ kbd {
   color: var(--danger);
 }
 
-.opt.danger:hover {
-  background: var(--danger-soft);
+.opt.danger:hover,
+html .opt.danger:focus-visible {
+  background-color: var(--danger-soft);
 }
 
 .opt .hint {

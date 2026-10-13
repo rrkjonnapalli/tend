@@ -18,8 +18,8 @@ class RefsStore {
 
   byId = (id: string) => this.refs.find((r) => r.id === id);
 
-  /** Another reference with the same link key (`except`: the one being edited). */
-  withKey = (key: string, except?: string) => this.refs.find((r) => r.urlKey === key && r.id !== except);
+  /** Another reference with the same link key (`except`: the id of the one being edited). */
+  withKey = ({ key, except }: { key: string; except?: string }) => this.refs.find((r) => r.urlKey === key && r.id !== except);
 }
 
 export const refs = new RefsStore();

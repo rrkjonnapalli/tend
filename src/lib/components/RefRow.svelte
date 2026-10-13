@@ -2,6 +2,7 @@
   // One reference in the list: title · reference · why · tags · added. The row opens it for
   // editing; a link's open icon (over the Reference column) opens the page instead.
   import { openUrl } from '@tauri-apps/plugin-opener';
+  import Chip from './Chip.svelte';
   import Icon from './Icon.svelte';
   import { REF_KIND } from '#lib/enums/ref.enum.ts';
   import type { Ref } from '#lib/types/ref.type.ts';
@@ -20,7 +21,7 @@
     <span class="ref" class:url={isLink}>{isLink ? shownUrl(ref.value) : ref.value}</span>
     <span class="why">{ref.why}</span>
     <span class="tags">
-      {#each ref.tags as tag (tag)}<span class="tag">{tag}</span>{/each}
+      {#each ref.tags as tag (tag)}<Chip text={tag} />{/each}
     </span>
     <span class="added">{ago(ref.createdAt)}</span>
   </button>
@@ -104,15 +105,9 @@
     overflow: hidden;
   }
 
-  .tag {
+  /* Whole chips: the ones that don't fit are cut off by the column, not squeezed. */
+  .tags :global(.chip) {
     flex: none;
-    height: 22px;
-    padding: 0 8px;
-    border-radius: var(--radius-sm);
-    background: var(--c-nav-active-soft);
-    font: var(--text-caption);
-    line-height: 22px;
-    color: var(--c-current-ink);
   }
 
   .added {

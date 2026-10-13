@@ -80,8 +80,8 @@
     await tasks.update(id, p);
   }
 
+  /** The chips follow the answer: a refused tag (a blocked one) never shows. */
   async function setTags(next: string[]) {
-    tags = next;
     tags = await tasksAPI.setTags({ id, tags: next });
   }
 

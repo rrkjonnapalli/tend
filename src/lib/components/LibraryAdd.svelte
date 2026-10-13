@@ -90,7 +90,7 @@
     field-sizing: content;
     max-height: 240px;
     background: transparent;
-    font: 400 17px/26px var(--font-ui);
+    font: var(--text-capture);
     color: var(--text);
     caret-color: var(--primary);
   }
