@@ -4,6 +4,7 @@
   // Deleting asks too: the tag leaves the pool and everything that carries it, and can be typed again.
   import ConfirmDialog from './ConfirmDialog.svelte';
   import Icon from './Icon.svelte';
+  import SearchLine from './SearchLine.svelte';
   import Section from './Section.svelte';
   import { tagsAPI } from '#lib/api/tags.ts';
   import { ENUM_STATUS, type EnumStatus } from '#lib/enums/status.enum.ts';
@@ -12,11 +13,17 @@
   import { toast } from '#lib/stores/toast.svelte.ts';
   import type { TagRow } from '#lib/types/tag.type.ts';
   import { plural } from '#lib/util/plural.ts';
+  import { searchNeedle, textMatches } from '#lib/util/search.ts';
 
   tagPool.load();
 
-  const active = $derived(tagPool.rows.filter((t) => t.status === ENUM_STATUS.active));
-  const blocked = $derived(tagPool.rows.filter((t) => t.status === ENUM_STATUS.blocked));
+  /** The search covers both columns. */
+  let query = $state('');
+  const needle = $derived(searchNeedle(query));
+  const found = $derived(tagPool.rows.filter((t) => textMatches([t.name], needle)));
+  const active = $derived(found.filter((t) => t.status === ENUM_STATUS.active));
+  const blocked = $derived(found.filter((t) => t.status === ENUM_STATUS.blocked));
+  const noMatch = 'No tags match.';
 
   /** The tag whose block is being confirmed. */
   let asking = $state<TagRow | null>(null);
@@ -75,12 +82,13 @@
   </Section>
 {/snippet}
 
+<SearchLine bind:value={query} label="Search tags" placeholder="Search tags" clearable />
 <span class="caption muted">
   Tags are shared by notes, tasks, words, snaps and references. A blocked tag comes off everything and can’t be added again until you unblock it.
 </span>
 <div class="cols">
-  {@render column({ title: 'Active', tags: active, empty: 'No tags yet.', action: 'Block', onact: (tag) => (asking = tag) })}
-  {@render column({ title: 'Blocked', tags: blocked, empty: 'No blocked tags.', action: 'Unblock', onact: unblock })}
+  {@render column({ title: 'Active', tags: active, empty: needle ? noMatch : 'No tags yet.', action: 'Block', onact: (tag) => (asking = tag) })}
+  {@render column({ title: 'Blocked', tags: blocked, empty: needle ? noMatch : 'No blocked tags.', action: 'Unblock', onact: unblock })}
 </div>
 
 {#if asking}

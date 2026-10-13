@@ -165,7 +165,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - A folder list shows all top-level tasks under that path (recursive), with subtask counts.
 
 ### Statuses (app-wide, Settings → Tasks)
-- Statuses are `TASK_STATUS` rows in `tend_enums` (§16).
+- Statuses are `TASK_STATUS` rows in `tend_enums` (§16). A task can only be given a status that is in the list and not blocked; anything else is refused (`NOT_FOUND`, `ENUM_BLOCKED`).
 - Each status has a fixed **value** (`NOT_STARTED`) and an editable **label** ("Not started", renameable e.g. to "Ready").
 - Defaults:
   - `NOT_STARTED`: always **first**; new tasks start here.
@@ -310,7 +310,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 
 - Sections on the left: General · Tasks · Library · Tags · Sync · Command palette.
 - **Library:** word kinds (§15).
-- **Tags:** every tag in two columns, **Active** and **Blocked**, by name; each row shows the tag and how many things use it. An active row has *Block*, a blocked row *Unblock*. Block asks first (*Block “name”?* — it comes off N things and can't be added again until unblocked); Unblock doesn't ask. Each row also has a delete icon: it always asks (*Delete “name”?* — it comes off N things), then removes the tag from the pool and from everything that carries it; unlike a blocked tag it can be typed again later. Each of the three reloads the tag pool and every list that shows tags (§7).
+- **Tags:** a search line at the top right, like the list pages, filters both columns by name. Every tag in two columns, **Active** and **Blocked**, by name; each row shows the tag and how many things use it. An active row has *Block*, a blocked row *Unblock*. Block asks first (*Block “name”?* — it comes off N things and can't be added again until unblocked); Unblock doesn't ask. Each row also has a delete icon: it always asks (*Delete “name”?* — it comes off N things), then removes the tag from the pool and from everything that carries it; unlike a blocked tag it can be typed again later. Each of the three reloads the tag pool and every list that shows tags (§7).
 - **General:** vault path as plain text, with a *Change vault folder…* link on the right. Below it, a quiet "N items skipped" line (files/folders whose names break the rule) that expands to the list.
 - **Tasks:** statuses (see §6).
 - Notes and People settings come later; they have no section yet.
@@ -334,7 +334,7 @@ The full behaviour is in `docs/tend-library-plan.md` and the mockups in `docs/te
 - **Word titles** are unique by exact match across all kinds. A `WORD` title is lowercased on save; other kinds keep their case, so `it` (word) and `IT` (abbr) are different entries. Changing a saved entry's kind to `WORD` lowercases its title and is refused if that title already exists.
 - **Kind guess** while adding, until a kind is picked by hand: all capitals (two characters or more) and no spaces guesses abbr (`NASA`, but not `Petrichor`), no spaces guesses word, spaces guess phrase; a dictionary hit marked idiom switches to idiom.
 - **Words list:** grouped by kind in kind order, always open; no random or collapse buttons.
-- **Meaning and Notes** render the markdown as written; Tend adds no link syntax of its own. An empty one shows its prompt as a button that opens it for writing; one with text opens with its pencil or a double-click, like a task's description.
+- **Meaning and Notes** render the markdown as written; Tend adds no link syntax of its own. Each opens for writing with its pencil or a double-click, empty or not, like every markdown field (a task's description, a person's notes, a comment, a note's body); a single click never opens one.
 - **A word's kind** is picked like a person: the kind chip opens a search over the kinds (type to filter, ↑↓, ↵), with the current one ticked.
 - **Pronunciation:** the dictionary's audio URL is stored with the entry and played from it (CSP `media-src https:`).
 - **Tags:** the app's shared tag pool and name rule (§7), not the spec's 24-character rule. The inline chip input from the mockups is `TagEditor`'s inline style.
@@ -358,5 +358,6 @@ The full behaviour is in `docs/tend-library-plan.md` and the mockups in `docs/te
   - Sources: `TASK`, `NOTE`, `COMMENT`, `PERSON`, `WORD`, `SNAP`, `REF`.
 - **Table names** live in one place too (`src-tauri/src/db/tables.rs`), with the column names that are passed around as data (`db/columns.rs`): sync rules, snapshot keys and SQL built at run time take them from there.
 - **Code enums, not rows:** `TEND_SOURCE_TYPE`, `TEND_TARGET_TYPE` and `TEND_TARGET_KIND` change only with a release, so they live in code: `src-tauri/src/enums/` and `src/lib/enums/*.enum.ts`, same values on both sides. No enum kind, value or type is typed inline anywhere else.
+- **A row that can't be read** (its `meta` isn't a JSON object, which only a sync can bring) is left out of its list and logged; the other rows still load.
 - **Integrity in the app:** an enum in use can't be deleted where the rules say so (statuses, word kinds); the check is not atomic. Triggers remove links when their source row, attachment or enum row is deleted. Deleting a label or tag removes it from everything that carries it.
 - **Sync:** duplicates by `(kind, value)` and by the link key keep the smaller id (v1-sync-spec §9.2). `status` syncs like any other column; after a merge, links whose enum row is blocked are dropped (a tag blocked on one device while another device put it on something).

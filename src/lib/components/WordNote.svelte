@@ -1,7 +1,6 @@
 <script lang="ts">
-  // One of a word's markdown fields (Meaning, Notes), shown formatted. Empty, its prompt is a
-  // button that opens it for writing; with text, the pencil or a double-click does. ⌘↵ or ✓ saves,
-  // Esc or ✕ cancels.
+  // One of a word's markdown fields (Meaning, Notes), shown formatted. The pencil or a double-click
+  // opens it for writing, empty or not, like every markdown field. ⌘↵ or ✓ saves, Esc or ✕ cancels.
   import MarkdownField from './MarkdownField.svelte';
   import EditControls from './EditControls.svelte';
 
@@ -14,8 +13,6 @@
 
   let field = $state<MarkdownField>();
   let editing = $state(false);
-
-  const blank = $derived(!editing && value.trim() === '');
 </script>
 
 <div class="note">
@@ -23,12 +20,7 @@
     <span class="field-label">{label}</span>
     <EditControls {editing} what={label.toLowerCase()} onedit={() => field?.edit()} oncancel={() => field?.cancel()} onsave={() => field?.save()} />
   </div>
-  {#if blank}
-    <button class="prompt" onclick={() => field?.edit()}>{placeholder}</button>
-  {/if}
-  <div hidden={blank}>
-    <MarkdownField bind:this={field} bind:editing {value} {onsave} {placeholder} minHeight={72} {label} />
-  </div>
+  <MarkdownField bind:this={field} bind:editing {value} {onsave} {placeholder} empty={placeholder} minHeight={72} {label} />
 </div>
 
 <style>
@@ -43,16 +35,5 @@
     align-items: center;
     gap: 8px;
     min-height: 24px;
-  }
-
-  .prompt {
-    align-self: flex-start;
-    padding: 6px 0;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    font: var(--text-editor-sm);
-    color: var(--c-muted-2);
-    cursor: text;
   }
 </style>
