@@ -118,3 +118,23 @@ fn blocking_a_tag_that_isnt_there_is_not_found() {
     assert!(missing.is(errors::NOT_FOUND));
     assert_eq!(missing.to_string(), "Tag was not found");
 }
+
+#[test]
+fn a_deleted_tag_comes_off_everything_and_can_be_added_again() {
+    let mut conn = open_memory();
+    crate::notes::seed(&conn, "n", "n.md");
+    set(&mut conn, note(), &["ops".into(), "q4".into()]).unwrap();
+    delete(&conn, "ops").unwrap();
+    assert_eq!(links(&conn), 1, "the deleted tag's link went with it");
+    assert_eq!(all(&conn).unwrap(), vec!["q4"]);
+
+    let tags = set(&mut conn, note(), &["q4".into(), "ops".into()]).unwrap();
+    assert_eq!(
+        tags,
+        vec!["ops", "q4"],
+        "a deleted tag is not a blocked one"
+    );
+
+    let missing = delete(&conn, "nope").unwrap_err();
+    assert!(missing.is(errors::NOT_FOUND));
+}

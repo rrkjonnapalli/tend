@@ -1,7 +1,9 @@
 <script lang="ts">
   // Settings → Tags: every tag in two columns, Active and Blocked, each with how many things use
   // it. Blocking asks first: the tag comes off everything and can't be added until unblocked.
+  // Deleting asks too: the tag leaves the pool and everything that carries it, and can be typed again.
   import ConfirmDialog from './ConfirmDialog.svelte';
+  import Icon from './Icon.svelte';
   import Section from './Section.svelte';
   import { tagsAPI } from '#lib/api/tags.ts';
   import { ENUM_STATUS, type EnumStatus } from '#lib/enums/status.enum.ts';
@@ -18,6 +20,8 @@
 
   /** The tag whose block is being confirmed. */
   let asking = $state<TagRow | null>(null);
+  /** The tag whose delete is being confirmed. */
+  let deleting = $state<TagRow | null>(null);
 
   /** Writes the status, then reloads the pool (pickers stop offering a blocked tag) and every
    *  list that shows tags. */
@@ -26,12 +30,27 @@
     await reloadAll();
   }
 
+  /** What deleting takes with it; a blocked or unused tag is on nothing. */
+  function deleteBody(tag: TagRow): string {
+    if (tag.uses === 0) return 'It isn’t on anything. This can’t be undone.';
+    return `It comes off ${plural(tag.uses, 'thing')} that carry it. This can’t be undone.`;
+  }
+
   async function block() {
     if (!asking) return;
     const tag = asking;
     await setStatus(tag, ENUM_STATUS.blocked);
     asking = null;
     toast.show(`Blocked “${tag.name}”`);
+  }
+
+  async function remove() {
+    if (!deleting) return;
+    const tag = deleting;
+    deleting = null;
+    await tagsAPI.remove(tag.name);
+    await reloadAll();
+    toast.show(`Deleted “${tag.name}”`);
   }
 
   async function unblock(tag: TagRow) {
@@ -47,6 +66,9 @@
         <span class="nm" title={tag.name}>{tag.name}</span>
         <span class="uses">{plural(tag.uses, 'use')}</span>
         <button class="btn-text" aria-label="{action} tag {tag.name}" onclick={() => onact(tag)}>{action}</button>
+        <button class="icon-btn sm danger" aria-label="Delete tag {tag.name}" title="Delete" onclick={() => (deleting = tag)}>
+          <Icon name="trash" size={13} />
+        </button>
       </div>
     {/each}
     {#if tags.length === 0}<span class="list-empty">{empty}</span>{/if}
@@ -71,6 +93,16 @@
     onclose={() => (asking = null)} />
 {/if}
 
+{#if deleting}
+  <ConfirmDialog
+    title="Delete “{deleting.name}”?"
+    body={deleteBody(deleting)}
+    confirm="Delete"
+    danger
+    onconfirm={remove}
+    onclose={() => (deleting = null)} />
+{/if}
+
 <style>
   .cols {
     display: grid;
@@ -81,7 +113,7 @@
 
   .trow {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
     align-items: center;
     gap: 12px;
     min-height: 36px;

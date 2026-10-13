@@ -235,6 +235,8 @@ fn the_library_round_trips_through_ipc() {
     let active = json!({ "name": "sound", "status": "ACTIVE" });
     h.ok("tag_set_status", active);
     assert_eq!(h.ok("tags_all", json!({})), json!(["sound"]));
+    h.ok("tag_delete", json!({ "name": "sound" }));
+    assert_eq!(h.ok("tags_overview", json!({})), json!([]));
 
     let stack = h.ok("stack_create", json!({ "parent": null, "name": "Haiku" }));
     let snap = h.ok(

@@ -229,6 +229,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - **A tag is its name**, under the name rule (`^[a-z0-9]+(_[a-z0-9]+)*$`). What is typed becomes its slug ("UI Design" → `ui_design`, "C++" → `c`), the same on every device. The slug is the tag's label; its value is the slug in capitals (`UI_DESIGN`). Tags are never renamed.
 - **One editor everywhere** (`TagEditor`): chips with a red ✕ and an inline field whose list suggests the pool's active tags and offers *Create “x”* for a new one (↑↓ move, Enter, comma or Tab add, Esc closes). The list floats above everything, so a dialog or the snap editor can't cut it off. Notes, tasks and saved words save each change at once and show the tags the save answered with; a new word, the reference popup and the snap editor keep them until Save.
 - **Blocked tags:** a tag is active or blocked. Blocking one (Settings → Tags, §13) takes it off everything that carries it, and it can't be added again until it is unblocked: it is never suggested, and typed by hand the list says it is blocked and the chips stay as they were. The backend refuses it too (`TAG_BLOCKED`, for a tag blocked on another device since the pool was loaded): nothing is added, the message is shown, and the pool is loaded again. When that happens on Save, the word or reference is saved without the new tags. Unblocking only makes the tag usable again; it doesn't put it back on anything.
+- **Deleting a tag** (Settings → Tags, §13; command `tag_delete`) removes its `tend_enums` row and, by trigger, every link to it. Nothing blocks it from being typed again, which makes a new tag.
 
 ## 8. Attachments
 
@@ -309,7 +310,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 
 - Sections on the left: General · Tasks · Library · Tags · Sync · Command palette.
 - **Library:** word kinds (§15).
-- **Tags:** every tag in two columns, **Active** and **Blocked**, by name; each row shows the tag and how many things use it. An active row has *Block*, a blocked row *Unblock*. Block asks first (*Block “name”?* — it comes off N things and can't be added again until unblocked); Unblock doesn't ask. Either one reloads the tag pool and every list that shows tags (§7).
+- **Tags:** every tag in two columns, **Active** and **Blocked**, by name; each row shows the tag and how many things use it. An active row has *Block*, a blocked row *Unblock*. Block asks first (*Block “name”?* — it comes off N things and can't be added again until unblocked); Unblock doesn't ask. Each row also has a delete icon: it always asks (*Delete “name”?* — it comes off N things), then removes the tag from the pool and from everything that carries it; unlike a blocked tag it can be typed again later. Each of the three reloads the tag pool and every list that shows tags (§7).
 - **General:** vault path as plain text, with a *Change vault folder…* link on the right. Below it, a quiet "N items skipped" line (files/folders whose names break the rule) that expands to the list.
 - **Tasks:** statuses (see §6).
 - Notes and People settings come later; they have no section yet.

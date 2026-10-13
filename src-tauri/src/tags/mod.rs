@@ -73,6 +73,12 @@ pub fn set_status(conn: &mut Connection, name: &str, status: EnumStatus) -> AppR
     in_transaction(conn, |tx| rows::set_status(tx, row, status))
 }
 
+/// Deletes the tag `name` (as shown) from the pool, blocked or not; it comes off every record
+/// (trigger `tend_enums_drop_links`). Unlike a blocked tag, it can be typed again later.
+pub fn delete(conn: &Connection, name: &str) -> AppResult<()> {
+    rows::delete(conn, KIND, &name.to_uppercase())
+}
+
 pub fn of(conn: &Connection, owner: SourceType, id: &str) -> AppResult<Vec<String>> {
     let source = Source { kind: owner, id };
     let values = links::enum_values(conn, source, KIND)?;

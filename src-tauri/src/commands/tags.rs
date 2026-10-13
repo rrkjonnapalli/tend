@@ -25,6 +25,12 @@ pub fn tag_set_status(state: State<AppState>, name: String, status: EnumStatus) 
     state.with(|db, _| tags::set_status(db, &name, status))
 }
 
+/// Deletes the tag from the pool and from everything that carries it.
+#[tauri::command(async)]
+pub fn tag_delete(state: State<AppState>, name: String) -> AppResult<()> {
+    state.with(|db, _| tags::delete(db, &name))
+}
+
 fn set(state: State<AppState>, source: Source, tags: &[String]) -> AppResult<Vec<String>> {
     state.with(|db, _| tags::set(db, source, tags))
 }

@@ -41,6 +41,13 @@ function setTagStatus(name: string, status: TagRow['status']) {
   for (const id of Object.keys(noteTags)) noteTags[id] = noteTags[id].filter((t) => t !== name);
 }
 
+/** Deleting takes the tag out of the pool and off every note, like the backend. */
+function deleteTag(name: string) {
+  const at = tagRows.findIndex((r) => r.name === name);
+  if (at >= 0) tagRows.splice(at, 1);
+  for (const id of Object.keys(noteTags)) noteTags[id] = noteTags[id].filter((t) => t !== name);
+}
+
 function setNoteTags(id: string, tags: string[]) {
   if (tags.some(isBlockedTag)) throw errors.TAG_BLOCKED;
   noteTags[id] = tags;
@@ -129,6 +136,7 @@ const handlers: Record<string, Handler> = {
   tags_all: () => tagRows.filter((r) => r.status === ENUM_STATUS.active).map((r) => r.name),
   tags_overview: () => tagRows,
   tag_set_status: ({ name, status }) => setTagStatus(name as string, status as TagRow['status']),
+  tag_delete: ({ name }) => deleteTag(name as string),
   notes_tree: () => ({ folders: ['home', 'work', 'work/tauri'], notes }),
   item_rename: ({ item, name }) => {
     const target = item as { kind: string; id?: string; path?: string };

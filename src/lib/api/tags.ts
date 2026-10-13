@@ -9,5 +9,7 @@ export const tagsAPI = {
   overview: () => call<TagRow[]>('tags_overview'),
   /** Blocking a tag takes it off everything that carries it. */
   setStatus: (input: { name: string; status: EnumStatus }) => call<void>('tag_set_status', { args: input }),
+  /** Deleting a tag takes it out of the pool and off everything that carries it. */
+  remove: (name: string) => call<void>('tag_delete', { args: { name } }),
   setForNote: (input: { id: string; tags: string[] }) => call<string[]>('note_tags_set', { args: input }),
 };
