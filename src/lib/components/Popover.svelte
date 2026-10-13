@@ -69,9 +69,18 @@
 
   const opener = () => (anchor instanceof HTMLElement ? anchor : null);
 
+  /** True when the press is in a popover opened from inside this one (a calendar's year list):
+   *  popovers sit in <body> in the order they opened, so that one comes after this. */
+  function inChildPopover(target: Node): boolean {
+    const element = target instanceof Element ? target : target.parentElement;
+    const other = element?.closest('[data-popover]');
+    if (!el || !other || other === el) return false;
+    return Boolean(el.compareDocumentPosition(other) & Node.DOCUMENT_POSITION_FOLLOWING);
+  }
+
   function onpointerdown(e: PointerEvent) {
     const target = e.target as Node;
-    if (el?.contains(target)) return;
+    if (el?.contains(target) || inChildPopover(target)) return;
     if (anchor instanceof HTMLElement && anchor.contains(target)) return;
     onclose();
   }
@@ -79,7 +88,7 @@
 
 <svelte:window onpointerdowncapture={onpointerdown} />
 
-<div bind:this={el} use:portal={opener} use:optionNav class="popover" class:pad {role} aria-label={label} style:left="{pos.left}px" style:top="{pos.top}px">
+<div bind:this={el} use:portal={opener} use:optionNav data-popover class="popover" class:pad {role} aria-label={label} style:left="{pos.left}px" style:top="{pos.top}px">
   {@render children()}
 </div>
 

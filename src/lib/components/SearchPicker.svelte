@@ -2,7 +2,7 @@
   // A search field over a list, inside a popover: type to filter, ↑↓ to move, Enter to pick.
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
-  import type { Snippet } from 'svelte';
+  import { tick, type Snippet } from 'svelte';
   import { nextIndex, prevIndex } from '#lib/util/list-nav.ts';
 
   let {
@@ -34,13 +34,22 @@
   const needle = $derived(query.trim().toLowerCase());
   const shown = $derived(items.filter((item) => match(item, needle)).slice(0, max));
 
+  let list = $state<HTMLElement>();
+
+  /** Moves the highlight and keeps it in view: a long list (years) scrolls under it. */
+  async function moveTo(index: number) {
+    hi = index;
+    await tick();
+    list?.querySelector('.po.on')?.scrollIntoView({ block: 'nearest' });
+  }
+
   function onkeydown(e: KeyboardEvent) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      hi = nextIndex(hi, shown.length);
+      moveTo(nextIndex(hi, shown.length));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      hi = prevIndex(hi);
+      moveTo(prevIndex(hi));
     } else if (e.key === 'Enter' && shown[hi]) {
       e.preventDefault();
       onpick(shown[hi]);
@@ -51,7 +60,7 @@
 <div class="picker">
   <input use:plainText use:focusOnMount {placeholder} aria-label={label} bind:value={query} oninput={() => (hi = 0)} {onkeydown} />
   {@render lead?.()}
-  <div role="listbox" aria-label={label}>
+  <div bind:this={list} class="rows" role="listbox" aria-label={label}>
     {#each shown as item, i (item.id)}
       <button class="po" class:on={i === hi} role="option" aria-selected={i === hi} onclick={() => onpick(item)} onmouseenter={() => (hi = i)}>
         {@render row(item)}
@@ -62,8 +71,9 @@
 </div>
 
 <style>
+  /* --picker-w: set by a caller whose choices are short (years). */
   .picker {
-    width: 280px;
+    width: var(--picker-w, 280px);
     display: flex;
     flex-direction: column;
   }
@@ -76,6 +86,12 @@
     border-bottom: 1px solid var(--c-chip);
     outline: none;
     font: var(--text-ui);
+  }
+
+  /* A long list scrolls in place, under the field. */
+  .rows {
+    max-height: 264px;
+    overflow-y: auto;
   }
 
   .po {

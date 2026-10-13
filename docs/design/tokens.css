@@ -250,6 +250,7 @@
 
   /* layout */
   --choice-field-w: 260px;   /* a dropdown shown as a field (ChoicePicker, in Settings) */
+  --choice-narrow-w: 132px;  /* a dropdown's list when its choices are short (a calendar's years) */
   --explorer-w: 232px;
   --content-w: 760px;      /* note/task page narrow width */
   --bottom-nav-h: 44px;

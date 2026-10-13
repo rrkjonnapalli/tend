@@ -1,18 +1,16 @@
 <script lang="ts">
-  // A date button with a month popover. Single mode picks one day (due dates); range mode
-  // adds presets and picks one day or two for a range (the tasks nav).
-  import type { DayRange } from '#lib/types/date.type.ts';
+  // A date button with a month popover. Single mode picks one day (a due date, a date of birth);
+  // range mode adds presets and picks one day or two for a range (the tasks nav). A single day is
+  // 'yyyy-mm-dd', or 'mm-dd' where the year may be left unknown (`yearOptional`).
+  import type { DateFieldProps, DayRange } from '#lib/types/date.type.ts';
   import Icon from './Icon.svelte';
   import Popover from './Popover.svelte';
   import MonthGrid from './MonthGrid.svelte';
-  import { shortDate, today } from '#lib/util/dates.ts';
+  import { pastYears, planYears, shortDate, today } from '#lib/util/dates.ts';
   import { rangePresets } from '#lib/util/date-presets.ts';
 
-  type Props =
-    | { mode?: 'single'; value: string | null; onchange: (day: string | null) => void; warn?: boolean }
-    | { mode: 'range'; range: DayRange; onrange: (r: DayRange) => void; active?: boolean; marked?: Set<string> };
 
-  let props: Props = $props();
+  let props: DateFieldProps = $props();
 
   let open = $state(false);
   let button = $state<HTMLButtonElement>();
@@ -27,8 +25,17 @@
       if (a !== b) return `${shortDate(a)} – ${shortDate(b)}`;
       return a === now ? `Today, ${shortDate(a)}` : shortDate(a);
     }
-    return props.value ? shortDate(props.value) : 'No due date';
+    if (!props.value) return emptyLabel;
+    return props.format ? props.format(props.value) : shortDate(props.value);
   });
+
+  /** What a single field is for, in its labels: "due date" unless told. */
+  const what = $derived(props.mode !== 'range' && props.what ? props.what : 'due date');
+  const emptyLabel = $derived(`No ${what}`);
+
+  /** The years the calendar's dropdown lists: back to the earliest for a day whose year may be
+   *  unknown (a date of birth), else the years around now (a due date, the tasks range). */
+  const years = $derived(props.mode !== 'range' && props.yearOptional ? pastYears() : planYears());
 
   const presets = rangePresets(now);
 
@@ -45,7 +52,7 @@
 
   function toggle() {
     if (open) close();
-    else open = true;
+    else show();
   }
 
   /** While picking a range, the hovered day previews its end. */
@@ -108,7 +115,7 @@
 {/if}
 
 {#if open}
-  <Popover anchor={button} label={props.mode === 'range' ? 'Pick a date or range' : 'Pick a due date'} onclose={close}>
+  <Popover anchor={button} label={props.mode === 'range' ? 'Pick a date or range' : `Pick a ${what}`} onclose={close}>
     <div class="pop">
       {#if props.mode === 'range'}
         {@const r = props.range}
@@ -123,6 +130,7 @@
             to={r[1]}
             preview={picking ? { anchor: picking, hover: hover ?? picking } : null}
             marked={props.marked}
+            {years}
             onpick={pick}
             {onhover} />
           <div class="foot">{picking ? 'Pick an end date' : 'Pick a day, or two for a range'}</div>
@@ -130,8 +138,8 @@
       {:else}
         {@const single = props}
         <div class="body">
-          <MonthGrid from={single.value} dimPast onpick={pick} />
-          <button class="clr" onclick={clear}>No due date</button>
+          <MonthGrid from={single.value} dimPast={single.dimPast ?? true} {years} yearOptional={single.yearOptional} onpick={pick} />
+          <button class="clr" aria-label="Clear the {what}" onclick={clear}>Clear</button>
         </div>
       {/if}
     </div>
@@ -228,10 +236,9 @@
   }
 
   .clr {
-    align-self: flex-start;
+    align-self: center;
     height: 24px;
-    padding: 0 6px;
-    margin-left: -6px;
+    padding: 0 8px;
     border: 0;
     border-radius: var(--radius-sm);
     background: transparent;

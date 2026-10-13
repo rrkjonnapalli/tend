@@ -263,8 +263,8 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - Back · breadcrumb · delete.
   - Fields:
     - First name, Last name, Nickname (shown instead of the name).
-    - Date of birth: `yyyy-mm-dd`, or `mm-dd` when the year is unknown. The hint shows the next birthday and age.
-    - Time of birth (optional).
+    - **Born:** the date and the time of birth side by side, the same date and time fields as a task's due date. The date shows as *12 May 1990*, or *12 May* when its year was left unassigned. The hint shows the next birthday and age. *Clear*, centred under the days of a single-day picker, removes the date (a due date too).
+    - **The date picker** (due date, date of birth, the tasks range) has three rows: the year between two arrows, the month between two arrows, then that month's days. The year is also a dropdown (type to find one, or scroll): the years back to 1900 for a date of birth, last year to ten years on for the others. For a date of birth the year starts *Unassigned*: the days are then plain numbers with no weekdays, and a pick keeps only the day and month.
     - Birthday reminder: stored in the database (`birthday_reminder`) but **hidden in v1**. It's used when reminders arrive.
   - **Phone / Email / Address:** collapsible sections that work like Settings → Statuses.
     - Rows show value + label, with delete · edit; in edit mode, ✓ / ✕.

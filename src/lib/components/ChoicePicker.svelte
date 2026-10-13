@@ -15,6 +15,8 @@
     what,
     search = true,
     field = false,
+    max,
+    narrow = false,
     onpick,
   }: {
     value: string;
@@ -25,6 +27,10 @@
     search?: boolean;
     /** A field-sized control, for a setting on its own line; else the small chip. */
     field?: boolean;
+    /** How many matches the search lists; a long list (years) scrolls. */
+    max?: number;
+    /** A narrow list, for choices a few characters long (years). */
+    narrow?: boolean;
     onpick: (id: string) => void;
   } = $props();
 
@@ -50,9 +56,11 @@
 
 {#if open && search}
   <Popover anchor={chip} onclose={() => (open = false)}>
-    <SearchPicker items={choices} match={matches} onpick={pick} placeholder="Search…" label={what} empty="Nothing like that">
-      {#snippet row(choice)}{@render ticked(choice)}{/snippet}
-    </SearchPicker>
+    <div class="search" class:narrow>
+      <SearchPicker items={choices} match={matches} onpick={pick} {max} placeholder="Search…" label={what} empty={narrow ? 'None' : 'Nothing like that'}>
+        {#snippet row(choice)}{@render ticked(choice)}{/snippet}
+      </SearchPicker>
+    </div>
   </Popover>
 {:else if open}
   <Popover anchor={chip} role="listbox" label={what} pad onclose={() => (open = false)}>
@@ -81,6 +89,10 @@
 
   .chip:hover {
     background: var(--c-hover);
+  }
+
+  .search.narrow {
+    --picker-w: var(--choice-narrow-w);
   }
 
   /* As a field: the size and border of a text field, the chevron at its right end. */

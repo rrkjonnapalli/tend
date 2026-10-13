@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, ago, dayOfMonth, dueLabel, joinTime, monthBounds, monthGrid, mondayIndex, nextBirthday, parseDOB, parseTime, shortDate, splitTime, timeLabel, timestamp } from './dates.ts';
+import { addDays, ago, dayOfMonth, dueLabel, joinTime, monthBounds, monthGrid, mondayIndex, calendarStart, clampYear, dobLabel, monthDay, monthDays, nextBirthday, parseDOB, parseTime, pastYears, planYears, stepMonth, shortDate, splitTime, timeLabel, timestamp } from './dates.ts';
 
 const NOW = new Date(2026, 9, 4, 12, 0); // Sun 4 Oct 2026, noon
 
@@ -67,6 +67,34 @@ describe('birthdays', () => {
     expect(parseDOB('')).toBeNull();
     expect(parseDOB('2023-02-30')).toBe('invalid');
     expect(parseDOB('10/10')).toBe('invalid');
+  });
+
+  it('shows a date of birth with its year when it has one', () => {
+    expect(dobLabel({ year: 1990, month: 5, day: 12 })).toBe('12 May 1990');
+    expect(dobLabel({ year: null, month: 5, day: 2 })).toBe('2 May');
+  });
+
+  it('lists the years a calendar offers', () => {
+    const now = new Date(2026, 9, 14);
+    expect(pastYears(now).slice(0, 3)).toEqual([2026, 2025, 2024]);
+    expect(pastYears(now).at(-1)).toBe(1900);
+    expect(planYears(now)).toEqual([2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035, 2036]);
+    expect(clampYear(1850)).toBe(1900);
+    expect(clampYear(2300)).toBe(2139);
+  });
+
+  it('steps months round the year', () => {
+    expect(stepMonth(4, 1)).toEqual({ month: 5, years: 0 });
+    expect(stepMonth(11, 1)).toEqual({ month: 0, years: 1 });
+    expect(stepMonth(0, -1)).toEqual({ month: 11, years: -1 });
+  });
+
+  it('handles a day whose year is not known', () => {
+    expect(monthDay(4, 2)).toBe('05-02');
+    expect(monthDays(1)).toHaveLength(29);
+    expect(monthDays(3).at(-1)).toBe('04-30');
+    expect(calendarStart('1990-05-12')).toEqual({ year: 1990, month: 4 });
+    expect(calendarStart('05-12')).toEqual({ year: null, month: 4 });
   });
 
   it('finds the next birthday and age', () => {

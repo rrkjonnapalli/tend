@@ -1,10 +1,14 @@
 <script lang="ts">
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import { focusWhen } from '#lib/actions/focus.action.ts';
-  // Person page name and birth fields. Each is saved on blur or Enter; only changed fields are sent.
+  // Person page name and birth fields. A name is saved on blur or Enter; the date and time of birth
+  // are the date and time fields a task's due date uses, side by side, saved as they change. Only
+  // changed fields are sent.
   import type { Person, PersonPatch } from '#lib/types/person.type.ts';
   import type { DOB } from '#lib/types/date.type.ts';
-  import { formatDOB, parseDOB, parseTime, timeLabel } from '#lib/util/dates.ts';
+  import DateField from './DateField.svelte';
+  import TimeField from './TimeField.svelte';
+  import { dobLabel, formatDOB, parseDOB } from '#lib/util/dates.ts';
   import { birthdayHint, dobOf } from '#lib/util/birthdays.ts';
 
   let {
@@ -21,32 +25,25 @@
   let first = $state('');
   let last = $state('');
   let nick = $state('');
-  let dob = $state('');
-  let tob = $state('');
 
-  const dobText = (d: DOB | null) => (d ? formatDOB(d) : '');
-  const tobText = (hhmm: string | null) => (hhmm ? timeLabel(hhmm) : '');
+  /** A date of birth as the date picker holds it: 'yyyy-mm-dd', or 'mm-dd' without a year. */
+  const dobText = (d: DOB | null) => (d ? formatDOB(d) : null);
+  /** The picker's text back to a date of birth; null for none (or text it can't read). */
+  function dobFrom(day: string | null): DOB | null {
+    const parsed = day ? parseDOB(day) : null;
+    return parsed === 'invalid' ? null : parsed;
+  }
 
   // Every save or reload hands in a new person; the fields start over from it.
   $effect.pre(() => {
     first = person.firstName;
     last = person.lastName;
     nick = person.nickname ?? '';
-    dob = dobText(dobOf(person));
-    tob = tobText(person.tob);
   });
 
-  const parsedDOB = $derived(parseDOB(dob));
-  const dobBad = $derived(parsedDOB === 'invalid');
-  const hasTOB = $derived(tob.trim() !== '');
-  const parsedTOB = $derived(hasTOB ? parseTime(tob) : null);
-  const tobBad = $derived(hasTOB && parsedTOB === null);
+  const dob = $derived(dobOf(person));
 
-  const hint = $derived.by(() => {
-    if (parsedDOB === 'invalid') return 'use yyyy-mm-dd or mm-dd';
-    if (parsedDOB) return birthdayHint(parsedDOB);
-    return '';
-  });
+  const hint = $derived(dob ? birthdayHint(dob) : '');
 
   /** The name fields that differ from the saved person. */
   function namePatch(): PersonPatch {
@@ -68,16 +65,15 @@
     if (Object.keys(patch).length) onsave(patch);
   }
 
-  function saveDOB() {
-    if (parsedDOB === 'invalid') return;
-    const changed = dobText(parsedDOB) !== dobText(dobOf(person));
-    if (changed) onsave({ dob: parsedDOB });
+  function saveDOB(day: string | null) {
+    const changed = day !== dobText(dob);
+    if (changed) onsave({ dob: dobFrom(day) });
   }
 
-  function saveTOB() {
-    if (tobBad) return;
-    if (parsedTOB !== person.tob) onsave({ tob: parsedTOB });
-    else tob = tobText(person.tob);
+  /** The button's text for the day the picker holds. */
+  function dobShown(day: string): string {
+    const d = dobFrom(day);
+    return d ? dobLabel(d) : day;
   }
 
   function enterBlurs(e: KeyboardEvent) {
@@ -95,15 +91,11 @@
   <div class="pv" data-prop>
     <input use:plainText class="text-field quiet" style:width="240px" aria-label="Nickname" placeholder="optional, shown instead of the name" bind:value={nick} onblur={saveName} onkeydown={enterBlurs} />
   </div>
-  <span class="pl">Date of birth</span>
+  <span class="pl">Born</span>
   <div class="pv" data-prop>
-    <input use:plainText class="text-field mono quiet" class:bad={dobBad} style:width="112px" aria-label="Date of birth, yyyy-mm-dd or mm-dd" placeholder="yyyy-mm-dd" bind:value={dob} onblur={saveDOB} onkeydown={enterBlurs} />
-    <span class="hint" class:err={dobBad}>{hint}</span>
-  </div>
-  <span class="pl">Time of birth</span>
-  <div class="pv" data-prop>
-    <input use:plainText class="text-field mono quiet" class:bad={tobBad} style:width="92px" aria-label="Time of birth" placeholder="optional" bind:value={tob} onblur={saveTOB} onkeydown={enterBlurs} />
-    {#if tobBad}<span class="hint err">use a time like 6:30 AM</span>{/if}
+    <DateField value={dobText(dob)} what="date of birth" format={dobShown} dimPast={false} yearOptional onchange={saveDOB} />
+    <TimeField value={person.tob} onchange={(tob) => onsave({ tob })} />
+    <span class="hint">{hint}</span>
   </div>
 </div>
 
@@ -111,9 +103,5 @@
   .hint {
     font: var(--text-meta);
     color: var(--c-muted-2);
-  }
-
-  .hint.err {
-    color: var(--danger);
   }
 </style>

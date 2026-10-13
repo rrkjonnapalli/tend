@@ -55,7 +55,56 @@ export function monthGrid(year: number, month: number): (string | null)[] {
   return cells;
 }
 
-export const monthTitle = (year: number, month: number) => `${MONTHS_LONG[month]} ${year}`;
+export const monthName = (month: number) => MONTHS_LONG[month];
+
+/** The years a calendar can be turned to. */
+export const YEAR_RANGE = { min: 1900, max: 2139 } as const;
+/** How far a date to plan for (a due date) looks back and ahead, in years. */
+const PLAN_YEARS = { back: 1, ahead: 10 } as const;
+const MONTHS_IN_YEAR = 12;
+/** A leap year: February has its 29th when the year isn't known. */
+const LEAP_YEAR = 2000;
+
+/** `year` kept inside the years a calendar shows. */
+export const clampYear = (year: number) => Math.min(Math.max(year, YEAR_RANGE.min), YEAR_RANGE.max);
+
+/** The years offered for a date in the past (a date of birth): this one first, back to the earliest. */
+export function pastYears(now = new Date()): number[] {
+  const latest = now.getFullYear();
+  return Array.from({ length: latest - YEAR_RANGE.min + 1 }, (_, i) => latest - i);
+}
+
+/** The years offered for a date to plan for (a due date): last year to ten years on. */
+export function planYears(now = new Date()): number[] {
+  const first = now.getFullYear() - PLAN_YEARS.back;
+  const count = PLAN_YEARS.back + PLAN_YEARS.ahead + 1;
+  return Array.from({ length: count }, (_, i) => first + i);
+}
+
+/** The month `n` months from `month`, wrapping round the year, with the years it crossed. */
+export function stepMonth(month: number, n: number): { month: number; years: number } {
+  const raw = month + n;
+  const wrapped = ((raw % MONTHS_IN_YEAR) + MONTHS_IN_YEAR) % MONTHS_IN_YEAR;
+  return { month: wrapped, years: Math.floor(raw / MONTHS_IN_YEAR) };
+}
+
+/** A day without its year, 'mm-dd' (a birthday whose year isn't known). */
+export const monthDay = (month: number, day: number) => `${pad(month + 1)}-${pad(day)}`;
+
+/** A month's days when the year isn't known: 'mm-dd' each, February with its 29th. */
+export function monthDays(month: number): string[] {
+  const count = new Date(LEAP_YEAR, month + 1, 0).getDate();
+  return Array.from({ length: count }, (_, i) => monthDay(month, i + 1));
+}
+
+/** Where a calendar opens for `day` ('yyyy-mm-dd', or 'mm-dd' without a year): its month, and its year when it has one. */
+export function calendarStart(day: string): { year: number | null; month: number } {
+  const parts = day.split('-').map(Number);
+  const hasYear = parts.length === 3;
+  const year = hasYear ? parts[0] : null;
+  const month = hasYear ? parts[1] : parts[0];
+  return { year, month: month - 1 };
+}
 
 /** '2026-10-10' → '10 Oct' (year added when it isn't the current one). */
 export function shortDate(day: string, now = new Date()): string {
@@ -162,6 +211,12 @@ export function parseDOB(text: string): DOB | null | 'invalid' {
   const rolledOver = probe.getMonth() !== month - 1 || probe.getDate() !== day;
   if (rolledOver) return 'invalid';
   return { year, month, day };
+}
+
+/** A date of birth as it is shown: '12 May 1990', or '12 May' when the year is unknown. */
+export function dobLabel(d: DOB): string {
+  const base = `${d.day} ${MONTHS[d.month - 1]}`;
+  return d.year ? `${base} ${d.year}` : base;
 }
 
 export function formatDOB(d: DOB): string {
