@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { plainText } from '#lib/actions/plain-text.action.ts';
   // "Move to…": a path field with folder suggestions. Leaves out the item's own folder and,
   // for folders, the folder itself and everything inside it. A new path is created.
@@ -91,10 +92,9 @@
   {/snippet}
   <div class="row">
     <span class="l">to</span>
-    <!-- svelte-ignore a11y_autofocus -->
     <input
       use:plainText
-      autofocus
+      use:focusOnMount
       aria-label="Destination folder"
       placeholder="folder path, empty = top level"
       bind:value={query}
