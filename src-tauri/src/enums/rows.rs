@@ -61,16 +61,26 @@ fn to_row((value, label, is_default, status, meta): Stored) -> AppResult<EnumRow
     })
 }
 
+/// A listed row, or `None` for one whose `meta` isn't a JSON object (a sync can bring one): it is
+/// left out and logged, so one bad row doesn't take its whole list down.
+fn listed(stored: Stored) -> Option<EnumRow> {
+    let value = stored.0.clone();
+    match to_row(stored) {
+        Ok(row) => Some(row),
+        Err(e) => {
+            eprintln!("tend: skipped enum row {value}: {e}");
+            None
+        }
+    }
+}
+
 /// The kind's rows in their order (`position`, then value).
 pub fn list(conn: &Connection, kind: EnumKind) -> AppResult<Vec<EnumRow>> {
     let stored: Vec<Stored> = conn
         .prepare(&format!("SELECT {COLS} FROM tend_enums WHERE kind = ?1"))?
         .query_map([kind.as_str()], to_stored)?
         .collect::<Result<_, _>>()?;
-    let mut rows = stored
-        .into_iter()
-        .map(to_row)
-        .collect::<AppResult<Vec<_>>>()?;
+    let mut rows: Vec<EnumRow> = stored.into_iter().filter_map(listed).collect();
     rows.sort_by(|a, b| (a.position(), &a.value).cmp(&(b.position(), &b.value)));
     Ok(rows)
 }
@@ -100,6 +110,23 @@ pub fn check_active(conn: &Connection, kind: EnumKind, value: &str) -> AppResult
         return Err(kind.blocked());
     }
     Ok(())
+}
+
+/// Refuses a value the kind doesn't have (`NOT_FOUND`) or has blocked: for a value that must be
+/// one of the kind's rows, like a task's status.
+pub fn check_usable(conn: &Connection, kind: EnumKind, value: &str) -> AppResult<()> {
+    let status: Option<String> = conn
+        .query_row(
+            "SELECT status FROM tend_enums WHERE kind = ?1 AND value = ?2",
+            params![kind.as_str(), value],
+            |r| r.get(0),
+        )
+        .optional()?;
+    match status.as_deref().map(EnumStatus::parse) {
+        None => Err(kind.not_found()),
+        Some(EnumStatus::Blocked) => Err(kind.blocked()),
+        Some(EnumStatus::Active) => Ok(()),
+    }
 }
 
 /// A label a row of a kind is to get. `except` is that row's value when it already exists (a

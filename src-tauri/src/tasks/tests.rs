@@ -413,6 +413,22 @@ fn a_blocked_status_cant_be_given_to_a_task() {
 }
 
 #[test]
+fn a_status_that_isnt_in_the_list_cant_be_given_to_a_task() {
+    let mut conn = open_memory();
+    let refused = titled(&mut conn, Some("NOPE")).unwrap_err();
+    assert!(refused.is(errors::NOT_FOUND));
+    let task = titled(&mut conn, None).unwrap();
+    let patch = Patch {
+        status: Some("NOPE".into()),
+        ..Default::default()
+    };
+    assert!(update(&conn, &task.id, &patch)
+        .unwrap_err()
+        .is(errors::NOT_FOUND));
+    assert_eq!(get(&conn, &task.id).unwrap().status, FIRST);
+}
+
+#[test]
 fn an_update_answers_with_the_task_as_written() {
     let mut conn = open_memory();
     let task = titled(&mut conn, None).unwrap();

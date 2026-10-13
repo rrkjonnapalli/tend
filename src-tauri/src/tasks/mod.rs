@@ -171,7 +171,7 @@ pub fn create(conn: &mut Connection, new: &NewTask) -> AppResult<Task> {
         None => names::accept_path(&new.path)?,
     };
     let status = new.status.as_deref().unwrap_or(FIRST);
-    statuses::check_active(conn, status)?;
+    statuses::check_usable(conn, status)?;
     let now = now_ms();
     let completed_at = (status == DONE).then_some(now);
     let tx = conn.transaction()?;
@@ -207,7 +207,7 @@ pub fn update(conn: &Connection, id: &str, patch: &Patch) -> AppResult<Task> {
     let mut update = Update::new(tables::TASKS);
     update.set_some(columns::TITLE, patch.title.as_deref().map(str::trim));
     if let Some(status) = &patch.status {
-        statuses::check_active(conn, status)?;
+        statuses::check_usable(conn, status)?;
         set_status(&mut update, status);
     }
     update.set_some("description", patch.description.as_ref());

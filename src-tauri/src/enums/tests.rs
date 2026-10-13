@@ -139,3 +139,21 @@ fn a_write_to_a_row_that_isnt_there_is_not_found() {
         assert_eq!(e.to_string(), "Label was not found");
     }
 }
+
+#[test]
+fn a_row_with_broken_meta_is_left_out_of_its_list() {
+    let conn = open_memory();
+    label(&conn, "GOOD", json!({ "position": 0 }));
+    conn.execute(
+        "INSERT INTO tend_enums (id, kind, value, label, meta, created_at, updated_at)
+         VALUES ('bad', 'TASK_LABEL', 'BAD', 'Bad', 'not json', 0, 0)",
+        [],
+    )
+    .unwrap();
+    let values: Vec<String> = rows::list(&conn, EnumKind::TaskLabel)
+        .unwrap()
+        .into_iter()
+        .map(|r| r.value)
+        .collect();
+    assert_eq!(values, vec!["GOOD"]);
+}

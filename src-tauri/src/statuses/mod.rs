@@ -74,9 +74,9 @@ pub fn add(conn: &Connection, new: &NewStatus) -> AppResult<Status> {
     Ok(to_status(added))
 }
 
-/// Refuses a status that is blocked: no task can be given it.
-pub fn check_active(conn: &Connection, value: &str) -> AppResult<()> {
-    rows::check_active(conn, KIND, value)
+/// Refuses a status that isn't in the list or is blocked: no task can be given it.
+pub fn check_usable(conn: &Connection, value: &str) -> AppResult<()> {
+    rows::check_usable(conn, KIND, value)
 }
 
 fn key(value: &str) -> Key<'_> {
