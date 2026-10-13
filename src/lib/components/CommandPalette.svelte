@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import type { QuickKind } from '#lib/types/ui.type.ts';
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
@@ -124,6 +125,8 @@
   // ---- commands and search hits
 
   const isTopGroup = (c: Command) => c.group === 'Go to' || c.group === 'Create';
+  /** What ⌘K lists before anything is typed, in the registry's order. */
+  const opensWith = (c: Command) => c.pinned === true || isTopGroup(c);
 
   function commandItem(c: Command, { searching }: { searching: boolean }): PaletteItem {
     const group = isTopGroup(c) ? c.group : 'Commands';
@@ -133,7 +136,7 @@
 
   function commandHits(q: string): PaletteItem[] {
     const usable = commands.filter(available);
-    if (!q) return usable.filter(isTopGroup).map((c) => commandItem(c, { searching: false }));
+    if (!q) return usable.filter(opensWith).map((c) => commandItem(c, { searching: false }));
     const found = usable.filter((c) => hasAllWords(`${c.label} ${c.group}`, q)).slice(0, MAX_CMDS);
     return found.map((c) => commandItem(c, { searching: true }));
   }
@@ -204,8 +207,8 @@
   <div class="pal">
     <div class="pin">
       <span class="ic"><Icon name="search" size={16} /></span>
-      <!-- svelte-ignore a11y_autofocus -->
-      <input use:plainText aria-label="Command or search" placeholder="Type a command, or search notes and tasks…" autofocus bind:value={query} oninput={() => (hi = 0)} {onkeydown} />
+      <!-- focusOnMount, not `autofocus`: that only takes focus when nothing else has it. -->
+      <input use:plainText use:focusOnMount aria-label="Command or search" placeholder="Type a command, or search notes and tasks…" bind:value={query} oninput={() => (hi = 0)} {onkeydown} />
       <kbd>esc</kbd>
     </div>
     <div class="res" role="listbox">

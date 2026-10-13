@@ -10,6 +10,14 @@ export function resolveTheme(pref: ThemePref, systemDark: boolean): Theme {
   return systemDark ? 'dark' : 'light';
 }
 
+/** The theme a toggle switches to: the one not shown now. From "system" it becomes a fixed choice. */
+export function toggledTheme(pref: ThemePref, systemDark: boolean): Theme {
+  return resolveTheme(pref, systemDark) === 'dark' ? 'light' : 'dark';
+}
+
+/** Whether the OS is in its dark look right now. */
+export const systemIsDark = () => window.matchMedia(DARK_QUERY).matches;
+
 /** Shows the theme for `pref` and, for "system", follows the OS as it changes. Returns a stop. */
 export function applyTheme(pref: ThemePref): () => void {
   const media = window.matchMedia(DARK_QUERY);

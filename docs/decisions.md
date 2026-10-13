@@ -49,7 +49,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - What sits above the chosen folder is never checked.
 - **Changing vault:** Settings → General → *Change vault folder…*. This reopens the start-up flow.
 - **File size limit:** 30 MB by default, set in Settings → General → Files (1–90 MB; 0 isn't allowed, it would drop every note). Shared through sync (setting `files.max_mb`), so every device agrees; changing it rescans. A `.md` that size or larger is never indexed; a file that size can't be attached; sync never commits one. A note already indexed that grows to the limit keeps its row unchanged (never marked missing), so nothing syncs as a deletion.
-- **Theme:** Settings → General → Appearance: *System* (default, follows macOS and changes with it), *Light* or *Dark*. Kept per device (setting `ui.theme`, never synced). The dark theme remaps the same token roles (`tokens.css`).
+- **Theme:** Settings → General → Appearance: *System* (default, follows macOS and changes with it), *Light* or *Dark*. Kept per device (setting `ui.theme`, never synced). The dark theme remaps the same token roles (`tokens.css`). ⌘K has *Toggle light / dark theme*, the first line when it opens: it switches to the one not showing, which turns *System* into a fixed choice.
 - **Delete confirmations:** Settings → General → Confirmations: *Ask before deleting a note / a task / a person / a word / a snap / a reference*, each on by default. Turned off, that delete (page trash button, explorer menu or ⌫) goes at once. Kept per device (settings `confirm.delete.note|task|person|word|snap|reference`, never synced). Folders, stacks, statuses, labels and word kinds always ask.
 
 ## 3. Start-up page

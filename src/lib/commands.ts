@@ -10,6 +10,8 @@ import { pageActions } from '#lib/stores/page-actions.svelte.ts';
 import { routes } from '#lib/util/routes.ts';
 import type { Command } from '#lib/types/command.type.ts';
 import type { PageAction, QuickKind } from '#lib/types/ui.type.ts';
+import type { ThemePref } from '#lib/types/theme.type.ts';
+import { systemIsDark, toggledTheme } from '#lib/util/theme.ts';
 import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
 
 const onPage = (id: PageAction) => ({ when: () => pageActions.has(id), run: () => pageActions.run(id) });
@@ -32,6 +34,12 @@ function writeSnap() {
   else snaps.write();
 }
 
+/** Light to dark and back, from whichever is showing; "system" becomes a fixed choice. */
+function toggleTheme() {
+  const pref = settings.get<ThemePref>(settingKeys.theme, settingDefaults.theme);
+  settings.set(settingKeys.theme, toggledTheme(pref, systemIsDark()));
+}
+
 function openPalette() {
   ui.palette = true;
 }
@@ -49,6 +57,7 @@ function toggleTaskLayout() {
 }
 
 export const commands: Command[] = [
+  { id: 'app.theme', group: 'App', label: 'Toggle light / dark theme', pinned: true, run: toggleTheme },
   { id: 'go.notes', group: 'Go to', label: 'Go to Notes', keys: 'mod+1', run: () => goto(routes.notes) },
   { id: 'go.tasks', group: 'Go to', label: 'Go to Tasks', keys: 'mod+2', run: () => goto(routes.tasks) },
   { id: 'go.people', group: 'Go to', label: 'Go to People', keys: 'mod+3', run: () => goto(routes.people) },
