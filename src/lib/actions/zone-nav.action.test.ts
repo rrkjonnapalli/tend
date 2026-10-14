@@ -119,4 +119,28 @@ describe('zoneNav', () => {
     key(el('r1'), 'ArrowDown');
     expect(document.activeElement).toBe(el('r2'));
   });
+
+  it('leaves a field inside a bar with ← at its start and → at its end, and keeps typing keys otherwise', () => {
+    document.body.innerHTML = `
+      <main>
+        <div data-zone="bar">
+          <button id="tab" data-pick>Words</button>
+          <button id="add">+</button>
+          <div data-zone="field"><input id="find" value="ab" /></div>
+        </div>
+      </main>`;
+    Element.prototype.getClientRects = () => [{}] as unknown as DOMRectList;
+    Element.prototype.scrollIntoView = vi.fn();
+    zoneNav(document.querySelector('main')!);
+    const find = document.getElementById('find') as HTMLInputElement;
+    find.focus();
+    find.setSelectionRange(1, 1);
+    key(find, 'ArrowLeft');
+    expect(document.activeElement).toBe(find);
+    find.setSelectionRange(0, 0);
+    key(find, 'ArrowLeft');
+    expect(document.activeElement).toBe(document.getElementById('add'));
+    key(document.getElementById('add')!, 'ArrowRight');
+    expect(document.activeElement).toBe(find);
+  });
 });

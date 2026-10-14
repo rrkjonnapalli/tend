@@ -11,7 +11,9 @@
 // - `stack`: controls one under another (attachments, comments): ↑↓ between them.
 // ↑ / ↓ past a zone's first or last item go to the zone above or below; zones with nothing to
 // focus are skipped. In a field ← → are for typing, and ↑ ↓ leave a multi-line field only from
-// its first or last character; a rich editor (the Markdown editor) keeps all its arrows.
+// its first or last character; a rich editor (the Markdown editor) keeps all its arrows. A one-line
+// field inside a bar (the Library's search) lets ← out at its start and → out at its end, along
+// the bar.
 import { rowKey } from './row-nav.action.ts';
 import { isTypingTarget } from '#lib/util/keys.ts';
 import { hasLayers } from '#lib/util/layers.ts';
@@ -114,6 +116,18 @@ function leavesField({ target, key }: Press): boolean {
   return true;
 }
 
+/** The bar a one-line field sits in, when ← at its start or → at its end should leave it. */
+function barToLeave({ zone, target, key }: Press): HTMLElement | null {
+  if (!(target instanceof HTMLInputElement)) return null;
+  const bar = zone.parentElement?.closest<HTMLElement>('[data-zone="bar"]') ?? null;
+  const { selectionStart: start, selectionEnd: end, value } = target;
+  const collapsed = start === end;
+  const atStart = collapsed && start === 0;
+  const atEnd = collapsed && end === value.length;
+  const leaves = key === 'ArrowLeft' ? atStart : atEnd;
+  return leaves ? bar : null;
+}
+
 /** ← → on a row step through its own controls (edit, My day, …); on a folder they fold it. */
 function sidewaysOnRow(press: Press, e: KeyboardEvent): boolean {
   const row = press.target.closest<HTMLElement>('[data-row]');
@@ -151,6 +165,8 @@ function handle(node: HTMLElement, e: KeyboardEvent): boolean {
   const typing = isTypingTarget(target);
   // A field inside a row (renaming it) keeps every key; other fields keep ← → and their inner ↑ ↓.
   const inRow = target.closest('[data-row]') !== null;
+  const bar = typing && isSideways && !inRow ? barToLeave(press) : null;
+  if (bar) return along(controlsOf(bar), { ...press, zone: bar });
   if (typing && (inRow || isSideways || !leavesField(press))) return false;
   if (isVertical) return vertical(press);
   if (isSideways) return sideways(press, e);
