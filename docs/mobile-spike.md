@@ -11,6 +11,9 @@ and the running dev app were never touched.
 | Android (aarch64) | **Builds and links** (`libtend_lib.so`) | Not built | The LuLu firewall blocks Java, so Gradle can't download (see "Your actions") |
 | iOS | Compiles up to Tauri's own build script | Not built | No Xcode on this Mac: only the Command Line Tools are installed |
 
+The release build of the Android core is **17.7 MB** (`libtend_lib.so`, aarch64, stripped), so
+the APK should land around 10 MB compressed, before the web assets.
+
 What this proves:
 
 - **`git2` with vendored libgit2 and OpenSSL, `rusqlite` (bundled SQLite), `ureq` with rustls,
