@@ -249,6 +249,55 @@ pub fn unlink(conn: &Connection, link_id: &str) -> AppResult<()> {
     links::delete_by_id(conn, link_id)
 }
 
+/// Kinds of file the OS runs instead of showing: scripts, apps, installers, and links that can
+/// point at one. A file that came by sync carries no quarantine flag, so macOS wouldn't ask first.
+const RUNNABLE: &[&str] = &[
+    "app",
+    "command",
+    "tool",
+    "terminal",
+    "sh",
+    "bash",
+    "zsh",
+    "csh",
+    "ksh",
+    "fish",
+    "pkg",
+    "mpkg",
+    "dmg",
+    "scpt",
+    "scptd",
+    "applescript",
+    "workflow",
+    "action",
+    "jar",
+    "fileloc",
+    "inetloc",
+    "webloc",
+    "url",
+    "exe",
+    "msi",
+    "bat",
+    "cmd",
+    "com",
+    "scr",
+    "ps1",
+    "vbs",
+    "lnk",
+];
+
+/// Refuses to open a file the OS would run (`RUNNABLE`); Show in folder still works.
+pub fn check_openable(path: &Path) -> AppResult<()> {
+    let ext = path
+        .extension()
+        .map(|e| e.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+    if RUNNABLE.contains(&ext.as_str()) {
+        return Err(errors::OPEN_BLOCKED.err());
+    }
+    Ok(())
+}
+
 /// Where an attachment's file lives on disk.
 pub fn file_path(conn: &Connection, root: &Path, attachment_id: &str) -> AppResult<PathBuf> {
     let path: String = conn

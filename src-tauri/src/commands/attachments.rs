@@ -84,6 +84,7 @@ fn opener_error(e: tauri_plugin_opener::Error) -> crate::error::AppError {
 #[tauri::command(async)]
 pub fn attachment_open(state: State<AppState>, attachment: String) -> AppResult<()> {
     let path = state.with(|db, v| attachments::file_path(db, &v.root, &attachment))?;
+    attachments::check_openable(&path)?;
     tauri_plugin_opener::open_path(path, None::<&str>).map_err(opener_error)
 }
 

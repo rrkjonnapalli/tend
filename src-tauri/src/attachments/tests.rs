@@ -134,3 +134,14 @@ fn only_paths_inside_the_vault_are_opened() {
     .unwrap();
     assert!(file_path(&conn, Path::new("/v"), "bad").is_err());
 }
+
+#[test]
+fn programs_and_scripts_are_never_opened() {
+    for name in ["x.command", "x.APP", "x.sh", "x.fileloc", "x.exe"] {
+        let refused = check_openable(Path::new(name)).unwrap_err();
+        assert!(refused.is(errors::OPEN_BLOCKED), "{name}");
+    }
+    for name in ["x.pdf", "x.png", "x.md", "x"] {
+        assert!(check_openable(Path::new(name)).is_ok(), "{name}");
+    }
+}

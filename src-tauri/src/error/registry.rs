@@ -37,6 +37,10 @@ pub const COLOR_INVALID: ErrorDef = def("COLOR_INVALID", "Colors are #rrggbb.");
 // Unused in tests, which delete instead of trashing (`files::to_trash`).
 #[cfg_attr(test, allow(dead_code))]
 pub const TRASH_FAILED: ErrorDef = def("TRASH_FAILED", "It couldn’t be moved to the Trash");
+pub const OPEN_BLOCKED: ErrorDef = def(
+    "OPEN_BLOCKED",
+    "Tend doesn’t open programs or scripts. Use Show in folder to look at it.",
+);
 pub const OPEN_FAILED: ErrorDef = def("OPEN_FAILED", "The file couldn’t be opened");
 pub const FILE_TOO_BIG: ErrorDef = def("FILE_TOO_BIG", "This file is over the size limit.");
 pub const ENUM_BLOCKED: ErrorDef = def("ENUM_BLOCKED", "This one is blocked.");
