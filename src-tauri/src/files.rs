@@ -176,6 +176,7 @@ pub fn mtime(path: &Path) -> i64 {
 }
 
 /// Size, hash and mtime of a file, as the attachments table stores them.
+#[derive(Clone)]
 pub struct FileFacts {
     pub size: i64,
     pub sha256: String,

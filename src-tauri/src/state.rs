@@ -15,6 +15,8 @@ pub struct Vault {
     conn: Mutex<Connection>,
     /// Items the last scan skipped because their names break the rule.
     skipped: Mutex<Vec<Skipped>>,
+    /// Held for a whole rescan, which takes `conn` only to read and to write.
+    scanning: Mutex<()>,
 }
 
 impl Vault {
@@ -23,12 +25,18 @@ impl Vault {
             root,
             conn: Mutex::new(conn),
             skipped: Mutex::default(),
+            scanning: Mutex::default(),
         }
     }
 
     pub fn db(&self) -> MutexGuard<'_, Connection> {
         // A poisoned lock only means another command panicked; the connection is still usable.
         self.conn.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
+    /// One rescan at a time.
+    pub fn scan_lock(&self) -> MutexGuard<'_, ()> {
+        self.scanning.lock().unwrap_or_else(|e| e.into_inner())
     }
 
     pub fn skipped(&self) -> Vec<Skipped> {

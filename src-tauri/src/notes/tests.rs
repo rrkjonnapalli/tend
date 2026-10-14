@@ -206,6 +206,30 @@ fn a_save_over_a_body_changed_elsewhere_is_refused() {
 }
 
 #[test]
+fn a_scan_records_its_walk_after_the_index_changed_meanwhile() {
+    let mut f = fixture(&[("a.md", "old"), ("b.md", "b")]);
+    let b = tree(&f.conn).unwrap().notes.into_iter().find(|n| n.name == "b");
+    let known = read_known(&f.conn, false).unwrap();
+    fs::write(f.dir.join("a.md"), "edited elsewhere").unwrap();
+    let disk = walk_disk(&f.dir, known);
+    // The database is free during the walk: a note made now must survive the record, and one
+    // deleted now must not come back.
+    let made = create(&mut f.conn, &f.dir, "", "Made meanwhile").unwrap();
+    delete_note(&mut f.conn, &f.dir, &b.unwrap().id).unwrap();
+    record(&mut f.conn, &f.dir, disk).unwrap();
+    let names = names_in(&tree(&f.conn).unwrap());
+    assert_eq!(names, vec!["a", "made_meanwhile"]);
+    let a = tree(&f.conn)
+        .unwrap()
+        .notes
+        .into_iter()
+        .find(|n| n.name == "a");
+    assert_eq!(a.unwrap().sha256, files::sha256_of(b"edited elsewhere"));
+    assert!(read(&f.conn, &f.dir, &made.id).is_ok());
+    assert_matches_disk(&mut f);
+}
+
+#[test]
 fn titles_become_slugs_and_clashes_get_a_suffix() {
     let mut f = fixture(&[("work/a.md", "")]);
     let empty = create(&mut f.conn, &f.dir, "", "  ").unwrap_err();

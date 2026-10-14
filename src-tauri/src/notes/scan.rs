@@ -22,6 +22,8 @@ struct DiskNote {
     /// File name without `.md`.
     name: String,
     mtime: i64,
+    /// Hashed during the walk when the index didn't hold this mtime; `None` when it did.
+    facts: Option<files::FileFacts>,
 }
 
 /// How deep the scan goes below the vault: a guard against pathological trees.
@@ -38,8 +40,9 @@ pub struct Skipped {
     pub fix: String,
 }
 
+/// What a scan found on disk; written to the index by `record`.
 #[derive(Default)]
-struct Disk {
+pub struct Disk {
     folders: Vec<String>,
     notes: Vec<DiskNote>,
     skipped: Vec<Skipped>,
@@ -48,21 +51,29 @@ struct Disk {
     /// Notes left alone for being over the size limit. Their rows stay as they are: dropping them
     /// would sync as a deletion and remove the file from the other devices.
     too_big: HashSet<String>,
+    /// The note and folder paths the index held when the walk started. Only these can be judged
+    /// missing: one Tend made during the walk may not have been walked.
+    seen_notes: HashSet<String>,
+    seen_folders: HashSet<String>,
 }
 
-/// What stays the same for the whole walk.
-struct Scope<'a> {
+/// What the index held when a scan started: the walk compares the disk with it, so it hashes only
+/// files whose mtime moved. Read with the database briefly locked (`read_known`).
+pub struct Known {
     /// Names that break the rule may be fixed on disk.
     fix: bool,
     /// Folders the index already has: they stay even when they hold no notes.
-    known: &'a HashSet<String>,
+    folders: HashSet<String>,
     /// Notes this size or larger are not indexed.
     limit: files::Limit,
+    /// Note bodies by path: their mtime, or `None` when missing.
+    notes: HashMap<String, Option<i64>>,
 }
 
 /// One directory being walked: its place, its depth, and the names in it.
 struct Walk<'a> {
-    scope: &'a Scope<'a>,
+    /// What stays the same for the whole walk.
+    scope: &'a Known,
     dir: &'a Path,
     rel: &'a str,
     depth: usize,
@@ -101,24 +112,54 @@ struct Vanished {
 }
 
 /// Returns the skipped items. With `fix`, names that can be made valid are renamed on disk first.
+/// A caller that shares its connection runs the three steps itself, so the walk (the slow part,
+/// which hashes changed files) holds no lock: `read_known`, `walk_disk`, `record`.
 pub fn scan(conn: &mut Connection, dir: &Path, fix: bool) -> AppResult<Vec<Skipped>> {
-    let known = known_folders(conn)?;
-    let scope = Scope {
+    let known = read_known(conn, fix)?;
+    let disk = walk_disk(dir, known);
+    record(conn, dir, disk)
+}
+
+pub fn read_known(conn: &Connection, fix: bool) -> AppResult<Known> {
+    Ok(Known {
         fix,
-        known: &known,
+        folders: known_folders(conn)?,
         limit: files::Limit::of(conn)?,
-    };
+        notes: known_notes(conn)?,
+    })
+}
+
+/// Walks the vault, fixing names on disk when allowed and hashing notes whose mtime moved. Reads
+/// no database.
+pub fn walk_disk(dir: &Path, known: Known) -> Disk {
     let mut disk = Disk::default();
-    walk(&scope, dir, "", 0, &mut disk);
+    walk(&known, dir, "", 0, &mut disk);
+    disk.seen_notes = known.notes.into_keys().collect();
+    disk.seen_folders = known.folders;
+    disk
+}
+
+/// Makes the index match what the walk found, in one transaction. A note whose file changed
+/// again since the walk is indexed as found; its new mtime makes the next scan look again.
+pub fn record(conn: &mut Connection, dir: &Path, mut disk: Disk) -> AppResult<Vec<Skipped>> {
     let now = now_ms();
     let tx = conn.transaction()?;
     log_renames(&tx, &disk.renamed, now)?;
-    sync_folders(&tx, &disk.folders, now)?;
+    sync_folders(&tx, dir, &disk, now)?;
     sync_notes(&tx, dir, &disk, now)?;
     purge(&tx, now)?;
     tx.commit()?;
     disk.skipped.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(disk.skipped)
+}
+
+fn known_notes(conn: &Connection) -> AppResult<HashMap<String, Option<i64>>> {
+    let mut stmt = conn.prepare(
+        "SELECT a.path, CASE WHEN a.missing_at IS NULL THEN a.mtime END
+         FROM attachments a JOIN notes n ON n.attachment_id = a.id",
+    )?;
+    let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+    Ok(rows.collect::<Result<_, _>>()?)
 }
 
 fn known_folders(conn: &Connection) -> AppResult<HashSet<String>> {
@@ -138,7 +179,7 @@ fn log_renames(tx: &Transaction, renamed: &[Moved], now: i64) -> AppResult<()> {
 
 /// Indexes `dir` and below. Returns true when a note was found anywhere under it. Hidden entries
 /// and symlinks are skipped (a symlinked folder could loop back on itself).
-fn walk(scope: &Scope, dir: &Path, rel: &str, depth: usize, out: &mut Disk) -> bool {
+fn walk(scope: &Known, dir: &Path, rel: &str, depth: usize, out: &mut Disk) -> bool {
     if depth > MAX_DEPTH {
         return false;
     }
@@ -171,7 +212,7 @@ fn walk(scope: &Scope, dir: &Path, rel: &str, depth: usize, out: &mut Disk) -> b
 /// Walks a folder and keeps it when it holds notes or Tend already knows it. A folder whose name
 /// breaks the rule is only renamed when it holds notes.
 fn add_folder(here: &mut Walk, raw: &str, out: &mut Disk) -> bool {
-    let known = here.scope.known.contains(&names::join(here.rel, raw));
+    let known = here.scope.folders.contains(&names::join(here.rel, raw));
     let valid = names::is_valid(raw);
     if !valid && !known && !has_notes(&here.dir.join(raw), here.depth + 1) {
         return false;
@@ -192,7 +233,7 @@ fn add_folder(here: &mut Walk, raw: &str, out: &mut Disk) -> bool {
         here.depth + 1,
         out,
     );
-    if found_notes || here.scope.known.contains(&shown) {
+    if found_notes || here.scope.folders.contains(&shown) {
         // Parents go before their children.
         out.folders.insert(at, shown);
     }
@@ -232,10 +273,21 @@ fn add_disk_note(here: &mut Walk, raw: &str, out: &mut Disk) -> bool {
     let Some(name) = settle(here, &found, out) else {
         return false;
     };
+    let file = here.dir.join(format!("{name}{EXT}"));
+    let mtime = files::mtime(&file);
+    let indexed = here.scope.notes.get(&vault_path(here.rel, &name));
+    let unchanged = indexed.is_some_and(|m| *m == Some(mtime));
+    // A file that can't be hashed now is hashed again when recorded, which reports the error.
+    let facts = if unchanged {
+        None
+    } else {
+        files::facts(&file).ok()
+    };
     out.notes.push(DiskNote {
         folder: here.rel.to_string(),
-        mtime: files::mtime(&here.dir.join(format!("{name}{EXT}"))),
+        mtime,
         name,
+        facts,
     });
     true
 }
@@ -315,9 +367,11 @@ fn record_skip(out: &mut Disk, kind: PathKind, old: &str, new: Option<&str>) {
     });
 }
 
-/// Folders on disk are present; indexed folders that are gone get `missing_at`.
-fn sync_folders(tx: &Transaction, folders: &[String], now: i64) -> AppResult<()> {
-    for f in folders {
+/// Folders on disk are present; indexed folders the walk saw gone get `missing_at`. A folder
+/// removed since the walk isn't added.
+fn sync_folders(tx: &Transaction, dir: &Path, disk: &Disk, now: i64) -> AppResult<()> {
+    let folders = &disk.folders;
+    for f in folders.iter().filter(|f| dir.join(f).is_dir()) {
         tx.execute(
             "INSERT INTO note_folders (id, path, created_at, updated_at) VALUES (?1, ?2, ?3, ?3)
              ON CONFLICT(path) DO UPDATE SET missing_at = NULL WHERE missing_at IS NOT NULL",
@@ -329,7 +383,8 @@ fn sync_folders(tx: &Transaction, folders: &[String], now: i64) -> AppResult<()>
         .prepare("SELECT path FROM note_folders WHERE path <> '' AND missing_at IS NULL")?
         .query_map([], |r| r.get(0))?
         .collect::<Result<_, _>>()?;
-    for f in known.iter().filter(|f| !on_disk.contains(f.as_str())) {
+    let gone = |f: &&String| !on_disk.contains(f.as_str()) && disk.seen_folders.contains(*f);
+    for f in known.iter().filter(gone) {
         tx.execute(
             "UPDATE note_folders SET missing_at = ?1 WHERE path = ?2",
             params![now, f],
@@ -346,6 +401,8 @@ fn sync_notes(tx: &Transaction, dir: &Path, disk: &Disk, now: i64) -> AppResult<
         match indexed.get(&path) {
             Some(ix) if ix.mtime == Some(n.mtime) && !ix.missing => {}
             Some(ix) => refresh_note(tx, dir, n, ix, now)?,
+            // Deleted or moved since the walk (by Tend, say): nothing to add.
+            None if !file_path(dir, &n.folder, &n.name).is_file() => {}
             None => add_note(tx, dir, n, &mut vanished, now)?,
         }
     }
@@ -383,7 +440,9 @@ fn find_vanished(indexed: &HashMap<String, Indexed>, disk: &Disk) -> Vec<Vanishe
         .iter()
         .map(|n| vault_path(&n.folder, &n.name))
         .collect();
-    let gone = |path: &String| !present.contains(path) && !disk.too_big.contains(path);
+    let gone = |path: &String| {
+        !present.contains(path) && !disk.too_big.contains(path) && disk.seen_notes.contains(path)
+    };
     indexed
         .iter()
         .filter(|(path, ix)| !ix.missing && gone(path))
@@ -392,6 +451,14 @@ fn find_vanished(indexed: &HashMap<String, Indexed>, disk: &Disk) -> Vec<Vanishe
             sha256: ix.sha256.clone(),
         })
         .collect()
+}
+
+/// The facts the walk hashed, or (when the index changed between the walk and now) hashed here.
+fn facts_of(dir: &Path, n: &DiskNote) -> AppResult<files::FileFacts> {
+    match &n.facts {
+        Some(facts) => Ok(facts.clone()),
+        None => files::facts(&file_path(dir, &n.folder, &n.name)),
+    }
 }
 
 /// The file's mtime moved (or it came back): re-hash it, and bump `updated_at` only when the
@@ -403,7 +470,7 @@ fn refresh_note(
     ix: &Indexed,
     now: i64,
 ) -> AppResult<()> {
-    let facts = files::facts(&file_path(dir, &n.folder, &n.name))?;
+    let facts = facts_of(dir, n)?;
     let changed = facts.sha256 != ix.sha256;
     tx.execute(
         "UPDATE attachments SET size_bytes = ?1, sha256 = ?2, mtime = ?3, missing_at = NULL,
@@ -430,7 +497,7 @@ fn add_note(
     vanished: &mut Vec<Vanished>,
     now: i64,
 ) -> AppResult<()> {
-    let facts = files::facts(&file_path(dir, &n.folder, &n.name))?;
+    let facts = facts_of(dir, n)?;
     let path = vault_path(&n.folder, &n.name);
     let file = format!("{}{EXT}", n.name);
     let moved = vanished.iter().position(|v| v.sha256 == facts.sha256);

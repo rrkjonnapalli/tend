@@ -31,7 +31,7 @@ pub use edit::{
     create, delete_folder, delete_note, folder_create, move_folder, move_note, rename_folder,
     rename_note,
 };
-pub use scan::{scan, Skipped};
+pub use scan::{read_known, record, scan, walk_disk, Skipped};
 
 /// Setting: the vault allows scans to rename folders and notes whose names break the rule.
 const FIX_NAMES: &str = "notes.fix_names";

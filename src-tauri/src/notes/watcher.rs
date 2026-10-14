@@ -48,9 +48,15 @@ fn is_indexed(vault: &Vault, roots: &[PathBuf], path: &Path) -> bool {
 /// Rescans the notes folder and records what it skipped. Names are fixed on disk only when the
 /// vault allows it.
 pub fn rescan(vault: &Vault) -> AppResult<()> {
-    let mut db = vault.db();
-    let fix = notes::fix_allowed(&db)?;
-    let skipped = notes::scan(&mut db, &vault.notes_dir(), fix)?;
+    // One scan at a time: two walks could both rename the same badly named file.
+    let _one = vault.scan_lock();
+    let known = {
+        let db = vault.db();
+        notes::read_known(&db, notes::fix_allowed(&db)?)?
+    };
+    // The walk hashes changed files with the database free, so commands never wait on it.
+    let disk = notes::walk_disk(&vault.notes_dir(), known);
+    let skipped = notes::record(&mut vault.db(), &vault.notes_dir(), disk)?;
     vault.set_skipped(skipped);
     Ok(())
 }
