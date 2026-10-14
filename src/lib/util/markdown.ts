@@ -2,7 +2,8 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
-marked.use({ gfm: true, breaks: false });
+// A newline in a paragraph shows as a line break, as typed (Obsidian's default), not a space.
+marked.use({ gfm: true, breaks: true });
 
 export function renderMarkdown(text: string): string {
   // A form could post the app window away to another site; Markdown never needs one.
