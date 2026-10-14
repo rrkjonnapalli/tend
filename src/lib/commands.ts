@@ -83,7 +83,7 @@ export const commands: Command[] = [
   { id: 'task.layout', group: 'Tasks', label: 'Switch list / board', keys: 'mod+r', when: onTasksList, run: toggleTaskLayout },
 
   { id: 'app.palette', group: 'App', label: 'Open command palette', keys: 'mod+k', run: openPalette },
-  { id: 'app.sync', group: 'App', label: 'Sync now', keys: 'mod+shift+arrowdown', when: () => sync.state !== 'off' && sync.state !== 'running', run: sync.now },
+  { id: 'app.sync', group: 'App', label: 'Sync now', keys: 'mod+shift+arrowdown', when: () => sync.state !== 'off' && sync.state !== 'running' && !sync.outdated, run: sync.now },
   { id: 'page.search', group: 'App', label: 'Search this list', keys: 'mod+l', ...onPage('page.search') },
   { id: 'app.explorer', group: 'App', label: 'Toggle explorer', keys: 'mod+e', when: hasExplorer, run: ui.toggleExplorer },
   { id: 'app.nav', group: 'App', label: 'Toggle dock (bottom bar)', keys: 'mod+d', run: ui.toggleNav },

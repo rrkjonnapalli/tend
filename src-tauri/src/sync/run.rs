@@ -17,7 +17,8 @@ use super::git::{Kept, Remote, Repo};
 use super::reconcile::{reconcile, Sides};
 use super::shards::{self, Snapshot};
 use super::state;
-use crate::db::{columns, tables};
+use super::upgrade::upgrade;
+use crate::db::{self, columns, tables};
 use crate::error::{errors, AppResult};
 use crate::files;
 use crate::names;
@@ -200,11 +201,15 @@ fn holds_vault(repo: &Repo, commit: Oid) -> AppResult<bool> {
     Ok(!repo.files_under(commit, SYNC_DIR)?.is_empty())
 }
 
-/// The rows a commit holds.
+/// The rows a commit holds, in this app's schema (rows an older app wrote are migrated).
 fn rows_at(repo: &Repo, commit: Oid) -> AppResult<Snapshot> {
     let files = repo.files_under(commit, SYNC_DIR)?;
-    shards::check_manifest(&files)?;
-    shards::parse(&files)
+    let version = shards::check_manifest(&files)?;
+    let rows = shards::parse(&files)?;
+    if version == db::schema_version() {
+        return Ok(rows);
+    }
+    upgrade(&rows, version, &db::MIGRATIONS)
 }
 
 fn oid(text: &str) -> AppResult<Oid> {

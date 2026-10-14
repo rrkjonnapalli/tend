@@ -44,7 +44,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - **Empty folder** → a new vault.
   - **Not a vault and not empty** (no `.tend/tend.db`, other visible items) → ask first, writing nothing: "This folder isn’t a Tend vault yet. It has N items, with M notes inside. Tend will use it as your notes folder… and rename notes and folders that hold notes to lowercase names…" → *Use this folder* / *Choose another folder*. Agreeing also lets scans fix names (§5a).
   - **`.tend/tend.db` exists:** read `meta`.
-    - `app_id = 'tend'` and `schema_version` ≤ app → migrate up if lower, then open.
+    - `app_id = 'tend'` and `schema_version` ≤ app → migrate up if lower, then open. Before migrating, the database is copied to `.tend/tend.db.bak` (replacing the last copy): an older schema can't be gone back to, so the copy is the only undo.
     - Anything else → **"An incompatible database exists in .tend/tend.db"**. The user picks another folder.
   - What sits above the chosen folder is never checked.
 - **Changing vault:** Settings → General → *Change vault folder…*. This reopens the start-up flow.

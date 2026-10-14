@@ -208,8 +208,10 @@ Accepted for V1; a hybrid logical clock is a later decision.
 - `manifest.json`: `{ "app_id": "tend", "format_version": 1, "schema_version": 1, "tables": [...] }`.
   A remote with unrelated files and no valid manifest is refused (`SYNC_NOT_A_VAULT`); a manifest
   whose schema is newer than the app is refused (`SNAPSHOT_TOO_NEW`) and nothing is imported. An
-  older schema is read up to date: a snapshot before schema 2 gets its task order keys rewritten
-  exactly as migration 2 rewrites a local database.
+  older schema is read up to date: its rows go into an in-memory database at that schema, the
+  app's own migrations take it to the latest, and the rows are read back (`sync::upgrade`). So a
+  snapshot before schema 2 gets its task order keys rewritten exactly as migration 2 rewrites a
+  local database. The base and the remote head are each upgraded from their own manifest's version.
 - Settings shows the snapshot size; warn above 200 MB.
 
 Old years are rarely touched, so Git neither rewrites nor rereads them: they act as an archive

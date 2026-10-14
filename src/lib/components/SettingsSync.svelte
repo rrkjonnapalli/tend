@@ -9,6 +9,7 @@
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import { emptySetup, publicRepoWarning } from '#lib/config/sync.config.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
+  import { errors } from '#lib/errors/registry.ts';
   import { sync } from '#lib/stores/sync.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { timestamp } from '#lib/util/dates.ts';
@@ -107,6 +108,9 @@
     <h2 class="section-title">Last sync</h2>
     {#if sync.state === 'running'}
       <div class="kv"><span class="v">Syncing…</span></div>
+    {:else if sync.outdated}
+      <div class="kv"><span class="k">Last synced</span><span class="v">{synced}</span></div>
+      <div class="banner-err" role="alert">{errors.SNAPSHOT_TOO_NEW.message}</div>
     {:else if sync.state === 'failed'}
       <div class="kv"><span class="k">Last synced</span><span class="v">{synced}</span></div>
       <div class="kv"><span class="k">Last failed</span><span class="v bad">{failed}</span></div>
@@ -114,7 +118,7 @@
       <div class="kv"><span class="v">{synced}</span></div>
     {/if}
     <div class="row">
-      <button class="btn-ghost" disabled={sync.state === 'running'} onclick={sync.now}>Sync now</button>
+      <button class="btn-ghost" disabled={sync.state === 'running' || sync.outdated} onclick={sync.now}>Sync now</button>
       <button class="btn-ghost" onclick={() => (confirmDisconnect = true)}>Disconnect…</button>
     </div>
   </section>

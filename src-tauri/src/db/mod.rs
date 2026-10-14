@@ -1,5 +1,9 @@
 //! SQLite connection and migrations, run by `rusqlite_migration`. `docs/schema.sql` is migration 1
 //! and is frozen from the first release; later changes are new entries in `STEPS`. The schema version lives in `PRAGMA user_version`.
+//!
+//! Sync runs the same steps on rows from other devices (`sync::upgrade`), so a step must be
+//! deterministic: the same rows in give the same rows out on every device (no new ids, no clock).
+//! A step changes rows only, never files on disk.
 
 pub mod columns;
 pub mod tables;
@@ -8,7 +12,7 @@ mod update;
 #[cfg(test)]
 mod tests;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use rusqlite::{Connection, OpenFlags, OptionalExtension, Transaction, TransactionBehavior};
 use rusqlite_migration::{Migrations, M};
@@ -22,10 +26,13 @@ pub const APP_ID: &str = "tend";
 /// SQL: `path` is the folder `?1` or anything under it.
 pub const UNDER: &str = "(path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '/')";
 const BUSY_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+/// Appended to the database's file name for the copy taken before a migration.
+const BACKUP_SUFFIX: &str = ".bak";
 
 /// Migration n is `STEPS[n - 1]`. Each step is checked for broken foreign keys before it commits.
-const STEPS: &[M<'static>] = &[M::up(include_str!("../../../docs/schema.sql")).foreign_key_check()];
-const MIGRATIONS: Migrations<'static> = Migrations::from_slice(STEPS);
+pub(crate) const STEPS: &[M<'static>] =
+    &[M::up(include_str!("../../../docs/schema.sql")).foreign_key_check()];
+pub(crate) const MIGRATIONS: Migrations<'static> = Migrations::from_slice(STEPS);
 
 pub fn schema_version() -> i64 {
     STEPS.len() as i64
@@ -62,6 +69,10 @@ pub fn open(path: &Path) -> AppResult<(Connection, Opened)> {
     // writes later fails at once ("database is locked") if the other connection committed in
     // between; an immediate one waits its turn (BUSY_TIMEOUT) instead.
     conn.set_transaction_behavior(TransactionBehavior::Immediate);
+    let migrating = from.is_some_and(|v| v < schema_version());
+    if migrating {
+        backup(&conn, path)?;
+    }
     MIGRATIONS.to_latest(&mut conn)?;
     let opened = match from {
         None => Opened::Created,
@@ -72,6 +83,20 @@ pub fn open(path: &Path) -> AppResult<(Connection, Opened)> {
         },
     };
     Ok((conn, opened))
+}
+
+/// Copies the database next to itself before a migration: there is no way back to an older
+/// schema, so this copy is the only undo. Each migration replaces the last copy.
+fn backup(conn: &Connection, path: &Path) -> AppResult<PathBuf> {
+    let mut name = path.file_name().unwrap_or_default().to_os_string();
+    name.push(BACKUP_SUFFIX);
+    let copy = path.with_file_name(name);
+    // `VACUUM INTO` refuses a file that is already there.
+    if copy.exists() {
+        std::fs::remove_file(&copy)?;
+    }
+    conn.execute("VACUUM INTO ?1", [copy.to_string_lossy()])?;
+    Ok(copy)
 }
 
 /// Reads the file without writing. Returns its schema version when it belongs to Tend and is not

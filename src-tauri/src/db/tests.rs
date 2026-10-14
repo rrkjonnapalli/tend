@@ -52,3 +52,14 @@ fn a_transaction_holds_the_write_lock_from_its_start() {
         .execute("UPDATE sync_state SET last_result = 'x' WHERE id = 1", [])
         .is_ok());
 }
+
+#[test]
+fn backup_copies_the_database_and_replaces_the_last_copy() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("tend.db");
+    let (conn, _) = open(&path).unwrap();
+    std::fs::write(dir.path().join("tend.db.bak"), "old copy").unwrap();
+    let copy = backup(&conn, &path).unwrap();
+    assert_eq!(copy, dir.path().join("tend.db.bak"));
+    assert_eq!(check(&copy).unwrap(), schema_version());
+}

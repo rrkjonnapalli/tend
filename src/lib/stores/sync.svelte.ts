@@ -1,6 +1,7 @@
 // Sync for the open vault: its settings and how the last run went. A run that brought changes
 // reloads every store, which also lets open pages notice items deleted elsewhere (useDeleted).
 import { syncAPI } from '#lib/api/sync.ts';
+import { errors } from '#lib/errors/registry.ts';
 import type { SyncLive, SyncSetup, SyncState, SyncStatus } from '#lib/types/sync.type.ts';
 import { notes } from './notes.svelte.ts';
 import { people } from './people.svelte.ts';
@@ -31,6 +32,12 @@ class SyncStore {
     const failed = s.error !== null || (s.lastResult !== null && s.lastResult !== OK);
     if (failed) return 'failed';
     return 'synced';
+  });
+
+  /** Another device synced with a newer Tend: nothing syncs either way until this app updates. */
+  outdated = $derived.by(() => {
+    const key = errors.SNAPSHOT_TOO_NEW.key;
+    return this.status?.error?.key === key || this.status?.lastResult === key;
   });
 
   load = async () => {

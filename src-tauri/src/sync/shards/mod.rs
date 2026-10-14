@@ -87,8 +87,13 @@ pub fn table_names() -> Vec<&'static str> {
 
 /// Every synced row in the database.
 pub fn snapshot(conn: &Connection) -> AppResult<Snapshot> {
+    snapshot_of(conn, &table_names())
+}
+
+/// The synced rows of the named tables only (an older schema lacks the newer ones).
+pub fn snapshot_of(conn: &Connection, names: &[&str]) -> AppResult<Snapshot> {
     let mut out = Snapshot::new();
-    for t in TABLES {
+    for t in TABLES.iter().filter(|t| names.contains(&t.name)) {
         out.insert(t.name, read_table(conn, t)?);
     }
     Ok(out)
@@ -228,8 +233,9 @@ fn manifest() -> AppResult<String> {
     Ok(text)
 }
 
-/// Refuses a set of shard files that isn't a Tend vault, or comes from a newer schema.
-pub fn check_manifest(files: &BTreeMap<PathBuf, String>) -> AppResult<()> {
+/// Refuses a set of shard files that isn't a Tend vault, or comes from a newer schema. Returns
+/// the schema version the files were written at.
+pub fn check_manifest(files: &BTreeMap<PathBuf, String>) -> AppResult<i64> {
     let manifest: Option<Value> = files
         .get(Path::new(MANIFEST_FILE))
         .and_then(|text| serde_json::from_str(text).ok());
@@ -240,10 +246,13 @@ pub fn check_manifest(files: &BTreeMap<PathBuf, String>) -> AppResult<()> {
         return Err(errors::SYNC_NOT_A_VAULT.err());
     }
     let version = manifest["schema_version"].as_i64().unwrap_or(i64::MAX);
+    if version < 1 {
+        return Err(errors::SYNC_NOT_A_VAULT.err());
+    }
     if version > db::schema_version() {
         return Err(errors::SNAPSHOT_TOO_NEW.err());
     }
-    Ok(())
+    Ok(version)
 }
 
 /// The rows in a set of shard files (as `render` makes them, e.g. read from a Git tree). Files of a

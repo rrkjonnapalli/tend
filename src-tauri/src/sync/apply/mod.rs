@@ -2,7 +2,7 @@
 //! staged files moved into place. If anything fails before the commit, the vault is as it was.
 
 mod files;
-mod rows;
+pub(super) mod rows;
 
 #[cfg(test)]
 mod tests;

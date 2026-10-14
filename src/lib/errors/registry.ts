@@ -11,6 +11,8 @@ export const errors = {
   TAG_BLOCKED: { key: 'TAG_BLOCKED', message: 'This tag is blocked. Unblock it in Settings → Tags.' },
   /** Mirrors the backend's NOTE_CHANGED: the note page asks which text to keep. */
   NOTE_CHANGED: { key: 'NOTE_CHANGED', message: 'This note changed outside Tend or on another device while it was open.' },
+  /** Mirrors the backend's SNAPSHOT_TOO_NEW: Settings → Sync asks for an update instead of Sync now. */
+  SNAPSHOT_TOO_NEW: { key: 'SNAPSHOT_TOO_NEW', message: 'This vault was synced by a newer Tend. Update Tend to keep syncing.' },
   TIMEOUT: { key: 'TIMEOUT', message: 'Tend took too long to respond. Try again.' },
   UNKNOWN: { key: 'UNKNOWN', message: 'Something went wrong.' },
 } as const satisfies Record<string, ErrorDef>;
