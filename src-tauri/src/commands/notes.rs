@@ -42,9 +42,22 @@ pub fn note_read(state: State<AppState>, id: String) -> AppResult<notes::NoteDoc
     state.with(|db, v| notes::read(db, &v.notes_dir(), &id))
 }
 
+/// `base` is the body's hash when the page read it; a body changed since is refused
+/// (`NOTE_CHANGED`). Without `base` the text is saved over whatever is there ("Keep mine").
 #[tauri::command(async)]
-pub fn note_write(state: State<AppState>, id: String, text: String) -> AppResult<notes::NoteRow> {
-    state.with(|db, v| notes::write(db, &v.notes_dir(), &id, &text))
+pub fn note_write(
+    state: State<AppState>,
+    id: String,
+    text: String,
+    base: Option<String>,
+) -> AppResult<notes::NoteRow> {
+    state.with(|db, v| {
+        let dir = v.notes_dir();
+        if let Some(base) = &base {
+            notes::check_unchanged(db, &dir, &id, base)?;
+        }
+        notes::write(db, &dir, &id, &text)
+    })
 }
 
 #[tauri::command(async)]

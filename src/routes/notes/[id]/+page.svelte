@@ -59,10 +59,16 @@
   let writing = $state(false);
   /** The last write failed; the text stays on screen until a retry works. */
   let failed = $state(false);
+  /** The last write was refused: the file changed elsewhere since it was read. The dialog asks which text wins. */
+  let conflict = $state(false);
+  /** Per note, the body's hash a save expects to replace; none saves over whatever is there ("Keep mine"). */
+  const bases = new Map<string, string>();
+  /** Writes started so far: a read that began before one of them is stale when it lands. */
+  let writeCount = 0;
 
   /** Edits not yet on disk count as saving: the autosave is at most SAVE_MS away. */
   const saveState = $derived.by((): SaveState => {
-    if (failed) return 'failed';
+    if (failed || conflict) return 'failed';
     if (writing || text !== saved) return 'saving';
     return 'saved';
   });
@@ -72,8 +78,10 @@
 
   function show({ noteId, doc, edit }: { noteId: string; doc: NoteDoc; edit: boolean }) {
     failed = false;
+    conflict = false;
     text = doc.text;
     saved = doc.text;
+    bases.set(noteId, doc.sha256);
     tags = doc.tags;
     loadedId = noteId;
     editing = edit;
@@ -96,11 +104,13 @@
     }
   });
 
-  /** True while the open note has no edits of its own that a reload would overwrite. */
-  const isUntouched = () => !editing && text === saved;
+  /** True while the open note has no edits of its own that a reload would overwrite, in either mode. */
+  const isUntouched = () => text === saved && !writing;
 
   function takeOutsideText(doc: NoteDoc) {
-    if (!isUntouched() || doc.text === text) return;
+    if (!isUntouched()) return;
+    bases.set(doc.id, doc.sha256);
+    if (doc.text === text) return;
     text = doc.text;
     saved = doc.text;
   }
@@ -131,8 +141,11 @@
     void notes.version;
     const noteId = untrack(() => loadedId);
     if (noteId === null) return;
+    const writesBefore = writeCount;
+    // A read that a save overtook holds older text than the file; taking it would undo the save.
     const takeIfStillOpen = (doc: NoteDoc) => {
-      if (noteId === loadedId) takeOutsideText(doc);
+      const current = noteId === loadedId && writeCount === writesBefore;
+      if (current) takeOutsideText(doc);
     };
     notesAPI.read(noteId).then(takeIfStillOpen, ignoreMissing);
   });
@@ -143,21 +156,31 @@
     const noteId = loadedId;
     const body = text;
     writing = true;
-    // Writes go one after another, so an older text can't land after a newer one.
-    const write = lastWrite.then(() => notesAPI.write({ id: noteId, text: body }));
+    writeCount += 1;
+    // Writes go one after another, so an older text can't land after a newer one. Each expects the
+    // hash the one before it left.
+    const write = lastWrite.then(async () => {
+      const row = await notesAPI.write({ id: noteId, text: body, base: bases.get(noteId) });
+      bases.set(noteId, row.sha256);
+      return row;
+    });
     lastWrite = write.catch(() => {});
     let row: NoteRow;
     try {
       row = await write;
     } catch (e) {
       // Only the note still open shows the failure; a late answer for one that was left doesn't.
-      failed = noteId === loadedId && !toAppError(e).is(errors.NOT_FOUND);
-      ignoreMissing(e);
+      const open = noteId === loadedId;
+      const changed = toAppError(e).is(errors.NOTE_CHANGED);
+      conflict = open && changed;
+      failed = open && !changed && !toAppError(e).is(errors.NOT_FOUND);
+      if (!changed) ignoreMissing(e);
       return;
     } finally {
       writing = false;
     }
     failed = false;
+    conflict = false;
     notes.patch(row);
     if (loadedId === noteId) saved = body;
   }
@@ -202,9 +225,25 @@
     tags = await tagsAPI.setForNote({ id, tags: next });
   }
 
+  /** "Keep mine": the text on screen is saved over the other version. */
+  function keepMine() {
+    if (loadedId === null) return;
+    conflict = false;
+    bases.delete(loadedId);
+    return flush();
+  }
+
+  /** "Load other version": the file's text replaces the edits on screen. */
+  async function loadOther() {
+    if (loadedId === null) return;
+    const noteId = loadedId;
+    const doc = await notesAPI.read(noteId);
+    if (noteId === loadedId) show({ noteId, doc, edit: editing });
+  }
+
   // While the last write failed, leaving would drop the text: stay, with "Not saved · Retry" showing.
   beforeNavigate(({ cancel }) => {
-    if (failed) cancel();
+    if (failed || conflict) cancel();
     flush();
   });
 
@@ -277,6 +316,17 @@
 
 {#if deleted.gone}
   <DeletedDialog kind="note" onkeep={keep} ondiscard={discard} />
+{/if}
+
+<!-- Esc keeps what is on screen: unsaved edits exist nowhere else. -->
+{#if conflict && !deleted.gone}
+  <ConfirmDialog
+    title="This note changed elsewhere"
+    body="It was changed outside Tend or on another device while you were editing. Load that version, or keep yours and save it over it?"
+    confirm="Load other version"
+    cancel="Keep mine"
+    onconfirm={loadOther}
+    onclose={keepMine} />
 {/if}
 
 {#if moving && place}

@@ -20,7 +20,7 @@ describe('folder counts', () => {
 
   it('describes what a folder delete removes', () => {
     expect(folderContents({ notes: 0, folders: 0 })).toBe('The folder is empty.');
-    expect(folderContents({ notes: 2, folders: 1 })).toBe('It contains 2 notes and 1 folder. Everything inside is deleted from disk.');
-    expect(folderContents({ notes: 0, folders: 1 })).toBe('It contains 0 notes and 1 folder. Everything inside is deleted from disk.');
+    expect(folderContents({ notes: 2, folders: 1 })).toBe('It contains 2 notes and 1 folder. Everything inside goes to the Trash.');
+    expect(folderContents({ notes: 0, folders: 1 })).toBe('It contains 0 notes and 1 folder. Everything inside goes to the Trash.');
   });
 });

@@ -7,7 +7,7 @@ import { routes } from './routes.ts';
 export const NOTES_ROOT_NAME = 'notes';
 
 /** What deleting a note does, for its confirmation (the explorer and the note page). */
-export const NOTE_DELETE_BODY = 'The file is deleted from disk. Tags and attachment links on it are removed.';
+export const NOTE_DELETE_BODY = 'The file goes to the Trash. Tags and attachment links on it are removed.';
 
 /** "notes / work / tauri": the root, then one link per folder segment. */
 export function folderCrumbs(folder: string): Crumb[] {
@@ -32,5 +32,5 @@ export function folderContents({ notes, folders }: { notes: number; folders: num
   if (!notes && !folders) return 'The folder is empty.';
   const noteCount = plural(notes, 'note');
   const counts = folders ? `${noteCount} and ${plural(folders, 'folder')}` : noteCount;
-  return `It contains ${counts}. Everything inside is deleted from disk.`;
+  return `It contains ${counts}. Everything inside goes to the Trash.`;
 }

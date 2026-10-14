@@ -215,9 +215,31 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
         ])
 }
 
+/// The app's one window (`tauri.conf.json`).
+const MAIN_WINDOW: &str = "main";
+
+/// Brings the window forward when the app is launched again while it runs.
+#[cfg(desktop)]
+fn show_main<R: Runtime>(app: &AppHandle<R>) {
+    let Some(window) = app.get_webview_window(MAIN_WINDOW) else {
+        return;
+    };
+    // Best effort: the second launch has already ended, and the window stays as it was.
+    let _ = window.unminimize();
+    let _ = window.show();
+    let _ = window.set_focus();
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let builder = tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    // First plugin, so a second launch exits before anything else starts: two copies would watch
+    // and sync the same vault at once.
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        show_main(app)
+    }));
+    let builder = builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())

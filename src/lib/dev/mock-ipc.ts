@@ -17,11 +17,11 @@ const withVault = vaultParam !== '0';
 const settings: Record<string, unknown> = {};
 const now = Date.now();
 const notes = [
-  { id: 'wc', folder: 'work/tauri', name: 'window_config', modifiedAt: now - 120_000 },
-  { id: 'pl', folder: 'work/tauri', name: 'plugins', modifiedAt: now - DAY_MS },
-  { id: 'rc', folder: 'work', name: 'release_checklist', modifiedAt: now - 1.2 * DAY_MS },
-  { id: 'gr', folder: 'home', name: 'groceries', modifiedAt: now - 3 * DAY_MS },
-  { id: 'sc', folder: '', name: 'scratch', modifiedAt: now - 14 * DAY_MS },
+  { id: 'wc', folder: 'work/tauri', name: 'window_config', modifiedAt: now - 120_000, sha256: '' },
+  { id: 'pl', folder: 'work/tauri', name: 'plugins', modifiedAt: now - DAY_MS, sha256: '' },
+  { id: 'rc', folder: 'work', name: 'release_checklist', modifiedAt: now - 1.2 * DAY_MS, sha256: '' },
+  { id: 'gr', folder: 'home', name: 'groceries', modifiedAt: now - 3 * DAY_MS, sha256: '' },
+  { id: 'sc', folder: '', name: 'scratch', modifiedAt: now - 14 * DAY_MS, sha256: '' },
 ];
 const texts: Record<string, string> = {
   wc: '# Window config\n\nHide native decorations. One **hairline** is the only chrome.\n\n## Checklist\n\n- [x] decorations: false\n- [ ] drag region on the explorer toolbar\n- [ ] global shortcut for capture\n\n> Closing hides the window, so timers keep running.\n\n```json\n"decorations": false,\n"minWidth": 900\n```',

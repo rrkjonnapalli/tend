@@ -24,12 +24,19 @@ pub const VAULT_GONE: ErrorDef = def(
 );
 pub const NOT_A_VAULT: ErrorDef = def("NOT_A_VAULT", "This folder isn’t a Tend vault.");
 pub const VAULT_OPEN_FAILED: ErrorDef = def("VAULT_OPEN_FAILED", "The vault couldn’t be opened.");
+pub const NOTE_CHANGED: ErrorDef = def(
+    "NOTE_CHANGED",
+    "This note changed outside Tend or on another device while it was open.",
+);
 pub const IO: ErrorDef = def("IO", "A file couldn’t be read or written");
 pub const DB: ErrorDef = def("DB", "The database couldn’t do that");
 pub const WATCH: ErrorDef = def("WATCH", "The notes folder can’t be watched");
 pub const EVENT: ErrorDef = def("EVENT", "The window couldn’t be told about a change");
 pub const JSON: ErrorDef = def("JSON", "That data couldn’t be read");
 pub const COLOR_INVALID: ErrorDef = def("COLOR_INVALID", "Colors are #rrggbb.");
+// Unused in tests, which delete instead of trashing (`files::to_trash`).
+#[cfg_attr(test, allow(dead_code))]
+pub const TRASH_FAILED: ErrorDef = def("TRASH_FAILED", "It couldn’t be moved to the Trash");
 pub const OPEN_FAILED: ErrorDef = def("OPEN_FAILED", "The file couldn’t be opened");
 pub const FILE_TOO_BIG: ErrorDef = def("FILE_TOO_BIG", "This file is over the size limit.");
 pub const ENUM_BLOCKED: ErrorDef = def("ENUM_BLOCKED", "This one is blocked.");

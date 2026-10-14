@@ -161,7 +161,7 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> A
     };
     let name = names::free(&slug_of(&title), |n| note_taken(conn, dir, slot, n))?;
     let path = file_path(dir, &folder, &name);
-    fs::write(&path, format!("# {title}\n"))?;
+    files::write_atomic(&path, format!("# {title}\n").as_bytes())?;
     let facts = files::facts(&path)?;
     let note_id = new_id();
     let attachment_id = new_id();
@@ -375,18 +375,18 @@ fn relocate_folder(conn: &mut Connection, dir: &Path, moved: Moved) -> AppResult
     Ok(moved.new)
 }
 
-/// Removes the body and the note (its attachment row goes, and the note with it).
+/// Moves the body to the Trash and removes the note (its attachment row goes, and the note with it).
 pub fn delete_note(conn: &mut Connection, dir: &Path, id: &str) -> AppResult<()> {
     let note = row(conn, id)?;
     let attachment_id = attachment_of(conn, id)?;
-    fs::remove_file(note_path(dir, &note))?;
+    files::to_trash(&note_path(dir, &note))?;
     in_transaction(conn, |tx| {
         tx.execute("DELETE FROM attachments WHERE id = ?1", [&attachment_id])?;
         Ok(())
     })
 }
 
-/// Deletes the folder and everything inside it, from disk and from the index.
+/// Moves the folder and everything inside it to the Trash, and drops it from the index.
 pub fn delete_folder(conn: &mut Connection, dir: &Path, path: &str) -> AppResult<()> {
     if path.is_empty() {
         return Err(errors::ROOT_FOLDER.err());
@@ -394,7 +394,7 @@ pub fn delete_folder(conn: &mut Connection, dir: &Path, path: &str) -> AppResult
     if !folder_exists(conn, path)? {
         return Err(errors::NOT_FOUND.with("Folder was not found"));
     }
-    fs::remove_dir_all(dir.join(path))?;
+    files::to_trash(&dir.join(path))?;
     in_transaction(conn, |tx| {
         tx.execute(
             "DELETE FROM attachments WHERE substr(path, 1, length(?1)) = ?1",

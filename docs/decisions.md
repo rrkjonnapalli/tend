@@ -149,7 +149,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - **Move to…** opens a popup like quick create. The path field suggests folders and leaves out the item's own folder and its subfolders. A new path shows "will create …" and is created.
   - Moving a folder moves everything inside it. Moving a task moves its subtasks.
 - **Delete:**
-  - **Folder:** a dialog shows "It contains N notes and M folders. Everything inside is deleted from disk." You type the **folder name** to enable the red *Delete folder* button.
+  - **Folder:** a dialog shows "It contains N notes and M folders. Everything inside goes to the Trash." Deleting a note or folder moves it to the system Trash, files Tend doesn't index included, so it can be got back. You type the **folder name** to enable the red *Delete folder* button.
   - **Note:** a simple confirmation, with no typing (can be turned off, see *Delete confirmations*).
   - **Tasks folders:** delete works the same way, with task counts.
 

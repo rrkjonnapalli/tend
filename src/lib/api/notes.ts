@@ -8,7 +8,8 @@ export const notesAPI = {
   /** Reads every note on disk, so a big vault gets the long deadline. */
   rescan: () => call<NoteTree>('notes_rescan', { timeoutMs: config.slowCallTimeoutMs }),
   read: (id: string) => call<NoteDoc>('note_read', { args: { id } }),
-  write: (input: { id: string; text: string }) => call<NoteRow>('note_write', { args: input }),
+  /** With `base` (the hash the page read), a body changed since is refused with NOTE_CHANGED; without it the text is saved over it. */
+  write: (input: { id: string; text: string; base?: string }) => call<NoteRow>('note_write', { args: input }),
   create: (input: { folder: string; title: string }) => call<NoteRow>('note_create', { args: input }),
   /** Resolves to the created path (a taken name gets a suffix). */
   createFolder: (path: string) => call<string>('folder_create', { args: { path } }),

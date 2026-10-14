@@ -228,9 +228,8 @@ fn manifest() -> AppResult<String> {
     Ok(text)
 }
 
-/// Refuses a set of shard files that isn't a Tend vault, or comes from a newer schema. Returns the
-/// schema version the files were written with.
-pub fn check_manifest(files: &BTreeMap<PathBuf, String>) -> AppResult<i64> {
+/// Refuses a set of shard files that isn't a Tend vault, or comes from a newer schema.
+pub fn check_manifest(files: &BTreeMap<PathBuf, String>) -> AppResult<()> {
     let manifest: Option<Value> = files
         .get(Path::new(MANIFEST_FILE))
         .and_then(|text| serde_json::from_str(text).ok());
@@ -244,54 +243,7 @@ pub fn check_manifest(files: &BTreeMap<PathBuf, String>) -> AppResult<i64> {
     if version > db::schema_version() {
         return Err(errors::SNAPSHOT_TOO_NEW.err());
     }
-    Ok(version)
-}
-
-/// The schema whose task order keys are in the `fractional-indexing` format (migration 2).
-pub const ORDER_KEYS_SCHEMA: i64 = 2;
-
-const KEY_DIGITS: &[u8] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-/// Gives the tasks of a snapshot written before `ORDER_KEYS_SCHEMA` new order keys, exactly as
-/// migration 2 does to a local database: ranked by old key, then id.
-pub fn rekey_tasks(snapshot: &mut Snapshot) {
-    let Some(tasks) = snapshot.get_mut(tables::TASKS) else {
-        return;
-    };
-    let key_of = |row: &Row| {
-        row.get(columns::ORDER_KEY)
-            .and_then(Value::as_str)
-            .unwrap_or_default()
-            .to_string()
-    };
-    let mut ranked: Vec<(String, String)> = tasks
-        .iter()
-        .map(|(id, row)| (key_of(row), id.clone()))
-        .collect();
-    ranked.sort();
-    for (n, (_, id)) in ranked.iter().enumerate() {
-        if let Some(row) = tasks.get_mut(id) {
-            row.insert(columns::ORDER_KEY.into(), Value::String(order_key(n)));
-        }
-    }
-}
-
-/// The `n`th key of migration 2: 'a' + 1 digit, then 'b' + 2, then 'c' + 3.
-fn order_key(n: usize) -> String {
-    let base = KEY_DIGITS.len();
-    let digit = |i: usize| KEY_DIGITS[i % base] as char;
-    if n < base {
-        return format!("a{}", digit(n));
-    }
-    if n < base * base {
-        return format!("b{}{}", digit(n / base), digit(n));
-    }
-    format!(
-        "c{}{}{}",
-        digit(n / (base * base)),
-        digit(n / base),
-        digit(n)
-    )
+    Ok(())
 }
 
 /// The rows in a set of shard files (as `render` makes them, e.g. read from a Git tree). Files of a

@@ -203,13 +203,8 @@ fn holds_vault(repo: &Repo, commit: Oid) -> AppResult<bool> {
 /// The rows a commit holds.
 fn rows_at(repo: &Repo, commit: Oid) -> AppResult<Snapshot> {
     let files = repo.files_under(commit, SYNC_DIR)?;
-    let version = shards::check_manifest(&files)?;
-    let mut rows = shards::parse(&files)?;
-    // A device not yet on migration 2 still writes old keys, which the UI can't order against.
-    if version < shards::ORDER_KEYS_SCHEMA {
-        shards::rekey_tasks(&mut rows);
-    }
-    Ok(rows)
+    shards::check_manifest(&files)?;
+    shards::parse(&files)
 }
 
 fn oid(text: &str) -> AppResult<Oid> {

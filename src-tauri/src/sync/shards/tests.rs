@@ -129,30 +129,3 @@ fn export_writes_only_what_changed_and_removes_what_is_gone() {
     assert_eq!(export(&conn, tmp.path()).unwrap(), 1);
     assert!(!tmp.path().join(".tend/sync/people").exists());
 }
-
-#[test]
-fn old_task_keys_are_rekeyed_as_migration_2_does() {
-    let task = |key: &str| json!({ "order_key": key }).as_object().unwrap().clone();
-    let mut snapshot: Snapshot = BTreeMap::new();
-    let tasks = BTreeMap::from([
-        ("t1".to_string(), task("VV")),
-        ("t2".to_string(), task("U")),
-        ("t3".to_string(), task("V")),
-    ]);
-    snapshot.insert(tables::TASKS, tasks);
-    rekey_tasks(&mut snapshot);
-    let key = |id: &str| {
-        snapshot[tables::TASKS][id]["order_key"]
-            .as_str()
-            .unwrap()
-            .to_string()
-    };
-    assert_eq!([key("t2"), key("t3"), key("t1")], ["a0", "a1", "a2"]);
-}
-
-#[test]
-fn rekeyed_keys_grow_a_digit_at_62_and_3844() {
-    assert_eq!(order_key(61), "az");
-    assert_eq!(order_key(62), "b10");
-    assert_eq!(order_key(3844), "c100");
-}

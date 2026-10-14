@@ -1,5 +1,5 @@
-//! SQLite connection and migrations, run by `rusqlite_migration`. `docs/schema.sql` is migration 1;
-//! later changes are new entries in `STEPS`. The schema version lives in `PRAGMA user_version`.
+//! SQLite connection and migrations, run by `rusqlite_migration`. `docs/schema.sql` is migration 1
+//! and is frozen from the first release; later changes are new entries in `STEPS`. The schema version lives in `PRAGMA user_version`.
 
 pub mod columns;
 pub mod tables;
@@ -24,10 +24,7 @@ pub const UNDER: &str = "(path = ?1 OR substr(path, 1, length(?1) + 1) = ?1 || '
 const BUSY_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// Migration n is `STEPS[n - 1]`. Each step is checked for broken foreign keys before it commits.
-const STEPS: &[M<'static>] = &[
-    M::up(include_str!("../../../docs/schema.sql")).foreign_key_check(),
-    M::up(include_str!("../../../docs/migrations/002_order_keys.sql")).foreign_key_check(),
-];
+const STEPS: &[M<'static>] = &[M::up(include_str!("../../../docs/schema.sql")).foreign_key_check()];
 const MIGRATIONS: Migrations<'static> = Migrations::from_slice(STEPS);
 
 pub fn schema_version() -> i64 {

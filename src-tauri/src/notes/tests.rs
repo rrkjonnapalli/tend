@@ -192,6 +192,20 @@ fn create_write_and_read() {
 }
 
 #[test]
+fn a_save_over_a_body_changed_elsewhere_is_refused() {
+    let mut f = fixture(&[]);
+    let n = create(&mut f.conn, &f.dir, "", "Plan").unwrap();
+    let base = read(&f.conn, &f.dir, &n.id).unwrap().row.sha256;
+    assert!(check_unchanged(&f.conn, &f.dir, &n.id, &base).is_ok());
+    // Another editor (or a sync) writes the file while the page holds `base`.
+    fs::write(f.dir.join("plan.md"), "# Plan\n\ntheirs").unwrap();
+    let refused = check_unchanged(&f.conn, &f.dir, &n.id, &base).unwrap_err();
+    assert!(refused.is(errors::NOTE_CHANGED));
+    let saved = write(&f.conn, &f.dir, &n.id, "# Plan\n\nmine").unwrap();
+    assert!(check_unchanged(&f.conn, &f.dir, &n.id, &saved.sha256).is_ok());
+}
+
+#[test]
 fn titles_become_slugs_and_clashes_get_a_suffix() {
     let mut f = fixture(&[("work/a.md", "")]);
     let empty = create(&mut f.conn, &f.dir, "", "  ").unwrap_err();

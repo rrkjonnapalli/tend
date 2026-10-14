@@ -121,6 +121,8 @@ pub struct NoteRow {
     /// File name without `.md`: what the explorer and lists show.
     pub name: String,
     pub modified_at: i64,
+    /// The body's hash as last indexed: what a save expects to replace (`check_unchanged`).
+    pub sha256: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -158,7 +160,7 @@ fn note_path(dir: &Path, note: &NoteRow) -> PathBuf {
     file_path(dir, &note.folder, &note.name)
 }
 
-const ROW_SQL: &str = "SELECT n.id, a.path, max(n.updated_at, a.updated_at)
+const ROW_SQL: &str = "SELECT n.id, a.path, max(n.updated_at, a.updated_at), a.sha256
     FROM notes n JOIN attachments a ON a.id = n.attachment_id";
 
 fn to_row(r: &rusqlite::Row) -> rusqlite::Result<NoteRow> {
@@ -169,6 +171,7 @@ fn to_row(r: &rusqlite::Row) -> rusqlite::Result<NoteRow> {
         folder,
         name,
         modified_at: r.get(2)?,
+        sha256: r.get(3)?,
     })
 }
 
@@ -214,11 +217,23 @@ pub fn read(conn: &Connection, dir: &Path, id: &str) -> AppResult<NoteDoc> {
     Ok(NoteDoc { row, text, tags })
 }
 
+/// Refuses a save over a body that changed since the page read it (`base`, its hash then): another
+/// editor or a sync wrote it. A body that is gone from disk has nothing to lose.
+pub fn check_unchanged(conn: &Connection, dir: &Path, id: &str, base: &str) -> AppResult<()> {
+    let note = row(conn, id)?;
+    let now = files::sha256(&note_path(dir, &note)).ok();
+    let changed = now.is_some_and(|sha| sha != base);
+    if changed {
+        return Err(errors::NOTE_CHANGED.err());
+    }
+    Ok(())
+}
+
 /// Writes the body and records the file's new facts.
 pub fn write(conn: &Connection, dir: &Path, id: &str, text: &str) -> AppResult<NoteRow> {
     let note = row(conn, id)?;
     let path = note_path(dir, &note);
-    fs::write(&path, text)?;
+    files::write_atomic(&path, text.as_bytes())?;
     let facts = files::facts(&path)?;
     let now = now_ms();
     conn.execute(

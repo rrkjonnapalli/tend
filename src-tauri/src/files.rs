@@ -1,13 +1,16 @@
 //! Facts about a file on disk that the attachments index keeps: hash, size and mtime.
 
 use std::fs;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::Path;
 use std::time::UNIX_EPOCH;
 
 use sha2::{Digest, Sha256};
 
 use crate::error::AppResult;
+
+#[cfg(test)]
+mod tests;
 
 const READ_CHUNK: usize = 64 * 1024;
 
@@ -110,6 +113,57 @@ fn hex(hasher: Sha256) -> String {
         .iter()
         .map(|b| format!("{b:02x}"))
         .collect()
+}
+
+/// Replaces the file at `path` with `bytes` all at once: they go to a hidden file beside it, reach
+/// the disk, then take its name. A crash or a full disk midway leaves the old file whole, never a
+/// cut-off one. A file being replaced keeps its permissions.
+pub fn write_atomic(path: &Path, bytes: &[u8]) -> AppResult<()> {
+    let name = path.file_name().unwrap_or_default().to_string_lossy();
+    let temp = path.with_file_name(format!(".{name}.tmp"));
+    let written = replace_with(&temp, bytes, path);
+    if written.is_err() {
+        // Only the hidden copy can be broken; the file at `path` is as it was.
+        let _ = fs::remove_file(&temp);
+    }
+    written
+}
+
+fn replace_with(temp: &Path, bytes: &[u8], target: &Path) -> AppResult<()> {
+    let mut file = fs::File::create(temp)?;
+    file.write_all(bytes)?;
+    file.sync_all()?;
+    if let Ok(meta) = fs::metadata(target) {
+        fs::set_permissions(temp, meta.permissions())?;
+    }
+    fs::rename(temp, target)?;
+    Ok(())
+}
+
+/// Moves a file or folder to the system Trash, where it can be got back. On macOS through
+/// `NSFileManager`: Finder's way would ask for permission to control Finder.
+#[cfg(not(test))]
+pub fn to_trash(path: &Path) -> AppResult<()> {
+    let mut trash = trash::TrashContext::default();
+    #[cfg(target_os = "macos")]
+    {
+        use trash::macos::{DeleteMethod, TrashContextExtMacos};
+        trash.set_delete_method(DeleteMethod::NsFileManager);
+    }
+    trash
+        .delete(path)
+        .map_err(|e| crate::error::errors::TRASH_FAILED.with(e.to_string()))
+}
+
+/// Tests delete for real, so running them never fills the Trash.
+#[cfg(test)]
+pub fn to_trash(path: &Path) -> AppResult<()> {
+    if path.is_dir() {
+        fs::remove_dir_all(path)?;
+        return Ok(());
+    }
+    fs::remove_file(path)?;
+    Ok(())
 }
 
 /// Last-modified time in ms, or 0 when the file can't be read.
