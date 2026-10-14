@@ -34,8 +34,8 @@ pub const WATCH: ErrorDef = def("WATCH", "The notes folder can’t be watched");
 pub const EVENT: ErrorDef = def("EVENT", "The window couldn’t be told about a change");
 pub const JSON: ErrorDef = def("JSON", "That data couldn’t be read");
 pub const COLOR_INVALID: ErrorDef = def("COLOR_INVALID", "Colors are #rrggbb.");
-// Unused in tests, which delete instead of trashing (`files::to_trash`).
-#[cfg_attr(test, allow(dead_code))]
+// Unused in tests and on phones, which delete instead of trashing (`files::to_trash`).
+#[cfg_attr(any(test, mobile), allow(dead_code))]
 pub const TRASH_FAILED: ErrorDef = def("TRASH_FAILED", "It couldn’t be moved to the Trash");
 pub const OPEN_BLOCKED: ErrorDef = def(
     "OPEN_BLOCKED",

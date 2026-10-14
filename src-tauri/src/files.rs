@@ -142,7 +142,7 @@ fn replace_with(temp: &Path, bytes: &[u8], target: &Path) -> AppResult<()> {
 
 /// Moves a file or folder to the system Trash, where it can be got back. On macOS through
 /// `NSFileManager`: Finder's way would ask for permission to control Finder.
-#[cfg(not(test))]
+#[cfg(all(not(test), desktop))]
 pub fn to_trash(path: &Path) -> AppResult<()> {
     let mut trash = trash::TrashContext::default();
     #[cfg(target_os = "macos")]
@@ -155,8 +155,9 @@ pub fn to_trash(path: &Path) -> AppResult<()> {
         .map_err(|e| crate::error::errors::TRASH_FAILED.with(e.to_string()))
 }
 
-/// Tests delete for real, so running them never fills the Trash.
-#[cfg(test)]
+/// Phones have no Trash a user can open; tests delete for real so they never fill it.
+// spike: mobile deletes for good. Decide: this, or a `.tend/trash/` folder Tend empties itself.
+#[cfg(any(test, mobile))]
 pub fn to_trash(path: &Path) -> AppResult<()> {
     if path.is_dir() {
         fs::remove_dir_all(path)?;

@@ -216,6 +216,7 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
 }
 
 /// The app's one window (`tauri.conf.json`).
+#[cfg(desktop)]
 const MAIN_WINDOW: &str = "main";
 
 /// Brings the window forward when the app is launched again while it runs.
