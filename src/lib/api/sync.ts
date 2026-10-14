@@ -15,7 +15,8 @@ export const syncAPI = {
   now: () => call<void>('sync_now'),
   setInterval: (minutes: number) => call<void>('sync_set_interval', { args: { minutes } }),
   setToken: (token: string) => call<void>('sync_token_set', { args: { token } }),
-  disconnect: () => call<void>('sync_disconnect'),
+  /** Waits for a run in progress to end, which can be a whole push, so no deadline either. */
+  disconnect: () => call<void>('sync_disconnect', { timeoutMs: null }),
   onStatus: (fn: (live: SyncLive) => void) => listen<SyncLive>(EVENTS.status, (e) => fn(e.payload)),
   /** Fires after a run changed rows or files, so every store reloads. */
   onApplied: (fn: () => void) => listen(EVENTS.applied, fn),

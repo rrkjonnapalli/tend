@@ -123,7 +123,7 @@
 {#if confirmDisconnect}
   <ConfirmDialog
     title="Disconnect sync?"
-    body="This vault stops syncing and its token is removed from the Keychain. Your notes, tasks and the repo stay as they are. Connecting again needs a repo with no vault in it."
+    body="This vault stops syncing and its token is removed from the Keychain. The Git history Tend kept in this folder goes to the Trash; your notes and tasks stay as they are, and so does the remote repo. Connecting again needs a repo with no vault in it."
     confirm="Disconnect"
     danger
     onconfirm={disconnect}

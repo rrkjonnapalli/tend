@@ -63,6 +63,7 @@ type Shared = Arc<Mutex<Status>>;
 pub struct Runner {
     tx: Sender<Trigger>,
     status: Shared,
+    thread: std::thread::JoinHandle<()>,
 }
 
 impl Runner {
@@ -70,8 +71,8 @@ impl Runner {
         let (tx, rx) = mpsc::channel();
         let status = Shared::default();
         let shared = status.clone();
-        std::thread::spawn(move || work(&app, &place, &rx, &shared));
-        Runner { tx, status }
+        let thread = std::thread::spawn(move || work(&app, &place, &rx, &shared));
+        Runner { tx, status, thread }
     }
 
     pub fn status(&self) -> Status {
@@ -88,6 +89,14 @@ impl Runner {
 
     pub fn stop(&self) {
         let _ = self.tx.send(Trigger::Stop);
+    }
+
+    /// Stops and waits for a run in progress to end (its Git calls have deadlines), so nothing
+    /// touches the repository after this returns.
+    pub fn stop_and_wait(self) {
+        self.stop();
+        // A thread that panicked has stopped too.
+        let _ = self.thread.join();
     }
 
     /// Runs a last sync and waits for it, at most `limit`. A cut-short run counts as not done; the

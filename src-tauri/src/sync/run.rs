@@ -214,7 +214,7 @@ fn oid(text: &str) -> AppResult<Oid> {
 /// Starts syncing a vault to a remote that holds no vault yet (it may be empty, or hold a README
 /// and the like, which stay). The first commit is the base.
 pub fn connect(conn: &mut Connection, root: &Path, remote: &Remote) -> AppResult<()> {
-    let repo = Repo::open(root)?;
+    let repo = Repo::take(root)?;
     let head = repo.fetch(remote)?;
     if let Some(head) = head {
         if holds_vault(&repo, head)? {
@@ -235,7 +235,7 @@ pub fn connect(conn: &mut Connection, root: &Path, remote: &Remote) -> AppResult
 
 /// Fills a new, empty vault from the remote; the restored commit is the base.
 pub fn restore(conn: &mut Connection, root: &Path, remote: &Remote) -> AppResult<()> {
-    let repo = Repo::open(root)?;
+    let repo = Repo::take(root)?;
     let head = repo
         .fetch(remote)?
         .ok_or_else(|| errors::SYNC_NOT_A_VAULT.err())?;

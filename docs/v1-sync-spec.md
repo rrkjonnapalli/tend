@@ -450,7 +450,7 @@ never sent to the UI. The other sync settings live in the app config folder, key
 (branch and username under "More") → clone → validate manifest → create the database → **write files → import rows → scan**
 → record the cloned commit as the base → open.
 
-**Disconnect:** clears the remote, token, schedule and markers; `.git` and all data stay.
+**Disconnect:** clears the remote, token, schedule and markers, and moves `.git` to the Trash when Tend made it (marked `tend.managed` in `.git/config`); all data stays. **Connect and restore** refuse a folder that is already a Git repository with a remote or a commit (`SYNC_REPO_EXISTS`); an empty one becomes Tend's.
 
 **Public repos** are allowed. A static warning on the Start-page restore and in Settings → Sync:
 "⚠ Beware of public repos: anything in your vault, private content included, is pushed there."

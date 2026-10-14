@@ -10,7 +10,7 @@ use crate::config::{self, ConfigDir, SyncConfig};
 use crate::db;
 use crate::error::{errors, AppResult};
 use crate::state::AppState;
-use crate::sync::{run, runner, state as sync_state, token};
+use crate::sync::{git, run, runner, state as sync_state, token};
 use crate::vault;
 
 const DEFAULT_BRANCH: &str = "main";
@@ -197,18 +197,20 @@ pub fn sync_token_set(
     Ok(())
 }
 
-/// Stops syncing: the settings and base go, and the token unless another vault syncs to the same
-/// remote; `.git` and all data stay.
+/// Stops syncing: the settings and base go, the token unless another vault syncs to the same
+/// remote, and `.git` to the Trash when Tend made it. All data stays.
 #[tauri::command(async)]
 pub fn sync_disconnect(state: State<AppState>, cfg: State<ConfigDir>) -> AppResult<()> {
     let vault = state.vault()?;
-    state.set_runner(None);
+    if let Some(runner) = state.take_runner() {
+        runner.stop_and_wait();
+    }
     if let Some(config) = config::sync_config(&cfg.0, &vault.root) {
         if !config::url_used_elsewhere(&cfg.0, &vault.root, &config.url) {
             token::clear(&config.url)?;
         }
     }
     config::set_sync_config(&cfg.0, &vault.root, None)?;
-    let conn = vault.db();
-    sync_state::forget(&conn)
+    sync_state::forget(&vault.db())?;
+    git::remove_if_managed(&vault.root)
 }

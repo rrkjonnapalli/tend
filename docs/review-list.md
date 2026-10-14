@@ -73,7 +73,7 @@ Each can come back later; none changes the shard layout.
     only the dock icon.
 15. **The watcher is not paused** during an apply: it re-indexes what the apply already wrote, which
     is harmless. A run that changed rows reloads every store.
-16. **Disconnect** removes the settings, the token and the base; `.git` and all data stay.
+16. **Disconnect** removes the settings, the token and the base, and moves `.git` to the Trash when Tend made it (`tend.managed`); all data stays. Connect and restore refuse a folder that is already a Git repository with a remote or a commit (`SYNC_REPO_EXISTS`).
     Connecting again needs a repo with no vault in it (spec §14).
 17. **Left out for now:** snapshot size in Settings (spec §16).
 18. **Not checked by eye:** I couldn't screenshot or click the app from here (no screen-recording

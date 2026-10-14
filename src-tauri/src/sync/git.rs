@@ -16,12 +16,20 @@ use super::apply::Blobs;
 use crate::error::{errors, AppError, AppResult};
 use crate::vault::TEND_DIR;
 
+#[cfg(test)]
+mod tests;
+
 /// How long a connection may take, and how long a network read may stall.
 const CONNECT_TIMEOUT_MS: i32 = 15_000;
 const IO_TIMEOUT_MS: i32 = 60_000;
 /// Credential prompts per operation before giving up (a wrong token would otherwise loop).
 const MAX_AUTH_TRIES: u32 = 3;
 const REMOTE_NAME: &str = "origin";
+/// The repository's own folder in the vault.
+const GIT_DIR: &str = ".git";
+/// Set in `.git/config` on a repository Tend made or took over empty: only such a one is Tend's
+/// to remove on disconnect.
+const MANAGED_KEY: &str = "tend.managed";
 const GITIGNORE: &str = ".gitignore";
 /// What the vault's Git never tracks: the live database and the apply's staging area.
 const IGNORED: &str = ".tend/tend.db*\n.tend/staging/\n.DS_Store\n";
@@ -105,20 +113,83 @@ pub struct Repo {
     repo: Repository,
 }
 
+/// A new repository, marked as Tend's.
+fn init(root: &Path) -> AppResult<Repository> {
+    let repo = Repository::init(root)?;
+    mark(&repo)?;
+    Ok(repo)
+}
+
+fn mark(repo: &Repository) -> AppResult<()> {
+    repo.config()?.set_bool(MANAGED_KEY, true)?;
+    Ok(())
+}
+
+fn is_marked(repo: &Repository) -> bool {
+    let config = repo.config().and_then(|c| c.get_bool(MANAGED_KEY));
+    config.unwrap_or(false)
+}
+
+/// The repository is someone's own: it links a remote or holds a commit.
+fn has_history(repo: &Repository) -> AppResult<bool> {
+    let linked = !repo.remotes()?.is_empty();
+    let committed = repo.head().is_ok();
+    Ok(linked || committed)
+}
+
+/// Moves the vault's repository to the Trash when it is Tend's (see `MANAGED_KEY`); a repository
+/// the user made stays.
+pub fn remove_if_managed(root: &Path) -> AppResult<()> {
+    let Ok(repo) = Repository::open(root) else {
+        return Ok(());
+    };
+    if !is_marked(&repo) {
+        return Ok(());
+    }
+    drop(repo);
+    crate::files::to_trash(&root.join(GIT_DIR))
+}
+
+/// Opens an existing repository, or makes one; any other failure (a damaged .git) must not be
+/// papered over.
+fn open_or_init(root: &Path) -> AppResult<Repository> {
+    match Repository::open(root) {
+        Ok(repo) => Ok(repo),
+        Err(e) if e.code() == ErrorCode::NotFound => init(root),
+        Err(e) => Err(e.into()),
+    }
+}
+
+/// Tend's `.gitignore`, written once; the user may change it after.
+fn ensure_ignore(root: &Path) -> AppResult<()> {
+    let ignore = root.join(GITIGNORE);
+    if !ignore.exists() {
+        std::fs::write(ignore, IGNORED)?;
+    }
+    Ok(())
+}
+
 impl Repo {
     /// The vault's repository, made on first use with Tend's `.gitignore`.
     pub fn open(root: &Path) -> AppResult<Repo> {
         set_timeouts();
-        let repo = match Repository::open(root) {
-            Ok(repo) => repo,
-            // No repository yet; any other failure (a damaged .git) must not be papered over.
-            Err(e) if e.code() == ErrorCode::NotFound => Repository::init(root)?,
-            Err(e) => return Err(e.into()),
-        };
-        let ignore = root.join(GITIGNORE);
-        if !ignore.exists() {
-            std::fs::write(ignore, IGNORED)?;
+        let repo = open_or_init(root)?;
+        ensure_ignore(root)?;
+        Ok(Repo { repo })
+    }
+
+    /// The repository for connecting or restoring. One the user already had, with a remote or a
+    /// commit, is refused before anything is written: Tend would move its branch. An empty one
+    /// becomes Tend's.
+    pub fn take(root: &Path) -> AppResult<Repo> {
+        set_timeouts();
+        let repo = open_or_init(root)?;
+        let theirs = !is_marked(&repo) && has_history(&repo)?;
+        if theirs {
+            return Err(errors::SYNC_REPO_EXISTS.err());
         }
+        mark(&repo)?;
+        ensure_ignore(root)?;
         Ok(Repo { repo })
     }
 

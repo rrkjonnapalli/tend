@@ -165,6 +165,10 @@ pub const SYNC_NOT_CONNECTED: ErrorDef = def(
     "SYNC_NOT_CONNECTED",
     "This vault isn’t connected to a remote.",
 );
+pub const SYNC_REPO_EXISTS: ErrorDef = def(
+    "SYNC_REPO_EXISTS",
+    "This folder is already a Git repository with its own history or remote. Tend syncs only folders that aren’t.",
+);
 pub const SYNC_REMOTE_NOT_EMPTY: ErrorDef = def(
     "SYNC_REMOTE_NOT_EMPTY",
     "This repo already has a vault. Restore it into an empty folder instead.",

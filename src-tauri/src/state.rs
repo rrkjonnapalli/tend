@@ -99,6 +99,11 @@ impl AppState {
         *slot = runner;
     }
 
+    /// Takes the sync runner out, leaving none.
+    pub fn take_runner(&self) -> Option<Runner> {
+        self.runner.lock().unwrap_or_else(|e| e.into_inner()).take()
+    }
+
     /// Runs `f` with the sync runner, when the open vault has one.
     pub fn with_runner<T>(&self, f: impl FnOnce(&Runner) -> T) -> Option<T> {
         let slot = self.runner.lock().unwrap_or_else(|e| e.into_inner());
