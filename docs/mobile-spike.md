@@ -8,7 +8,7 @@ and the running dev app were never touched.
 
 | Platform | Rust core | App package | Blocked by |
 |---|---|---|---|
-| Android (aarch64) | **Builds and links** (`libtend_lib.so`) | Not built | The LuLu firewall blocks Java, so Gradle can't download (see "Your actions") |
+| Android (aarch64) | **Builds and links** (`libtend_lib.so`) | **Debug APK builds** (`gen/android/app/build/outputs/apk/universal/debug/`, 246 MB with debug symbols) | Not run yet: no emulator image or phone |
 | iOS | Compiles up to Tauri's own build script | Not built | No Xcode on this Mac: only the Command Line Tools are installed |
 
 The release build of the Android core is **17.7 MB** (`libtend_lib.so`, aarch64, stripped), so
@@ -36,7 +36,11 @@ What this proves:
 3. **Identifier** set to `io.github.rniverse.tend` (only on this branch; the Android package name
    comes from it).
 4. **`tauri android init`** generated `src-tauri/gen/android` (Gradle project, 468 KB).
-5. Two items that become unused on phones are marked so the build stays warning-free
+5. **Latest Android toolchain** in the generated project: Gradle 9.8.1 (the first to run on
+   JDK 27), Android Gradle Plugin 9.4.1, Kotlin plugin 2.4.21, Java/Kotlin target 17 (the
+   template had 1.8). The template's `android.builtInKotlin=false` stays until Tauri v3. The
+   remaining build warnings come from Tauri's own Android library, not from Tend.
+6. Two items that become unused on phones are marked so the build stays warning-free
    (`MAIN_WINDOW`, `TRASH_FAILED`).
 
 Desktop is unchanged: `cargo test` 221 pass, clippy clean, on the branch.
@@ -65,15 +69,13 @@ Desktop is unchanged: `cargo test` 221 pass, clippy clean, on the branch.
 1. **Install Xcode** (App Store, free Apple ID is enough to build and run on the simulator; about
    15 GB). Then run `sudo xcode-select -s /Applications/Xcode.app` and
    `bun tauri ios init` on the branch.
-2. **Allow Java in LuLu.** I installed `openjdk@17` with Homebrew for Gradle; LuLu blocks its
-   network access (a pending LuLu alert, or a rule). Allow
-   `/opt/homebrew/Cellar/openjdk@17/*/libexec/openjdk.jdk/Contents/Home/bin/java`, then run:
+2. **Java in LuLu — done.** To rebuild the APK:
 
    ```sh
    cd ../ntr-mobile-spike
    export ANDROID_HOME=$HOME/Library/Android/sdk
-   export NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018
-   export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+   export NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370
+   export JAVA_HOME=/opt/homebrew/opt/openjdk
    bun tauri android build --debug --apk --target aarch64
    ```
 3. **For a device run:** an Android emulator needs a system image (none installed), or plug in a
@@ -93,8 +95,9 @@ Desktop is unchanged: `cargo test` 221 pass, clippy clean, on the branch.
 | Action | Where | Undo |
 |---|---|---|
 | Added Rust targets `aarch64-linux-android`, `x86_64-linux-android`, `aarch64-apple-ios`, `aarch64-apple-ios-sim`; `tauri android init` added `armv7-linux-androideabi`, `i686-linux-android` | rustup | `rustup target remove <target>` |
-| Downloaded Android NDK r27c from dl.google.com | `~/Library/Android/sdk/ndk/27.2.12479018` (2.4 GB) | delete the folder |
-| `brew install openjdk@17` (keg-only, not on your PATH) | Homebrew | `brew uninstall openjdk@17` |
+| Android NDK r30 (30.0.16248370, latest stable) from dl.google.com; r27c removed | `~/Library/Android/sdk/ndk/30.0.16248370` | delete the folder |
+| `brew install openjdk` (27, latest; keg-only, not on your PATH); `openjdk@17` removed | Homebrew | `brew uninstall openjdk` |
+| Gradle 9.8.1 downloaded by the wrapper; 9.6.1 removed | `~/.gradle/wrapper/dists/` | delete the folder |
 | Ran Gradle once outside the command sandbox to rule the sandbox out (it failed on LuLu the same way; nothing was downloaded) | — | — |
 | Git worktree and branch `spike/mobile` | `../ntr-mobile-spike` | `git worktree remove ../ntr-mobile-spike && git branch -D spike/mobile` |
 | Build output in the worktree (not committed) | `target-android` 5.6 GB, `target-ios` 1.5 GB, `src-tauri/target` 8 GB | delete those folders |
