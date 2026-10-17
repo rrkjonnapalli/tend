@@ -49,8 +49,9 @@ opt-level = 3
 panic = "abort"
 strip = true
 
-# Desktop only: the window size and position are remembered between launches, and the app runs
-# once (a second launch brings the window forward).
+# Desktop only: the window size and position are remembered between launches, the app runs once
+# (a second launch brings the window forward), and it updates itself (phones update from stores).
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2.5.3"
+tauri-plugin-updater = "2.14.0"
 tauri-plugin-window-state = "2.5.0"

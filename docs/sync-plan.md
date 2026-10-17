@@ -20,7 +20,7 @@ another machine (or the same one, after a loss).
 ## 2. What Tend has today (facts the design builds on)
 
 **The vault folder** (chosen on the Start page; the last one is remembered in the app config
-dir, `~/Library/Application Support/com.sage.tend/config.json`):
+dir, `~/Library/Application Support/io.github.rniverse.tend/config.json`):
 
 ```
 <vault>/

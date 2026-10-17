@@ -19,6 +19,7 @@
   import { routes } from '#lib/util/routes.ts';
   import { inTauri, watchFilled } from '#lib/util/window.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
+  import { update } from '#lib/stores/update.svelte.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
   import { installErrorHandler } from '#lib/errors/handler.ts';
@@ -71,6 +72,11 @@
       await appAPI.flushed();
     });
     return () => void stop.then((unlisten) => unlisten());
+  });
+
+  // Once per launch: look for a newer Tend.
+  $effect(() => {
+    if (inTauri()) void update.start();
   });
 
   // Back in the window after midnight: My day, Overdue and Upcoming move to the new day.

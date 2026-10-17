@@ -1,0 +1,42 @@
+# Builds Tend for macOS (one universal app for Apple Silicon and Intel) and uploads it to a draft
+# GitHub release tagged with the version in src-tauri/tauri.conf.json, with `latest.json` for the
+# updater. Installed apps see the update only once the draft is published.
+#
+# Run it from the Actions tab after bumping the version. Needs the secret TAURI_SIGNING_PRIVATE_KEY
+# (the contents of ~/.tauri/tend.key); the key has no password.
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: bun install --frozen-lockfile
+
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        with:
+          tagName: v__VERSION__
+          releaseName: Tend __VERSION__
+          generateReleaseNotes: true
+          releaseDraft: true
+          args: --target universal-apple-darwin --config src-tauri/tauri.release.conf.json

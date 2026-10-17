@@ -1,6 +1,6 @@
 <script lang="ts">
-  // Settings → General: the theme, the file size limit, the timer sound, delete confirmations, the vault folder, and notes or folders skipped for breaking the name rule
-  // (with the name each can be renamed to, and one button to rename them all).
+  // Settings → General: the theme, the file size limit, the timer sound, delete confirmations, updates, the vault folder, and notes or folders skipped for breaking
+  // the name rule (with the name each can be renamed to, and one button to rename them all).
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import Icon from './Icon.svelte';
@@ -16,6 +16,7 @@
   import { notes } from '#lib/stores/notes.svelte.ts';
   import type { ThemePref } from '#lib/types/theme.type.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { update } from '#lib/stores/update.svelte.ts';
 
   let skipped = $state<Skipped[]>([]);
   let showSkipped = $state(false);
@@ -49,7 +50,7 @@
 
 <section class="group">
   <h2 class="section-title">Vault</h2>
-  <div class="vault">
+  <div class="line">
     <span class="vpath">{vault.path}</span>
     <button class="link-btn" onclick={() => goto(routes.start)}>Change vault folder…</button>
   </div>
@@ -126,6 +127,27 @@
   <span class="hint">Deleting a folder, a status or a label always asks.</span>
 </section>
 
+<section class="group">
+  <h2 class="section-title">Updates</h2>
+  <div class="line">
+    <span>Tend {update.current}</span>
+    {#if update.available}
+      <button class="btn-ghost" disabled={update.installing} onclick={update.install}>
+        {update.installing ? 'Installing…' : `Install ${update.available.version} and restart`}
+      </button>
+    {:else}
+      <button class="btn-ghost" disabled={update.checking} onclick={update.check}>
+        {update.checking ? 'Checking…' : 'Check for updates'}
+      </button>
+    {/if}
+  </div>
+  {#if update.available}
+    <span class="hint">Tend saves your work and syncs first, then opens again as the new version.</span>
+  {:else if update.checked}
+    <span class="hint">Tend is up to date.</span>
+  {/if}
+</section>
+
 <style>
   .group {
     display: flex;
@@ -133,7 +155,7 @@
     gap: 12px;
   }
 
-  .vault {
+  .line {
     display: flex;
     align-items: center;
     gap: 16px;

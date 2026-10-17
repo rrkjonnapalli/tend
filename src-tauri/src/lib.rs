@@ -28,6 +28,8 @@ mod sync;
 mod tags;
 mod tasks;
 mod timers;
+#[cfg(desktop)]
+mod update;
 mod util;
 mod vault;
 mod words;
@@ -82,25 +84,44 @@ pub const QUIT_EVENT: &str = "app:quitting";
 const FLUSH_LIMIT: Duration = Duration::from_secs(2);
 const FLUSH_POLL: Duration = Duration::from_millis(20);
 
-/// On quit (⌘Q or the last window closed): the UI saves what it holds (at most `FLUSH_LIMIT`), a
-/// connected vault syncs once more (at most `CLOSE_SYNC_LIMIT`), then the app exits.
+/// On quit (⌘Q or the last window closed): `finish`, then the app exits.
 fn on_exit<R: Runtime>(app: &AppHandle<R>, api: &tauri::ExitRequestApi) {
     let state = app.state::<AppState>();
     if !state.start_closing() {
         return;
     }
     api.prevent_exit();
-    let _ = app.emit(QUIT_EVENT, ());
     let app = app.clone();
     std::thread::spawn(move || {
-        let state = app.state::<AppState>();
-        let waited = std::time::Instant::now();
-        while !state.is_flushed() && waited.elapsed() < FLUSH_LIMIT {
-            std::thread::sleep(FLUSH_POLL);
-        }
-        state.with_runner(|r| r.close(CLOSE_SYNC_LIMIT));
+        finish(&app);
         app.exit(0);
     });
+}
+
+/// After an update is installed: `finish`, then the app starts again as the new version.
+#[cfg(desktop)]
+pub(crate) fn restart<R: Runtime>(app: &AppHandle<R>) {
+    let state = app.state::<AppState>();
+    if !state.start_closing() {
+        return;
+    }
+    let app = app.clone();
+    std::thread::spawn(move || {
+        finish(&app);
+        app.restart();
+    });
+}
+
+/// What every way out does first: the UI saves what it holds (at most `FLUSH_LIMIT`), then a
+/// connected vault syncs once more (at most `CLOSE_SYNC_LIMIT`).
+fn finish<R: Runtime>(app: &AppHandle<R>) {
+    let _ = app.emit(QUIT_EVENT, ());
+    let state = app.state::<AppState>();
+    let waited = std::time::Instant::now();
+    while !state.is_flushed() && waited.elapsed() < FLUSH_LIMIT {
+        std::thread::sleep(FLUSH_POLL);
+    }
+    state.with_runner(|r| r.close(CLOSE_SYNC_LIMIT));
 }
 
 /// App state and every command. Shared by the real app and the IPC tests.
@@ -118,6 +139,10 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
             commands::sync::sync_token_set,
             commands::sync::sync_disconnect,
             commands::app::app_flushed,
+            #[cfg(desktop)]
+            commands::app::app_update_check,
+            #[cfg(desktop)]
+            commands::app::app_update_install,
             commands::app::settings_all,
             commands::app::settings_set,
             commands::notes::skipped_items,
@@ -250,7 +275,9 @@ pub fn run() {
             Ok(())
         });
     #[cfg(desktop)]
-    let builder = builder.plugin(tauri_plugin_window_state::Builder::default().build());
+    let builder = builder
+        .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(tauri_plugin_updater::Builder::new().build());
     let app = with_commands(builder)
         .build(tauri::generate_context!())
         .expect("error while building tauri application");

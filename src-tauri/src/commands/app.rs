@@ -9,6 +9,27 @@ use crate::error::AppResult;
 use crate::state::AppState;
 use crate::{feedback, settings};
 
+/// A newer release, if there is one.
+#[cfg(desktop)]
+#[tauri::command]
+pub async fn app_update_check<R: Runtime>(
+    app: AppHandle<R>,
+) -> AppResult<Option<crate::update::Available>> {
+    crate::update::check(&app).await
+}
+
+/// Installs the newest release, then quits as usual and starts again as the new version. `false`
+/// when there was nothing newer to install.
+#[cfg(desktop)]
+#[tauri::command]
+pub async fn app_update_install<R: Runtime>(app: AppHandle<R>) -> AppResult<bool> {
+    let installed = crate::update::install(&app).await?;
+    if installed {
+        crate::restart(&app);
+    }
+    Ok(installed)
+}
+
 /// The UI has saved everything it held after `QUIT_EVENT`; quitting can go on.
 #[tauri::command]
 pub fn app_flushed(state: State<AppState>) {

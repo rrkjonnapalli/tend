@@ -29,14 +29,22 @@ Status: **todo**, **doing**, **done**, **decided** (no code needed), **user** (o
 
 ## 2. Must be in v1 (hard to fix after release)
 
-### 2.1 Auto-update — todo
-- Add `tauri-plugin-updater`. Its signing key is Tauri's own, separate from Apple, and free:
-  `bun tauri signer generate`. The app checks every update against the public key, so nobody
-  else can push one.
-- **Back up the private key.** If it is lost, installed copies can never be updated again.
-- A GitHub Action builds each release and uploads the bundles and `latest.json`.
-- UI: "Update" in Settings → General, and in the Settings → Sync banner shown on
-  `SNAPSHOT_TOO_NEW` ("This vault was synced by a newer Tend…").
+### 2.1 Auto-update — done (first real release still to test)
+- `tauri-plugin-updater` (desktop only), driven from Rust (`src-tauri/src/update.rs`,
+  `app_update_check`, `app_update_install`). Feed:
+  `https://github.com/rrkjonnapalli/tend/releases/latest/download/latest.json` (the repo is public).
+- Signing key: `~/.tauri/tend.key` (no password), public key in `tauri.conf.json`. Tauri's own
+  key, separate from Apple. **Back up the private key.** If it is lost, installed copies can never
+  be updated again. A password can be added later without changing the public key.
+- `.github/workflows/release.yml` (run by hand from the Actions tab) builds one universal macOS
+  app and uploads it with `latest.json` to a **draft** release `v<version>`. Installed apps see it
+  once the draft is published. It needs the secret `TAURI_SIGNING_PRIVATE_KEY` (the key file's
+  contents). Updater artifacts come from `tauri.release.conf.json`, so local builds (`bun run app`)
+  need no key.
+- Installing restarts through the quit steps: the UI saves, the vault syncs once more, then the
+  new version opens.
+- UI: checked at launch (a toast when one is ready), Settings → General → Updates, and "Update
+  Tend and restart" in place of Sync now on `SNAPSHOT_TOO_NEW`.
 - Desktop only: on mobile, updates come from the stores (iOS) or a new APK (Android).
 
 ### 2.2 Signing (macOS) — decided
@@ -47,17 +55,18 @@ Status: **todo**, **doing**, **done**, **decided** (no code needed), **user** (o
   quarantined). **Confirm this on the first real release.**
 - Get an Apple Developer account ($99/year) later for a clean first install, and for iOS.
 
-### 2.3 App identifier — todo
-- Change `com.sage.tend` to `io.github.rniverse.tend` in `tauri.conf.json` and anywhere else it
-  appears (Keychain service name, config paths in docs).
-- The app config dir moves with it. Move the existing sync config across (or reconnect once).
-- Never change it after release: a new identifier is a new app (config, Keychain token and
+### 2.3 App identifier — done
+- `io.github.rniverse.tend` in `tauri.conf.json`. The Keychain service (`app.tend.sync`) never
+  used the identifier, so saved tokens stay.
+- The app config dir moved with it, to `~/Library/Application Support/io.github.rniverse.tend/`.
+  Copy the old folder's contents across once (or reopen the vault and reconnect sync).
+- Never change it after release: a new identifier is a new app (config, Keychain access and
   update channel all lost).
 
 ### 2.4 Platforms — decided
 - v1 ships on **macOS** (Apple Silicon and Intel), **iOS** and **Android**.
-- Replace the bundle target `"all"` with the macOS targets; add the iOS and Android projects
-  (`tauri ios init`, `tauri android init`).
+- Bundle targets are now `app` and `dmg` (done). Add the iOS and Android projects
+  (`tauri ios init`, `tauri android init`) with the mobile work.
 - The mobile work is in §5.
 
 ### 2.5 Sync, before the format freezes — todo

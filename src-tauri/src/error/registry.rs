@@ -46,6 +46,9 @@ pub const FILE_TOO_BIG: ErrorDef = def("FILE_TOO_BIG", "This file is over the si
 pub const ENUM_BLOCKED: ErrorDef = def("ENUM_BLOCKED", "This one is blocked.");
 pub const TAG_BLOCKED: ErrorDef = def("TAG_BLOCKED", "This tag is blocked.");
 pub const FILE_LIMIT: ErrorDef = def("FILE_LIMIT", "The size limit is 1 to 90 MB.");
+// Desktop only: phones update from their stores.
+#[cfg_attr(mobile, allow(dead_code))]
+pub const UPDATE_FAILED: ErrorDef = def("UPDATE_FAILED", "Tend couldn’t check for or install an update");
 
 // ---- names and folders
 pub const NAME_EMPTY: ErrorDef = def("NAME_EMPTY", "Name can’t be empty");

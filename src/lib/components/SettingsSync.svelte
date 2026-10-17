@@ -12,6 +12,7 @@
   import { errors } from '#lib/errors/registry.ts';
   import { sync } from '#lib/stores/sync.svelte.ts';
   import { toast } from '#lib/stores/toast.svelte.ts';
+  import { update } from '#lib/stores/update.svelte.ts';
   import { timestamp } from '#lib/util/dates.ts';
 
   let setup = $state(emptySetup());
@@ -118,7 +119,13 @@
       <div class="kv"><span class="v">{synced}</span></div>
     {/if}
     <div class="row">
-      <button class="btn-ghost" disabled={sync.state === 'running' || sync.outdated} onclick={sync.now}>Sync now</button>
+      {#if sync.outdated}
+        <button class="btn-ghost" disabled={update.installing} onclick={update.install}>
+          {update.installing ? 'Installing…' : 'Update Tend and restart'}
+        </button>
+      {:else}
+        <button class="btn-ghost" disabled={sync.state === 'running'} onclick={sync.now}>Sync now</button>
+      {/if}
       <button class="btn-ghost" onclick={() => (confirmDisconnect = true)}>Disconnect…</button>
     </div>
   </section>
