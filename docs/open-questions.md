@@ -30,7 +30,7 @@ status).
 |---|---|---|
 | 12 | Schema | Resolved 2026-10-14: migration 2 (task order keys) is folded into `docs/schema.sql`, which is the whole of v1 and frozen from the first release; later changes are migration steps. A dev vault at `user_version` 2 opens as incompatible: set `PRAGMA user_version = 1` once (its tables already match v1). |
 | 13 | Sync | Blocking or deleting a tag, and a recolor against a reorder, are covered by unit tests only. No two-device run yet. |
-| 14 | Snaps | Saving a snap into a new stack, and pairing two snaps, are several calls. A failure midway leaves a stray stack (the reload shows it); marked `shortcut:` in `SnapDialogs` and the Snaps page. One Rust command each would make them all-or-nothing. |
+| 14 | Snaps | Resolved 2026-10-19: saving into a new stack (`startStack` on `snap_create` / `snap_update`) and pairing two snaps (`stack_pair`) are one transaction each; a failure leaves no stray stack. |
 | 15 | Words | dictionaryapi.dev timed out on every request on 2026-10-13. There is no fallback: a lookup asks only the source picked in Settings. |
 | 16 | Words | freedictionaryapi.com has no recordings, and calls an idiom a verb, so a looked-up idiom no longer switches its kind to *idiom* by itself. |
 | 17 | Fonts | `static/fonts/Smile Moon.otf` says "All Rights Reserved" (MJType). Fine in a private repo; check its licence before the app is shared. |

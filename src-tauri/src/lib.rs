@@ -206,7 +206,7 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
             commands::snaps::snap_create,
             commands::snaps::snap_update,
             commands::snaps::snap_delete,
-            commands::snaps::stack_create,
+            commands::snaps::stack_pair,
             commands::snaps::stack_rename,
             commands::snaps::stack_move,
             commands::snaps::stack_remove,

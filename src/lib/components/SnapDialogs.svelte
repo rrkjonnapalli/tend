@@ -26,20 +26,14 @@
     if (snaps.editing && !snaps.loaded) snaps.load();
   });
 
-  /** The stack a saved snap goes in: the one picked, or a new one where the board is. */
-  async function targetOf(draft: SnapDraft): Promise<string | null> {
-    if (draft.stackId !== NEW_STACK) return draft.stackId;
-    const made = await snapsAPI.createStack({ parent: open, name: '' });
-    return made.id;
-  }
-
-  /** Writes the draft (a new stack first, then the snap, then its tags); resolves to its stack. */
+  /** Writes the draft (the snap, in a new stack when picked, then its tags); resolves to its stack. */
   async function writeDraft(draft: SnapDraft, before: Snap | null): Promise<SavedDraft> {
-    const stackId = await targetOf(draft);
+    const startsStack = draft.stackId === NEW_STACK;
+    const place = startsStack ? { stackId: null, startStack: { parent: open } } : { stackId: draft.stackId };
     const color = draft.paper === PAPER.sticky ? draft.color : null;
-    const input = { text: draft.text, stackId, paper: draft.paper, color, pinned: draft.pinned };
+    const input = { text: draft.text, paper: draft.paper, color, pinned: draft.pinned, ...place };
     const saved = before ? await snapsAPI.update({ id: before.id, patch: input }) : await snapsAPI.create(input);
-    return { stackId, tagsError: await writeTags(saved, draft.tags) };
+    return { stackId: saved.stackId, tagsError: await writeTags(saved, draft.tags) };
   }
 
   /** Saves the tags when they changed. A refusal (a tag blocked since the pool was loaded) is
@@ -81,7 +75,6 @@
       written = await writeDraft(draft, before);
     } finally {
       saving = false;
-      // shortcut: a save that fails halfway can leave a new empty stack; the reload shows it. One Rust command would make it all-or-nothing.
       await snaps.load();
     }
     snaps.editing = null;

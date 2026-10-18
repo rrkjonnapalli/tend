@@ -130,13 +130,8 @@
 
   /** A snap dropped on a snap: both go into a new stack, named right there. */
   async function pair(a: string, b: string) {
-    const stack = await snapsAPI.createStack({ parent: open, name: '' });
-    try {
-      for (const id of [a, b]) await snapsAPI.update({ id, patch: { stackId: stack.id } });
-    } finally {
-      // shortcut: a move that fails leaves the new stack with one snap or none; the reload shows it.
-      await snaps.load();
-    }
+    const stack = await snapsAPI.pairStack({ parent: open, snaps: [a, b] });
+    await snaps.load();
     snaps.naming = stack.id;
   }
 

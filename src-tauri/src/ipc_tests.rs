@@ -238,16 +238,24 @@ fn the_library_round_trips_through_ipc() {
     h.ok("tag_delete", json!({ "name": "sound" }));
     assert_eq!(h.ok("tags_overview", json!({})), json!([]));
 
-    let stack = h.ok("stack_create", json!({ "parent": null, "name": "Haiku" }));
     let snap = h.ok(
         "snap_create",
-        json!({ "snap": { "text": "first rain", "stackId": stack["id"], "paper": "STICKY", "color": "#d4b23b" } }),
+        json!({ "snap": { "text": "first rain", "paper": "STICKY", "color": "#d4b23b", "startStack": { "parent": null } } }),
     );
     assert_eq!(snap["paper"], "STICKY");
-    h.ok("stack_remove", json!({ "id": stack["id"] }));
+    h.ok("stack_remove", json!({ "id": snap["stackId"] }));
     let board = h.ok("snaps_board", json!({}));
     assert_eq!(board["snaps"][0]["stackId"], Value::Null);
     assert_eq!(board["stacks"], json!([]));
+    let other = h.ok(
+        "snap_create",
+        json!({ "snap": { "text": "late train", "paper": "SCRAP" } }),
+    );
+    let pair = json!({ "parent": null, "snaps": [snap["id"], other["id"]] });
+    let stack = h.ok("stack_pair", pair);
+    let board = h.ok("snaps_board", json!({}));
+    assert_eq!(board["snaps"][0]["stackId"], stack["id"]);
+    assert_eq!(board["snaps"][1]["stackId"], stack["id"]);
     let bad = h.call(
         "snap_create",
         json!({ "snap": { "text": "x", "paper": "FOLDED" } }),

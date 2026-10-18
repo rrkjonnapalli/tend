@@ -100,10 +100,11 @@ Status: **todo**, **doing**, **done**, **decided** (no code needed), **user** (o
 
 ## 3. In v1, no decisions needed
 
-### 3.1 Snap stacks are atomic — todo (#14)
-- "+ New stack" in the snap editor and dropping a snap on a snap each become one Rust command
-  (make the stack, move the snap(s), all or nothing). Removes both `shortcut:` notes
-  (`SnapDialogs.svelte`, `routes/library/snaps/+page.svelte`).
+### 3.1 Snap stacks are atomic — done (#14)
+- Saving a snap into "+ New stack" makes the stack in the same transaction as the snap
+  (`startStack` on `snap_create` / `snap_update`); a snap dropped on a snap is `stack_pair`. A
+  failed save or drop leaves no empty stack. `stack_create` is gone (nothing else used it). Both
+  `shortcut:` notes are removed.
 
 ### 3.2 Tests — todo (#19, audit #10)
 - HTTP fetch: a 404, and a body over the size cap.

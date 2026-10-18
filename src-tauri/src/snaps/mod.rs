@@ -17,8 +17,8 @@ use crate::tags;
 use crate::util::{new_id, now_ms};
 
 pub use stacks::{
-    create as stack_create, move_to as stack_move, remove as stack_remove, rename as stack_rename,
-    Move as StackMove, NewStack, Rename as StackRename, Stack,
+    move_to as stack_move, remove as stack_remove, rename as stack_rename, Move as StackMove,
+    NewStack, Rename as StackRename, Stack,
 };
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -53,6 +53,9 @@ pub struct NewSnap {
     pub color: Option<String>,
     #[serde(default)]
     pub pinned: bool,
+    /// Put the snap in a new stack instead of `stack_id`.
+    #[serde(default)]
+    pub start_stack: Option<StartStack>,
 }
 
 /// Fields an edit can change; absent fields stay. `stackId: null` puts the snap loose on the
@@ -67,6 +70,23 @@ pub struct Patch {
     #[serde(default, with = "crate::util::nullable")]
     pub color: Option<Option<String>>,
     pub pinned: Option<bool>,
+    /// Move the snap into a new stack instead of `stack_id`.
+    #[serde(default)]
+    pub start_stack: Option<StartStack>,
+}
+
+/// A new untitled stack a saved snap starts, inside `parent` (`None`: on the board). Made in the
+/// same transaction as the snap, so a failed save leaves no empty stack.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StartStack {
+    pub parent: Option<String>,
+}
+
+/// A snap dropped on a snap: both go into a new untitled stack inside `parent`.
+pub struct Pair<'a> {
+    pub parent: Option<&'a str>,
+    pub snaps: [&'a str; 2],
 }
 
 const COLS: &str = "id, stack_id, text, paper, color, pinned, created_at, updated_at";
@@ -134,9 +154,22 @@ fn kept_color(paper: Paper, color: Option<&str>) -> AppResult<Option<String>> {
     Ok(Some(color.to_string()))
 }
 
+/// The new stack's id. Callers run in one transaction, so the stack and the snap land together.
+fn started(conn: &Connection, start: &StartStack) -> AppResult<String> {
+    let new = NewStack {
+        parent: start.parent.as_deref(),
+        name: "",
+    };
+    Ok(stacks::create(conn, &new)?.id)
+}
+
 pub fn create(conn: &Connection, new: &NewSnap) -> AppResult<Snap> {
     check_text(&new.text)?;
-    if let Some(stack) = &new.stack_id {
+    let stack_id = match &new.start_stack {
+        Some(start) => Some(started(conn, start)?),
+        None => new.stack_id.clone(),
+    };
+    if let Some(stack) = &stack_id {
         stacks::get(conn, stack)?;
     }
     let color = kept_color(new.paper, new.color.as_deref())?;
@@ -147,7 +180,7 @@ pub fn create(conn: &Connection, new: &NewSnap) -> AppResult<Snap> {
         ),
         params![
             new_id(),
-            new.stack_id,
+            stack_id,
             new.text,
             new.paper.as_str(),
             color,
@@ -182,7 +215,11 @@ pub fn update(conn: &Connection, id: &str, patch: &Patch) -> AppResult<Snap> {
     if let Some(text) = &patch.text {
         check_text(text)?;
     }
-    if let Some(Some(stack)) = &patch.stack_id {
+    let stack_id = match &patch.start_stack {
+        Some(start) => Some(Some(started(conn, start)?)),
+        None => patch.stack_id.clone(),
+    };
+    if let Some(Some(stack)) = &stack_id {
         stacks::get(conn, stack)?;
     }
     // Only when asked: a paper this version doesn't know must survive a pin or a move.
@@ -194,7 +231,7 @@ pub fn update(conn: &Connection, id: &str, patch: &Patch) -> AppResult<Snap> {
     };
     let mut update = Update::new(tables::SNAPS);
     update.set_some("text", patch.text.as_ref());
-    update.set_some(columns::STACK_ID, patch.stack_id.as_ref());
+    update.set_some(columns::STACK_ID, stack_id.as_ref());
     if let Some((paper, color)) = &look {
         update.set("paper", paper.as_str());
         update.set("color", color);
@@ -203,6 +240,23 @@ pub fn update(conn: &Connection, id: &str, patch: &Patch) -> AppResult<Snap> {
     let mut updated = update.run(conn, id, WRITTEN)?.ok_or_else(not_found)?;
     updated.tags = tags::of(conn, SourceType::Snap, id)?;
     Ok(updated)
+}
+
+/// Makes the stack and moves both snaps in; callers run it in one transaction.
+pub fn pair(conn: &Connection, pair: &Pair) -> AppResult<Stack> {
+    let new = NewStack {
+        parent: pair.parent,
+        name: "",
+    };
+    let stack = stacks::create(conn, &new)?;
+    let into = Patch {
+        stack_id: Some(Some(stack.id.clone())),
+        ..Default::default()
+    };
+    for id in pair.snaps {
+        update(conn, id, &into)?;
+    }
+    Ok(stack)
 }
 
 /// Deletes the snap; its tags come off with it (trigger `snaps_drop_links`).

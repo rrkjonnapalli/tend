@@ -7,7 +7,8 @@ export const snapsAPI = {
   update: (input: { id: string; patch: SnapPatch }) => call<Snap>('snap_update', { args: input }),
   remove: (id: string) => call<void>('snap_delete', { args: { id } }),
   setTags: (input: { id: string; tags: string[] }) => call<string[]>('snap_tags_set', { args: input }),
-  createStack: (input: { parent: string | null; name: string }) => call<Stack>('stack_create', { args: input }),
+  /** A new untitled stack holding both snaps, all or nothing. */
+  pairStack: (input: { parent: string | null; snaps: [string, string] }) => call<Stack>('stack_pair', { args: input }),
   renameStack: (input: { id: string; name: string }) => call<Stack>('stack_rename', { args: input }),
   moveStack: (input: { id: string; parent: string | null }) => call<Stack>('stack_move', { args: input }),
   /** Its snaps and sub-stacks move up a level. */

@@ -23,7 +23,11 @@ export type Stack = {
 
 export type Board = { snaps: Snap[]; stacks: Stack[] };
 
-export type NewSnap = Pick<Snap, 'text' | 'stackId' | 'paper' | 'color' | 'pinned'>;
+/** A new untitled stack a saved snap starts, inside `parent` (null: on the board), in the same
+ *  write as the snap. */
+export type StartStack = { parent: string | null };
+
+export type NewSnap = Pick<Snap, 'text' | 'stackId' | 'paper' | 'color' | 'pinned'> & { startStack?: StartStack };
 
 /** Fields an edit can change; `stackId: null` puts it loose on the board. */
 export type SnapPatch = Partial<NewSnap>;

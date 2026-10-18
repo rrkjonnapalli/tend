@@ -8,6 +8,7 @@ fn note(conn: &Connection, text: &str, stack: Option<&str>) -> Snap {
         paper: Paper::Scrap,
         color: None,
         pinned: false,
+        start_stack: None,
     };
     create(conn, &new).unwrap()
 }
@@ -24,7 +25,8 @@ fn text_is_kept_as_written_and_only_stickies_keep_a_colour() {
             stack_id: None,
             paper: Paper::Scrap,
             color: None,
-            pinned: false
+            pinned: false,
+            start_stack: None,
         }
     )
     .unwrap_err()
@@ -79,7 +81,7 @@ fn the_board_leads_with_pinned_then_the_latest_edit() {
 #[test]
 fn a_stack_cant_go_inside_itself_or_its_sub_stacks() {
     let conn = open_memory();
-    let work = stack_create(
+    let work = stacks::create(
         &conn,
         &NewStack {
             parent: None,
@@ -87,7 +89,7 @@ fn a_stack_cant_go_inside_itself_or_its_sub_stacks() {
         },
     )
     .unwrap();
-    let reviews = stack_create(
+    let reviews = stacks::create(
         &conn,
         &NewStack {
             parent: Some(&work.id),
@@ -96,7 +98,7 @@ fn a_stack_cant_go_inside_itself_or_its_sub_stacks() {
     )
     .unwrap();
     assert_eq!(reviews.name, "Code reviews");
-    let deep = stack_create(
+    let deep = stacks::create(
         &conn,
         &NewStack {
             parent: Some(&reviews.id),
@@ -141,7 +143,7 @@ fn a_stack_cant_go_inside_itself_or_its_sub_stacks() {
 #[test]
 fn removing_a_stack_moves_its_contents_up_one_level() {
     let mut conn = open_memory();
-    let haiku = stack_create(
+    let haiku = stacks::create(
         &conn,
         &NewStack {
             parent: None,
@@ -149,7 +151,7 @@ fn removing_a_stack_moves_its_contents_up_one_level() {
         },
     )
     .unwrap();
-    let monsoon = stack_create(
+    let monsoon = stacks::create(
         &conn,
         &NewStack {
             parent: Some(&haiku.id),
@@ -157,7 +159,7 @@ fn removing_a_stack_moves_its_contents_up_one_level() {
         },
     )
     .unwrap();
-    let rain = stack_create(
+    let rain = stacks::create(
         &conn,
         &NewStack {
             parent: Some(&monsoon.id),
@@ -187,7 +189,7 @@ fn moving_a_snap_needs_a_real_stack() {
     assert!(update(&conn, &snap.id, &into(Some("nope")))
         .unwrap_err()
         .is(errors::NOT_FOUND));
-    let s = stack_create(
+    let s = stacks::create(
         &conn,
         &NewStack {
             parent: None,
@@ -230,4 +232,68 @@ fn a_snap_or_stack_that_isnt_there_is_not_found() {
     not_found(stack_rename(&conn, &rename).unwrap_err());
     not_found(stack_move(&conn, &to_board).unwrap_err());
     not_found(stack_remove(&mut conn, "nope").unwrap_err());
+}
+
+fn stack_count(conn: &Connection) -> i64 {
+    conn.query_row("SELECT count(*) FROM snap_stacks", [], |r| r.get(0))
+        .unwrap()
+}
+
+#[test]
+fn a_pair_makes_one_stack_holding_both_or_nothing() {
+    let mut conn = open_memory();
+    let a = note(&conn, "a", None);
+    let b = note(&conn, "b", None);
+    let pair = Pair {
+        parent: None,
+        snaps: [&a.id, &b.id],
+    };
+    let stack = crate::db::in_transaction(&mut conn, |tx| super::pair(tx, &pair)).unwrap();
+    let shown = board(&conn).unwrap();
+    assert!(shown
+        .snaps
+        .iter()
+        .all(|s| s.stack_id.as_ref() == Some(&stack.id)));
+
+    let missing = Pair {
+        parent: None,
+        snaps: [&a.id, "gone"],
+    };
+    let failed = crate::db::in_transaction(&mut conn, |tx| super::pair(tx, &missing));
+    assert!(failed.unwrap_err().is(errors::NOT_FOUND));
+    assert_eq!(stack_count(&conn), 1, "the failed pair left no stack");
+    assert_eq!(board(&conn).unwrap().snaps[0].stack_id, Some(stack.id));
+}
+
+#[test]
+fn a_save_that_starts_a_stack_makes_it_only_when_the_save_succeeds() {
+    let mut conn = open_memory();
+    let start = || Some(StartStack { parent: None });
+    let new = NewSnap {
+        text: "rain".into(),
+        stack_id: None,
+        paper: Paper::Scrap,
+        color: None,
+        pinned: false,
+        start_stack: start(),
+    };
+    let snap = crate::db::in_transaction(&mut conn, |tx| create(tx, &new)).unwrap();
+    assert!(snap.stack_id.is_some());
+
+    let empty = Patch {
+        text: Some(" ".into()),
+        start_stack: start(),
+        ..Default::default()
+    };
+    let failed = crate::db::in_transaction(&mut conn, |tx| update(tx, &snap.id, &empty));
+    assert!(failed.unwrap_err().is(errors::SNAP_TEXT_EMPTY));
+    assert_eq!(stack_count(&conn), 1);
+
+    let moved = Patch {
+        start_stack: start(),
+        ..Default::default()
+    };
+    let snap2 = crate::db::in_transaction(&mut conn, |tx| update(tx, &snap.id, &moved)).unwrap();
+    assert_ne!(snap2.stack_id, snap.stack_id);
+    assert_eq!(stack_count(&conn), 2);
 }

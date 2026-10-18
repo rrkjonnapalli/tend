@@ -2,6 +2,7 @@
 
 use tauri::State;
 
+use crate::db;
 use crate::error::AppResult;
 use crate::snaps;
 use crate::state::AppState;
@@ -13,7 +14,7 @@ pub fn snaps_board(state: State<AppState>) -> AppResult<snaps::Board> {
 
 #[tauri::command(async)]
 pub fn snap_create(state: State<AppState>, snap: snaps::NewSnap) -> AppResult<snaps::Snap> {
-    state.with(|db, _| snaps::create(db, &snap))
+    state.with(|conn, _| db::in_transaction(conn, |tx| snaps::create(tx, &snap)))
 }
 
 #[tauri::command(async)]
@@ -22,27 +23,26 @@ pub fn snap_update(
     id: String,
     patch: snaps::Patch,
 ) -> AppResult<snaps::Snap> {
-    state.with(|db, _| snaps::update(db, &id, &patch))
+    state.with(|conn, _| db::in_transaction(conn, |tx| snaps::update(tx, &id, &patch)))
+}
+
+/// A snap dropped on a snap: a new stack holding both, all or nothing.
+#[tauri::command(async)]
+pub fn stack_pair(
+    state: State<AppState>,
+    parent: Option<String>,
+    snaps: [String; 2],
+) -> AppResult<snaps::Stack> {
+    let pair = snaps::Pair {
+        parent: parent.as_deref(),
+        snaps: [&snaps[0], &snaps[1]],
+    };
+    state.with(|conn, _| db::in_transaction(conn, |tx| snaps::pair(tx, &pair)))
 }
 
 #[tauri::command(async)]
 pub fn snap_delete(state: State<AppState>, id: String) -> AppResult<()> {
     state.with(|db, _| snaps::delete(db, &id))
-}
-
-#[tauri::command(async)]
-pub fn stack_create(
-    state: State<AppState>,
-    parent: Option<String>,
-    name: String,
-) -> AppResult<snaps::Stack> {
-    state.with(|db, _| {
-        let new = snaps::NewStack {
-            parent: parent.as_deref(),
-            name: &name,
-        };
-        snaps::stack_create(db, &new)
-    })
 }
 
 #[tauri::command(async)]
