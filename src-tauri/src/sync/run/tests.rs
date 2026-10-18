@@ -128,33 +128,116 @@ fn two_devices_connect_restore_and_converge() {
     assert_eq!(a.rows(), b.rows());
 }
 
-#[test]
-fn a_remote_with_a_vault_is_refused_on_connect() {
-    let server = tempfile::tempdir().unwrap();
-    let remote = remote(server.path());
-    let a = Device::new();
-    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
-    let c = Device::new();
-    let refused = connect(&mut c.vault.db(), c.root(), &remote).unwrap_err();
-    assert!(refused.is(errors::SYNC_REMOTE_NOT_EMPTY));
+/// Every row's id in a table.
+fn ids(device: &Device, table: &str) -> Vec<String> {
+    device.rows()[table].keys().cloned().collect()
 }
 
 #[test]
-fn a_rewritten_remote_stops_sync_and_asks_for_a_restore() {
+fn a_remote_with_a_vault_is_merged_on_connect() {
+    let server = tempfile::tempdir().unwrap();
+    let remote = remote(server.path());
+    let a = Device::new();
+    let ship = a.task("Ship");
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
+
+    let c = Device::new();
+    let write = c.task("Write");
+    connect(&mut c.vault.db(), c.root(), &remote).unwrap();
+    assert_eq!(a.sync(&remote).unwrap(), Outcome::Pulled);
+    for device in [&a, &c] {
+        let tasks = ids(device, tables::TASKS);
+        assert!(tasks.contains(&ship) && tasks.contains(&write), "{tasks:?}");
+    }
+    assert_eq!(a.rows(), c.rows());
+}
+
+#[test]
+fn two_vaults_with_the_same_note_path_keep_both_notes_on_connect() {
+    let server = tempfile::tempdir().unwrap();
+    let remote = remote(server.path());
+    let a = Device::new();
+    let ours = notes::create(&mut a.vault.db(), &a.vault.notes_dir(), "", "Plan").unwrap();
+    notes::write(
+        &a.vault.db(),
+        &a.vault.notes_dir(),
+        &ours.id,
+        "# Plan\n\nours",
+    )
+    .unwrap();
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
+
+    let c = Device::new();
+    let theirs = notes::create(&mut c.vault.db(), &c.vault.notes_dir(), "", "Plan").unwrap();
+    notes::write(
+        &c.vault.db(),
+        &c.vault.notes_dir(),
+        &theirs.id,
+        "# Plan\n\ntheirs",
+    )
+    .unwrap();
+    connect(&mut c.vault.db(), c.root(), &remote).unwrap();
+    a.sync(&remote).unwrap();
+
+    for device in [&a, &c] {
+        let texts = [device.read("plan.md"), device.read("plan_1.md")];
+        assert!(texts.contains(&"# Plan\n\nours".to_string()), "{texts:?}");
+        assert!(texts.contains(&"# Plan\n\ntheirs".to_string()), "{texts:?}");
+    }
+    assert_eq!(a.rows(), c.rows());
+}
+
+/// Replaces the remote's branch with another vault's unrelated history.
+fn rewrite_remote(server: &Path, remote: &Remote) -> Device {
+    let bare = git2::Repository::open_bare(server).unwrap();
+    bare.find_reference("refs/heads/main")
+        .unwrap()
+        .delete()
+        .unwrap();
+    let other = Device::new();
+    other.task("Theirs");
+    connect(&mut other.vault.db(), other.root(), remote).unwrap();
+    other
+}
+
+#[test]
+fn a_rewritten_remote_merges_on_an_empty_base_and_keeps_both_sides() {
     let server = tempfile::tempdir().unwrap();
     let remote = remote(server.path());
     let a = Device::new();
     connect(&mut a.vault.db(), a.root(), &remote).unwrap();
-    // Someone replaces the branch with unrelated history.
-    let other = Device::new();
+    let other = rewrite_remote(server.path(), &remote);
+    let mine = a.task("Mine, made while the remote changed");
+
+    assert_eq!(a.sync(&remote).unwrap(), Outcome::Pushed);
+    other.sync(&remote).unwrap();
+    assert!(ids(&other, tables::TASKS).contains(&mine));
+    assert_eq!(a.rows(), other.rows());
+    assert_eq!(
+        a.sync(&remote).unwrap(),
+        Outcome::Idle,
+        "the merge became the base"
+    );
+}
+
+#[test]
+fn a_deleted_branch_gets_the_vault_pushed_again() {
+    let server = tempfile::tempdir().unwrap();
+    let remote = remote(server.path());
+    let a = Device::new();
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
     let bare = git2::Repository::open_bare(server.path()).unwrap();
     bare.find_reference("refs/heads/main")
         .unwrap()
         .delete()
         .unwrap();
-    connect(&mut other.vault.db(), other.root(), &remote).unwrap();
-    let stopped = a.sync(&remote).unwrap_err();
-    assert!(stopped.is(errors::SYNC_BASE_LOST));
+    a.task("Ship");
+
+    assert_eq!(a.sync(&remote).unwrap(), Outcome::Pushed);
+    let b = Device::new();
+    let root = b.root().to_path_buf();
+    restore(&mut b.vault.db(), &root, &remote).unwrap();
+    assert_eq!(b.rows(), a.rows());
 }
 
 #[test]
@@ -170,7 +253,7 @@ fn a_push_that_landed_before_a_crash_becomes_the_base() {
     let pushed = state::load(&a.vault.db()).unwrap().base.unwrap();
     let repo = git2::Repository::open(a.root()).unwrap();
     let old = repo
-        .find_commit(oid(&pushed).unwrap())
+        .find_commit(parse(&pushed).unwrap())
         .unwrap()
         .parent_id(0)
         .unwrap();

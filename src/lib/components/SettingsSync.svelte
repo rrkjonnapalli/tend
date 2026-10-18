@@ -67,7 +67,7 @@
 {#if !config}
   <section class="group">
     <h2 class="section-title">Connect a repo</h2>
-    <span class="cap">Use a new Git repo (a README in it is fine). Tend pushes this vault there, then syncs it on its own.</span>
+    <span class="cap">Use a new Git repo (a README in it is fine), or one that already holds a vault: Tend merges the two, keeping everything from both. Then it syncs on its own.</span>
     <SyncFields bind:setup />
     {#if failure}<div class="banner-err" role="alert">{failure}</div>{/if}
     <div><button class="btn-primary" disabled={!canConnect} onclick={connect}>{busy ? 'Connecting…' : 'Connect'}</button></div>
@@ -134,7 +134,7 @@
 {#if confirmDisconnect}
   <ConfirmDialog
     title="Disconnect sync?"
-    body="This vault stops syncing and its token is removed from the Keychain. The Git history Tend kept in this folder goes to the Trash; your notes and tasks stay as they are, and so does the remote repo. Connecting again needs a repo with no vault in it."
+    body="This vault stops syncing and its token is removed from the Keychain. The Git history Tend kept in this folder goes to the Trash; your notes and tasks stay as they are, and so does the remote repo. Connecting again merges this vault with the repo, keeping everything from both, so items deleted on one side in between come back."
     confirm="Disconnect"
     danger
     onconfirm={disconnect}

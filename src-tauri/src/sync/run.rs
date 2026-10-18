@@ -212,30 +212,23 @@ fn rows_at(repo: &Repo, commit: Oid) -> AppResult<Snapshot> {
     upgrade(&rows, version, &db::MIGRATIONS)
 }
 
-fn oid(text: &str) -> AppResult<Oid> {
-    Oid::from_str(text).map_err(|_| errors::SYNC_BASE_LOST.err())
+/// The rows a commit holds, or none when it holds no vault (a remote with only a README, or one
+/// replaced by something else).
+fn rows_or_none(repo: &Repo, commit: Oid) -> AppResult<Snapshot> {
+    if !holds_vault(repo, commit)? {
+        return Ok(Snapshot::new());
+    }
+    rows_at(repo, commit)
 }
 
-/// Starts syncing a vault to a remote that holds no vault yet (it may be empty, or hold a README
-/// and the like, which stay). The first commit is the base.
+/// Starts syncing a vault to a remote. A remote that already holds a vault (another device's, or
+/// this vault's own after a disconnect) is merged with this one on an empty base, as after a lost
+/// base; files Tend doesn't manage (a README) stay.
 pub fn connect(conn: &mut Connection, root: &Path, remote: &Remote) -> AppResult<()> {
     let repo = Repo::take(root)?;
     let head = repo.fetch(remote)?;
-    if let Some(head) = head {
-        if holds_vault(&repo, head)? {
-            return Err(errors::SYNC_REMOTE_NOT_EMPTY.err());
-        }
-    }
-    let adopted = match head {
-        Some(head) => adopt(conn, root, &repo, head)?,
-        None => Vec::new(),
-    };
-    shards::export(conn, root)?;
-    let tree = tree_now(conn, root, &repo, (head, &adopted))?;
-    let commit = repo.commit(remote, tree, head, "Start syncing")?;
-    state::set_pending(conn, Some(&commit.to_string()))?;
-    repo.push(remote)?;
-    state::set_base(conn, &commit.to_string())
+    step(conn, root, (&repo, remote), (None, head))?;
+    Ok(())
 }
 
 /// Fills a new, empty vault from the remote; the restored commit is the base.
@@ -274,47 +267,73 @@ pub fn sync(conn: &mut Connection, root: &Path, remote: &Remote) -> AppResult<Ou
 }
 
 /// The base for this run: a pending commit the remote now has becomes it (a crash after a push).
-fn resolve_base(conn: &Connection, repo: &Repo, head: Oid) -> AppResult<Oid> {
+/// `None` when the remote no longer holds the base (its history was rewritten, or the branch was
+/// deleted): the run then merges on an empty base, keeping rows from both sides. The cost is that
+/// rows deleted on one side since the lost base come back once.
+fn resolve_base(conn: &Connection, repo: &Repo, head: Option<Oid>) -> AppResult<Option<Oid>> {
     let saved = state::load(conn)?;
     let base = saved.base.ok_or_else(|| errors::SYNC_NOT_CONNECTED.err())?;
-    if let Some(pending) = saved.pending {
-        let pushed = oid(&pending)?;
-        let landed = repo.has(pushed) && repo.contains(head, pushed)?;
-        if landed {
-            state::set_base(conn, &pending)?;
-            return Ok(pushed);
-        }
+    let Some(head) = head else {
         state::set_pending(conn, None)?;
+        return Ok(None);
+    };
+    let on_remote =
+        |commit: Oid| -> AppResult<bool> { Ok(repo.has(commit) && repo.contains(head, commit)?) };
+    if let Some(pushed) = saved.pending.as_deref().and_then(parse) {
+        if on_remote(pushed)? {
+            state::set_base(conn, &pushed.to_string())?;
+            return Ok(Some(pushed));
+        }
     }
-    let base = oid(&base)?;
-    let known = repo.has(base) && repo.contains(head, base)?;
-    if !known {
-        return Err(errors::SYNC_BASE_LOST.err());
-    }
-    Ok(base)
+    state::set_pending(conn, None)?;
+    let Some(base) = parse(&base) else {
+        return Ok(None);
+    };
+    Ok(on_remote(base)?.then_some(base))
+}
+
+fn parse(text: &str) -> Option<Oid> {
+    Oid::from_str(text).ok()
 }
 
 fn run_once(conn: &mut Connection, root: &Path, remote: &Remote) -> AppResult<Outcome> {
     let repo = Repo::open(root)?;
-    let head = repo
-        .fetch(remote)?
-        .ok_or_else(|| errors::SYNC_BASE_LOST.err())?;
+    let head = repo.fetch(remote)?;
     let base = resolve_base(conn, &repo, head)?;
-    let adopted = adopt(conn, root, &repo, head)?;
+    step(conn, root, (&repo, remote), (base, head))
+}
+
+/// Takes in the remote's changes since `base` (all of its rows when there is none), then pushes
+/// what the remote doesn't have yet. `head` is `None` for an empty remote or a deleted branch: the
+/// vault is pushed as it is.
+fn step(
+    conn: &mut Connection,
+    root: &Path,
+    (repo, remote): (&Repo, &Remote),
+    (base, head): (Option<Oid>, Option<Oid>),
+) -> AppResult<Outcome> {
+    let adopted = match head {
+        Some(head) => adopt(conn, root, repo, head)?,
+        None => Vec::new(),
+    };
     shards::export(conn, root)?;
-    let tree = tree_now(conn, root, &repo, (Some(head), &adopted))?;
-    let idle = head == base && tree == repo.tree_of(base)?;
-    if idle {
-        return Ok(Outcome::Idle);
+    let mut tree = tree_now(conn, root, repo, (head, &adopted))?;
+    if let (Some(base), Some(head)) = (base, head) {
+        let idle = head == base && tree == repo.tree_of(base)?;
+        if idle {
+            return Ok(Outcome::Idle);
+        }
     }
-    merge_in(conn, root, &repo, (base, head))?;
-    shards::export(conn, root)?;
-    let tree = tree_now(conn, root, &repo, (Some(head), &adopted))?;
-    if tree == repo.tree_of(head)? {
-        repo.point_branch(remote, head)?;
-        return Ok(Outcome::Pulled);
+    if let Some(head) = head {
+        merge_in(conn, root, repo, (base, head))?;
+        shards::export(conn, root)?;
+        tree = tree_now(conn, root, repo, (Some(head), &adopted))?;
+        if tree == repo.tree_of(head)? {
+            repo.point_branch(remote, head)?;
+            return Ok(Outcome::Pulled);
+        }
     }
-    let commit = repo.commit(remote, tree, Some(head), "Sync")?;
+    let commit = repo.commit(remote, tree, head, "Sync")?;
     state::set_pending(conn, Some(&commit.to_string()))?;
     repo.push(remote)?;
     state::set_base(conn, &commit.to_string())?;
@@ -327,10 +346,13 @@ fn merge_in(
     conn: &mut Connection,
     root: &Path,
     repo: &Repo,
-    (base, head): (Oid, Oid),
+    (base, head): (Option<Oid>, Oid),
 ) -> AppResult<()> {
-    let base_rows = rows_at(repo, base)?;
-    let remote_rows = rows_at(repo, head)?;
+    let base_rows = match base {
+        Some(base) => rows_at(repo, base)?,
+        None => Snapshot::new(),
+    };
+    let remote_rows = rows_or_none(repo, head)?;
     let local_rows = shards::snapshot(conn)?;
     let merged = reconcile(&Sides {
         base: &base_rows,

@@ -1,8 +1,8 @@
 //! The sync runner (spec §15): one background thread per open, connected vault. It syncs when the
 //! vault opens (after the scan), every `interval_minutes`, on "Sync now", and once more when the
 //! app quits. It has its own database connection, so a slow network never blocks the app's
-//! commands. Failures retry with backoff up to an hour; a refused token, a lost base or a newer
-//! vault stop automatic runs until "Sync now".
+//! commands. Failures retry with backoff up to an hour; a refused token or a newer vault stop
+//! automatic runs until "Sync now".
 
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver, RecvTimeoutError, Sender};
@@ -113,7 +113,7 @@ impl Runner {
 #[derive(Default)]
 struct Backoff {
     failures: u32,
-    /// Waiting for the user (bad token, lost base, newer vault): no automatic runs.
+    /// Waiting for the user (bad token, newer vault): no automatic runs.
     paused: bool,
 }
 
@@ -148,7 +148,6 @@ fn needs_user(e: &AppError) -> bool {
     let keys = [
         errors::SYNC_AUTH,
         errors::SYNC_TOKEN,
-        errors::SYNC_BASE_LOST,
         errors::SYNC_NOT_A_VAULT,
         errors::SNAPSHOT_TOO_NEW,
         errors::SYNC_NOT_CONNECTED,

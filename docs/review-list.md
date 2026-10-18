@@ -68,7 +68,7 @@ Each can come back later; none changes the shard layout.
     path. **No device name**, and commits are authored "Tend <tend@localhost>" (no UI for it).
 14. **Runner:** one thread per connected vault, its own DB connection (busy timeout 5 s). Runs on
     open (after the scan), every 15 min by default (any 0–1440 minutes in Settings, 0 = off), on Sync now, and on
-    quit (at most 10 s). Failures back off 1, 2, 4 … 60 min; a bad token, a lost base or a newer
+    quit (at most 10 s). Failures back off 1, 2, 4 … 60 min; a bad token or a newer
     vault stop automatic runs until Sync now or a new token. One toast on the first failure, then
     only the dock icon.
 15. **The watcher is not paused** during an apply: it re-indexes what the apply already wrote, which
@@ -83,8 +83,8 @@ Each can come back later; none changes the shard layout.
 
 ## Not done (sync v1 closed 2026-10-09; these come later)
 
-- C1: connecting two vaults that both hold data (a first merge on an empty base).
-- A lost base: keep stopping, or merge the same way.
+- C1: connecting two vaults that both hold data (a first merge on an empty base). **Done 2026-10-17.**
+- A lost base: keep stopping, or merge the same way. **Merges the same way, done 2026-10-17.**
 - `README.md` / `readme.md` pairs that differ only in case on the remote.
 - Hashing remote files by Git's blob id instead of SHA-256.
 - "Syncing…" shown while quitting; a long deadline and progress for a big first push or restore.

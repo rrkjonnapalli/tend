@@ -48,7 +48,10 @@ pub const TAG_BLOCKED: ErrorDef = def("TAG_BLOCKED", "This tag is blocked.");
 pub const FILE_LIMIT: ErrorDef = def("FILE_LIMIT", "The size limit is 1 to 90 MB.");
 // Desktop only: phones update from their stores.
 #[cfg_attr(mobile, allow(dead_code))]
-pub const UPDATE_FAILED: ErrorDef = def("UPDATE_FAILED", "Tend couldn’t check for or install an update");
+pub const UPDATE_FAILED: ErrorDef = def(
+    "UPDATE_FAILED",
+    "Tend couldn’t check for or install an update",
+);
 
 // ---- names and folders
 pub const NAME_EMPTY: ErrorDef = def("NAME_EMPTY", "Name can’t be empty");
@@ -175,14 +178,6 @@ pub const SYNC_NOT_CONNECTED: ErrorDef = def(
 pub const SYNC_REPO_EXISTS: ErrorDef = def(
     "SYNC_REPO_EXISTS",
     "This folder is already a Git repository with its own history or remote. Tend syncs only folders that aren’t.",
-);
-pub const SYNC_REMOTE_NOT_EMPTY: ErrorDef = def(
-    "SYNC_REMOTE_NOT_EMPTY",
-    "This repo already has a vault. Restore it into an empty folder instead.",
-);
-pub const SYNC_BASE_LOST: ErrorDef = def(
-    "SYNC_BASE_LOST",
-    "The remote’s history changed. Restore the vault into an empty folder to keep syncing.",
 );
 pub const SYNC_NOT_A_VAULT: ErrorDef =
     def("SYNC_NOT_A_VAULT", "This repo doesn’t hold a Tend vault.");

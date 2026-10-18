@@ -264,10 +264,15 @@ back only by being created again after the deletion has synced, which the base t
 
 Rows are matched by `id` across all shards of a table.
 
-**There is always a base.** A vault is connected only to a remote that holds no vault yet (its first
-push is the base), and every other device starts by restoring into an empty folder (the restored commit is its
-base) (§14). If the base commit can no longer be read (the remote was rewritten), sync stops with
-`SYNC_BASE_LOST` and asks for a fresh restore; it never guesses.
+**No shared base: merge on an empty base.** Normally there is a base: a connect's first push, or the
+commit a restore cloned (§14). There is none when a vault connects to a remote that already holds a
+vault, or when the remote no longer holds the base (its history was rewritten, or the branch was
+deleted). The run then merges with an **empty base**: every row on either side counts as added, so
+rows from both sides are kept and same-id rows take the newer `updated_at`; §9.2 then merges
+unique-key clashes (two notes at one path keep both, one gets `_1`). The cost: a row deleted on one
+side since the lost base comes back once, since nothing shows it was deleted. A deleted branch gets
+the vault pushed again as a new first commit. The merge result becomes the base, so later runs are
+ordinary 3-way merges.
 
 ### 9.2 Unique keys after merging
 
@@ -430,10 +435,9 @@ lock (one run at a time; triggers during a run coalesce into it)
 
 **Connect** (Settings → Sync): URL and token, with branch (default `main`) and username (default
 `x-access-token`) under "More". Commits are authored "Tend <tend@localhost>"; there is no device
-name. New connections sync every 15 min. The remote must **hold no vault**: no branch yet, or a branch
-without `.tend/sync/` (a README or licence made with the repo is fine). A remote that holds a vault
-is refused (`SYNC_REMOTE_NOT_EMPTY`: "This repo already has a vault. Restore it into an empty folder
-instead."). **Files on the remote that Tend doesn't manage** (anything outside `.tend/`, `.gitignore` and the
+name. New connections sync every 15 min. The remote can be empty, hold only files such as a README or licence, or
+already hold a vault (another device's, or this one's after a disconnect): a vault there is merged
+with this one on an empty base (§9.1). **Files on the remote that Tend doesn't manage** (anything outside `.tend/`, `.gitignore` and the
 files rows point at), checked on connect and on every sync:
 - **Markdown** (`*.md`, any case: the README made with the repo, a file added on the host's web
   editor) becomes a note. Each folder and the file name get their slug (`Docs/Guide.md` →
@@ -493,7 +497,7 @@ never sent to the UI. The other sync settings live in the app config folder, key
 ## 17. Errors (registry)
 
 `SYNC_AUTH` · `SYNC_OFFLINE` · `SYNC_TIMEOUT` · `SYNC_NOT_A_VAULT` · `SYNC_INVALID_MANIFEST` ·
-`SNAPSHOT_TOO_NEW` · `SYNC_REMOTE_NOT_EMPTY` · `SYNC_BASE_LOST` · `SYNC_REJECTED` ·
+`SNAPSHOT_TOO_NEW` · `SYNC_REJECTED` ·
 `SYNC_RECONCILE_FAILED` · `SYNC_APPLY_FAILED`.
 
 ## 18. Code layout
@@ -595,7 +599,7 @@ a note renames the file without breaking links · name rule with `_1` suffixes.
 **Sync** — pull always before push · a change on one side always survives · same row edited on both:
 newer wins, older gone · delete beats edit · unique-key collisions merged (§9.2) · no Git merge or
 conflict ever surfaces · non-fast-forward push retried once · repeated syncs change nothing · an
-idle sync writes nothing · a lost base stops sync and asks for a restore · failed runs leave a consistent vault and
+idle sync writes nothing · a lost base merges on an empty base, keeping both sides · failed runs leave a consistent vault and
 retry later · simulation test passes.
 
 **Files** — notes and attachments sync as files · WAL/SHM and staging never committed · files of

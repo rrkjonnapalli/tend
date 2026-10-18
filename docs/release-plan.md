@@ -69,13 +69,13 @@ Status: **todo**, **doing**, **done**, **decided** (no code needed), **user** (o
   (`tauri ios init`, `tauri android init`) with the mobile work.
 - The mobile work is in §5.
 
-### 2.5 Sync, before the format freezes — todo
-- **Lost base.** Sync remembers the last commit both sides agreed on (the base). A force-push or
-  a deleted branch erases it. Today sync stops with `SYNC_BASE_LOST` and asks for a restore, which
-  only works into an empty vault, so unsynced edits are stranded. Fix: merge with an empty base,
-  keeping rows from both sides.
-- **C1, two vaults that both hold data.** Connecting a vault with data to a remote that already
-  holds a vault. Same fix as the lost base: a first merge on an empty base.
+### 2.5 Sync, before the format freezes — doing
+- **Lost base — done.** When the remote no longer holds the base (force-push, rewritten history)
+  the run merges on an empty base, keeping rows from both sides; a deleted branch gets the vault
+  pushed again. `SYNC_BASE_LOST` is gone. Cost: a row deleted on one side since the lost base comes
+  back once (spec §9.1).
+- **C1, two vaults that both hold data — done.** Connect merges with a remote that already holds a
+  vault the same way (`SYNC_REMOTE_NOT_EMPTY` is gone). Two notes at one path keep both (`_1`).
 - **Case pairs.** A remote can hold the user's own files, such as `README.md` and `readme.md`.
   On a Mac those are one file, so one overwrites the other. Tend's own notes are lowercase and
   never hit this. Fix: detect the pair, keep one, show a notice.

@@ -36,7 +36,7 @@ fn failures_double_the_wait_up_to_an_hour() {
 fn errors_the_user_must_fix_stop_automatic_runs() {
     for key in [
         errors::SYNC_AUTH,
-        errors::SYNC_BASE_LOST,
+        errors::SYNC_NOT_A_VAULT,
         errors::SNAPSHOT_TOO_NEW,
     ] {
         let mut backoff = Backoff::default();
