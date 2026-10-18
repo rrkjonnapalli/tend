@@ -21,7 +21,7 @@ Status: **todo**, **doing**, **done**, **decided** (no code needed), **user** (o
 | Date input | No typed date field. `DateField` stays a button plus month popover. |
 | Fonts | Smile Moon stays for now. Its licence is noted in the About page's credits. |
 | Snap stacks | Keep "+ New stack" in the snap editor (it is the keyboard path); make it atomic. |
-| Sync, remote files | Compare remote files by Git's blob id instead of SHA-256. |
+| Sync, remote files | Blob ids not needed: remote files are never read to be hashed (§2.5). |
 | Attachments | The existing size limit (Settings → General, `files.max_mb`, 1–90 MB) is the rule. |
 | Quit | Quitting waits for the last sync's result, success or failure, with no time cap. |
 
@@ -69,18 +69,23 @@ Status: **todo**, **doing**, **done**, **decided** (no code needed), **user** (o
   (`tauri ios init`, `tauri android init`) with the mobile work.
 - The mobile work is in §5.
 
-### 2.5 Sync, before the format freezes — doing
+### 2.5 Sync, before the format freezes — done
 - **Lost base — done.** When the remote no longer holds the base (force-push, rewritten history)
   the run merges on an empty base, keeping rows from both sides; a deleted branch gets the vault
   pushed again. `SYNC_BASE_LOST` is gone. Cost: a row deleted on one side since the lost base comes
   back once (spec §9.1).
 - **C1, two vaults that both hold data — done.** Connect merges with a remote that already holds a
   vault the same way (`SYNC_REMOTE_NOT_EMPTY` is gone). Two notes at one path keep both (`_1`).
-- **Case pairs.** A remote can hold the user's own files, such as `README.md` and `readme.md`.
-  On a Mac those are one file, so one overwrites the other. Tend's own notes are lowercase and
-  never hit this. Fix: detect the pair, keep one, show a notice.
-- **Blob ids.** Hash remote files by Git's blob id instead of reading and hashing them with
-  SHA-256 (speed; see §3.6).
+- **Case pairs — done (tests only).** Tend's own paths can't clash by case: notes and folders keep
+  the lowercase name rule, attachments live at their id. Host Markdown that differs only in case
+  (`README.md`, `readme.md`) becomes two notes (`readme.md`, `readme_1.md`). Other host files are
+  never written to disk and both stay in every commit, though the vault's repository has
+  `core.ignorecase` on. Two tests in `sync/run/tests.rs` hold this.
+- **Blob ids — not needed (already covered).** Sync never reads remote files to hash them: it
+  compares files by the `sha256` in their rows, and since `7a3233d` (2026-10-10) files unchanged
+  since the parent commit reuse its tree entries unread; oversized ones are judged by the object
+  header's size. Remote bytes are read only to install a changed file or take in a foreign
+  Markdown file. The remaining cost is on the local side (scan hashing), §3.6.3.
 
 ### 2.6 Two-device sync test end to end — todo
 - Run on two devices (laptop and phone once the mobile build exists; two laptops or two vaults
@@ -130,8 +135,8 @@ before the database is ready is fine.
    `git2` already reports transfer progress for fetch and push.
 2. **"Getting your vault ready…"** full-screen for a restore or a large pull; the app opens when
    the apply is done. Small syncs stay in the background.
-3. **Work grows with the change, not the vault.** Blob ids on the remote side (§2.5) and a size
-   and mtime cache on the local side, so unchanged files aren't read again. First measure how
+3. **Work grows with the change, not the vault.** The remote side already does (§2.5); left is a
+   size and mtime cache on the local side, so unchanged files aren't read again. First measure how
    much the current code rehashes on each run.
 4. **Big files — done.** The size limit (`files.max_mb`, 1–90 MB, default 30) already stops a file
    that big from being attached, indexed or committed by sync, so GitHub's 100 MB per-file limit

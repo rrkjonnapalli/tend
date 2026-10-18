@@ -440,3 +440,47 @@ fn hidden_and_oversized_files_on_the_host_are_never_taken_in_and_big_ones_leave_
         [".github/ISSUE_TEMPLATE/bug.md", ".gitignore"]
     );
 }
+
+// On a Mac the vault's repository has `core.ignorecase` on, so these check that a pair of names
+// that differ only in case never collapses into one.
+#[test]
+fn host_files_that_differ_only_in_case_both_stay_in_the_repo() {
+    let server = tempfile::tempdir().unwrap();
+    let remote = remote(server.path());
+    host_commit(
+        server.path(),
+        &[
+            ("LICENSE", "MIT"),
+            ("license", "BSD"),
+            ("img/A.png", "a"),
+            ("img/a.png", "b"),
+        ],
+    );
+    let a = Device::new();
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
+    a.task("Ship");
+    a.sync(&remote).unwrap();
+    assert_eq!(
+        remote_files(server.path()),
+        [".gitignore", "LICENSE", "img/A.png", "img/a.png", "license"]
+    );
+}
+
+#[test]
+fn host_markdown_that_differs_only_in_case_becomes_two_notes() {
+    let server = tempfile::tempdir().unwrap();
+    let remote = remote(server.path());
+    host_commit(
+        server.path(),
+        &[("README.md", "# One"), ("readme.md", "# Two")],
+    );
+    let a = Device::new();
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
+    let mut texts = [a.read("readme.md"), a.read("readme_1.md")];
+    texts.sort();
+    assert_eq!(texts, ["# One", "# Two"]);
+    assert_eq!(
+        remote_files(server.path()),
+        [".gitignore", "readme.md", "readme_1.md"]
+    );
+}

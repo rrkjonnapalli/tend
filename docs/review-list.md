@@ -85,8 +85,8 @@ Each can come back later; none changes the shard layout.
 
 - C1: connecting two vaults that both hold data (a first merge on an empty base). **Done 2026-10-17.**
 - A lost base: keep stopping, or merge the same way. **Merges the same way, done 2026-10-17.**
-- `README.md` / `readme.md` pairs that differ only in case on the remote.
-- Hashing remote files by Git's blob id instead of SHA-256.
+- `README.md` / `readme.md` pairs that differ only in case on the remote. **Already safe; tests added 2026-10-19.**
+- Hashing remote files by Git's blob id instead of SHA-256. **Not needed: since 2026-10-10 remote files are never read to be hashed.**
 - "Syncing…" shown while quitting; a long deadline and progress for a big first push or restore.
 - Snapshot size in Settings; a token store off macOS.
 
