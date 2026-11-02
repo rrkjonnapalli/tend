@@ -1,6 +1,6 @@
 # Tend V1 Sync Specification
 
-**Status:** V1 design, agreed in discussion; not built.
+**Status:** built (S1–S5, 2026-10-09; first merge on an empty base 2026-10-17). Decisions taken while building are in `docs/review-list.md`.
 **Scope:** Git-backed vault sync, and the v1 schema changes it needs.
 **Replaces:** `docs/sync-plan.md` (kept for the history of the discussion).
 
@@ -325,8 +325,8 @@ never left dangling:
 
 | Reference | Rule |
 |---|---|
-| comment, contact, my_day → deleted parent | dropped (and recorded in deletions) |
-| `tend_links` row → deleted source row, attachment or enum | dropped (and recorded in deletions) |
+| comment, contact, my_day → deleted parent | dropped |
+| `tend_links` row → deleted source row, attachment or enum | dropped |
 | task → deleted status | status set to the first status |
 | word → deleted word kind | kind set to `OTHER` (never `WORD`, whose lowercasing could make a new title clash) |
 | snap → deleted stack; stack → deleted parent | moved to the board root |
@@ -589,7 +589,7 @@ steps in the normal test run; 2,000 × 300 also pass). It found the two base-mov
 ## 22. Acceptance criteria
 
 **Repository** — connect to an empty remote, or one with only a README (kept) · a remote holding a
-vault refused on connect · restore from a
+vault merged on an empty base · restore from a
 Tend remote into an empty folder · unrelated remote refused · token works and lives only in the
 Keychain.
 

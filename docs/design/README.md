@@ -15,7 +15,9 @@ Fonts load from Google Fonts in the mockups. The app bundles them with @fontsour
 | `people.html` | `png/people.png`, `png/person-page.png` | People list, person page with contact sections and markdown notes |
 | `settings.html` | `png/settings.png`, `png/settings-palette.png` | Settings: General (vault), Tasks → Statuses (drag, color, rename, add, delete rules), Command palette list |
 | `command-palette.html` | `png/command-palette.png`, `png/command-palette-typed.png` | ⌘K palette: groups, search, quick-create phrases |
-| `quick-create.html` | `png/quick-create-note.png`, `png/quick-create-timer.png` | ⌘N / ⌘⇧T / ⌘⇧N / ⌘T popups (use the buttons at the bottom; ⌘ keys are usually taken by the browser) |
+| `quick-create.html` | `png/quick-create.png`, `png/quick-create-note.png`, `png/quick-create-timer.png` | ⌘N / ⌘⇧T / ⌘⇧N / ⌘T popups (use the buttons at the bottom; ⌘ keys are usually taken by the browser) |
+
+The Library (Words, Snaps, References) has its own mockups in `docs/tend-library/`. Sync (Settings → Sync, Start → Restore from Git) has no mockups; it reuses the Settings and Start page styles.
 
 Ignore anything in a mockup that isn't in `decisions.md`; it's a leftover.
 

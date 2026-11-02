@@ -11,7 +11,7 @@ Reference for building Tend (Tauri 2 + SvelteKit). The mockups in `docs/design/s
 - Light and dark themes (§2 *Theme*). Minimal, editor-like (Sublime / VS Code / JetBrains feel).
 - No floating or detached panels, no shadows. Panels sit flush, separated by hairlines.
 - Design system: **Clean Colors**.
-  - Fonts: Montserrat (page and section titles), Lato (all UI text), JetBrains Mono (note editor, values, paths, keys, code, snap text). The Library's hands: Gaegu (sticky notes), Smile Moon (stack names; a file in `static/fonts`, personal-use licence to check before the app is shared), Caveat (the line on an empty area). Tokens: `docs/design/tokens.css`.
+  - Fonts: Montserrat (page and section titles), Lato (all UI text), JetBrains Mono (note editor, values, paths, keys, code, snap text), Work Sans (the note view's body text, unless a reading font is picked, §2). The Library's hands: Gaegu (sticky notes), Smile Moon (stack names; a file in `static/fonts`, personal-use licence to check before the app is shared), Caveat (the line on an empty area). Tokens: `docs/design/tokens.css`.
   - Key colors:
 
     | Role | Hex |
@@ -44,12 +44,13 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - **Empty folder** → a new vault.
   - **Not a vault and not empty** (no `.tend/tend.db`, other visible items) → ask first, writing nothing: "This folder isn’t a Tend vault yet. It has N items, with M notes inside. Tend will use it as your notes folder… and rename notes and folders that hold notes to lowercase names…" → *Use this folder* / *Choose another folder*. Agreeing also lets scans fix names (§5a).
   - **`.tend/tend.db` exists:** read `meta`.
-    - `app_id = 'tend'` and `schema_version` ≤ app → migrate up if lower, then open. Before migrating, the database is copied to `.tend/tend.db.bak` (replacing the last copy): an older schema can't be gone back to, so the copy is the only undo.
+    - `app_id = 'tend'` and the schema version (`PRAGMA user_version`) ≤ app → migrate up if lower, then open. Before migrating, the database is copied to `.tend/tend.db.bak` (replacing the last copy): an older schema can't be gone back to, so the copy is the only undo.
     - Anything else → **"An incompatible database exists in .tend/tend.db"**. The user picks another folder.
   - What sits above the chosen folder is never checked.
 - **Changing vault:** Settings → General → *Change vault folder…*. This reopens the start-up flow.
 - **File size limit:** 30 MB by default, set in Settings → General → Files (1–90 MB; 0 isn't allowed, it would drop every note). Shared through sync (setting `files.max_mb`), so every device agrees; changing it rescans. A `.md` that size or larger is never indexed; a file that size can't be attached; sync never commits one. A note already indexed that grows to the limit keeps its row unchanged (never marked missing), so nothing syncs as a deletion.
 - **Theme:** Settings → General → Appearance: *System* (default, follows macOS and changes with it), *Light* or *Dark*. Kept per device (setting `ui.theme`, never synced). The dark theme remaps the same token roles (`tokens.css`). ⌘K has *Toggle light / dark theme*, the first line when it opens: it switches to the one not showing, which turns *System* into a fixed choice.
+- **Reading font:** Settings → General → Reading: a searchable list of the font families installed on the device (system and user), with *Tend’s own* (Work Sans, bundled) first. It changes only the note view’s body text; headings, the editor and every other field keep their fonts. Below the list, a snap card shows two short paragraphs in the picked font. Kept per device (setting `notes.reading_font`, never synced, since fonts differ per machine); a picked family that is no longer installed stays listed as “(not installed)” and the view falls back to Work Sans.
 - **Delete confirmations:** Settings → General → Confirmations: *Ask before deleting a note / a task / a person / a word / a snap / a reference*, each on by default. Turned off, that delete (page trash button, explorer menu or ⌫) goes at once. Kept per device (settings `confirm.delete.note|task|person|word|snap|reference`, never synced). Folders, stacks, statuses, labels and word kinds always ask.
 
 ## 3. Start-up page
@@ -140,7 +141,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - Task titles and note titles (the heading inside a note) are free text.
   - **Names found on disk that break the rule** (folders holding notes, and `.md` files) get their slug, with a suffix when taken. The old path is kept in `path_log`.
   - Fixing needs the vault's consent once (setting `notes.fix_names`): a new empty vault has it, confirming a non-vault folder gives it, and an existing vault asks on the Start page (*Rename and open →* / *Open without renaming*). Until then such items are skipped and listed in Settings → General with the name each would get and a *Rename N items to fit* link.
-  - **Every rename or move** of a folder or note file, by the user or by a fix, is written to `path_log` (old path, new path, why, when), so an earlier layout can be restored later.
+  - **Every rename or move** of a folder or note file, by the user, by a fix or by a sync, is written to `path_log` (old path, new path, why, when), so an earlier layout can be restored later.
 - **Explorer actions:** hover a row → `⋯`, or right-click, opens a menu: **Rename** (F2) · **Move to…** (⌘⇧M) · **Delete…** (⌫), on the row with the keyboard cursor or else the open item. The root has no menu.
   - **Rename:** edited in place in the row. Invalid or duplicate names turn red with a hint underneath. Enter saves, Esc cancels.
   - **New note / new folder** (toolbar): an inline row in the selected folder, checked against the same rules.
@@ -234,7 +235,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 ## 8. Attachments
 
 - **Upload:** copy to `.tend/attachments/<id>.<ext>` and insert a row in `attachments` (original name, mime type, size, sha256).
-- **Linking:** link to a task, note, comment or person through `tend_links` (§16, target type `ATTACHMENT`). A note can also be linked to a task.
+- **Linking:** link to a task, note, comment, person, word, snap or reference through `tend_links` (§16, target type `ATTACHMENT`). A note can also be linked to a task.
 - The UI always refers to attachments by id, never by path.
 - **Task page → Attachments:**
   - A dashed drop zone: "Drop files here or click to choose" (several files at once), plus *or link a note*, which opens a note search.
@@ -318,7 +319,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 
 ## 14. Out of scope for v1
 
-- **Calendar, events and reminders**, including repeat rules, alerts, the notification engine, the bell, birthday and due-date alerts. The design is in `docs/later/calendar-design-spec-doc.md`, and mockups are in `docs/later/screens/`. They'll arrive as a schema migration (`schema_version` 2).
+- **Calendar, events and reminders**, including repeat rules, alerts, the notification engine, the bell, birthday and due-date alerts. The design is in `docs/later/calendar-design-spec-doc.md`, and mockups are in `docs/later/screens/`. They'll arrive as a schema migration (schema version 2).
 
 - Gantt / timeline view.
 - Per-folder status lists (statuses are app-wide).

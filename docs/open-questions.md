@@ -28,12 +28,17 @@ status).
 
 | # | Where | Item |
 |---|---|---|
-| 12 | Schema | Resolved 2026-10-14: migration 2 (task order keys) is folded into `docs/schema.sql`, which is the whole of v1 and frozen from the first release; later changes are migration steps. A dev vault at `user_version` 2 opens as incompatible: set `PRAGMA user_version = 1` once (its tables already match v1). |
 | 13 | Sync | Blocking or deleting a tag, and a recolor against a reorder, are covered by unit tests only. No two-device run yet. |
-| 14 | Snaps | Resolved 2026-10-19: saving into a new stack (`startStack` on `snap_create` / `snap_update`) and pairing two snaps (`stack_pair`) are one transaction each; a failure leaves no stray stack. |
-| 15 | Words | dictionaryapi.dev timed out on every request on 2026-10-13. There is no fallback: a lookup asks only the source picked in Settings. |
-| 16 | Words | freedictionaryapi.com has no recordings, and calls an idiom a verb, so a looked-up idiom no longer switches its kind to *idiom* by itself. |
-| 17 | Fonts | `static/fonts/Smile Moon.otf` says "All Rights Reserved" (MJType). Fine in a private repo; check its licence before the app is shared. |
 | 18 | Keyboard | No arrow keys in the date picker's month grid; the colour swatches move in order, not as a grid. The stack picker shows eight rows; the rest are reached by typing. |
 | 19 | Tests | None for the HTTP fetch (a 404, the size cap) or for Home's add guess at its 40-character edge. Short words with a dot (`Node.js`) are guessed as links; left as it is. |
 | 20 | Rust | `notes/`, `tasks/folders.rs` and a few sync helpers still take several positional arguments. |
+
+## Resolved since 2026-10-14
+
+| # | Where | What was done |
+|---|---|---|
+| 12 | Schema | Migration 2 (task order keys) is folded into `docs/schema.sql`, which is the whole of v1 and frozen from the first release; later changes are migration steps. A dev vault at `user_version` 2 opens as incompatible: set `PRAGMA user_version = 1` once (its tables already match v1). |
+| 14 | Snaps | Saving into a new stack (`startStack` on `snap_create` / `snap_update`) and pairing two snaps (`stack_pair`) are one transaction each; a failure leaves no stray stack. |
+| 15 | Words | dictionaryapi.dev timed out on every request on 2026-10-13. There is no fallback: a lookup asks only the source picked in Settings. Decided: no fallback (`release-plan.md` §1). |
+| 16 | Words | freedictionaryapi.com has no recordings, and calls an idiom a verb, so a looked-up idiom no longer switches its kind to *idiom* by itself. Accepted with the same decision. |
+| 17 | Fonts | Moved to `release-plan.md` §2.7 (Smile Moon licence). |

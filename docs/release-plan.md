@@ -126,7 +126,7 @@ Status: **todo**, **doing**, **done**, **decided** (no code needed), **user** (o
 
 ### 3.5 About page with credits — todo
 - Settings → About: version, licence notices for the libraries and fonts (MIT and OFL require
-  their notices to ship), and the Smile Moon note.
+  their notices to ship), and the Smile Moon note. Work Sans (`@fontsource/work-sans`, OFL-1.1) is bundled since the reading-font change and needs its notice too.
 
 ### 3.6 Big syncs — todo
 Covers the first sync, a sync after a long time, and syncs with many changes. A loading screen

@@ -41,7 +41,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
   - opens or creates `.tend/tend.db` with `foreign_keys=ON` and WAL.
   - **New DB:** run `schema.sql` as migration 1.
   - **Existing DB:**
-    - reads `meta`: `app_id='tend'` and `schema_version` ≤ app version → run pending migrations.
+    - reads `meta` (`app_id='tend'`) and `PRAGMA user_version` ≤ app version → run pending migrations.
     - Otherwise → error `IncompatibleDb`. Never modify an incompatible file.
   - Returns a step-by-step result, `[{item:'notes/', status:'found'|'created', detail:'42 notes'}, …]`, so the UI can show the checklist.
 - Remember the last vault path in the app config dir. On launch, open it directly. If it's gone or broken, show the start page.
@@ -54,7 +54,7 @@ Spec: `docs/decisions.md` (§ numbers below refer to it) · DB: `docs/schema.sql
 - **Settings → General:** vault path + "Change vault folder…" (back to the start page). The rest of Settings comes in M9.
 
 **Done when**
-- Empty folder → `notes/`, `.attachments/`, `.tend/tend.db` created; `meta` has `app_id=tend`, `schema_version=1`.
+- Empty folder → `notes/`, `.attachments/`, `.tend/tend.db` created; `meta` has `app_id=tend`, and `PRAGMA user_version` is 1.
 - Existing vault opens without changes. A random `.tend/tend.db` from another app shows the incompatible error and isn't modified.
 - Restarting the app reopens the last vault.
 - `cargo test` covers: new vault, existing vault, incompatible DB (wrong app_id, higher version, missing meta).
@@ -430,10 +430,20 @@ Not a planned milestone: the work that followed L0–L6, 2026-10-12 to 2026-10-1
 
 ---
 
+## Built after the milestones
+
+Not milestones of this plan, but on `main`:
+
+- **Git sync** (S1–S5, 2026-10-09; spec `docs/v1-sync-spec.md`, decisions in `docs/review-list.md`). Connecting two vaults that both hold data, and a lost base, merge on an empty base (2026-10-17).
+- **Hardening** (2026-10-15): atomic note saves and save conflicts, one schema file, deletes go to the Trash, a single app instance, a full CSP, attachments never open programs or scripts, sync migrates older snapshots and asks for an update on newer ones. A newline in Markdown shows as a line break.
+- **Auto-update** from GitHub releases, app identifier `io.github.rniverse.tend` (2026-10-17; `docs/release-plan.md` §2.1).
+- **Reading font** (Settings → General → Reading, `decisions.md` §2), with Work Sans bundled as the default for the note view.
+
+---
+
 ## After v1
 
 - Polish pass: empty states, error toasts, loading states. (Window state restore is done.)
 - Gaps and open questions from the 2026-10-09 check: `docs/open-questions.md`.
-- Git sync: `docs/v1-sync-spec.md`.
-- Packaging: macOS / Windows / Linux builds, code signing, auto-update.
+- Packaging and release: `docs/release-plan.md` (v1 is macOS, iOS and Android; code signing needs an Apple account).
 - v2: calendar, events and reminders, see `docs/later/calendar-design-spec-doc.md` (a later migration step).
