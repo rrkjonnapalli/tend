@@ -9,6 +9,7 @@ mod enums;
 mod error;
 mod feedback;
 mod files;
+mod fonts;
 mod http;
 #[cfg(test)]
 mod ipc_tests;
@@ -139,6 +140,7 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
             commands::sync::sync_token_set,
             commands::sync::sync_disconnect,
             commands::app::app_flushed,
+            commands::app::fonts_list,
             #[cfg(desktop)]
             commands::app::app_update_check,
             #[cfg(desktop)]

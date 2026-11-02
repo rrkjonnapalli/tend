@@ -24,6 +24,8 @@ export const settingKeys = {
   fileLimitMB: 'files.max_mb',
   /** The dictionary new lookups ask (`DictionarySource`); kept on this device. */
   dictionarySource: 'words.dictionary_source',
+  /** The note view's font family, installed on this device; empty is Tend's own. Kept on this device. */
+  readingFont: 'notes.reading_font',
   /** The folder Quick create last used for each kind; folders keep one per tree. */
   /** Whether deleting a note, task, person, word, snap or reference asks first; kept on this device. */
   confirmDelete: (kind: DeleteKind) => `confirm.delete.${kind}`,
@@ -46,6 +48,7 @@ export const settingDefaults = {
   fileLimitMB: 30,
   confirmDelete: true,
   dictionarySource: DICTIONARY_SOURCE.freedictionaryapiCom,
+  readingFont: '',
 } as const;
 
 /** The range the file size limit may take (src-tauri/src/files.rs `LIMIT_MB_RANGE`). */

@@ -9,6 +9,8 @@ export const appAPI = {
   /** Fires when the app is about to quit; answer with `flushed()` once saved. */
   onQuitting: (fn: () => void) => listen(QUIT_EVENT, fn),
   flushed: () => call<void>('app_flushed'),
+  /** The font families installed on this device, system and user. */
+  fonts: () => call<string[]>('fonts_list'),
   /** A newer release, or null. Desktop only. */
   updateCheck: () => call<AvailableUpdate | null>('app_update_check'),
   /** Downloads and installs the newest release, then the app restarts; false when there was none.

@@ -30,6 +30,12 @@ pub async fn app_update_install<R: Runtime>(app: AppHandle<R>) -> AppResult<bool
     Ok(installed)
 }
 
+/// The font families installed on this device.
+#[tauri::command(async)]
+pub fn fonts_list() -> Vec<String> {
+    crate::fonts::families()
+}
+
 /// The UI has saved everything it held after `QUIT_EVENT`; quitting can go on.
 #[tauri::command]
 pub fn app_flushed(state: State<AppState>) {

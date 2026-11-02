@@ -26,6 +26,7 @@
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import { applyTheme } from '#lib/util/theme.ts';
+  import { applyReadingFont } from '#lib/util/font.ts';
   import { startTabbingIn } from '#lib/util/focus-start.ts';
   import { focusDock, focusMain, focusSide } from '#lib/util/panes.ts';
   import { hasLayers } from '#lib/util/layers.ts';
@@ -63,6 +64,9 @@
 
   // Light or dark, from Settings (System until a vault's settings say otherwise).
   $effect(() => applyTheme(settings.get<ThemePref>(settingKeys.theme, settingDefaults.theme)));
+
+  // The note view's font, from Settings → General.
+  $effect(() => applyReadingFont(settings.get<string>(settingKeys.readingFont, settingDefaults.readingFont)));
 
   // On quit, pages save what they hold first (an open note), then Rust may close the app.
   $effect(() => {

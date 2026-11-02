@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Rendered markdown. "note" is the note page look (mono body, large headings); "ui" is the
+  // Rendered markdown. "note" is the note page look (Work Sans body, large headings); "ui" is the
   // compact look used for descriptions, person notes and comments.
   import { openUrl } from '@tauri-apps/plugin-opener';
   import { renderMarkdown } from '#lib/util/markdown.ts';
@@ -136,6 +136,8 @@
   /* Note page */
   .note {
     font: var(--text-editor);
+    /* The reading font picked in Settings → General, if any. */
+    font-family: var(--font-reading, var(--font-note));
   }
 
   .note :global(h1) {

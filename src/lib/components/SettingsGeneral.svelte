@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Settings → General: the theme, the file size limit, the timer sound, delete confirmations, updates, the vault folder, and notes or folders skipped for breaking
+  // Settings → General: the theme, the reading font, the file size limit, the timer sound, delete confirmations, updates, the vault folder, and notes or folders skipped for breaking
   // the name rule (with the name each can be renamed to, and one button to rename them all).
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -17,6 +17,10 @@
   import type { ThemePref } from '#lib/types/theme.type.ts';
   import { routes } from '#lib/util/routes.ts';
   import { update } from '#lib/stores/update.svelte.ts';
+  import ChoicePicker from './ChoicePicker.svelte';
+  import { appAPI } from '#lib/api/app.ts';
+  import { fontStack } from '#lib/util/font.ts';
+  import type { Choice } from '#lib/types/ui.type.ts';
 
   let skipped = $state<Skipped[]>([]);
   let showSkipped = $state(false);
@@ -25,7 +29,31 @@
   const theme = $derived(settings.get<ThemePref>(settingKeys.theme, settingDefaults.theme));
   const fileLimit = $derived(settings.get<number>(settingKeys.fileLimitMB, settingDefaults.fileLimitMB));
 
-  onMount(loadSkipped);
+  /** The families installed on this device; loaded when the page opens. */
+  let fonts = $state<string[]>([]);
+  const readingFont = $derived(settings.get<string>(settingKeys.readingFont, settingDefaults.readingFont));
+  const fontChoices = $derived(readingChoices(fonts, readingFont));
+  const sampleFont = $derived(readingFont ? fontStack(readingFont) : 'var(--font-note)');
+
+  onMount(() => {
+    loadSkipped();
+    loadFonts();
+  });
+
+  async function loadFonts() {
+    fonts = await appAPI.fonts();
+  }
+
+  /** Tend's own font first, then every installed family; a picked one that is gone stays listed. */
+  function readingChoices(installed: string[], picked: string): Choice[] {
+    const own: Choice = { id: '', label: 'Tend’s own (Work Sans)' };
+    const families = installed.map((name) => ({ id: name, label: name }));
+    const unlisted = picked !== '' && !installed.includes(picked);
+    const loaded = installed.length > 0;
+    const label = loaded ? `${picked} (not installed)` : picked;
+    const gone: Choice[] = unlisted ? [{ id: picked, label }] : [];
+    return [own, ...gone, ...families];
+  }
 
   /** Saves the limit, then rescans so notes over (or now under) it leave (or join) the index. */
   async function setFileLimit(mb: number) {
@@ -83,6 +111,15 @@
     {/each}
   </div>
   <span class="hint">System follows your Mac's light or dark setting.</span>
+</section>
+
+<section class="group">
+  <h2 class="section-title">Reading</h2>
+  <ChoicePicker value={readingFont} choices={fontChoices} what="Reading font" field max={fontChoices.length} onpick={(id) => settings.set(settingKeys.readingFont, id)} />
+  <div class="sample" style:font-family={sampleFont}>
+    <p>Notes are read in this font, with numbers 0123456789 and punctuation: “quotes”, dashes — and an ellipsis…</p>
+    <p>Headings and the editor keep Tend’s own fonts. The choice stays on this device.</p>
+  </div>
 </section>
 
 <section class="group">
@@ -257,6 +294,21 @@
 
   .check input {
     accent-color: var(--primary);
+  }
+
+  /* The reading font on a snap card: the paper the Library's snaps use. */
+  .sample {
+    max-width: 420px;
+    padding: 18px 22px 4px;
+    background: var(--paper);
+    box-shadow: var(--paper-shadow);
+    color: var(--board-ink);
+    font-size: 15px;
+    line-height: 26px;
+  }
+
+  .sample p {
+    margin: 0 0 14px;
   }
 
 </style>

@@ -187,6 +187,7 @@
   --font-heading: 'Montserrat', sans-serif;   /* 28/36 500 page titles; 15–16 500 section titles */
   --font-ui: 'Lato', sans-serif;              /* 14/20 body UI; 13/18 captions; 12/16 meta */
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;  /* note editor 15/26, values, paths, kbd */
+  --font-note: 'Work Sans', var(--font-ui);   /* the note view's body text, unless Settings picks a reading font */
   --font-hand: 'Caveat', cursive;             /* Library: the empty-area line */
   --font-stack: 'Smile Moon', var(--font-hand);     /* Library: the marker hand on stack names (one weight) */
   --font-sticky: 'Gaegu', var(--font-hand);         /* Library: the hand on sticky notes (400) */
