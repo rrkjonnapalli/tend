@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { baseOf, childFolders, cleanPath, isUnder, join, nameError, nameErrors, parentOf, pathError, relativeTo, slug, titleError } from './names.ts';
+import { baseOf, cleanPath, isUnder, join, nameError, nameErrors, parentOf, pathError, relativeTo, slug, titleError } from './names.ts';
 
 describe('names', () => {
   it('slugs text the way Rust does', () => {
@@ -46,15 +46,5 @@ describe('paths', () => {
     expect(pathError('Work/Tend v0.1')).toBe('');
     expect(pathError('work/!!')).toBe(nameErrors.noLetters);
     expect(pathError('work//x')).toBe(nameErrors.empty);
-  });
-});
-
-describe('childFolders', () => {
-  const folders = ['work', 'home', 'work/meetings', 'work/meetings/q4', 'reading'];
-
-  it('lists only the folders directly inside, by name', () => {
-    expect(childFolders(folders, '')).toEqual(['home', 'reading', 'work']);
-    expect(childFolders(folders, 'work')).toEqual(['work/meetings']);
-    expect(childFolders(folders, 'home')).toEqual([]);
   });
 });

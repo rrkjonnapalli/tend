@@ -7,6 +7,7 @@
   import Explorer from '#lib/components/Explorer.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { ui } from '#lib/stores/ui.svelte.ts';
+  import Drawer from '#lib/components/phone/Drawer.svelte';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { isUnder, join, parentOf } from '#lib/util/names.ts';
   import { plural } from '#lib/util/plural.ts';
@@ -73,6 +74,9 @@
 </script>
 
 {#if ui.phone}
+  <Drawer label="Task folders">
+    <Explorer id="tasks" {rootName} folders={tasks.folders} {selected} newItemLabel="New task" {actions} />
+  </Drawer>
   {@render children()}
 {:else}
   <Explorer id="tasks" {rootName} folders={tasks.folders} {selected} newItemLabel="New task" {actions} />

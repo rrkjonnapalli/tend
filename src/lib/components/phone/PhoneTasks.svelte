@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Tasks on a phone (MC-Tasks, MC-Tasks-Open): the folder's subfolders, then the views (My day ·
+  // Tasks on a phone (MC-Tasks, MC-Tasks-Open): the views (My day ·
   // All · Due · Upcoming, a calendar for the day Due counts up to) and the board switch, then the
   // tasks in this folder and its subfolders. Counts are for this folder.
   import type { LastView, View } from '#lib/types/task-view.type.ts';
@@ -13,7 +13,6 @@
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
-  import { childFolders } from '#lib/util/names.ts';
   import { defaultView, isDone, isOverdue, isView, viewCounts, viewTasks } from '#lib/util/task-views.ts';
   import { folderParam, TASK_PARAMS, tasksURL } from '#lib/util/task-urls.ts';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
@@ -31,7 +30,6 @@
 
   let query = $state('');
   let adding = $state(false);
-  let foldersOpen = $state(false);
   let picker = $state<HTMLInputElement>();
 
   const params = $derived(page.url.searchParams);
@@ -49,7 +47,6 @@
   const ctx = $derived({ today: tasks.day, myDay: tasks.myDay, range: [tasks.day, tasks.day] as [string, string], hideDone, dueOn });
 
   const needle = $derived(searchNeedle(query));
-  const subfolders = $derived(needle ? [] : childFolders(tasks.folders, folder));
   const counts = $derived(viewCounts({ tasks: tasks.tasks, folder, ctx }));
   const rows = $derived(viewTasks({ tasks: tasks.tasks, folder, view, ctx }).filter((t) => textMatches([t.title, t.path], needle)));
 
@@ -82,11 +79,9 @@
   <FolderNav
     {rootName}
     {folder}
-    {subfolders}
     hrefOf={routes.tasksFolder}
     placeholder="Search tasks"
     bind:query
-    bind:open={foldersOpen}
     onadd={() => (adding = true)} />
 
   <nav class="views" aria-label="Views">

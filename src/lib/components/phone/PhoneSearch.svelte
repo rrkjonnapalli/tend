@@ -1,11 +1,18 @@
 <script lang="ts">
-  // The top row of a phone list (MC-Notes, MD-People): a soft search field and +.
+  // The top row of a phone list (MC-Notes, MD-People): the drawer button when the page has one, a
+  // soft search field and +.
   import Icon from '../Icon.svelte';
 
-  let { placeholder, query = $bindable(''), onadd }: { placeholder: string; query?: string; onadd: () => void } = $props();
+  let {
+    placeholder,
+    query = $bindable(''),
+    onadd,
+    onmenu,
+  }: { placeholder: string; query?: string; onadd: () => void; onmenu?: () => void } = $props();
 </script>
 
-<div class="top">
+<div class="top" class:menu={onmenu}>
+  {#if onmenu}<button class="ib" aria-label="Folders" onclick={onmenu}><Icon name="list" size={20} /></button>{/if}
   <label class="fld">
     <Icon name="search" size={18} />
     <input type="search" {placeholder} aria-label={placeholder} autocapitalize="off" bind:value={query} />
@@ -21,6 +28,10 @@
     gap: 6px;
     height: 56px;
     margin-right: -12px;
+  }
+
+  .top.menu {
+    margin-left: -12px;
   }
 
   .fld {

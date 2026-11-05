@@ -1,6 +1,6 @@
 <script lang="ts">
   // Settings on a phone (MD-Settings): the vault, sync, appearance (theme and the menu button's
-  // side) and fonts on one page, then rows that open the other sections. Spec: tend-mobile-spec.md §11.
+  // side) and fonts on one page; the other sections are in the drawer. Spec: tend-mobile-spec.md §11.
   import { onMount } from 'svelte';
   import Icon from '../Icon.svelte';
   import { appAPI } from '#lib/api/app.ts';
@@ -8,20 +8,14 @@
   import { sync } from '#lib/stores/sync.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { settingDefaults, settingKeys, textSizeChoices, themeChoices } from '#lib/config/settings.config.ts';
-  import { SETTINGS_SECTION, type SettingsSection } from '#lib/enums/settings.enum.ts';
+  import { SETTINGS_SECTION } from '#lib/enums/settings.enum.ts';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import type { ThemePref } from '#lib/types/theme.type.ts';
   import type { TextSize } from '#lib/types/font.type.ts';
   import type { MenuSide } from '#lib/types/ui.type.ts';
   import { ago } from '#lib/util/dates.ts';
   import { routes } from '#lib/util/routes.ts';
 
-  const sections: { id: SettingsSection; label: string; sub: string }[] = [
-    { id: SETTINGS_SECTION.general, label: 'General', sub: 'files, confirmations' },
-    { id: SETTINGS_SECTION.tasks, label: 'Tasks', sub: 'statuses, labels' },
-    { id: SETTINGS_SECTION.library, label: 'Library', sub: 'dictionary, kinds' },
-    { id: SETTINGS_SECTION.tags, label: 'Tags', sub: 'active, blocked' },
-    { id: SETTINGS_SECTION.sync, label: 'Sync', sub: 'repo, token, schedule' },
-  ];
   const sides: { value: MenuSide; label: string }[] = [
     { value: 'left', label: 'Left' },
     { value: 'right', label: 'Right' },
@@ -49,7 +43,10 @@
 </script>
 
 <main class="phone-list">
-  <h1>Settings</h1>
+  <div class="head">
+    <h1>Settings</h1>
+    <button class="ib" aria-label="Settings sections" onclick={() => (ui.drawer = true)}><Icon name="list" size={20} /></button>
+  </div>
 
   <h2>Vault</h2>
   <p class="val mono">{vault.path ?? ''}</p>
@@ -110,12 +107,6 @@
     </div>
   </div>
 
-  <h2>Sections</h2>
-  {#each sections as s (s.id)}
-    <a class="qr" href={routes.settingsSection(s.id)}>
-      <span class="tt">{s.label}</span><span class="meta">{s.sub}</span><Icon name="chevronRight" size={14} />
-    </a>
-  {/each}
 </main>
 
 <style>
@@ -227,8 +218,27 @@
     color: var(--text);
   }
 
-  .qr :global(svg) {
-    flex: none;
-    color: var(--c-faint);
+  .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-right: -12px;
+  }
+
+  .ib {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--text-muted);
+  }
+
+  .ib:active,
+  .ib:focus-visible {
+    outline: none;
+    background: var(--c-hover);
   }
 </style>

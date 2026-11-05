@@ -7,6 +7,7 @@
   import Explorer from '#lib/components/Explorer.svelte';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { ui } from '#lib/stores/ui.svelte.ts';
+  import Drawer from '#lib/components/phone/Drawer.svelte';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
   import { isUnder, join, parentOf } from '#lib/util/names.ts';
@@ -89,6 +90,9 @@
 </script>
 
 {#if ui.phone}
+  <Drawer label="Notes folders">
+    <Explorer id="notes" rootName={NOTES_ROOT_NAME} folders={notes.folders} {leaves} {selected} {actions} />
+  </Drawer>
   {@render children()}
 {:else}
   <Explorer id="notes" rootName={NOTES_ROOT_NAME} folders={notes.folders} {leaves} {selected} {actions} />

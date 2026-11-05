@@ -1,6 +1,8 @@
 <script lang="ts" module>
   // Expanded folders per explorer, kept while the app runs so switching sections keeps them.
   const expandedBy = new Map<string, Record<string, boolean>>();
+  /** On a phone the explorer lives in the drawer, which does the hiding. */
+  const shown = $derived(ui.phone || ui.explorerOpen);
 </script>
 
 <script lang="ts">
@@ -316,7 +318,7 @@
     const inList = e.target instanceof HTMLElement && e.target.closest('[data-row]:not(.tree [data-row])') !== null;
     if (e.defaultPrevented || inList) return;
     const row = focusedRow(e.target) ?? selectedRow;
-    if (!ui.explorerOpen || busy || !row) return;
+    if (!shown || busy || !row) return;
     if (e.key === 'F2') {
       e.preventDefault();
       startRename(row);
@@ -332,7 +334,7 @@
 
 <svelte:window {onkeydown} />
 
-{#if ui.explorerOpen}
+{#if shown}
   <aside class="explorer" class:dragging={drag !== null} aria-label="Explorer" data-pane="side">
     <div class="toolbar" role="toolbar" aria-label="Explorer actions">
       <button class="icon-btn sm" aria-label={newItemLabel} title={newItemLabel} onclick={onNewItem}>
@@ -372,9 +374,11 @@
       {/each}
     </div>
 
-    <button class="caret" aria-label="Collapse explorer" title="Hide explorer" onclick={ui.toggleExplorer}>
-      <Icon name="chevronLeft" size={10} stroke={3} />
-    </button>
+    {#if !ui.phone}
+      <button class="caret" aria-label="Collapse explorer" title="Hide explorer" onclick={ui.toggleExplorer}>
+        <Icon name="chevronLeft" size={10} stroke={3} />
+      </button>
+    {/if}
   </aside>
 {:else}
   <button class="caret tab" aria-label="Expand explorer" title="Show explorer" onclick={ui.toggleExplorer}>

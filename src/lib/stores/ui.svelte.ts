@@ -11,6 +11,8 @@ class Ui {
   popup = $state<Popup>(null);
   palette = $state(false);
   quick = $state<QuickKind | null>(null);
+  /** The phone's left drawer (folder tree, Settings sections) is open. */
+  drawer = $state(false);
 
   /** The phone layout: a narrow window (always on a phone). */
   get phone(): boolean {

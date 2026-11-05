@@ -2,6 +2,8 @@
   import { page } from '$app/state';
   import { ui } from '#lib/stores/ui.svelte.ts';
   import PhoneSettings from '#lib/components/phone/PhoneSettings.svelte';
+  import Drawer from '#lib/components/phone/Drawer.svelte';
+  import Icon from '#lib/components/Icon.svelte';
   import StatusesEditor from '#lib/components/StatusesEditor.svelte';
   import LabelsEditor from '#lib/components/LabelsEditor.svelte';
   import WordKindsEditor from '#lib/components/WordKindsEditor.svelte';
@@ -36,6 +38,8 @@
   ];
 
   const requested = $derived(page.url.searchParams.get(SECTION_PARAM));
+  /** A phone has no command palette, so no section for it. */
+  const shownSections = $derived(ui.phone ? sections.filter((s) => s.id !== SETTINGS_SECTION.palette) : sections);
   const current = $derived(sections.find((s) => s.id === requested) ?? sections[0]);
 
   let navEl = $state<HTMLElement>();
@@ -61,25 +65,34 @@
 
 <svelte:window {onkeydown} />
 
-{#if ui.phone && !requested}
-  <PhoneSettings />
-{:else}
-{#if !ui.phone}
+{#snippet sectionList()}
 <aside class="side" aria-label="Settings sections" data-pane="side">
   <div class="top"><span class="caption muted">Settings</span></div>
   <nav class="secs" bind:this={navEl}>
-    {#each sections as s (s.id)}
-      <button class="sec" class:on={s.id === current.id} aria-current={s.id === current.id ? 'page' : undefined} onclick={() => show(s.id)}>
+    {#each shownSections as s (s.id)}
+      {@const on = s.id === current.id && (!ui.phone || requested !== null)}
+      <button class="sec" class:on aria-current={on ? 'page' : undefined} onclick={() => show(s.id)}>
         {s.label}
       </button>
     {/each}
   </nav>
 </aside>
+{/snippet}
+
+{#if ui.phone}
+  <Drawer label="Settings sections">{@render sectionList()}</Drawer>
 {/if}
 
+{#if ui.phone && !requested}
+  <PhoneSettings />
+{:else}
+{#if !ui.phone}{@render sectionList()}{/if}
 <main class="detail-page detail-stack">
   <PageBar onback={ui.phone ? () => nav.back(routes.settings) : undefined}>
     <Breadcrumbs crumbs={[{ label: SETTINGS_ROOT_NAME }, { label: current.label }]} />
+    {#snippet actions()}
+      {#if ui.phone}<button class="icon-btn" aria-label="Settings sections" onclick={() => (ui.drawer = true)}><Icon name="list" size={16} /></button>{/if}
+    {/snippet}
   </PageBar>
   <article class="detail-body">
     <PageTitle title={current.label} meta={current.sub} />

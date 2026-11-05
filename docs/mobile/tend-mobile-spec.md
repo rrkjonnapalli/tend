@@ -56,8 +56,8 @@ There is no tab bar or dock on the phone. Navigation is one round button in a bo
 
 ## 5. Explorer (Notes and Tasks)
 
-- Top row: search field (soft gray fill, no border) and **+**.
-- **Folders** section: collapsible, shows only the folders inside the current folder, indented under the heading. Tapping a folder opens it (it becomes the current folder). No tree expansion.
+- Top row: the drawer button, the search field (soft gray fill, no border) and **+**.
+- **Folders live in a left drawer** (decided 2026-11-05, replacing the mockups' in-page Folders section): the same folder tree as the desktop explorer, full height, 44 px rows. It opens from the drawer button or a swipe from the left edge, and closes on the veil, Esc/Back, or as soon as a folder or note is picked. Note, task and person pages reach it by the edge swipe.
 - Outside the top-level folder: a row with **↑** (up one level) and the path (`notes / work`).
 - Below: the items in the current folder.
   - Notes: notes directly in the folder; row = name | last edited.
@@ -112,7 +112,7 @@ There is no tab bar or dock on the phone. Navigation is one round button in a bo
 - Sync: repo · branch, last synced, Sync now.
 - Appearance: Theme (System / Light / Dark), Menu button (Left / Right).
 - Fonts: App font, Editor font, Text size (each opens the Fonts screen).
-- Sections: General, Tasks (statuses, labels), Library, Tags, Sync, Feedback. These follow the desktop pages in the mobile row style.
+- Sections: General, Tasks (statuses, labels), Library, Tags, Sync, in the left drawer (its button sits by the title, and on each section's bar). Each opens full screen with a back arrow. No Command palette section on a phone; Feedback isn't there yet.
 
 ## 12. Screens
 
