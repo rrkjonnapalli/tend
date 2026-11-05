@@ -18,6 +18,8 @@ export type DateFieldProps =
       warn?: boolean;
       /** What the day is, for the labels: "due date" (the default), "date of birth". */
       what?: string;
+      /** The button's text with no day; "No <what>" when left out. */
+      empty?: string;
       /** How the button shows the day; the short date when left out. */
       format?: (day: string) => string;
       /** Days before today are greyed; on unless turned off (a date of birth is always past). */

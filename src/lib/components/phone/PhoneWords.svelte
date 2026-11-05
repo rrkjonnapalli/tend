@@ -1,37 +1,26 @@
 <script lang="ts">
-  // Words on a phone (ML-Words): a collapsible Kinds section that filters the list, then each word
-  // with its meaning on one line. A word opens on its own page.
-  import Icon from '../Icon.svelte';
+  // Words on a phone (ML-Words): a kind dropdown (all kinds unless one is picked) that filters the
+  // list, then each word with its meaning on one line. A word opens on its own page.
   import type { WordGroup } from '#lib/types/word.type.ts';
   import { routes } from '#lib/util/routes.ts';
 
   let { groups }: { groups: WordGroup[] } = $props();
 
-  let open = $state(false);
-  let kind = $state<string | null>(null);
+  const ALL = '';
+
+  let kind = $state(ALL);
 
   const picked = $derived(groups.find((g) => g.kind.value === kind) ?? null);
   const shown = $derived(
     (picked ? [picked] : groups).flatMap((g) => g.words).sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })),
   );
-
-  function pick(value: string | null) {
-    kind = value;
-    open = false;
-  }
 </script>
 
 <div class="phone-list">
-  <button class="fs" aria-expanded={open} onclick={() => (open = !open)}>
-    <Icon name={open ? 'chevronDown' : 'chevronRight'} size={14} stroke={2.5} />Kinds<span class="cur">· {picked?.kind.label ?? 'all'}</span>
-  </button>
-  {#if open}
-    <button class="kr" class:on={kind === null} onclick={() => pick(null)}>all</button>
-    {#each groups as g (g.kind.value)}
-      <button class="kr" class:on={kind === g.kind.value} onclick={() => pick(g.kind.value)}>{g.kind.label}<span class="n">{g.words.length}</span></button>
-    {/each}
-  {/if}
-  <div class="gap"></div>
+  <select class="kind" aria-label="Kind" bind:value={kind}>
+    <option value={ALL}>All kinds</option>
+    {#each groups as g (g.kind.value)}<option value={g.kind.value}>{g.kind.label} ({g.words.length})</option>{/each}
+  </select>
   {#each shown as w (w.id)}
     <a class="wr" href={routes.libraryWord(w.id)}>
       <span class="w">{w.title}</span>
@@ -43,54 +32,21 @@
 </div>
 
 <style>
-  .fs,
-  .kr {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    width: calc(100% + 20px);
-    height: 44px;
-    margin: 0 -10px;
+  .kind {
+    height: 36px;
+    margin: 4px 0 12px;
     padding: 0 10px;
     border: 0;
-    border-radius: var(--radius-control);
-    background: transparent;
-    text-align: left;
+    border-radius: var(--radius-sm);
+    background: var(--c-chip);
+    font: var(--text-ui);
+    font-size: 15px;
     color: var(--text);
   }
 
-  .fs {
-    font: var(--text-section);
-  }
-
-  .fs :global(svg),
-  .cur,
-  .n {
-    color: var(--c-muted-2);
-  }
-
-  .cur {
-    font: var(--text-ui);
-  }
-
-  .kr {
-    padding-left: 34px;
-    font: var(--text-ui);
-    font-size: 15px;
-  }
-
-  .kr.on {
-    background: var(--c-selected);
-    color: var(--c-current-ink);
-  }
-
-  .n {
-    margin-left: auto;
-    font: var(--text-meta);
-  }
-
-  .gap {
-    height: 12px;
+  .kind:focus-visible {
+    outline: none;
+    background: var(--c-hover);
   }
 
   .wr {
@@ -107,9 +63,7 @@
   }
 
   .wr:active,
-  .wr:focus-visible,
-  .fs:focus-visible,
-  .kr:focus-visible {
+  .wr:focus-visible {
     outline: none;
     background: var(--c-hover);
   }

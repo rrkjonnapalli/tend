@@ -31,7 +31,7 @@
 
   /** What a single field is for, in its labels: "due date" unless told. */
   const what = $derived(props.mode !== 'range' && props.what ? props.what : 'due date');
-  const emptyLabel = $derived(`No ${what}`);
+  const emptyLabel = $derived((props.mode !== 'range' && props.empty) || `No ${what}`);
 
   /** The years the calendar's dropdown lists: back to the earliest for a day whose year may be
    *  unknown (a date of birth), else the years around now (a due date, the tasks range). */

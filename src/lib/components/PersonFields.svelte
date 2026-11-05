@@ -93,7 +93,7 @@
   </div>
   <span class="pl">Born</span>
   <div class="pv" data-prop>
-    <DateField value={dobText(dob)} what="date of birth" format={dobShown} dimPast={false} yearOptional onchange={saveDOB} />
+    <DateField value={dobText(dob)} what="date of birth" empty="No DOB" format={dobShown} dimPast={false} yearOptional onchange={saveDOB} />
     <TimeField value={person.tob} onchange={(tob) => onsave({ tob })} />
     <span class="hint">{hint}</span>
   </div>

@@ -77,7 +77,7 @@ There is no tab bar or dock on the phone. Navigation is one round button in a bo
 ## 7. Library
 
 - Tabs: Words · Snaps · References (no Home on mobile). No tag filter, as on desktop (`decisions.md` §15); search covers it. Opens on the last used tab.
-- Words: collapsible **Kinds** section (works like Folders, filters the list); rows = word + one-line meaning.
+- Words: a kind dropdown (All kinds by default) that filters the list; rows = word + one-line meaning.
 - Snaps: two-column pinboard. Stacks open like folders (↑ `snaps / Recipes`). **+** opens the New snap sheet (paper, colour, text, stack). Tapping a snap opens the snap editor (paper, tags; ⋯ = Cut, Delete).
 - References: title, link or author, tags and date. "Why I kept it" is on the reference page.
 
