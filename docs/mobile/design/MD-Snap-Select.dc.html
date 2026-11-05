@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Select · snaps</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./tend-app.css">
+<link rel="stylesheet" href="./tend-mobile2.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Caveat:wght@500;600&amp;family=Gaegu&amp;display=swap">
+<style>
+body{margin:0}
+/* snaps (paper on a pinboard) */
+.board{background-color:var(--board-bg);background-image:radial-gradient(var(--board-dot) 1px,transparent 1.3px);background-size:22px 22px}
+.sheet{--rule:22px;--rule-top:4px;--margin:27px;--band-size:12px;position:relative;display:flex;flex-direction:column;gap:10px;color:var(--board-ink);font:var(--text-snap-mini);font-size:13px;line-height:22px}
+.sheet.lined{padding:24px 12px 10px 36px;background-color:var(--paper);background-image:linear-gradient(90deg,transparent var(--margin),var(--paper-margin) var(--margin),var(--paper-margin) calc(var(--margin) + 1px),transparent calc(var(--margin) + 1px)),repeating-linear-gradient(transparent 0 calc(var(--rule) - 1px),var(--paper-rule) calc(var(--rule) - 1px) var(--rule));background-position:0 0,0 var(--rule-top);box-shadow:var(--paper-shadow)}
+.sheet.plain{padding:24px 14px 10px;background:var(--paper);box-shadow:var(--paper-shadow)}
+.sheet.slip{padding:24px 12px 10px;background:var(--paper-kraft);box-shadow:var(--paper-shadow);font:var(--text-mono);font-size:12px}
+.sheet.sticky{min-height:150px;padding:24px 14px 10px;background:linear-gradient(var(--band) 0 var(--band-size),var(--tint) var(--band-size));box-shadow:var(--paper-shadow);font:var(--text-hand-sticky-mini);font-size:18px;line-height:24px}
+.sheet.scrap{padding:24px 14px 26px;background:var(--paper);clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),92% 100%,84% calc(100% - 7px),75% calc(100% - 2px),66% calc(100% - 9px),58% 100%,50% calc(100% - 7px),42% calc(100% - 2px),33% calc(100% - 9px),25% 100%,16% calc(100% - 7px),8% calc(100% - 2px),0 calc(100% - 8px))}
+.torn{filter:var(--paper-torn-shadow)}
+.pin{position:absolute;top:7px;left:calc(50% - 6px);width:12px;height:12px;border-radius:50%;background:var(--pin-red);box-shadow:var(--pin-shadow)}
+.pin.top{background:var(--pin-brass)}
+.bf{display:flex;align-items:center;gap:8px;margin-top:auto;font:var(--text-meta);font-size:11px;color:var(--board-ink-muted)}
+.bf .tg{margin-left:auto}
+.pile{position:relative;display:block;height:150px;margin-top:14px;color:var(--board-ink)}
+.pile .u{position:absolute;inset:0;box-shadow:var(--paper-shadow)}
+.pile .u1{background:var(--paper-kraft);transform:rotate(4deg) translate(5px,4px)}
+.pile .u2{background:var(--paper);transform:rotate(-4deg) translate(-4px,6px)}
+.pile .top{position:absolute;inset:0;display:flex;flex-direction:column;gap:4px;padding:22px 14px 10px;background:var(--paper);box-shadow:var(--paper-shadow)}
+.pile .nm{font:var(--text-hand-stack);font-size:20px;line-height:26px}
+.pile .pk{max-height:44px;overflow:hidden;font:var(--text-code);font-size:11px;line-height:16px;color:var(--board-ink-muted)}
+.pile .clip{position:absolute;top:-6px;left:50%;width:40px;height:16px;margin-left:-20px;border-radius:3px;background:var(--clip);box-shadow:var(--pin-shadow)}
+.pile .clip::before,.pile .clip::after{content:'';position:absolute;top:-10px;width:10px;height:12px;border:2px solid var(--clip-wire);border-bottom:0;border-radius:6px 6px 0 0}
+.pile .clip::before{left:6px}.pile .clip::after{right:6px}
+
+
+</style>
+</helmet>
+<div class="q">
+<header class="selbar"><button class="quiet-btn">Cancel</button><span class="t">2 selected</span><button class="done-btn" style="font-weight:400">Select all</button></header><div class="qc" style="padding:0"><div class="board" style="height:100%;border-top:1px solid var(--board-edge)"><div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:22px 18px"><div style="display:flex;flex-direction:column;gap:26px"><div style="position:relative;rotate:-1.2deg" class="" role="checkbox" aria-checked="false"><div class="sheet sticky" data-surface="light" style="--band:hsl(50 calc(70% * var(--sticky-sat)) var(--sticky-band-l));--tint:hsl(50 calc(70% * var(--sticky-sat)) var(--sticky-sheet-l));"><div style="white-space:pre-wrap">Call the bank before Friday about the standing order</div><span class="bf"><span>2h</span><span class="tg"></span></span></div><span class="pin top"></span><span class="snap-ck"><span class="ckb" aria-hidden="true"></span></span></div><div style="position:relative;rotate:1.2deg" class="torn" role="checkbox" aria-checked="true"><div class="sheet scrap picked-snap" ><div style="white-space:pre-wrap">Soup for Sunday: leek, potato, a little mustard.</div><span class="bf"><span>Sat</span><span class="tg"></span></span></div><span class="pin "></span><span class="snap-ck"><span class="ckb on" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 12.5l3 3 7-7"/></svg></span></span></div></div><div style="display:flex;flex-direction:column;gap:26px"><div style="position:relative;rotate:1.4deg" class="" role="checkbox" aria-checked="true"><div class="sheet lined picked-snap" ><div style="white-space:pre-wrap">Things to ask at the viewing:
+- which way do the bedrooms face</div><span class="bf"><span>Yesterday</span><span class="tg"></span></span></div><span class="pin "></span><span class="snap-ck"><span class="ckb on" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 12.5l3 3 7-7"/></svg></span></span></div><div style="position:relative;rotate:-1deg" class="" role="checkbox" aria-checked="false"><div class="sheet sticky" data-surface="light" style="--band:hsl(160 calc(70% * var(--sticky-sat)) var(--sticky-band-l));--tint:hsl(160 calc(70% * var(--sticky-sat)) var(--sticky-sheet-l));"><div style="white-space:pre-wrap">Water the fern on Mondays</div><span class="bf"><span>Fri</span><span class="tg"></span></span></div><span class="pin "></span><span class="snap-ck"><span class="ckb" aria-hidden="true"></span></span></div></div></div></div></div><nav class="actbar" aria-label="Selection actions"><button><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1L20 20M8.1 15.9L20 4"/></svg>Cut</button><button><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l9 9-8 8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>Tag</button><button class="danger"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Delete</button></nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

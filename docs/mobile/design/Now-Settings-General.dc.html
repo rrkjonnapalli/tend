@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings General · current</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./tend-app.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&family=Lato:wght@400;700&family=JetBrains+Mono:wght@400;500&family=Caveat:wght@500;600&family=Gaegu&display=swap">
+<style>
+body{margin:0}
+.pt-lt{flex:0 0 auto;display:flex;flex-direction:column;gap:2px;padding:4px 0 8px}
+.pt-meta{font:var(--text-caption);color:var(--c-muted-2)}
+.ec-acts{display:flex;align-items:center;gap:2px}
+.ec-edit{color:var(--c-muted-2)}
+.ec-edit:hover{background:var(--border)}
+.st-side{flex:0 0 var(--explorer-w);border-right:1px solid var(--border);display:flex;flex-direction:column}
+.st-top{flex:0 0 40px;display:flex;align-items:center;padding:0 16px}
+.st-secs{display:flex;flex-direction:column}
+.st-sec{display:flex;align-items:center;min-height:32px;padding:0 16px;border:0;background:transparent;text-align:left;font:var(--text-ui);color:var(--text-muted);cursor:pointer}
+.st-sec:hover{background:var(--c-hover);color:var(--text)}
+.st-sec.on{background:var(--c-selected);color:var(--c-current-ink)}
+.sg-group{display:flex;flex-direction:column;gap:12px}
+.sg-hint{font:var(--text-meta);color:var(--c-muted-2)}
+.ns-line{display:flex;align-items:center;gap:8px;min-height:28px}
+.ns-val{font:var(--text-ui)}
+.sg-line{display:flex;align-items:center;gap:16px;min-height:32px}
+.sg-vpath{flex:1;min-width:0;font:var(--text-mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sg-seg{display:inline-flex;align-self:flex-start;gap:2px;padding:2px;border-radius:var(--radius-control);background:var(--c-chip)}
+.sg-choice{position:relative;display:inline-flex;align-items:center;height:26px;padding:0 12px;border-radius:var(--radius-sm);font:var(--text-caption);color:var(--c-muted-2);cursor:pointer}
+.sg-choice:hover{color:var(--text)}
+.sg-choice.on{background:var(--c-page);color:var(--text)}
+.sg-choice input{position:absolute;opacity:0;pointer-events:none}
+.sg-check{display:flex;align-items:center;gap:var(--space-2);font:var(--text-ui);cursor:pointer}
+.sg-check input{accent-color:var(--primary)}
+</style>
+</helmet>
+<div class="app-shell" style="width:100%;min-height:800px;height:800px;">
+
+  <header class="tb-bar">
+    <div class="tb-dots" role="group" aria-label="Window">
+      <button class="tb-dot close" aria-label="Close window"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      <button class="tb-dot min" aria-label="Minimize window"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+      <button class="tb-dot max" aria-label="Maximize window"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+    </div>
+    <span class="tb-title">Settings</span>
+  </header>
+
+  <div class="app-page">
+
+    <aside class="st-side" aria-label="Settings sections">
+      <div class="st-top"><span class="caption muted">Settings</span></div>
+      <nav class="st-secs">
+        <button class="st-sec on" aria-current="page">General</button>
+        <button class="st-sec">Tasks</button>
+        <button class="st-sec">Library</button>
+        <button class="st-sec">Tags</button>
+        <button class="st-sec">Sync</button>
+        <button class="st-sec">Command palette</button>
+      </nav>
+    </aside>
+
+    <main class="detail-page detail-stack">
+        <div class="pb-bar caption">
+          <nav class="cr-trail caption" aria-label="Breadcrumb">
+            <span class="cr-cur">settings</span> <span aria-hidden="true">/</span> <span class="cr-cur" aria-current="page">General</span>
+          </nav>
+          <span class="pb-grow"></span>
+        </div>
+      <article class="detail-body">
+        <div class="pt-lt">
+          <h1 class="heading">General</h1>
+          <span class="pt-meta">App-wide preferences.</span>
+        </div>
+        <section class="sg-group">
+          <h2 class="section-title">Vault</h2>
+          <div class="sg-line">
+            <span class="sg-vpath">/Users/sage/Documents/tend</span>
+            <button class="link-btn">Change vault folder…</button>
+          </div>
+        </section>
+
+        <section class="sg-group">
+          <h2 class="section-title">Appearance</h2>
+          <div class="sg-seg" role="radiogroup" aria-label="Theme">
+            <label class="sg-choice on"><input type="radio" name="theme" value="system" checked="checked"> System</label>
+            <label class="sg-choice"><input type="radio" name="theme" value="light"> Light</label>
+            <label class="sg-choice"><input type="radio" name="theme" value="dark"> Dark</label>
+          </div>
+          <span class="sg-hint">System follows your Mac's light or dark setting.</span>
+        </section>
+
+        <section class="sg-group">
+          <h2 class="section-title">Fonts</h2>
+          <div class="sg-line"><span style="width:96px;font:var(--text-ui)">App font</span><button class="btn-ghost" aria-haspopup="listbox" style="font-family:'Lato',sans-serif">Lato <span class="sg-hint">default</span> ▾</button></div>
+          <div class="sg-line"><span style="width:96px;font:var(--text-ui)">Editor font</span><button class="btn-ghost" aria-haspopup="listbox" style="font-family:'JetBrains Mono',monospace">JetBrains Mono <span class="sg-hint">default</span> ▾</button></div>
+          <div class="sg-line"><span style="width:96px;font:var(--text-ui)">Text size</span><div class="sg-seg" role="radiogroup" aria-label="Text size">
+            <label class="sg-choice"><input type="radio" name="size" value="s"> Small</label>
+            <label class="sg-choice on"><input type="radio" name="size" value="m" checked="checked"> Default</label>
+            <label class="sg-choice"><input type="radio" name="size" value="l"> Large</label>
+          </div></div>
+          <span class="sg-hint">App font is everything except snaps. Editor font is notes, descriptions, meanings and the other editors. Snaps keep their paper fonts.</span>
+        </section>
+
+        <section class="sg-group">
+          <h2 class="section-title">Files</h2>
+          <div class="ns-line">
+            <span class="ns-val">30 MB</span>
+            <span class="ec-acts"><button class="icon-btn sm ec-edit" aria-label="Edit file size limit" title="Edit"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></span>
+          </div>
+          <span class="sg-hint">
+            Notes this size or larger aren’t indexed, files this size can’t be attached, and sync never commits one.
+            Lowering it never deletes anything: a note Tend already has stays, but its changes aren’t picked up while it’s too big.
+          </span>
+        </section>
+
+        <section class="sg-group">
+          <h2 class="section-title">Timers</h2>
+          <label class="sg-check"><input type="checkbox" checked="checked"> Play a sound when a timer ends</label>
+        </section>
+
+        <section class="sg-group">
+          <h2 class="section-title">Confirmations</h2>
+          <label class="sg-check"><input type="checkbox" checked="checked"> Ask before deleting a note</label>
+          <label class="sg-check"><input type="checkbox" checked="checked"> Ask before deleting a task</label>
+          <label class="sg-check"><input type="checkbox" checked="checked"> Ask before deleting a person</label>
+          <label class="sg-check"><input type="checkbox" checked="checked"> Ask before deleting a word</label>
+          <label class="sg-check"><input type="checkbox"> Ask before deleting a snap</label>
+          <label class="sg-check"><input type="checkbox" checked="checked"> Ask before deleting a reference</label>
+          <span class="sg-hint">Deleting a folder, a status or a label always asks.</span>
+        </section>
+
+        <section class="sg-group">
+          <h2 class="section-title">Updates</h2>
+          <div class="sg-line">
+            <span>Tend 0.1.0</span>
+            <button class="btn-ghost">Check for updates</button>
+          </div>
+        </section>
+      </article>
+    </main>
+  </div>
+
+  <div class="nav-dock">
+    <button class="nav-tog" aria-label="Hide sections bar" title="Hide"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+    <nav class="nav-row" aria-label="Sections">
+      <a class="nav-ico" href="#" aria-label="Notes" title="Notes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h5"></path></svg></a>
+      <a class="nav-ico" href="#" aria-label="Tasks" title="Tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></a>
+      <a class="nav-ico" href="#" aria-label="People" title="People"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+      <a class="nav-ico" href="#" aria-label="Library" title="Library"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h3v16H5z"></path><path d="M10 4h3v16h-3z"></path><path d="M15.4 5.2l2.9-.8 3.6 15-2.9.8z"></path></svg></a>
+      <div class="nav-right">
+        <button class="nav-sync" aria-label="Sync now" title="Sync now"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"></path><path d="M4 4v4h4"></path><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"></path><path d="M20 20v-4h-4"></path></svg></button>
+        <a class="nav-ico cur" href="#" aria-label="Settings" title="Settings" aria-current="page"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
+        <button class="nav-ico" aria-label="Feedback" title="Feedback" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M8.5 11h7M8.5 14.5h4"></path></svg></button>
+      </div>
+    </nav>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

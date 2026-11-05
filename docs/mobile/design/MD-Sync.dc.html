@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sync · mobile</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./tend-app.css">
+<link rel="stylesheet" href="./tend-mobile2.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="q">
+<header class="qt"><button class="qi" aria-label="Back to settings" title="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><nav class="crumb-q" aria-label="Path"><span>settings</span><span class="sl">/</span><b>Sync</b></nav></header>
+<div class="qc clear-fab">
+<div class="qsec"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Last sync</div>
+<div class="banner-err" role="alert" style="margin:0 0 8px">Couldn’t reach the sync remote. Tend tries again in 2 minutes.</div>
+<div class="cr" style="padding-left:0"><span class="v">Last synced</span><span class="lb">today, 9:42</span></div>
+<div style="display:flex;gap:8px;margin:4px 0 8px"><button class="btn-ghost" style="height:44px;flex:1">Sync now</button><button class="btn-ghost" style="height:44px;flex:1">Disconnect…</button></div>
+<div class="qsec"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> Repo</div>
+<div class="cr" style="padding-left:0"><span class="v" style="font:var(--text-mono);font-size:13px">github.com/sage-notes/tend-vault</span><span class="lb">main</span></div>
+<div class="cr" style="padding-left:0"><span class="v">Token · saved on this phone</span><button class="link-btn" style="min-height:44px;padding:0 6px">Replace</button></div>
+<div class="qsec"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg> When</div>
+<div class="cr" style="padding-left:0"><span class="v">When you open or leave Tend, and every</span><button class="box" style="background:transparent">15 min</button></div>
+<p style="margin:4px 0 0;font:var(--text-caption);color:var(--c-muted-2)">A phone can’t sync in the background for long, so Tend syncs as you come and go.</p>
+</div>
+<div class="cm r"><div class="items" aria-hidden="true"></div><div class="brow" style="justify-content:flex-end"><button class="btn" aria-haspopup="menu" aria-label="Menu: Settings, sync failed"><span class="a"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></span><span class="dot fail" aria-hidden="true"></span></button></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

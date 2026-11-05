@@ -6,7 +6,7 @@ Reference for building Tend (Tauri 2 + SvelteKit). The mockups in `docs/design/s
 
 ## 1. Product
 
-- **Tend**: notes, tasks, people and a Library (words, snaps, references) in one desktop app, plus simple timers.
+- **Tend**: notes, tasks, people and a Library (words, snaps, references) in one app, plus simple timers. v1 runs on macOS, iOS and Android (`docs/release-plan.md` §5); on a phone the vault is filled from the remote on first run (`docs/mobile/tend-mobile-spec.md`).
 - **v1 scope:** Notes · Tasks · People · Library (§15) · Timers. Calendar, events and reminders come later (§14, and `docs/later/calendar-design-spec-doc.md`).
 - Light and dark themes (§2 *Theme*). Minimal, editor-like (Sublime / VS Code / JetBrains feel).
 - No floating or detached panels, no shadows. Panels sit flush, separated by hairlines.
@@ -26,6 +26,11 @@ Reference for building Tend (Tauri 2 + SvelteKit). The mockups in `docs/design/s
     | success | `#1e7a55` |
     | warning | `#a84f2c` |
     | danger | `#da0037` (soft `#ffebeb`) |
+- **Sharing a vault:** anyone with write access to the vault's Git remote can connect their own Tend to it and sync; to sync, another person is just another device (`docs/v1-sync-spec.md`). There are no users, owners or permissions inside Tend, and it is not live co-editing. What sharing means:
+  - Changes to different columns of a row, and new rows on either side, all survive.
+  - When two people change the same column of a row between syncs, the newer edit wins and the other is lost without a conflict copy. A note's body is one value, so two people editing the same note between syncs keep only the newer note.
+  - Shared settings, statuses, labels, word kinds and tags are the same for everyone on the vault.
+  - The whole vault is shared; one folder or note can't be shared alone.
 - **App icon:** a lowercase t whose crossbar grows into a leaf, white on a violet (`#6f5ee4`) rounded square. Files in `docs/design/icon/`: `icon.svg` (source), `icon-1024.png` (input for `npx tauri icon`), `mark.svg` (one-colour glyph, `currentColor`, for favicon and in-app use).
 
 ## 2. Vault

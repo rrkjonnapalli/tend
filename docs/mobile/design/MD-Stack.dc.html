@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Library · stack</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./tend-app.css">
+<link rel="stylesheet" href="./tend-mobile2.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Caveat:wght@500;600&amp;family=Gaegu&amp;display=swap">
+<style>
+body{margin:0}
+/* snaps (paper on a pinboard) */
+.board{background-color:var(--board-bg);background-image:radial-gradient(var(--board-dot) 1px,transparent 1.3px);background-size:22px 22px}
+.sheet{--rule:22px;--rule-top:4px;--margin:27px;--band-size:12px;position:relative;display:flex;flex-direction:column;gap:10px;color:var(--board-ink);font:var(--text-snap-mini);font-size:13px;line-height:22px}
+.sheet.lined{padding:24px 12px 10px 36px;background-color:var(--paper);background-image:linear-gradient(90deg,transparent var(--margin),var(--paper-margin) var(--margin),var(--paper-margin) calc(var(--margin) + 1px),transparent calc(var(--margin) + 1px)),repeating-linear-gradient(transparent 0 calc(var(--rule) - 1px),var(--paper-rule) calc(var(--rule) - 1px) var(--rule));background-position:0 0,0 var(--rule-top);box-shadow:var(--paper-shadow)}
+.sheet.plain{padding:24px 14px 10px;background:var(--paper);box-shadow:var(--paper-shadow)}
+.sheet.slip{padding:24px 12px 10px;background:var(--paper-kraft);box-shadow:var(--paper-shadow);font:var(--text-mono);font-size:12px}
+.sheet.sticky{min-height:150px;padding:24px 14px 10px;background:linear-gradient(var(--band) 0 var(--band-size),var(--tint) var(--band-size));box-shadow:var(--paper-shadow);font:var(--text-hand-sticky-mini);font-size:18px;line-height:24px}
+.sheet.scrap{padding:24px 14px 26px;background:var(--paper);clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),92% 100%,84% calc(100% - 7px),75% calc(100% - 2px),66% calc(100% - 9px),58% 100%,50% calc(100% - 7px),42% calc(100% - 2px),33% calc(100% - 9px),25% 100%,16% calc(100% - 7px),8% calc(100% - 2px),0 calc(100% - 8px))}
+.torn{filter:var(--paper-torn-shadow)}
+.pin{position:absolute;top:7px;left:calc(50% - 6px);width:12px;height:12px;border-radius:50%;background:var(--pin-red);box-shadow:var(--pin-shadow)}
+.pin.top{background:var(--pin-brass)}
+.bf{display:flex;align-items:center;gap:8px;margin-top:auto;font:var(--text-meta);font-size:11px;color:var(--board-ink-muted)}
+.bf .tg{margin-left:auto}
+.pile{position:relative;display:block;height:150px;margin-top:14px;color:var(--board-ink)}
+.pile .u{position:absolute;inset:0;box-shadow:var(--paper-shadow)}
+.pile .u1{background:var(--paper-kraft);transform:rotate(4deg) translate(5px,4px)}
+.pile .u2{background:var(--paper);transform:rotate(-4deg) translate(-4px,6px)}
+.pile .top{position:absolute;inset:0;display:flex;flex-direction:column;gap:4px;padding:22px 14px 10px;background:var(--paper);box-shadow:var(--paper-shadow)}
+.pile .nm{font:var(--text-hand-stack);font-size:20px;line-height:26px}
+.pile .pk{max-height:44px;overflow:hidden;font:var(--text-code);font-size:11px;line-height:16px;color:var(--board-ink-muted)}
+.pile .clip{position:absolute;top:-6px;left:50%;width:40px;height:16px;margin-left:-20px;border-radius:3px;background:var(--clip);box-shadow:var(--pin-shadow)}
+.pile .clip::before,.pile .clip::after{content:'';position:absolute;top:-10px;width:10px;height:12px;border:2px solid var(--clip-wire);border-bottom:0;border-radius:6px 6px 0 0}
+.pile .clip::before{left:6px}.pile .clip::after{right:6px}
+
+</style>
+</helmet>
+<div class="q">
+<header class="qs"><label class="fld"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input aria-label="Search library" placeholder="Search library"></label><button class="qi" aria-label="New" title="New"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></header><div class="qc clear-fab" style="padding:0"><div style="padding:0 20px"><nav class="qv2" aria-label="Library"><button class="vt-tab" aria-pressed="false">Words <span class="n">14</span></button><button class="vt-tab on" aria-pressed="true">Snaps <span class="n">23</span></button><button class="vt-tab" aria-pressed="false">References <span class="n">31</span></button><span class="tools"><button class="ib" aria-label="Filter by tag" title="Filter by tag"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4h8l9 9-8 8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg></button></span></nav><div class="loc"><button class="qi" aria-label="Up to snaps" title="Up to snaps"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V6M6 11l6-6 6 6"/></svg></button><nav class="crumb-q" aria-label="Path"><span>snaps</span><span class="sl">/</span><b>Recipes</b></nav></div></div><div class="board" style="height:100%;border-top:1px solid var(--board-edge)"><div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:22px 18px"><div style="display:flex;flex-direction:column;gap:26px"><div style="position:relative;rotate:-1deg" class=""><div class="sheet lined" ><div style="white-space:pre-wrap">Dal: soak the lentils overnight, cumin first, then the onions.</div><span class="bf"><span>Sep</span><span class="tg"></span></span></div><span class="pin "></span></div><div style="position:relative;rotate:1.2deg" class=""><div class="sheet sticky" data-surface="light" style="--band:hsl(50 calc(70% * var(--sticky-sat)) var(--sticky-band-l));--tint:hsl(50 calc(70% * var(--sticky-sat)) var(--sticky-sheet-l));"><div style="white-space:pre-wrap">Double the garlic. Always.</div><span class="bf"><span>2 Oct</span><span class="tg"></span></span></div><span class="pin top"></span></div><div style="position:relative;rotate:-0.8deg" class=""><div class="sheet slip" ><div style="white-space:pre-wrap">rice 1 : water 1.5
+12 min, rest 10</div><span class="bf"><span>Aug</span><span class="tg"></span></span></div><span class="pin "></span></div></div><div style="display:flex;flex-direction:column;gap:26px"><div style="position:relative;rotate:1.3deg" class=""><div class="sheet plain" ><div style="white-space:pre-wrap">Shakshuka: peppers first, eggs last, lid on for 6 minutes.</div><span class="bf"><span>Sat</span><span class="tg"></span></span></div><span class="pin "></span></div><div style="position:relative;rotate:-1.2deg" class="torn"><div class="sheet scrap" ><div style="white-space:pre-wrap">Pesto: basil, pine nuts, parmesan, lemon.</div><span class="bf"><span>Jul</span><span class="tg"></span></span></div><span class="pin "></span></div><div style="position:relative;rotate:0.8deg" class=""><div class="sheet sticky" data-surface="light" style="--band:hsl(160 calc(70% * var(--sticky-sat)) var(--sticky-band-l));--tint:hsl(160 calc(70% * var(--sticky-sat)) var(--sticky-sheet-l));"><div style="white-space:pre-wrap">Bread: 500 g flour, 350 water, 10 salt</div><span class="bf"><span>Jun</span><span class="tg"></span></span></div><span class="pin "></span></div></div></div></div></div><div class="cm r"><div class="items" aria-hidden="true"></div><div class="brow" style="justify-content:flex-end"><button class="btn" aria-haspopup="menu" aria-label="Menu: Library"><span class="a"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h3v16H5z"/><path d="M10 4h3v16h-3z"/><path d="M15.4 5.2l2.9-.8 3.6 15-2.9.8z"/></svg></span></button></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

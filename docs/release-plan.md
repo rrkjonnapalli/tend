@@ -173,8 +173,9 @@ before the database is ready is fine.
 Decided: both ship in v1. Tauri 2 builds iOS and Android apps, but mobile is a project of its own:
 
 - **UI.** The mockups are desktop only (sidebar, popovers, keyboard). Phones need designed screens.
-- **Storage.** iOS can't use an arbitrary folder as the vault; Android only awkwardly. On mobile
-  the vault lives in the app's own storage and is filled by sync. Tend on a phone is a sync device.
+- **Storage.** For now the vault is a folder in Tend's own storage named after the remote
+  (`vaults/<host>/<owner>/<repo>`), filled by restoring from the remote on first run. Picking any folder is deferred (`docs/mobile/tend-mobile-spec.md` §10,
+  `open-questions.md` #22).
 - **Rust crates.** `git2` (libgit2 plus TLS) must cross-compile; `keyring`, `trash` and `notify`
   have no mobile path or need replacing.
 - **Distribution.** iOS needs the Apple account even for TestFlight. Android can install an APK

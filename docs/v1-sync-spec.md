@@ -26,8 +26,11 @@ Back up and synchronize a Tend vault through a Git remote, automatically.
 
 SSH remotes · Git LFS · choosing which folders sync · sub-minute sync · field-level merging or
 collaborative editing · conflict copies or user-facing conflict resolution · Git history or diffs
-inside Tend · mobile (iOS/Android) · journaling or multi-step rollback · archiving rows out of the
+inside Tend · journaling or multi-step rollback · archiving rows out of the
 database.
+
+Mobile (iOS and Android) was a non-goal here; it is now in v1 (`docs/release-plan.md` §5).
+A phone syncs with the same format and rules: nothing in this spec changes for it.
 
 ---
 
@@ -467,6 +470,10 @@ never sent to the UI. The other sync settings live in the app config folder, key
 
 - **Triggers:** app open (after the scan, §13) · interval (minutes, 0–1440, 0 = off, default 15) · app close ·
   **Sync now**.
+- **Phones** (iOS, Android) never get a close event: the app is suspended and may be killed. There,
+  *app close* is replaced by **suspend** (Tauri `WindowEvent::Suspended`) and **resume** (`Resumed`);
+  the interval runs only while the app is in front. iOS gives a suspended app a few seconds; a run
+  cut short is safe and the next trigger finishes it.
 - **Close:** Tauri close is intercepted; "Syncing…" shows; the app quits when pull (and push, if
   needed) succeed or after **10 s**. A cut-short run isn't treated as successful; the next open
   syncs again.

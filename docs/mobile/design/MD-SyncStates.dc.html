@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sync states</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./tend-app.css">
+<link rel="stylesheet" href="./tend-mobile2.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+.strip{width:390px;height:440px;background:var(--c-page);color:var(--text);font:var(--text-ui)}.strip *{box-sizing:border-box}.ss .dot{right:6px}
+</style>
+</helmet>
+<div class="strip">
+<div style="padding:24px 20px 8px"><h1 class="qh" style="margin:0 0 4px;font-size:20px">Sync on the menu button</h1><p style="margin:0;font:var(--text-caption);color:var(--c-muted-2)">A dot on the corner button shows the state. Open the menu and the sync icon takes the same colour; tap it to act.</p></div><div class="ss" style="height:72px"><span style="position:absolute;left:16px;top:8px;display:block;width:56px;height:56px"><span class="cm r" style="position:absolute;right:0;bottom:0;padding-right:0;width:56px;border-radius:28px"><span class="brow" style="width:56px;padding:0"><span class="btn" style="width:56px;display:block"><span class="a"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg></span></span></span></span></span><span class="lbl2" style="left:92px">Idle<span>No dot. Sync now sits in the menu with the last time.</span></span></div><div class="ss" style="height:72px"><span style="position:absolute;left:16px;top:8px;display:block;width:56px;height:56px"><span class="cm r" style="position:absolute;right:0;bottom:0;padding-right:0;width:56px;border-radius:28px"><span class="brow" style="width:56px;padding:0"><span class="btn" style="width:56px;display:block"><span class="a"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg></span><span class="dot run" aria-hidden="true"></span></span></span></span></span><span class="lbl2" style="left:92px">Syncing<span>Violet dot.</span></span></div><div class="ss" style="height:72px"><span style="position:absolute;left:16px;top:8px;display:block;width:56px;height:56px"><span class="cm r" style="position:absolute;right:0;bottom:0;padding-right:0;width:56px;border-radius:28px"><span class="brow" style="width:56px;padding:0"><span class="btn" style="width:56px;display:block"><span class="a"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg></span><span class="dot fail" aria-hidden="true"></span></span></span></span></span><span class="lbl2" style="left:92px">Failed<span>Red dot. Sync in the menu opens Settings › Sync with the error.</span></span></div><div class="ss" style="height:72px"><span style="position:absolute;left:16px;top:8px;display:block;width:56px;height:56px"><span class="cm r" style="position:absolute;right:0;bottom:0;padding-right:0;width:56px;border-radius:28px"><span class="brow" style="width:56px;padding:0"><span class="btn" style="width:56px;display:block"><span class="a"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg></span><span class="dot tok" aria-hidden="true"></span></span></span></span></span><span class="lbl2" style="left:92px">Needs a new token<span>Orange dot. Sync in the menu opens the token sheet.</span></span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":440}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

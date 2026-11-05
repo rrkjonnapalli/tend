@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Restore · mobile</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./tend-app.css">
+<link rel="stylesheet" href="./tend-mobile2.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&amp;family=Lato:wght@400;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div class="q">
+<div class="qc" style="padding-top:36px;display:flex;flex-direction:column">
+<h1 class="qh" style="font-size:32px;line-height:40px;margin-bottom:6px">tend.</h1>
+<p style="margin:0 0 24px;font:var(--text-ui);color:var(--text-muted)">Tend restores your vault from its Git repo into a folder on this phone. Connect the repo your computer syncs to.</p>
+<div class="fl"><span class="l">Repo URL</span><span class="v">https://github.com/sage-notes/tend-vault</span></div>
+<div class="fl"><span class="l">Token</span><span class="v">••••••••••••••••<button class="qi" style="margin-left:auto;margin-right:-12px" aria-label="Show token"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></span></div>
+<div class="fl"><span class="l">Vault folder</span><span class="v">On My iPhone/Tend<button class="link-btn" style="margin-left:auto;min-height:44px;font:var(--text-ui)">Change</button></span></div><button class="fs" aria-expanded="false"><span class="cv"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span>More <span class="cur">· branch main</span></button>
+<p style="margin:8px 0 0;font:var(--text-caption);color:var(--c-muted-2)">⚠ Beware of public repos: anything in your vault, private content included, is pushed there.</p>
+<div style="flex:1"></div>
+<button class="btn-primary" style="height:48px;margin-bottom:12px;font:var(--text-ui-strong)">Restore</button>
+<p style="margin:0 0 28px;text-align:center;font:var(--text-caption);color:var(--c-muted-2)">No vault yet? Start one on your computer, connect it to a repo, then restore it here.</p>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

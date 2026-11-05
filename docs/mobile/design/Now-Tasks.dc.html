@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tasks · current</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./tend-app.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600&family=Lato:wght@400;700&family=JetBrains+Mono:wght@400;500&family=Caveat:wght@500;600&family=Gaegu&display=swap">
+<style>
+body{margin:0}
+.st-dot{flex:0 0 auto;display:inline-block;width:8px;height:8px;border-radius:50%;}
+.st-btn{display:grid;place-items:center;width:20px;height:20px;margin:0 -6px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer;}
+.st-btn:hover{background:var(--c-hover);}
+.av{flex:0 0 auto;display:inline-grid;place-items:center;border-radius:50%;background:var(--accent);color:var(--c-page);font-family:var(--font-ui);font-weight:700;line-height:1;letter-spacing:0.02em;}
+.av-none{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--c-chip);color:var(--c-muted-2);font:var(--text-badge);}
+.as-badge{display:grid;place-items:center;width:24px;height:24px;margin-left:-2px;padding:0;border:0;border-radius:50%;background:transparent;cursor:pointer;}
+.as-badge:hover{background:var(--c-hover);}
+.sub-mark{display:inline-grid;place-items:center;width:14px;height:14px;margin-right:6px;border-radius:50%;background:var(--success-soft);color:var(--success);font:var(--text-badge);vertical-align:1px;cursor:default;}
+.md-mini{height:24px;padding:0 6px;border:0;border-radius:var(--radius-sm);background:transparent;font:var(--text-meta);white-space:nowrap;cursor:pointer;}
+.md-mini.add{color:var(--primary);}
+.md-mini.add:hover{background:var(--primary-soft);}
+.md-mini.rem{color:var(--danger);}
+.md-mini.rem:hover{background:var(--danger-soft);}
+.tr-row{position:relative;display:grid;grid-template-columns:var(--grid-task);align-items:center;column-gap:var(--col-gap);min-height:36px;padding:0 16px;margin:0 -16px;font:var(--text-ui);}
+.tr-row.compact{grid-template-columns:var(--grid-subtask);min-height:32px;}
+.tr-row.sortable{padding-left:32px;margin-left:-32px;}
+.tr-row:hover{background:var(--c-hover);}
+.tr-title{min-width:0;height:36px;padding:0;border:0;background:transparent;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:inherit;color:inherit;cursor:pointer;}
+.compact .tr-title{height:32px;}
+.tr-ed{display:grid;}
+.tr-done{color:var(--c-muted-2);}
+.tr-meta{font:var(--text-caption);color:var(--c-muted-2);}
+.tr-path{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tr-due{font:var(--text-caption);color:var(--c-muted-2);}
+.tr-due.warn{color:var(--c-overdue);}
+.tr-md,.tr-who{display:flex;}
+.ttl{flex:0 0 auto;display:flex;flex-direction:column;gap:2px;padding:4px 0 8px;}
+.ttl-meta{font:var(--text-caption);color:var(--c-muted-2);}
+.srch-line{flex:0 0 auto;display:flex;align-items:center;justify-content:flex-end;min-height:40px;}
+.srch{display:flex;align-items:center;gap:8px;width:100%;max-width:320px;height:32px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-control);}
+.srch:focus-within{border-color:var(--primary);}
+.srch input{flex:1;min-width:0;border:0;outline:none;background:transparent;font:var(--text-ui);}
+.srch-ic{display:grid;color:var(--c-muted-2);}
+.views{flex:0 0 auto;display:flex;align-items:center;min-height:36px;margin-bottom:12px;flex-wrap:wrap;gap:4px 8px;font:var(--text-ui);}
+.v-tab{display:inline-flex;align-items:center;gap:4px;height:28px;padding:2px 2px 0;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--c-muted-2);font:var(--text-ui);cursor:pointer;}
+.v-tab:hover{color:var(--text);}
+.v-tab.on{color:var(--c-current-ink);border-bottom-color:var(--c-current);}
+.v-count{font:var(--text-meta);color:var(--c-muted-2);}
+.v-sep{color:var(--c-muted-2);line-height:28px;}
+.rangebtn{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;margin-left:2px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--c-page);color:var(--c-muted-2);font:var(--text-caption);cursor:pointer;}
+.rangebtn:hover{border-color:var(--c-muted-2);}
+.fld-ic{display:grid;color:var(--c-muted-2);}
+.add-line{flex:0 0 auto;display:flex;align-items:center;gap:var(--space-2);min-height:36px;font:var(--text-ui);color:var(--c-muted-2);}
+.add-plus{width:16px;text-align:center;}
+.add-line input{flex:1;min-width:0;border:0;outline:none;background:transparent;font:var(--text-ui);color:var(--text);}
+.add-line input::placeholder{color:var(--c-muted-2);}
+</style>
+</helmet>
+<div class="app-shell" style="width:100%;min-height:800px;height:800px;">
+
+  <header class="tb-bar">
+    <div class="tb-dots" role="group" aria-label="Window">
+      <button class="tb-dot close" aria-label="Close window"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      <button class="tb-dot min" aria-label="Minimize window"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path></svg></button>
+      <button class="tb-dot max" aria-label="Maximize window"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></button>
+    </div>
+    <span class="tb-title">Tasks</span>
+  </header>
+
+  <div class="app-page">
+
+    <aside class="ex-pane" aria-label="Explorer">
+      <div class="ex-toolbar" role="toolbar" aria-label="Explorer actions">
+        <button class="icon-btn sm" aria-label="New task" title="New task"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><path d="M12 8.5v7M8.5 12h7"></path></svg></button>
+        <button class="icon-btn sm" aria-label="New folder" title="New folder"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h6l2 2h10v11H3z"></path><path d="M12 11v5M9.5 13.5h5"></path></svg></button>
+        <button class="icon-btn sm" aria-label="Reload" title="Reload"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7"></path><path d="M20 4v5h-5"></path></svg></button>
+        <button class="icon-btn sm" aria-label="Collapse all" title="Collapse all"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4l4 4 4-4"></path><path d="M8 20l4-4 4 4"></path><path d="M5 12h14"></path></svg></button>
+      </div>
+
+      <div class="ex-tree" role="tree">
+        <div class="ex-row sel" role="treeitem" aria-expanded="true" aria-selected="true" style="padding-left:16px;">
+          <button class="ex-chev" aria-label="Expand or collapse folder"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+          <button class="ex-nm">tasks</button>
+          <button class="ex-more" aria-label="More actions" title="More"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="19" cy="12" r="1.3"></circle></svg></button>
+        </div>
+        <div class="ex-row" role="treeitem" aria-expanded="false" style="padding-left:32px;">
+          <button class="ex-chev" aria-label="Expand or collapse folder"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+          <button class="ex-nm">errands</button>
+          <button class="ex-more" aria-label="More actions" title="More"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="19" cy="12" r="1.3"></circle></svg></button>
+        </div>
+        <div class="ex-row" role="treeitem" aria-expanded="false" style="padding-left:32px;">
+          <button class="ex-chev" aria-label="Expand or collapse folder"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+          <button class="ex-nm">home</button>
+          <button class="ex-more" aria-label="More actions" title="More"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="19" cy="12" r="1.3"></circle></svg></button>
+        </div>
+        <div class="ex-row" role="treeitem" aria-expanded="false" style="padding-left:32px;">
+          <button class="ex-chev" aria-label="Expand or collapse folder"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+          <button class="ex-nm">reading</button>
+          <button class="ex-more" aria-label="More actions" title="More"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="19" cy="12" r="1.3"></circle></svg></button>
+        </div>
+        <div class="ex-row" role="treeitem" aria-expanded="true" style="padding-left:32px;">
+          <button class="ex-chev" aria-label="Expand or collapse folder"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+          <button class="ex-nm">work</button>
+          <button class="ex-more" aria-label="More actions" title="More"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="19" cy="12" r="1.3"></circle></svg></button>
+        </div>
+        <div class="ex-row" role="treeitem" aria-expanded="false" style="padding-left:48px;">
+          <button class="ex-chev" aria-label="Expand or collapse folder"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg></button>
+          <button class="ex-nm">launch</button>
+          <button class="ex-more" aria-label="More actions" title="More"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.3"></circle><circle cx="12" cy="12" r="1.3"></circle><circle cx="19" cy="12" r="1.3"></circle></svg></button>
+        </div>
+      </div>
+
+      <button class="ex-caret" aria-label="Collapse explorer" title="Hide explorer"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></button>
+    </aside>
+
+    <div class="app-pane">
+      <main class="list-page">
+        <div class="pb-bar caption">
+          <nav class="cr-trail caption" aria-label="Breadcrumb">
+            <span class="cr-cur" aria-current="page">tasks</span>
+          </nav>
+          <span class="pb-grow"></span>
+        </div>
+        <div class="ttl">
+          <h1 class="heading" style="margin:0;">tasks</h1>
+          <span class="ttl-meta">10 tasks</span>
+        </div>
+        <div class="srch-line">
+          <label class="srch">
+            <span class="srch-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path></svg></span>
+            <input aria-label="Search tasks" placeholder="Search tasks">
+          </label>
+        </div>
+        <nav class="views" aria-label="Views">
+          <button class="v-tab" aria-pressed="false">My day<span class="v-count">4</span></button>
+          <span class="v-sep" aria-hidden="true">·</span>
+          <button class="v-tab on" aria-pressed="true">All<span class="v-count">10</span></button>
+          <span class="v-sep" aria-hidden="true">·</span>
+          <button class="v-tab" aria-pressed="false">Due<span class="v-count">2</span></button>
+          <span class="v-sep" aria-hidden="true">·</span>
+          <button class="v-tab" aria-pressed="false">Upcoming<span class="v-count">3</span></button>
+          <span class="v-sep" aria-hidden="true">·</span>
+          <button class="rangebtn" aria-pressed="false" aria-label="Calendar: pick a date or range" aria-haspopup="dialog" aria-expanded="false"><span class="fld-ic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"></rect><path d="M4 10h16M9 3v4M15 3v4"></path></svg></span>Today, 19 Oct</button>
+          <button class="icon-btn" aria-label="Hide done tasks" aria-pressed="false" title="Hide done tasks" style="margin-left:auto;margin-right:var(--space-2);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"></circle><path d="M8.5 12.2l2.4 2.4 4.6-4.8"></path><path d="M4 20L20 4"></path></svg></button>
+          <span role="group" aria-label="Layout" style="display:inline-flex;align-items:center;gap:2px;">
+            <button class="icon-btn on" aria-label="List" aria-pressed="true" title="List"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"></path><path d="M4 6h.01M4 12h.01M4 18h.01"></path></svg></button>
+            <button class="icon-btn" aria-label="Board" aria-pressed="false" title="Board"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M15 4v16"></path></svg></button>
+          </span>
+        </nav>
+        <label class="add-line">
+          <span class="add-plus" aria-hidden="true">+</span>
+          <input aria-label="Add task" placeholder="add task">
+        </label>
+        <div role="presentation" style="flex:0 0 auto;display:grid;grid-template-columns:var(--grid-task);column-gap:var(--col-gap);padding:0 0 6px;border-bottom:1px solid var(--c-chip);font:var(--text-meta);color:var(--c-muted-2);"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Title</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">My day</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Subs</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Due</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Who</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Folder</span></div>
+        <div class="list-scroll">
+          <div style="display:flex;flex-direction:column;" role="list">
+          <div class="tr-row reveal-on-hover sortable" role="listitem" tabindex="-1">
+            <span class="grip" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"></circle><circle cx="6" cy="2" r="1.2"></circle><circle cx="2" cy="7" r="1.2"></circle><circle cx="6" cy="7" r="1.2"></circle><circle cx="2" cy="12" r="1.2"></circle><circle cx="6" cy="12" r="1.2"></circle></svg></span>
+            <button class="st-btn" aria-label="Status: In progress" title="Status: In progress" aria-haspopup="listbox" aria-expanded="false"><span class="st-dot" style="background:var(--sw-blue);" aria-hidden="true"></span></button>
+            <button class="tr-title"><span>Book the van for Saturday</span></button>
+            <span class="tr-ed"><button class="icon-btn sm on-hover" aria-label="Edit title" title="Edit title (F2)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></span>
+            <span class="tr-md"><button class="md-mini rem on-hover">− my day</button></span>
+            <span class="tr-meta">1/3</span>
+            <span class="tr-due">Today</span>
+            <span class="tr-who"><button class="as-badge" aria-label="Assignee: Priya Raman" title="Assignee: Priya Raman" aria-haspopup="dialog" aria-expanded="false"><span class="av" style="width:20px;height:20px;font-size:9px;" title="Priya Raman">PR</span></button></span>
+            <span class="tr-meta tr-path">home</span>
+            </div>
+          <div class="tr-row reveal-on-hover sortable" role="listitem" tabindex="-1">
+            <span class="grip" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"></circle><circle cx="6" cy="2" r="1.2"></circle><circle cx="2" cy="7" r="1.2"></circle><circle cx="6" cy="7" r="1.2"></circle><circle cx="2" cy="12" r="1.2"></circle><circle cx="6" cy="12" r="1.2"></circle></svg></span>
+            <button class="st-btn" aria-label="Status: Not started" title="Status: Not started" aria-haspopup="listbox" aria-expanded="false"><span class="st-dot" style="border:1.5px solid var(--sw-gray);" aria-hidden="true"></span></button>
+            <button class="tr-title"><span>Renew passport</span></button>
+            <span class="tr-ed"><button class="icon-btn sm on-hover" aria-label="Edit title" title="Edit title (F2)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></span>
+            <span class="tr-md"><button class="md-mini rem on-hover">− my day</button></span>
+            <span class="tr-meta"></span>
+            <span class="tr-due warn">14 Oct</span>
+            <span class="tr-who"><button class="as-badge" aria-label="Unassigned" title="Unassigned" aria-haspopup="dialog" aria-expanded="false"><span class="av-none">U</span></button></span>
+            <span class="tr-meta tr-path">errands</span>
+            </div>
+          <div class="tr-row reveal-on-hover sortable" role="listitem" tabindex="-1" style="background:var(--c-hover);">
+            <span class="grip" style="visibility:visible;" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"></circle><circle cx="6" cy="2" r="1.2"></circle><circle cx="2" cy="7" r="1.2"></circle><circle cx="6" cy="7" r="1.2"></circle><circle cx="2" cy="12" r="1.2"></circle><circle cx="6" cy="12" r="1.2"></circle></svg></span>
+            <button class="st-btn" aria-label="Status: In progress" title="Status: In progress" aria-haspopup="listbox" aria-expanded="false"><span class="st-dot" style="background:var(--sw-blue);" aria-hidden="true"></span></button>
+            <button class="tr-title"><span>Send the Q4 roadmap draft to Daniel</span></button>
+            <span class="tr-ed"><button class="icon-btn sm on-hover" aria-label="Edit title" title="Edit title (F2)" style="visibility:visible;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></span>
+            <span class="tr-md"><button class="md-mini add on-hover" style="visibility:visible;">+ my day</button></span>
+            <span class="tr-meta"></span>
+            <span class="tr-due">Tomorrow</span>
+            <span class="tr-who"><button class="as-badge" aria-label="Assignee: Daniel Kim" title="Assignee: Daniel Kim" aria-haspopup="dialog" aria-expanded="false"><span class="av" style="width:20px;height:20px;font-size:9px;" title="Daniel Kim">DK</span></button></span>
+            <span class="tr-meta tr-path">work</span>
+            </div>
+          <div class="tr-row reveal-on-hover sortable" role="listitem" tabindex="-1">
+            <span class="grip" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"></circle><circle cx="6" cy="2" r="1.2"></circle><circle cx="2" cy="7" r="1.2"></circle><circle cx="6" cy="7" r="1.2"></circle><circle cx="2" cy="12" r="1.2"></circle><circle cx="6" cy="12" r="1.2"></circle></svg></span>
+            <button class="st-btn" aria-label="Status: Not started" title="Status: Not started" aria-haspopup="listbox" aria-expanded="false"><span class="st-dot" style="border:1.5px solid var(--sw-gray);" aria-hidden="true"></span></button>
+            <button class="tr-title"><span class="sub-mark" title="Subtask" aria-label="Subtask" role="img">s</span><span>Measure the bedroom door</span></button>
+            <span class="tr-ed"><button class="icon-btn sm on-hover" aria-label="Edit title" title="Edit title (F2)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></span>
+            <span class="tr-md"><button class="md-mini rem on-hover">− my day</button></span>
+            <span class="tr-meta"></span>
+            <span class="tr-due">Today</span>
+            <span class="tr-who"><button class="as-badge" aria-label="Unassigned" title="Unassigned" aria-haspopup="dialog" aria-expanded="false"><span class="av-none">U</span></button></span>
+            <span class="tr-meta tr-path">home</span>
+            </div>
+          <div class="tr-row reveal-on-hover sortable" role="listitem" tabindex="-1">
+            <span class="grip" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"></circle><circle cx="6" cy="2" r="1.2"></circle><circle cx="2" cy="7" r="1.2"></circle><circle cx="6" cy="7" r="1.2"></circle><circle cx="2" cy="12" r="1.2"></circle><circle cx="6" cy="12" r="1.2"></circle></svg></span>
+            <button class="st-btn" aria-label="Status: Not started" title="Status: Not started" aria-haspopup="listbox" aria-expanded="false"><span class="st-dot" style="border:1.5px solid var(--sw-gray);" aria-hidden="true"></span></button>
+            <button class="tr-title"><span>Fix the login timeout on staging</span></button>
+            <span class="tr-ed"><button class="icon-btn sm on-hover" aria-label="Edit title" title="Edit title (F2)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></span>
+            <span class="tr-md"><button class="md-mini add on-hover">+ my day</button></span>
+            <span class="tr-meta">0/2</span>
+            <span class="tr-due">Thu</span>
+            <span class="tr-who"><button class="as-badge" aria-label="Assignee: Marta Olsen" title="Assignee: Marta Olsen" aria-haspopup="dialog" aria-expanded="false"><span class="av" style="width:20px;height:20px;font-size:9px;" title="Marta Olsen">MO</span></button></span>
+            <span class="tr-meta tr-path">work/launch</span>
+            </div>
+          <div class="tr-row reveal-on-hover sortable" role="listitem" tabindex="-1">
+            <span class="grip" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"></circle><circle cx="6" cy="2" r="1.2"></circle><circle cx="2" cy="7" r="1.2"></circle><circle cx="6" cy="7" r="1.2"></circle><circle cx="2" cy="12" r="1.2"></circle><circle cx="6" cy="12" r="1.2"></circle></svg></span>
+            <button class="st-btn" aria-label="Status: Not started" title="Status: Not started" aria-haspopup="listbox" aria-expanded="false"><span class="st-dot" style="border:1.5px solid var(--sw-gray);" aria-hidden="true"></span></button>
+            <button class="tr-title"><span>Call the plumber about the boiler</span></button>
+            <span class="tr-ed"><button class="icon-btn sm on-hover" aria-label="Edit title" title="Edit title (F2)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></span>
+            <span class="tr-md"><button class="md-mini rem on-hover">− my day</button></span>
+            <span class="tr-meta"></span>
+            <span class="tr-due warn">Yesterday</span>
+            <span class="tr-who"><button class="as-badge" aria-label="Unassigned" title="Unassigned" aria-haspopup="dialog" aria-expanded="false"><span class="av-none">U</span></button></span>
+            <span class="tr-meta tr-path">home</span>
+            </div>
+          <div class="tr-row reveal-on-hover sortable" role="listitem" tabindex="-1">
+            <span class="grip" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"></circle><circle cx="6" cy="2" r="1.2"></circle><circle cx="2" cy="7" r="1.2"></circle><circle cx="6" cy="7" r="1.2"></circle><circle cx="2" cy="12" r="1.2"></circle><circle cx="6" cy="12" r="1.2"></circle></svg></span>
+            <button class="st-btn" aria-label="Status: In progress" title="Status: In progress" aria-haspopup="listbox" aria-expanded="false"><span class="st-dot" style="background:var(--sw-blue);" aria-hidden="true"></span></button>
+            <button class="tr-title"><span>Finish The Overstory</span></button>
+            <span class="tr-ed"><button class="icon-btn sm on-hover" aria-label="Edit title" title="Edit title (F2)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></span>
+            <span class="tr-md"><button class="md-mini add on-hover">+ my day</button></span>
+            <span class="tr-meta"></span>
+            <span class="tr-due"></span>
+            <span class="tr-who"><button class="as-badge" aria-label="Unassigned" title="Unassigned" aria-haspopup="dialog" aria-expanded="false"><span class="av-none">U</span></button></span>
+            <span class="tr-meta tr-path">reading</span>
+            </div>
+          <div class="tr-row reveal-on-hover sortable" role="listitem" tabindex="-1">
+            <span class="grip" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"></circle><circle cx="6" cy="2" r="1.2"></circle><circle cx="2" cy="7" r="1.2"></circle><circle cx="6" cy="7" r="1.2"></circle><circle cx="2" cy="12" r="1.2"></circle><circle cx="6" cy="12" r="1.2"></circle></svg></span>
+            <button class="st-btn" aria-label="Status: Not started" title="Status: Not started" aria-haspopup="listbox" aria-expanded="false"><span class="st-dot" style="border:1.5px solid var(--sw-gray);" aria-hidden="true"></span></button>
+            <button class="tr-title"><span>Write release notes for v1</span></button>
+            <span class="tr-ed"><button class="icon-btn sm on-hover" aria-label="Edit title" title="Edit title (F2)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></span>
+            <span class="tr-md"><button class="md-mini add on-hover">+ my day</button></span>
+            <span class="tr-meta"></span>
+            <span class="tr-due">2 Nov</span>
+            <span class="tr-who"><button class="as-badge" aria-label="Unassigned" title="Unassigned" aria-haspopup="dialog" aria-expanded="false"><span class="av-none">U</span></button></span>
+            <span class="tr-meta tr-path">work/launch</span>
+            </div>
+          <div class="tr-row reveal-on-hover sortable" role="listitem" tabindex="-1">
+            <span class="grip" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"></circle><circle cx="6" cy="2" r="1.2"></circle><circle cx="2" cy="7" r="1.2"></circle><circle cx="6" cy="7" r="1.2"></circle><circle cx="2" cy="12" r="1.2"></circle><circle cx="6" cy="12" r="1.2"></circle></svg></span>
+            <button class="st-btn" aria-label="Status: Done" title="Status: Done" aria-haspopup="listbox" aria-expanded="false"><span class="st-dot" style="background:var(--sw-green);" aria-hidden="true"></span></button>
+            <button class="tr-title"><span class="tr-done">Give notice to the landlord</span></button>
+            <span class="tr-ed"><button class="icon-btn sm on-hover" aria-label="Edit title" title="Edit title (F2)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></span>
+            <span class="tr-md"></span>
+            <span class="tr-meta"></span>
+            <span class="tr-due">9 Oct</span>
+            <span class="tr-who"><button class="as-badge" aria-label="Unassigned" title="Unassigned" aria-haspopup="dialog" aria-expanded="false"><span class="av-none">U</span></button></span>
+            <span class="tr-meta tr-path">home</span>
+            </div>
+          <div class="tr-row reveal-on-hover sortable" role="listitem" tabindex="-1">
+            <span class="grip" aria-hidden="true"><svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor"><circle cx="2" cy="2" r="1.2"></circle><circle cx="6" cy="2" r="1.2"></circle><circle cx="2" cy="7" r="1.2"></circle><circle cx="6" cy="7" r="1.2"></circle><circle cx="2" cy="12" r="1.2"></circle><circle cx="6" cy="12" r="1.2"></circle></svg></span>
+            <button class="st-btn" aria-label="Status: Done" title="Status: Done" aria-haspopup="listbox" aria-expanded="false"><span class="st-dot" style="background:var(--sw-green);" aria-hidden="true"></span></button>
+            <button class="tr-title"><span class="tr-done">Pay council tax</span></button>
+            <span class="tr-ed"><button class="icon-btn sm on-hover" aria-label="Edit title" title="Edit title (F2)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg></button></span>
+            <span class="tr-md"></span>
+            <span class="tr-meta"></span>
+            <span class="tr-due">1 Oct</span>
+            <span class="tr-who"><button class="as-badge" aria-label="Unassigned" title="Unassigned" aria-haspopup="dialog" aria-expanded="false"><span class="av-none">U</span></button></span>
+            <span class="tr-meta tr-path">errands</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <div class="nav-dock">
+    <button class="nav-tog" aria-label="Hide sections bar" title="Hide"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></button>
+    <nav class="nav-row" aria-label="Sections">
+      <a class="nav-ico" href="#" aria-label="Notes" title="Notes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M9 12h7M9 16h5"></path></svg></a>
+      <a class="nav-ico cur" href="#" aria-label="Tasks" title="Tasks" aria-current="page"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M8.5 12l2.5 2.5 4.5-5"></path></svg></a>
+      <a class="nav-ico" href="#" aria-label="People" title="People"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></a>
+      <a class="nav-ico" href="#" aria-label="Library" title="Library"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h3v16H5z"></path><path d="M10 4h3v16h-3z"></path><path d="M15.4 5.2l2.9-.8 3.6 15-2.9.8z"></path></svg></a>
+      <div class="nav-right">
+        <button class="nav-sync" aria-label="Sync now" title="Sync now"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"></path><path d="M4 4v4h4"></path><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"></path><path d="M20 20v-4h-4"></path></svg></button>
+        <a class="nav-ico" href="#" aria-label="Settings" title="Settings"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>
+        <button class="nav-ico" aria-label="Feedback" title="Feedback" aria-haspopup="dialog" aria-expanded="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"></path><path d="M8.5 11h7M8.5 14.5h4"></path></svg></button>
+      </div>
+    </nav>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
