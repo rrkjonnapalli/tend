@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Settings → General: the theme, the fonts and text size, the file size limit, the timer sound, delete confirmations, updates, the vault folder, and notes or folders skipped for breaking
+  // Settings → General (on a phone only Files and Confirmations; the rest is on its Settings page): the theme, the fonts and text size, the file size limit, the timer sound, delete confirmations, updates, the vault folder, and notes or folders skipped for breaking
   // the name rule (with the name each can be renamed to, and one button to rename them all).
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -11,6 +11,7 @@
   import { plural } from '#lib/util/plural.ts';
   import { fixable } from '#lib/util/skipped.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import { deleteChoices, fileLimitRange, settingDefaults, settingKeys, textSizeChoices, themeChoices } from '#lib/config/settings.config.ts';
   import NumberSetting from './NumberSetting.svelte';
   import { notes } from '#lib/stores/notes.svelte.ts';
@@ -78,6 +79,7 @@
   }
 </script>
 
+{#if !ui.phone}
 <section class="group">
   <h2 class="section-title">Vault</h2>
   <div class="line">
@@ -101,7 +103,9 @@
     {/if}
   {/if}
 </section>
+{/if}
 
+{#if !ui.phone}
 <section class="group">
   <h2 class="section-title">Appearance</h2>
   <div class="seg" role="radiogroup" aria-label="Theme">
@@ -114,7 +118,9 @@
   </div>
   <span class="hint">System follows your Mac's light or dark setting.</span>
 </section>
+{/if}
 
+{#if !ui.phone}
 <section class="group">
   <h2 class="section-title">Fonts</h2>
   <div class="line">
@@ -138,6 +144,7 @@
   </div>
   <span class="hint">App font is everything except snaps. Editor font is notes, descriptions, comments and the other editors. Snaps keep their paper fonts. These stay on this device.</span>
 </section>
+{/if}
 
 <section class="group">
   <h2 class="section-title">Files</h2>
@@ -156,6 +163,7 @@
   </span>
 </section>
 
+{#if !ui.phone}
 <section class="group">
   <h2 class="section-title">Timers</h2>
   <label class="check">
@@ -166,6 +174,7 @@
     Play a sound when a timer ends
   </label>
 </section>
+{/if}
 
 <section class="group">
   <h2 class="section-title">Confirmations</h2>
@@ -181,6 +190,7 @@
   <span class="hint">Deleting a folder, a status or a label always asks.</span>
 </section>
 
+{#if !ui.phone}
 <section class="group">
   <h2 class="section-title">Updates</h2>
   <div class="line">
@@ -201,6 +211,7 @@
     <span class="hint">Tend is up to date.</span>
   {/if}
 </section>
+{/if}
 
 <style>
   .group {

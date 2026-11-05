@@ -1,5 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
+  import { ui } from '#lib/stores/ui.svelte.ts';
+  import PhoneSettings from '#lib/components/phone/PhoneSettings.svelte';
   import StatusesEditor from '#lib/components/StatusesEditor.svelte';
   import LabelsEditor from '#lib/components/LabelsEditor.svelte';
   import WordKindsEditor from '#lib/components/WordKindsEditor.svelte';
@@ -59,6 +61,10 @@
 
 <svelte:window {onkeydown} />
 
+{#if ui.phone && !requested}
+  <PhoneSettings />
+{:else}
+{#if !ui.phone}
 <aside class="side" aria-label="Settings sections" data-pane="side">
   <div class="top"><span class="caption muted">Settings</span></div>
   <nav class="secs" bind:this={navEl}>
@@ -69,9 +75,12 @@
     {/each}
   </nav>
 </aside>
+{/if}
 
 <main class="detail-page detail-stack">
-  <PageBar><Breadcrumbs crumbs={[{ label: SETTINGS_ROOT_NAME }, { label: current.label }]} /></PageBar>
+  <PageBar onback={ui.phone ? () => nav.back(routes.settings) : undefined}>
+    <Breadcrumbs crumbs={[{ label: SETTINGS_ROOT_NAME }, { label: current.label }]} />
+  </PageBar>
   <article class="detail-body">
     <PageTitle title={current.label} meta={current.sub} />
 
@@ -92,6 +101,7 @@
     {/if}
   </article>
 </main>
+{/if}
 
 <style>
   .side {

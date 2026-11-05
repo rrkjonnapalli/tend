@@ -148,4 +148,4 @@ Tauri 2 mobile, same SvelteKit app; phone layout chosen by viewport width. Each 
 | P5 | Pages · done (the board was built in P4) | Note view/edit with formatting bar, task page, board, people, person |
 | P6 | Library · done (snap editor as a popup, `open-questions.md` #26) | Words with Kinds, word page, snaps board and stacks, new snap and snap editor, references |
 | P7 | Select · cut · paste, dialogs | Long-press selection, action bar, paste bar and rules, delete confirms, changed-elsewhere |
-| P8 | Settings | Vault, sync, appearance, fonts, sub-pages |
+| P8 | Settings · done (fonts as lists, text size in 3 steps; no Feedback row yet) | Vault, sync, appearance, fonts, sub-pages |
