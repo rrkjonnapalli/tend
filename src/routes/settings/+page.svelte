@@ -86,10 +86,9 @@
 {#if !ui.phone}{@render sectionList()}{/if}
 <main class="detail-page detail-stack">
   <PageBar>
+    <!-- On a phone the sections drawer opens from the left, so its button leads the bar. -->
+    {#if ui.phone}<button class="icon-btn" aria-label="Settings sections" onclick={() => (ui.drawer = true)}><Icon name="list" size={16} /></button>{/if}
     <Breadcrumbs crumbs={[{ label: SETTINGS_ROOT_NAME }, { label: current.label }]} />
-    {#snippet actions()}
-      {#if ui.phone}<button class="icon-btn" aria-label="Settings sections" onclick={() => (ui.drawer = true)}><Icon name="list" size={16} /></button>{/if}
-    {/snippet}
   </PageBar>
   <article class="detail-body">
     <PageTitle title={current.label} meta={current.sub} />
