@@ -74,3 +74,25 @@
 .phone-list ::-webkit-scrollbar {
   display: none;
 }
+
+/* A row while its list is selecting (MD-Select): a circle check before it, a tint when picked. */
+.qr.sel {
+  background: var(--c-selected);
+  color: var(--c-current-ink);
+}
+
+.qr .check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--c-faint);
+  border-radius: 50%;
+  color: var(--c-page);
+}
+
+.qr.sel .check {
+  border-color: var(--c-current);
+  background: var(--c-current);
+}

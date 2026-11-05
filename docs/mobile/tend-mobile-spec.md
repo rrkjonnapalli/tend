@@ -83,7 +83,7 @@ There is no tab bar or dock on the phone. Navigation is one round button in a bo
 
 ## 8. Select, cut, paste
 
-- Long-press any row (or snap) to enter selection. Top: Cancel · "N selected" · Select all. Rows get a circle check.
+- Long-press a note or task row to enter selection (folders are in the drawer, which has its own move and delete). Top: Cancel · "N selected" · Select all. Rows get a circle check.
 - Action bar replaces the menu button: **Cut · Rename · Delete** (Rename only with one item). Snaps: **Cut · Tag · Delete**.
 - Single item ⋯ menu: Cut · Rename · Delete.
 - After Cut: a violet bar at the bottom, "Cut · 2 notes from notes/home", Cancel and **Paste here**. Browse normally; search becomes "Search folders" (or "Search stacks").
@@ -147,5 +147,5 @@ Tauri 2 mobile, same SvelteKit app; phone layout chosen by viewport width. Each 
 | P4 | Explorer · done (the board too) | Notes and Tasks explorer: search, Folders section, ↑, items, views and counts, quick create |
 | P5 | Pages · done (the board was built in P4) | Note view/edit with formatting bar, task page, board, people, person |
 | P6 | Library · done (snap editor as a popup, `open-questions.md` #26) | Words with Kinds, word page, snaps board and stacks, new snap and snap editor, references |
-| P7 | Select · cut · paste, dialogs | Long-press selection, action bar, paste bar and rules, delete confirms, changed-elsewhere |
+| P7 | Select · cut · paste, dialogs · done for notes and tasks (snaps: `open-questions.md` #27) | Long-press selection, action bar, paste bar and rules, delete confirms, changed-elsewhere |
 | P8 | Settings · done (fonts as lists, text size in 3 steps; no Feedback row yet) | Vault, sync, appearance, fonts, sub-pages |

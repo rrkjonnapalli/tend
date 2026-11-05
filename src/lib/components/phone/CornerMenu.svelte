@@ -9,6 +9,7 @@
   import Icon from '../Icon.svelte';
   import TokenSheet from './TokenSheet.svelte';
   import { sync } from '#lib/stores/sync.svelte.ts';
+  import { clip } from '#lib/stores/clip.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import { SETTINGS_SECTION } from '#lib/enums/settings.enum.ts';
@@ -77,7 +78,8 @@
 
 <svelte:window {onkeydown} {onfocusin} {onfocusout} />
 
-{#if !typing}
+<!-- The keyboard, the selection's action bar and the paste bar each take the bottom. -->
+{#if !typing && !clip.busy}
   <button class="veil" class:open tabindex="-1" aria-hidden="true" onclick={() => (open = false)}></button>
   <nav class="cm" class:open class:l={side === 'left'} aria-label="Menu">
     <div class="items" inert={!open}>

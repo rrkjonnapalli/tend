@@ -8,6 +8,10 @@
   import StatusDot from '../StatusDot.svelte';
   import FolderNav from './FolderNav.svelte';
   import QuickSheet from './QuickSheet.svelte';
+  import SelectBar from './SelectBar.svelte';
+  import Selection from './Selection.svelte';
+  import { longPress } from '#lib/actions/long-press.action.ts';
+  import { clip } from '#lib/stores/clip.svelte.ts';
   import PhoneBoard from './PhoneBoard.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
@@ -30,6 +34,8 @@
 
   let query = $state('');
   let adding = $state(false);
+
+  const selecting = $derived(clip.selecting?.tree === 'tasks');
   let picker = $state<HTMLInputElement>();
 
   const params = $derived(page.url.searchParams);
@@ -76,13 +82,11 @@
 </script>
 
 <main class="phone-list">
-  <FolderNav
-    {rootName}
-    {folder}
-    hrefOf={routes.tasksFolder}
-    placeholder="Search tasks"
-    bind:query
-    onadd={() => (adding = true)} />
+  {#if selecting}
+    <SelectBar all={rows.map((t) => t.id)} />
+  {:else}
+    <FolderNav {rootName} {folder} hrefOf={routes.tasksFolder} placeholder="Search tasks" bind:query onadd={() => (adding = true)} />
+  {/if}
 
   <nav class="views" aria-label="Views">
     {#each VIEWS as [value, label] (value)}
@@ -107,16 +111,34 @@
     <PhoneBoard tasks={rows} {folder} />
   {:else}
     {#each rows as t (t.id)}
-      <a class="qr" href={routes.task(t.id)}>
+      {#snippet body()}
         <StatusDot value={t.status} size={9} />
         <span class="tt" class:done={isDone(t)}>{t.title}</span>
         {#if t.dueDate}<span class="due" class:warn={isOverdue(t, tasks.day)}>{dueLabel(t.dueDate)}</span>{/if}
-      </a>
+      {/snippet}
+      {#if selecting}
+        {@const on = clip.selecting?.ids.includes(t.id)}
+        <button class="qr" class:sel={on} aria-pressed={on} onclick={() => clip.toggle(t.id)}>
+          <span class="check"><Icon name="check" size={14} stroke={3} /></span>{@render body()}
+        </button>
+      {:else}
+        <a class="qr" href={routes.task(t.id)} use:longPress={() => clip.start('tasks', t.id)}>{@render body()}</a>
+      {/if}
     {:else}
       <p class="empty">{needle ? 'No tasks match' : 'Nothing here'}</p>
     {/each}
   {/if}
 </main>
+
+{#if selecting}
+  <Selection
+    {folder}
+    noun="task"
+    asksDelete={settings.asksDelete('task')}
+    nameOf={(id) => tasks.byId(id)?.title ?? ''}
+    onrename={(id, title) => tasks.update(id, { title })}
+    onremove={tasks.remove} />
+{/if}
 
 {#if adding}<QuickSheet tree="tasks" {folder} {rootName} onclose={() => (adding = false)} />{/if}
 

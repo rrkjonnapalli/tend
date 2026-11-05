@@ -6,6 +6,8 @@
   import VaultGate from '#lib/components/VaultGate.svelte';
   import BottomNav from '#lib/components/BottomNav.svelte';
   import CornerMenu from '#lib/components/phone/CornerMenu.svelte';
+  import PasteBar from '#lib/components/phone/PasteBar.svelte';
+  import { clip } from '#lib/stores/clip.svelte.ts';
   import TopBar from '#lib/components/TopBar.svelte';
   import Toast from '#lib/components/Toast.svelte';
   import CommandPalette from '#lib/components/CommandPalette.svelte';
@@ -50,6 +52,8 @@
   // After a navigation nothing has focus; Tab should start in the page, not at the window buttons.
   afterNavigate((to) => {
     nav.record(to);
+    // A selection belongs to the list it started in; a cut stays until pasted.
+    clip.stop();
     const nothingFocused = document.activeElement === document.body;
     if (nothingFocused && pageEl) startTabbingIn(pageEl);
   });
@@ -215,7 +219,12 @@
   {:else}
     <div class="page" bind:this={pageEl}>{@render children()}</div>
     {#if inVault}
-      {#if ui.phone}<CornerMenu />{:else}<BottomNav />{/if}
+      {#if ui.phone}
+        <CornerMenu />
+        {#if clip.cut}<PasteBar />{/if}
+      {:else}
+        <BottomNav />
+      {/if}
     {/if}
   {/if}
 </div>
