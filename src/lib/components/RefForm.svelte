@@ -4,6 +4,10 @@
   // own title until changed. Link or text is picked from what is typed, until picked by hand.
   import { untrack } from 'svelte';
   import Modal from './Modal.svelte';
+  import PageBar from './PageBar.svelte';
+  import Breadcrumbs from './Breadcrumbs.svelte';
+  import { ui } from '#lib/stores/ui.svelte.ts';
+  import { pushLayer } from '#lib/util/layers.ts';
   import Segmented from './Segmented.svelte';
   import TagEditor from './TagEditor.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
@@ -22,7 +26,7 @@
   import { toast } from '#lib/stores/toast.svelte.ts';
   import type { NewRef, Ref } from '#lib/types/ref.type.ts';
   import { iso, shortDate } from '#lib/util/dates.ts';
-  import { kindOf, openableUrl, siteOf, urlKey } from '#lib/util/refs.ts';
+  import { kindOf, openableUrl, refTitle, siteOf, urlKey } from '#lib/util/refs.ts';
 
   let {
     editing,
@@ -46,6 +50,12 @@
 
   // The popup is remounted for each reference, so these start from the one it opened with.
   const start = untrack(() => editing);
+  const label = start ? 'Edit reference' : 'Add a reference';
+
+  // On a phone the page is a layer of its own: Esc (and the back arrow) close it.
+  $effect(() => {
+    if (ui.phone) return pushLayer(onclose);
+  });
   const handed = untrack(() => filled);
   let value = $state(start?.value ?? handed);
   let kind = $state<RefKind>(start?.kind ?? REF_KIND.text);
@@ -230,7 +240,7 @@
   const savedOn = $derived(dupe ? shortDate(iso(new Date(dupe.createdAt))) : '');
 </script>
 
-<Modal label={start ? 'Edit reference' : 'Add a reference'} width={560} top={96} shade {onclose}>
+{#snippet form()}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div class="card" onkeydown={onformkey}>
     <input
@@ -276,12 +286,26 @@
         <button class="del" onclick={askRemove}><Icon name="trash" size={14} />Delete</button>
       {/if}
       <span class="grow"></span>
-      <span class="hint">{start ? '⌘↵ saves' : '↵ saves'}</span>
+      {#if !ui.phone}<span class="hint">{start ? '⌘↵ saves' : '↵ saves'}</span>{/if}
       <button class="btn-ghost" onclick={onclose}>Cancel</button>
       <button class="btn-primary" disabled={!canSave} onclick={save}>Save</button>
     </div>
   </div>
-</Modal>
+{/snippet}
+
+{#if ui.phone}
+  <!-- A phone opens a reference as a page of its own (ML-Refs), not a popup. -->
+  <div class="page" role="dialog" aria-modal="true" aria-label={label}>
+    <PageBar onback={onclose}>
+      <Breadcrumbs crumbs={[{ label: 'references' }, { label: start ? refTitle(start) : 'new' }]} />
+    </PageBar>
+    {@render form()}
+  </div>
+{:else}
+  <Modal {label} width={560} top={96} shade {onclose}>
+    {@render form()}
+  </Modal>
+{/if}
 
 {#if confirming}
   <ConfirmDialog
@@ -294,6 +318,22 @@
 {/if}
 
 <style>
+  /* A phone's reference page: the whole screen, above the list, scrolling on its own. */
+  .page {
+    position: fixed;
+    inset: 0;
+    z-index: 45;
+    display: flex;
+    flex-direction: column;
+    padding: env(safe-area-inset-top) 20px calc(24px + var(--kb, 0px));
+    overflow-y: auto;
+    background: var(--c-page);
+  }
+
+  .page .card {
+    padding: 8px 0 0;
+  }
+
   .card {
     display: flex;
     flex-direction: column;

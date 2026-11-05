@@ -79,8 +79,8 @@ There is no tab bar or dock on the phone. Navigation is one round button in a bo
 
 - Tabs: Words · Snaps · References (no Home on mobile). No tag filter, as on desktop (`decisions.md` §15); search covers it. Opens on the last used tab.
 - Words: a kind dropdown (All kinds by default) that filters the list; rows = word + one-line meaning.
-- Snaps: two-column pinboard. Stacks open like folders (↑ `snaps / Recipes`). **+** opens the New snap sheet (paper, colour, text, stack). Tapping a snap opens the snap editor (paper, tags; ⋯ = Cut, Delete).
-- References: title, link or author, tags and date. "Why I kept it" is on the reference page.
+- Snaps: one snap per line, the full width (decided 2026-11-05, replacing the mockups' two columns). Stacks open like folders (↑ `snaps / Recipes`). **+** opens the New snap sheet (paper, colour, text, stack). Tapping a snap opens the snap editor (paper, tags; ⋯ = Cut, Delete).
+- References: title, link or author, tags and date. "Why I kept it" is on the reference page: a row opens it full screen, with the back arrow, the fields of the desktop popup, and Delete.
 
 ## 8. Select, cut, paste
 

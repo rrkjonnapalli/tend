@@ -72,8 +72,8 @@ export const phoneStickyColors = ['#d4b106', '#62d2a2', '#429ff5', '#f67280', '#
 /** The board's columns: at least this wide, this far apart, with the gap also at each side. */
 export const boardColumn = { minWidth: 250, gap: 52 };
 
-/** The same on a phone: two narrow columns, the pinboard of ML-Snaps. */
-export const phoneBoardColumn = { minWidth: 140, gap: 16 };
+/** The same on a phone: one snap per line, as wide as the screen. */
+export const phoneBoardColumn = { minWidth: 280, gap: 20 };
 
 /** Each board item's small fixed tilt, by position, in degrees (never more than 1.8). */
 export const boardTilts = [-1.6, 1.2, -0.6, 1.8, -1.2, 0.6, 1.4, -1.8];
