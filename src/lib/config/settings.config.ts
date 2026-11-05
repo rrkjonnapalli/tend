@@ -57,7 +57,7 @@ export const settingDefaults = {
   appFont: '',
   editorFont: '',
   textSize: 'default',
-  menuSide: 'left',
+  menuSide: 'right',
 } as const;
 
 /** The range the file size limit may take (src-tauri/src/files.rs `LIMIT_MB_RANGE`). */

@@ -41,7 +41,7 @@ There is no tab bar or dock on the phone. Navigation is one round button in a bo
 - **Open:** the button grows out of the corner into the menu, as one shape. Animate size from the corner (≈300 ms, ease-out); the icon rotates and cross-fades into ×, which stays exactly where the button was. Items fade in just after the shape starts growing. The rest of the screen gets a light veil.
 - **Menu contents:** Notes · Tasks · People · Library as text rows with icons (current one highlighted). Bottom row: × at the button's position; Settings and Sync as icons at the other end, with **Sync at the outer end** (the far end from ×). Sync shows the last sync time ("9:42").
 - **Closing:** tap ×, any item, or the veil.
-- **Side:** Settings › General › Appearance › Menu button: Left / Right (default Left, the drawer's side). The whole thing mirrors.
+- **Side:** Settings › Appearance › Menu button: Left / Right (default Right). The whole thing mirrors.
 - **Hidden** while the keyboard is up, while items are selected (the action bar takes the bottom) and while pasting (the paste bar takes the bottom).
 - Lists get bottom padding (≈96 px) so the last row can scroll clear of the button.
 
