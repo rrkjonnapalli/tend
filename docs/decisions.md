@@ -11,7 +11,7 @@ Reference for building Tend (Tauri 2 + SvelteKit). The mockups in `docs/design/s
 - Light and dark themes (§2 *Theme*). Minimal, editor-like (Sublime / VS Code / JetBrains feel).
 - No floating or detached panels, no shadows. Panels sit flush, separated by hairlines.
 - Design system: **Clean Colors**.
-  - Fonts: Montserrat (page and section titles), Lato (all UI text), JetBrains Mono (note editor, values, paths, keys, code, snap text), Work Sans (the note view's body text, unless a reading font is picked, §2). The Library's hands: Gaegu (sticky notes), Smile Moon (stack names; a file in `static/fonts`, personal-use licence to check before the app is shared), Caveat (the line on an empty area). Tokens: `docs/design/tokens.css`.
+  - Fonts: Montserrat (page and section titles), Lato (all UI text), JetBrains Mono (values, paths, keys, code, snap text), Work Sans (notes in view and edit, descriptions and comments, unless an editor font is picked, §2). The Library's hands: Gaegu (sticky notes), Smile Moon (stack names; a file in `static/fonts`, personal-use licence to check before the app is shared), Caveat (the line on an empty area). Tokens: `docs/design/tokens.css`.
   - Key colors:
 
     | Role | Hex |
@@ -55,7 +55,11 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - **Changing vault:** Settings → General → *Change vault folder…*. This reopens the start-up flow.
 - **File size limit:** 30 MB by default, set in Settings → General → Files (1–90 MB; 0 isn't allowed, it would drop every note). Shared through sync (setting `files.max_mb`), so every device agrees; changing it rescans. A `.md` that size or larger is never indexed; a file that size can't be attached; sync never commits one. A note already indexed that grows to the limit keeps its row unchanged (never marked missing), so nothing syncs as a deletion.
 - **Theme:** Settings → General → Appearance: *System* (default, follows macOS and changes with it), *Light* or *Dark*. Kept per device (setting `ui.theme`, never synced). The dark theme remaps the same token roles (`tokens.css`). ⌘K has *Toggle light / dark theme*, the first line when it opens: it switches to the one not showing, which turns *System* into a fixed choice.
-- **Reading font:** Settings → General → Reading: a searchable list of the font families installed on the device (system and user), with *Tend’s own* (Work Sans, bundled) first. It changes only the note view’s body text; headings, the editor and every other field keep their fonts. Below the list, a snap card shows two short paragraphs in the picked font. Kept per device (setting `notes.reading_font`, never synced, since fonts differ per machine); a picked family that is no longer installed stays listed as “(not installed)” and the view falls back to Work Sans.
+- **Fonts:** Settings → General → Fonts, kept per device (never synced, since fonts differ per machine):
+  - **App font** (setting `fonts.app`): page and section titles and all UI text. **Editor font** (`fonts.editor`): the note view and the note editor (the same font, so the editor is no longer monospace), descriptions, person notes and comments, and a word's dictionary meanings.
+  - Each is a searchable list of the font families installed on the device (system and user), with *Tend’s own* first (Lato for the app, Work Sans for the editor). A picked family that is no longer installed stays listed as “(not installed)” and falls back to Tend’s own.
+  - **Text size** (`fonts.size`): Small · Default · Large, a segmented control; it scales every type token (×0.9, ×1, ×1.15).
+  - Values, paths, code and keys keep JetBrains Mono. Snaps never change: their paper fonts and sizes stay as they are.
 - **Delete confirmations:** Settings → General → Confirmations: *Ask before deleting a note / a task / a person / a word / a snap / a reference*, each on by default. Turned off, that delete (page trash button, explorer menu or ⌫) goes at once. Kept per device (settings `confirm.delete.note|task|person|word|snap|reference`, never synced). Folders, stacks, statuses, labels and word kinds always ask.
 
 ## 3. Start-up page
@@ -176,7 +180,7 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 - Defaults:
   - `NOT_STARTED`: always **first**; new tasks start here.
   - `IN_PROGRESS`: can be placed anywhere between first and last.
-  - `DONE`: always **last**; counts as finished (done tasks sink, Overdue skips them, subtask "2/5" counts).
+  - `DONE`: always **last**; counts as finished (done tasks sink, Due skips them, subtask "2/5" counts).
 - **Defaults:** can be renamed, never deleted.
 - **Custom statuses:**
   - Label plus a value that is auto-filled from the label in UPPER_SNAKE_CASE and editable before saving.
@@ -191,11 +195,11 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
   - The Statuses section is collapsible.
 
 ### Views
-- **Nav:** My day · All · Overdue · Upcoming · [date or range picker], each with a count; at the right end, [hide done] then the List/Board switch. With no view in the URL the list opens My day on the first visit of a day, then the view picked last that day.
+- **Nav:** My day · All · Due · Upcoming · [date or range picker], each with a count; at the right end, [hide done] then the List/Board switch. With no view in the URL the list opens My day on the first visit of a day, then the view picked last that day.
 - **Views** (all limited to the open folder and below; done tasks sink):
   - **My day:** added by hand, or due today and not removed by hand.
   - **All:** top-level tasks (subtasks show on their parent).
-  - **Overdue:** not done, due before today. Never shows Done tasks.
+  - **Due:** not done, due today or before (overdue included), by due date. Never shows Done tasks. An old link or saved view naming *Overdue* opens My day.
   - **Upcoming:** due today or later.
   - **Date range:** due within the range, both ends included.
   - Tasks without a due date show only in All (or in My day when added by hand).

@@ -21,7 +21,7 @@ Two font settings in Settings › Appearance (mobile) and Settings › General �
 
 - **The note view and the note editor use the same font.** The editor is no longer monospace.
 - Both pick from the same list as today's reading font (`decisions.md` §2): the app's own font first, then the font families installed on the device. No new bundled fonts; the font options in the mockups are not used.
-- The Editor font replaces the desktop's *Reading font* setting (`notes.reading_font`); a family picked there carries over. Both settings are kept per device, never synced.
+- The Editor font replaces the desktop's *Reading font* setting. Both settings are kept per device, never synced (`fonts.app`, `fonts.editor`, `fonts.size`).
 - Snaps never change: their paper fonts (Gaegu, Caveat, the mono slip) stay as they are.
 - Text size: Small · Default · Large (desktop segmented control; mobile slider with 5 steps, Default follows the phone's text size).
 - Code, paths and other monospace values keep JetBrains Mono regardless of the editor font.
@@ -30,7 +30,7 @@ Two font settings in Settings › Appearance (mobile) and Settings › General �
 ## 3. Due replaces Overdue (Both apps)
 
 - Task views are **My day · All · Due · Upcoming**.
-- **Due** = open tasks due on or before a date, overdue included. The date defaults to today. The calendar icon next to the tabs picks the date (desktop: the existing date pill).
+- **Due** = open tasks due on or before a date, overdue included. The date defaults to today. On the phone the calendar icon next to the tabs picks the date. On desktop Due is up to today, and the existing date pill keeps picking a date or range as its own view.
 - Desktop tab label changes from "Overdue" to "Due".
 
 ## 4. Menu: the corner button
@@ -141,7 +141,7 @@ Tauri 2 mobile, same SvelteKit app; phone layout chosen by viewport width. Each 
 
 | # | Milestone | Done when |
 |---|---|---|
-| P1 | Fonts and Due (both apps) | App/Editor font + text size work on desktop; Due view with date picker replaces Overdue; snaps unaffected |
+| P1 | Fonts and Due (both apps) · done | App/Editor font + text size work on desktop; Due view with date picker replaces Overdue; snaps unaffected |
 | P2 | Phone shell + corner menu | Phone layout at narrow widths; corner button (left/right), grow animation, veil, hides with keyboard |
 | P3 | First run + sync on phone | Restore into `vaults/<host>/<owner>/<repo>` (§10), progress screen, sync on open/suspend/resume/interval, dot states, token sheet |
 | P4 | Explorer | Notes and Tasks explorer: search, Folders section, ↑, items, views and counts, quick create |

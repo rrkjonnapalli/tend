@@ -26,7 +26,8 @@
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import { applyTheme } from '#lib/util/theme.ts';
-  import { applyReadingFont } from '#lib/util/font.ts';
+  import { applyFonts } from '#lib/util/font.ts';
+  import type { TextSize } from '#lib/types/font.type.ts';
   import { startTabbingIn } from '#lib/util/focus-start.ts';
   import { focusDock, focusMain, focusSide } from '#lib/util/panes.ts';
   import { hasLayers } from '#lib/util/layers.ts';
@@ -65,8 +66,14 @@
   // Light or dark, from Settings (System until a vault's settings say otherwise).
   $effect(() => applyTheme(settings.get<ThemePref>(settingKeys.theme, settingDefaults.theme)));
 
-  // The note view's font, from Settings → General.
-  $effect(() => applyReadingFont(settings.get<string>(settingKeys.readingFont, settingDefaults.readingFont)));
+  // The App font, Editor font and text size, from Settings → General.
+  $effect(() =>
+    applyFonts({
+      app: settings.get<string>(settingKeys.appFont, settingDefaults.appFont),
+      editor: settings.get<string>(settingKeys.editorFont, settingDefaults.editorFont),
+      size: settings.get<TextSize>(settingKeys.textSize, settingDefaults.textSize),
+    }),
+  );
 
   // On quit, pages save what they hold first (an open note), then Rust may close the app.
   $effect(() => {
@@ -83,7 +90,7 @@
     if (inTauri()) void update.start();
   });
 
-  // Back in the window after midnight: My day, Overdue and Upcoming move to the new day.
+  // Back in the window after midnight: My day, Due and Upcoming move to the new day.
   $effect(() => {
     if (!vault.path) return;
     window.addEventListener('focus', tasks.ensureToday);

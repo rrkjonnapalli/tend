@@ -119,7 +119,7 @@
   }
 
   .editor :global(.cm-scroller) {
-    font-family: var(--font-mono);
+    font-family: var(--font-editor);
   }
 
   .editor :global(.cm-content) {

@@ -1,20 +1,25 @@
-// The note view's reading font: a family installed on this device, or none for Tend's own.
+// The App font, Editor font and text size from Settings → General → Fonts, applied as CSS variables
+// on the root (see tokens.css). A family is one installed on this device, or empty for Tend's own.
+import type { TextSize } from '#lib/types/font.type.ts';
 
-/** The CSS variable the note view reads (MarkdownView `.note`). */
-const READING_VAR = '--font-reading';
+/** How much each text size multiplies the type tokens by. */
+export const TEXT_SCALE: Record<TextSize, number> = { small: 0.9, default: 1, large: 1.15 };
 
-/** A family name as a quoted CSS string, falling back to Tend's note font when it isn't installed. */
-export function fontStack(family: string): string {
+/** A family name as a quoted CSS string, falling back to `fallback` (a CSS value) when it isn't installed. */
+export function fontStack(family: string, fallback: string): string {
   const quoted = family.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-  return `"${quoted}", var(--font-note)`;
+  return `"${quoted}", ${fallback}`;
 }
 
-/** Shows notes in `family`; an empty one goes back to Tend's own font. */
-export function applyReadingFont(family: string) {
+type Fonts = { app: string; editor: string; size: TextSize };
+
+/** Sets the root's font variables; an empty family goes back to Tend's own. */
+export function applyFonts({ app, editor, size }: Fonts) {
   const root = document.documentElement.style;
-  if (!family) {
-    root.removeProperty(READING_VAR);
-    return;
-  }
-  root.setProperty(READING_VAR, fontStack(family));
+  const set = (name: string, value: string | null) => (value ? root.setProperty(name, value) : root.removeProperty(name));
+  const appStack = app ? fontStack(app, 'var(--font-own-ui)') : null;
+  set('--font-ui', appStack);
+  set('--font-heading', appStack);
+  set('--font-editor', editor ? fontStack(editor, 'var(--font-own-editor)') : null);
+  set('--text-scale', size === 'default' ? null : String(TEXT_SCALE[size] ?? 1));
 }

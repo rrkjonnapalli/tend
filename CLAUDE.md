@@ -27,8 +27,8 @@ The Library (Words, Snaps, References) has its own plan, `docs/tend-library-plan
 - **Other Rust crates:** `ureq` (dictionary lookups and HTTP), `fontdb` (installed font families for the reading font).
 - **Plugins:** `tauri-plugin-dialog` (folder picker), `tauri-plugin-notification` (timers), `tauri-plugin-opener`, `tauri-plugin-single-instance`, `tauri-plugin-window-state`, `tauri-plugin-updater` (auto-update from GitHub releases). App prefs live in the `settings` table; the last vault path and sync settings live in the app config dir (`src-tauri/src/config/`), not inside a vault.
 - **Styling:** plain CSS plus `tokens.css`, scoped `<style>` in components. No Tailwind or UI kit; the look is custom and minimal.
-- **Fonts:** `@fontsource/montserrat` (500, 600), `@fontsource/lato` (400, 700), `@fontsource/jetbrains-mono` (400, 500), `@fontsource/work-sans` (400, 700; the note view's body), bundled offline. The Library's handwriting: `@fontsource/caveat` (500, 600) and `@fontsource/gaegu` (400, sticky notes), plus `static/fonts/Smile Moon.otf` (stack names; not on Fontsource).
-- **Markdown:** `marked` + `DOMPurify` for rendering. The editor is CodeMirror 6 (`@codemirror/*`, `MarkdownEditor.svelte`) with a monospace font.
+- **Fonts:** `@fontsource/montserrat` (500, 600), `@fontsource/lato` (400, 700), `@fontsource/jetbrains-mono` (400, 500), `@fontsource/work-sans` (400, 700; the default Editor font), bundled offline. The Library's handwriting: `@fontsource/caveat` (500, 600) and `@fontsource/gaegu` (400, sticky notes), plus `static/fonts/Smile Moon.otf` (stack names; not on Fontsource).
+- **Markdown:** `marked` + `DOMPurify` for rendering. The editor is CodeMirror 6 (`@codemirror/*`, `MarkdownEditor.svelte`) in the Editor font (`--font-editor`, Work Sans by default), the same font as the note view.
 - **Order keys:** `fractional-indexing` (`src/lib/util`, `keyBetween`).
 
 ## Project layout

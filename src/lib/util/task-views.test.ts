@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Task } from '#lib/types/task.type.ts';
 import { defaultView, inMyDay, viewCounts, viewTasks } from './task-views.ts';
-import type { ViewContext } from '#lib/types/task-view.type.ts';
+import type { LastView, ViewContext } from '#lib/types/task-view.type.ts';
 
 const base: Task = {
   id: '',
@@ -36,8 +36,8 @@ describe('views', () => {
     expect(titles(viewTasks({ tasks, folder: 'work', view: 'all', ctx }))).toEqual(['a', 'c', 'd', 'b', 'g']);
   });
 
-  it('Overdue skips done tasks', () => {
-    expect(titles(viewTasks({ tasks, folder: 'work', view: 'overdue', ctx }))).toEqual(['c']);
+  it('Due: open tasks due today or before, by due date; skips done tasks', () => {
+    expect(titles(viewTasks({ tasks, folder: 'work', view: 'due', ctx }))).toEqual(['c', 'd']);
   });
 
   it('Upcoming sorts by due date and includes subtasks', () => {
@@ -55,10 +55,10 @@ describe('views', () => {
   });
 
   it('counts every view', () => {
-    expect(viewCounts({ tasks, folder: 'work', ctx })).toEqual({ all: 5, overdue: 1, myday: 1, upcoming: 2, range: 2 });
+    expect(viewCounts({ tasks, folder: 'work', ctx })).toEqual({ all: 5, due: 2, myday: 1, upcoming: 2, range: 2 });
   });
 
-  it('upcoming keeps Done tasks; overdue never shows them; hide done drops them everywhere', () => {
+  it('upcoming keeps Done tasks; due never shows them; hide done drops them everywhere', () => {
     const hidden = { ...ctx, hideDone: true };
     expect(titles(viewTasks({ tasks, folder: '', view: 'upcoming', ctx: hidden }))).toEqual(['d', 'f', 'e']);
     expect(titles(viewTasks({ tasks, folder: 'work', view: 'all', ctx: hidden }))).toEqual(['a', 'c', 'd']);
@@ -79,5 +79,10 @@ describe('defaultView', () => {
 
   it('keeps the view picked earlier today', () => {
     expect(defaultView({ last: { view: 'all', day: '2026-10-04' }, today: '2026-10-04' })).toBe('all');
+  });
+
+  it('opens My day when the saved view no longer exists', () => {
+    const last = { view: 'overdue', day: '2026-10-04' } as unknown as LastView;
+    expect(defaultView({ last, today: '2026-10-04' })).toBe('myday');
   });
 });

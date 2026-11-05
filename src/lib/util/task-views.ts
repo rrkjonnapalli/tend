@@ -7,6 +7,8 @@ import { isUnder } from './names.ts';
 
 export const isDone = (t: Task) => t.status === DONE_STATUS;
 export const isOverdue = (t: Task, today: string) => !isDone(t) && !!t.dueDate && t.dueDate < today;
+/** Open and due on or before `day`, overdue included. */
+export const isDue = (t: Task, day: string) => !isDone(t) && !!t.dueDate && t.dueDate <= day;
 
 /** In My day: added by hand, or due today and not removed by hand. */
 export function inMyDay(t: Task, { today, myDay }: MyDayContext): boolean {
@@ -16,14 +18,17 @@ export function inMyDay(t: Task, { today, myDay }: MyDayContext): boolean {
 
 const inRange = (day: string, [from, to]: DayRange) => day >= from && day <= to;
 
-// Overdue never shows Done tasks; every other view does, unless the list hides them.
+// Due never shows Done tasks; every other view does, unless the list hides them.
 const filters: Record<View, (t: Task, c: ViewContext) => boolean> = {
   all: (t) => t.parentId === null,
-  overdue: (t, c) => isOverdue(t, c.today),
+  due: (t, c) => isDue(t, c.today),
   myday: (t, c) => inMyDay(t, c),
   upcoming: (t, c) => !!t.dueDate && t.dueDate >= c.today,
   range: (t, c) => !!t.dueDate && inRange(t.dueDate, c.range),
 };
+
+/** A view name from a URL or a saved setting; an old or unknown one (`overdue`) is not a view. */
+export const isView = (v: unknown): v is View => typeof v === 'string' && Object.hasOwn(filters, v);
 
 function inView(t: Task, view: View, c: ViewContext): boolean {
   const hidden = c.hideDone === true && isDone(t);
@@ -34,7 +39,7 @@ function inView(t: Task, view: View, c: ViewContext): boolean {
 /** The view to open without one in the URL: My day on the first visit of a day, after that
  * whichever view was picked last today. */
 export function defaultView({ last, today }: { last: LastView | null; today: string }): View {
-  if (!last || last.day !== today) return 'myday';
+  if (!last || last.day !== today || !isView(last.view)) return 'myday';
   return last.view;
 }
 
@@ -62,5 +67,5 @@ export function viewTasks({ tasks, folder, view, ctx }: ViewScope & { view: View
 export function viewCounts({ tasks, folder, ctx }: ViewScope): Record<View, number> {
   const scoped = tasks.filter((t) => isUnder(t.path, folder));
   const count = (v: View) => scoped.filter((t) => inView(t, v, ctx)).length;
-  return { all: count('all'), overdue: count('overdue'), myday: count('myday'), upcoming: count('upcoming'), range: count('range') };
+  return { all: count('all'), due: count('due'), myday: count('myday'), upcoming: count('upcoming'), range: count('range') };
 }

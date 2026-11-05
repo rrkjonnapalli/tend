@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Settings → General: the theme, the reading font, the file size limit, the timer sound, delete confirmations, updates, the vault folder, and notes or folders skipped for breaking
+  // Settings → General: the theme, the fonts and text size, the file size limit, the timer sound, delete confirmations, updates, the vault folder, and notes or folders skipped for breaking
   // the name rule (with the name each can be renamed to, and one button to rename them all).
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -11,7 +11,7 @@
   import { plural } from '#lib/util/plural.ts';
   import { fixable } from '#lib/util/skipped.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
-  import { deleteChoices, fileLimitRange, settingDefaults, settingKeys, themeChoices } from '#lib/config/settings.config.ts';
+  import { deleteChoices, fileLimitRange, settingDefaults, settingKeys, textSizeChoices, themeChoices } from '#lib/config/settings.config.ts';
   import NumberSetting from './NumberSetting.svelte';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import type { ThemePref } from '#lib/types/theme.type.ts';
@@ -19,7 +19,7 @@
   import { update } from '#lib/stores/update.svelte.ts';
   import ChoicePicker from './ChoicePicker.svelte';
   import { appAPI } from '#lib/api/app.ts';
-  import { fontStack } from '#lib/util/font.ts';
+  import type { TextSize } from '#lib/types/font.type.ts';
   import type { Choice } from '#lib/types/ui.type.ts';
 
   let skipped = $state<Skipped[]>([]);
@@ -31,9 +31,11 @@
 
   /** The families installed on this device; loaded when the page opens. */
   let fonts = $state<string[]>([]);
-  const readingFont = $derived(settings.get<string>(settingKeys.readingFont, settingDefaults.readingFont));
-  const fontChoices = $derived(readingChoices(fonts, readingFont));
-  const sampleFont = $derived(readingFont ? fontStack(readingFont) : 'var(--font-note)');
+  const appFont = $derived(settings.get<string>(settingKeys.appFont, settingDefaults.appFont));
+  const editorFont = $derived(settings.get<string>(settingKeys.editorFont, settingDefaults.editorFont));
+  const textSize = $derived(settings.get<TextSize>(settingKeys.textSize, settingDefaults.textSize));
+  const appChoices = $derived(fontChoices({ installed: fonts, picked: appFont, own: 'Lato' }));
+  const editorChoices = $derived(fontChoices({ installed: fonts, picked: editorFont, own: 'Work Sans' }));
 
   onMount(() => {
     loadSkipped();
@@ -45,8 +47,8 @@
   }
 
   /** Tend's own font first, then every installed family; a picked one that is gone stays listed. */
-  function readingChoices(installed: string[], picked: string): Choice[] {
-    const own: Choice = { id: '', label: 'Tend’s own (Work Sans)' };
+  function fontChoices({ installed, picked, own: ownName }: { installed: string[]; picked: string; own: string }): Choice[] {
+    const own: Choice = { id: '', label: `Tend’s own (${ownName})` };
     const families = installed.map((name) => ({ id: name, label: name }));
     const unlisted = picked !== '' && !installed.includes(picked);
     const loaded = installed.length > 0;
@@ -114,12 +116,27 @@
 </section>
 
 <section class="group">
-  <h2 class="section-title">Reading</h2>
-  <ChoicePicker value={readingFont} choices={fontChoices} what="Reading font" field max={fontChoices.length} onpick={(id) => settings.set(settingKeys.readingFont, id)} />
-  <div class="sample" style:font-family={sampleFont}>
-    <p>Notes are read in this font, with numbers 0123456789 and punctuation: “quotes”, dashes — and an ellipsis…</p>
-    <p>Headings and the editor keep Tend’s own fonts. The choice stays on this device.</p>
+  <h2 class="section-title">Fonts</h2>
+  <div class="line">
+    <span class="flabel">App font</span>
+    <ChoicePicker value={appFont} choices={appChoices} what="App font" field max={appChoices.length} onpick={(id) => settings.set(settingKeys.appFont, id)} />
   </div>
+  <div class="line">
+    <span class="flabel">Editor font</span>
+    <ChoicePicker value={editorFont} choices={editorChoices} what="Editor font" field max={editorChoices.length} onpick={(id) => settings.set(settingKeys.editorFont, id)} />
+  </div>
+  <div class="line">
+    <span class="flabel">Text size</span>
+    <div class="seg" role="radiogroup" aria-label="Text size">
+      {#each textSizeChoices as t (t.value)}
+        <label class="choice" class:on={textSize === t.value}>
+          <input type="radio" name="text-size" value={t.value} checked={textSize === t.value} onchange={() => settings.set(settingKeys.textSize, t.value)} />
+          {t.label}
+        </label>
+      {/each}
+    </div>
+  </div>
+  <span class="hint">App font is everything except snaps. Editor font is notes, descriptions, comments and the other editors. Snaps keep their paper fonts. These stay on this device.</span>
 </section>
 
 <section class="group">
@@ -296,19 +313,10 @@
     accent-color: var(--primary);
   }
 
-  /* The reading font on a snap card: the paper the Library's snaps use. */
-  .sample {
-    max-width: 420px;
-    padding: 18px 22px 4px;
-    background: var(--paper);
-    box-shadow: var(--paper-shadow);
-    color: var(--board-ink);
-    font-size: 15px;
-    line-height: 26px;
-  }
-
-  .sample p {
-    margin: 0 0 14px;
+  .flabel {
+    width: 96px;
+    flex: none;
+    font: var(--text-ui);
   }
 
 </style>

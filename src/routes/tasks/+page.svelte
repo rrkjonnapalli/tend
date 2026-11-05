@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Task folder list: views (My day · All · Overdue · Upcoming · date range), then the rows.
+  // Task folder list: views (My day · All · Due · Upcoming · date range), then the rows.
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import type { DayRange } from '#lib/types/date.type.ts';
   import type { DroppedOrder } from '#lib/types/reorder.type.ts';
@@ -23,7 +23,7 @@
   import { tasks } from '#lib/stores/tasks.svelte.ts';
   import { people } from '#lib/stores/people.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
-  import { defaultView, isDone, isManual, viewCounts, viewTasks } from '#lib/util/task-views.ts';
+  import { defaultView, isDone, isManual, isView, viewCounts, viewTasks } from '#lib/util/task-views.ts';
   import { droppedKey, inPreviewOrder } from '#lib/util/task-order.ts';
   import { folderCrumbs, folderParam, TASK_PARAMS, tasksURL } from '#lib/util/task-urls.ts';
   import { startReorder } from '#lib/util/reorder.ts';
@@ -36,7 +36,7 @@
   const VIEWS: [View, string][] = [
     ['myday', 'My day'],
     ['all', 'All'],
-    ['overdue', 'Overdue'],
+    ['due', 'Due'],
     ['upcoming', 'Upcoming'],
   ];
   /** Views with an "add task" field; a task added in My day is due today and joins today's My day. */
@@ -45,7 +45,7 @@
   const COLUMNS = ['', 'Title', '', 'My day', 'Subs', 'Due', 'Who', 'Folder'];
   const EMPTY: Record<View, string> = {
     all: 'No tasks here yet',
-    overdue: 'Nothing overdue',
+    due: 'Nothing due',
     myday: 'Nothing for today yet',
     upcoming: 'Nothing coming up',
     range: 'Nothing due on these days',
@@ -54,7 +54,8 @@
   const params = $derived(page.url.searchParams);
   const folder = $derived(params.get(TASK_PARAMS.folder) ?? '');
   const lastView = $derived(settings.get<LastView | null>(settingKeys.tasksLastView, null));
-  const view = $derived((params.get(TASK_PARAMS.view) as View | null) ?? defaultView({ last: lastView, today: tasks.day }));
+  const asked = $derived(params.get(TASK_PARAMS.view));
+  const view = $derived(isView(asked) ? asked : defaultView({ last: lastView, today: tasks.day }));
   const range = $derived.by((): DayRange => {
     const from = params.get(TASK_PARAMS.from) ?? tasks.day;
     const to = params.get(TASK_PARAMS.to) ?? from;

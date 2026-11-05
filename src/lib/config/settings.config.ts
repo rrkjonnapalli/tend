@@ -24,8 +24,12 @@ export const settingKeys = {
   fileLimitMB: 'files.max_mb',
   /** The dictionary new lookups ask (`DictionarySource`); kept on this device. */
   dictionarySource: 'words.dictionary_source',
-  /** The note view's font family, installed on this device; empty is Tend's own. Kept on this device. */
-  readingFont: 'notes.reading_font',
+  /** The App font (everything but editors and snaps) and the Editor font (notes, descriptions,
+   *  comments): a family installed on this device, empty for Tend's own. Kept on this device. */
+  appFont: 'fonts.app',
+  editorFont: 'fonts.editor',
+  /** `TextSize`: scales the type tokens; kept on this device. */
+  textSize: 'fonts.size',
   /** The folder Quick create last used for each kind; folders keep one per tree. */
   /** Whether deleting a note, task, person, word, snap or reference asks first; kept on this device. */
   confirmDelete: (kind: DeleteKind) => `confirm.delete.${kind}`,
@@ -48,7 +52,9 @@ export const settingDefaults = {
   fileLimitMB: 30,
   confirmDelete: true,
   dictionarySource: DICTIONARY_SOURCE.freedictionaryapiCom,
-  readingFont: '',
+  appFont: '',
+  editorFont: '',
+  textSize: 'default',
 } as const;
 
 /** The range the file size limit may take (src-tauri/src/files.rs `LIMIT_MB_RANGE`). */
@@ -59,6 +65,13 @@ export const themeChoices = [
   { value: 'system', label: 'System' },
   { value: 'light', label: 'Light' },
   { value: 'dark', label: 'Dark' },
+] as const;
+
+/** The choices for the text size setting, in Settings → General. */
+export const textSizeChoices = [
+  { value: 'small', label: 'Small' },
+  { value: 'default', label: 'Default' },
+  { value: 'large', label: 'Large' },
 ] as const;
 
 /** The delete confirmations that can be turned off, in Settings → General. Folders, stacks,

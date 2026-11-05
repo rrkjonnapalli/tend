@@ -1,7 +1,7 @@
 import type { DayRange } from '#lib/types/date.type.ts';
 import type { Task } from '#lib/types/task.type.ts';
 
-export type View = 'all' | 'overdue' | 'myday' | 'upcoming' | 'range';
+export type View = 'all' | 'due' | 'myday' | 'upcoming' | 'range';
 
 /** The view last picked in the task list, and the day it was picked. */
 export type LastView = { view: View; day: string };

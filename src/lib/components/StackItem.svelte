@@ -158,7 +158,7 @@
     max-height: 60px;
     overflow: hidden;
     white-space: pre-wrap;
-    font: var(--text-code);
+    font: var(--text-snap-slip);
     color: var(--board-ink-muted);
   }
 

@@ -136,8 +136,6 @@
   /* Note page */
   .note {
     font: var(--text-editor);
-    /* The reading font picked in Settings → General, if any. */
-    font-family: var(--font-reading, var(--font-note));
   }
 
   .note :global(h1) {
