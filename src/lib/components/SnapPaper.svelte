@@ -40,12 +40,11 @@
 </div>
 
 <style>
-  /* --rule: a lined paper's line pitch; --rule-top: where its first rule starts; --margin: its
-     red margin line, from the left; --band-size: a sticky's darker top band. */
+  /* --rule: a lined paper's line pitch; --rule-top: where its first rule starts; --band-size: a
+     sticky's darker top band. Lined paper has no margin line: the text uses the whole width. */
   .sheet {
     --rule: 24px;
     --rule-top: 4px;
-    --margin: 33px;
     --band-size: 14px;
     flex: 1 1 auto;
     display: flex;
@@ -71,12 +70,10 @@
 
   .lined {
     min-height: 170px;
-    padding: 28px 20px 14px 44px;
+    padding: 28px 20px 14px;
     background-color: var(--paper);
-    background-image:
-      linear-gradient(90deg, transparent var(--margin), var(--paper-margin) var(--margin), var(--paper-margin) calc(var(--margin) + 1px), transparent calc(var(--margin) + 1px)),
-      repeating-linear-gradient(transparent 0 calc(var(--rule) - 1px), var(--paper-rule) calc(var(--rule) - 1px) var(--rule));
-    background-position: 0 0, 0 var(--rule-top);
+    background-image: repeating-linear-gradient(transparent 0 calc(var(--rule) - 1px), var(--paper-rule) calc(var(--rule) - 1px) var(--rule));
+    background-position: 0 var(--rule-top);
     box-shadow: var(--paper-shadow);
   }
 
@@ -121,7 +118,6 @@
   .mini {
     --rule: 20px;
     --rule-top: 2px;
-    --margin: 21px;
     --band-size: 12px;
     min-height: 0;
     padding: 22px 14px 10px;
@@ -131,10 +127,6 @@
   /* Room for the torn edge. */
   .mini.scrap {
     padding-bottom: 22px;
-  }
-
-  .mini.lined {
-    padding-left: 30px;
   }
 
   .mini.sticky {

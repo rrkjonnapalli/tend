@@ -89,7 +89,7 @@ Snaps are your own short writing, pinned to a board. Stacks group them like fold
 | --- | --- | --- |
 | Scrap | Off-white, torn bottom edge | Mono 14/24 |
 | Slip | Kraft (#efe3c8), short strip | Mono 13/20 |
-| Lined | Notebook lines, red margin rule | Mono 14/24 |
+| Lined | Notebook lines across the whole width (no margin rule, 2026-11-05) | Mono 14/24 |
 | Plain card | Clean off-white sheet with soft shadow (the stack's top sheet) | Mono 14/24 |
 | Sticky | Tinted paper with a deeper glue band | Handwritten (Gaegu) 20/28 |
 

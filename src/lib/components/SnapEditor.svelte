@@ -208,14 +208,12 @@
      every line of text stays sitting on one. At the top they meet the sheet's own rules. */
   .ruled {
     flex: none;
-    width: calc(100% + 62px);
+    width: calc(100% + 38px);
     height: 240px;
-    margin: 0 -18px 0 -44px;
-    padding: 0 18px 0 44px;
+    margin: 0 -18px 0 -20px;
+    padding: 0 18px 0 20px;
     background-color: var(--paper);
-    background-image:
-      linear-gradient(90deg, transparent 33px, var(--paper-margin) 33px, var(--paper-margin) 34px, transparent 34px),
-      repeating-linear-gradient(transparent 0 23px, var(--paper-rule) 23px 24px);
+    background-image: repeating-linear-gradient(transparent 0 23px, var(--paper-rule) 23px 24px);
     background-attachment: local;
     /* No scrollbar: its gutter would cut the rules short of the paper's edge. */
     scrollbar-width: none;
