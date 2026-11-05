@@ -6,8 +6,9 @@ export type View = 'all' | 'due' | 'myday' | 'upcoming' | 'range';
 /** The view last picked in the task list, and the day it was picked. */
 export type LastView = { view: View; day: string };
 
-/** `hideDone`: the list's "hide done" toggle; Done tasks are left out of every view. */
-export type ViewContext = { today: string; myDay: Map<string, boolean>; range: DayRange; hideDone?: boolean };
+/** `hideDone`: the list's "hide done" toggle; Done tasks are left out of every view. `dueOn`: the
+ *  day Due counts up to (the phone's calendar), today when missing. */
+export type ViewContext = { today: string; myDay: Map<string, boolean>; range: DayRange; hideDone?: boolean; dueOn?: string };
 
 /** My day state: the current day and the tasks added (true) or removed (false) by hand. */
 export type MyDayContext = { today: string; myDay: Map<string, boolean> };

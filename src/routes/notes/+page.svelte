@@ -15,6 +15,8 @@
   import { zoneNav } from '#lib/actions/zone-nav.action.ts';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
+  import { ui } from '#lib/stores/ui.svelte.ts';
+  import PhoneNotes from '#lib/components/phone/PhoneNotes.svelte';
   import { messageOf } from '#lib/errors/app-error.ts';
   import { nameError, relativeTo } from '#lib/util/names.ts';
   import { folderCrumbs, folderSummary } from '#lib/util/note-paths.ts';
@@ -61,35 +63,39 @@
   }
 </script>
 
-<main class="list-page" use:zoneNav>
-  <PageBar><Breadcrumbs {crumbs} /></PageBar>
-  <PageTitle title={crumbs[crumbs.length - 1].label} meta={summary} />
-  <SearchLine bind:value={query} label="Search notes" placeholder="Search notes" />
-  <AddLine bind:value={draft} label="New note" placeholder="new note" {error} onadd={create} oninput={() => (error = '')} />
-  <ColumnHeader template="var(--grid-note)" columns={COLUMNS} />
-  <div class="list-scroll" data-zone="rows">
-    <div class="rows">
-      {#each rows as n (n.id)}
-        {#if editingId === n.id}
-          <div class="row editing">
-            <InlineTitle value={n.name} label="Note name" check={nameError} onsave={(name) => rename(n, name)} oncancel={stopEditing} />
-            <span></span>
-            <span class="meta">{ago(n.modifiedAt)}</span>
-            <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>
-          </div>
-        {:else}
-          <a class="row reveal-on-hover" data-row href={routes.note(n.id)}>
-            <span class="name">{n.name}</span>
-            <EditButton label="Rename note" onedit={() => (editingId = n.id)} />
-            <span class="meta">{ago(n.modifiedAt)}</span>
-            <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>
-          </a>
-        {/if}
-      {/each}
-      {#if rows.length === 0}<span class="list-empty">{needle ? 'No notes match' : 'No notes here yet'}</span>{/if}
+{#if ui.phone}
+  <PhoneNotes {folder} />
+{:else}
+  <main class="list-page" use:zoneNav>
+    <PageBar><Breadcrumbs {crumbs} /></PageBar>
+    <PageTitle title={crumbs[crumbs.length - 1].label} meta={summary} />
+    <SearchLine bind:value={query} label="Search notes" placeholder="Search notes" />
+    <AddLine bind:value={draft} label="New note" placeholder="new note" {error} onadd={create} oninput={() => (error = '')} />
+    <ColumnHeader template="var(--grid-note)" columns={COLUMNS} />
+    <div class="list-scroll" data-zone="rows">
+      <div class="rows">
+        {#each rows as n (n.id)}
+          {#if editingId === n.id}
+            <div class="row editing">
+              <InlineTitle value={n.name} label="Note name" check={nameError} onsave={(name) => rename(n, name)} oncancel={stopEditing} />
+              <span></span>
+              <span class="meta">{ago(n.modifiedAt)}</span>
+              <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>
+            </div>
+          {:else}
+            <a class="row reveal-on-hover" data-row href={routes.note(n.id)}>
+              <span class="name">{n.name}</span>
+              <EditButton label="Rename note" onedit={() => (editingId = n.id)} />
+              <span class="meta">{ago(n.modifiedAt)}</span>
+              <span class="meta path" use:overflowTitle>{relativeTo(n.folder, folder)}</span>
+            </a>
+          {/if}
+        {/each}
+        {#if rows.length === 0}<span class="list-empty">{needle ? 'No notes match' : 'No notes here yet'}</span>{/if}
+      </div>
     </div>
-  </div>
-</main>
+  </main>
+{/if}
 
 <style>
 

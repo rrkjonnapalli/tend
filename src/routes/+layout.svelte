@@ -239,7 +239,9 @@
   }
 
   /* The phone layout clears the status bar and the home indicator. */
+  /* 100dvh follows the keyboard, so the page doesn't slide under the status bar while typing. */
   .shell.phone {
+    height: 100dvh;
     padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
   }
 

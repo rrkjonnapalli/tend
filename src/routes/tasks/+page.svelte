@@ -21,6 +21,8 @@
   import TaskBoard from '#lib/components/TaskBoard.svelte';
   import Icon from '#lib/components/Icon.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
+  import { ui } from '#lib/stores/ui.svelte.ts';
+  import PhoneTasks from '#lib/components/phone/PhoneTasks.svelte';
   import { people } from '#lib/stores/people.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { defaultView, isDone, isManual, isView, viewCounts, viewTasks } from '#lib/util/task-views.ts';
@@ -152,56 +154,60 @@
   }
 </script>
 
-<main class="list-page" use:zoneNav>
-  <PageBar><Breadcrumbs {crumbs} /></PageBar>
-  <PageTitle title={crumbs[crumbs.length - 1].label} meta={plural(counts.all, 'task')} />
-  <SearchLine bind:value={query} label="Search tasks" placeholder="Search tasks" />
+{#if ui.phone}
+  <PhoneTasks {folder} />
+{:else}
+  <main class="list-page" use:zoneNav>
+    <PageBar><Breadcrumbs {crumbs} /></PageBar>
+    <PageTitle title={crumbs[crumbs.length - 1].label} meta={plural(counts.all, 'task')} />
+    <SearchLine bind:value={query} label="Search tasks" placeholder="Search tasks" />
 
-  <nav class="views" aria-label="Views" data-zone="bar">
-    <ViewTabs options={viewTabs} value={view} onchange={setView} />
-    <span class="sep" aria-hidden="true">·</span>
-    <DateField mode="range" {range} active={view === 'range'} marked={dueDays} onrange={setRange} />
-    <button
-      class="icon-btn hide"
-      class:on={hideDone}
-      aria-label="Hide done tasks"
-      aria-pressed={hideDone}
-      title={hideDone ? 'Show done tasks' : 'Hide done tasks'}
-      onclick={() => settings.set(settingKeys.tasksHideDone, !hideDone)}>
-      <Icon name="doneHidden" size={14} />
-    </button>
-    <span class="lay" role="group" aria-label="Layout">
-      <button class="icon-btn" class:on={!board} aria-label="List" aria-pressed={!board} title="List" onclick={() => settings.set(settingKeys.tasksLayout, 'list')}>
-        <Icon name="list" size={14} />
+    <nav class="views" aria-label="Views" data-zone="bar">
+      <ViewTabs options={viewTabs} value={view} onchange={setView} />
+      <span class="sep" aria-hidden="true">·</span>
+      <DateField mode="range" {range} active={view === 'range'} marked={dueDays} onrange={setRange} />
+      <button
+        class="icon-btn hide"
+        class:on={hideDone}
+        aria-label="Hide done tasks"
+        aria-pressed={hideDone}
+        title={hideDone ? 'Show done tasks' : 'Hide done tasks'}
+        onclick={() => settings.set(settingKeys.tasksHideDone, !hideDone)}>
+        <Icon name="doneHidden" size={14} />
       </button>
-      <button class="icon-btn" class:on={board} aria-label="Board" aria-pressed={board} title="Board" onclick={() => settings.set(settingKeys.tasksLayout, 'board')}>
-        <Icon name="board" size={14} />
-      </button>
-    </span>
-  </nav>
+      <span class="lay" role="group" aria-label="Layout">
+        <button class="icon-btn" class:on={!board} aria-label="List" aria-pressed={!board} title="List" onclick={() => settings.set(settingKeys.tasksLayout, 'list')}>
+          <Icon name="list" size={14} />
+        </button>
+        <button class="icon-btn" class:on={board} aria-label="Board" aria-pressed={board} title="Board" onclick={() => settings.set(settingKeys.tasksLayout, 'board')}>
+          <Icon name="board" size={14} />
+        </button>
+      </span>
+    </nav>
 
-  {#if board}
-    <div class="boardwrap" data-zone="board"><TaskBoard items={rows} {folder} /></div>
-  {:else}
-    {#if canAdd}
-      <AddLine bind:value={draft} bind:input={addInput} label="Add task" placeholder="add task" onadd={add} />
-    {/if}
-    <ColumnHeader template="var(--grid-task)" columns={COLUMNS} />
-    <div class="list-scroll" data-zone="rows">
-      <div class="rows" role="list">
-        {#each shown as task (task.id)}
-          <TaskRow
-            {task}
-            {folder}
-            sortable={manual}
-            lifted={lifted === task.id && preview !== null}
-            onpointerdown={(e) => grab(e, task.id)} />
-        {/each}
-        {#if shown.length === 0}<span class="list-empty">{needle ? 'No tasks match' : EMPTY[view]}</span>{/if}
+    {#if board}
+      <div class="boardwrap" data-zone="board"><TaskBoard items={rows} {folder} /></div>
+    {:else}
+      {#if canAdd}
+        <AddLine bind:value={draft} bind:input={addInput} label="Add task" placeholder="add task" onadd={add} />
+      {/if}
+      <ColumnHeader template="var(--grid-task)" columns={COLUMNS} />
+      <div class="list-scroll" data-zone="rows">
+        <div class="rows" role="list">
+          {#each shown as task (task.id)}
+            <TaskRow
+              {task}
+              {folder}
+              sortable={manual}
+              lifted={lifted === task.id && preview !== null}
+              onpointerdown={(e) => grab(e, task.id)} />
+          {/each}
+          {#if shown.length === 0}<span class="list-empty">{needle ? 'No tasks match' : EMPTY[view]}</span>{/if}
+        </div>
       </div>
-    </div>
-  {/if}
-</main>
+    {/if}
+  </main>
+{/if}
 
 <style>
   /* The board fills the rest of the window; its columns scroll on their own. */

@@ -1,5 +1,6 @@
 @import '../../../docs/design/tokens.css';
 @import './fonts.css';
+@import './phone.css';
 
 *,
 *::before,

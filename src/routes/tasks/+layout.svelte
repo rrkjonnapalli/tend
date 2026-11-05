@@ -6,6 +6,7 @@
   import { page } from '$app/state';
   import Explorer from '#lib/components/Explorer.svelte';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { isUnder, join, parentOf } from '#lib/util/names.ts';
   import { plural } from '#lib/util/plural.ts';
@@ -71,8 +72,12 @@
   };
 </script>
 
-<Explorer id="tasks" {rootName} folders={tasks.folders} {selected} newItemLabel="New task" {actions} />
-<div class="pane">{@render children()}</div>
+{#if ui.phone}
+  {@render children()}
+{:else}
+  <Explorer id="tasks" {rootName} folders={tasks.folders} {selected} newItemLabel="New task" {actions} />
+  <div class="pane">{@render children()}</div>
+{/if}
 
 <style>
   .pane {

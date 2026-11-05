@@ -2,7 +2,7 @@
 import type { Crumb } from '#lib/types/breadcrumb.type.ts';
 import { routes } from './routes.ts';
 
-export const TASK_PARAMS = { folder: 'f', view: 'v', from: 'from', to: 'to', add: 'add' } as const;
+export const TASK_PARAMS = { folder: 'f', view: 'v', from: 'from', to: 'to', add: 'add', dueOn: 'd' } as const;
 
 /** `{ f: folder }`, or nothing for the root folder. */
 export function folderParam(folder: string): Record<string, string> {

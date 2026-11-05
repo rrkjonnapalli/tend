@@ -1,0 +1,76 @@
+/* Shared by the phone layout's lists (src/lib/components/phone/). Sizes from
+   docs/mobile/design/tend-mobile2.css. */
+
+/* A phone page that scrolls; the bottom padding lets the last row clear the corner button. */
+.phone-list {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 4px 20px 96px;
+}
+
+/* A list row: title, then quiet meta at the right end. */
+.qr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: calc(100% + 20px);
+  min-height: 44px;
+  margin: 0 -10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  text-align: left;
+  font: var(--text-ui);
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.qr:active,
+.qr:focus-visible {
+  outline: none;
+  background: var(--c-hover);
+}
+
+.qr .tt {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qr .tt.done {
+  color: var(--c-muted-2);
+}
+
+.qr .meta,
+.qr .due {
+  flex: none;
+  font: var(--text-meta);
+  color: var(--c-muted-2);
+}
+
+.qr .due.warn {
+  color: var(--c-overdue);
+}
+
+.qr .path {
+  flex: none;
+  font: var(--text-mono-meta);
+  color: var(--c-muted-2);
+}
+
+.phone-list .empty {
+  margin: 12px 0;
+  font: var(--text-ui);
+  color: var(--c-muted-2);
+}
+
+/* Sideways strips (views, the board) swipe without a visible scrollbar. */
+.phone-list ::-webkit-scrollbar {
+  display: none;
+}

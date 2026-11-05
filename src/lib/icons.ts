@@ -28,6 +28,7 @@ export const icons = {
   alert: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.5v.01"/>',
   doneHidden: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8"/><path d="M4 20L20 4"/>',
   back: '<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>',
+  up: '<path d="M12 19V6M6 11l6-6 6 6"/>',
   widen: '<path d="M3 12h18"/><path d="M7 8l-4 4 4 4"/><path d="M17 8l4 4-4 4"/>',
   narrow: '<path d="M3 12h6M15 12h6"/><path d="M6 8l4 4-4 4"/><path d="M18 8l-4 4 4 4"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',

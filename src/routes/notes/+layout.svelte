@@ -6,6 +6,7 @@
   import { page } from '$app/state';
   import Explorer from '#lib/components/Explorer.svelte';
   import { notes } from '#lib/stores/notes.svelte.ts';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
   import { isUnder, join, parentOf } from '#lib/util/names.ts';
@@ -87,8 +88,12 @@
   };
 </script>
 
-<Explorer id="notes" rootName={NOTES_ROOT_NAME} folders={notes.folders} {leaves} {selected} {actions} />
-<div class="pane">{@render children()}</div>
+{#if ui.phone}
+  {@render children()}
+{:else}
+  <Explorer id="notes" rootName={NOTES_ROOT_NAME} folders={notes.folders} {leaves} {selected} {actions} />
+  <div class="pane">{@render children()}</div>
+{/if}
 
 <style>
   .pane {

@@ -54,6 +54,10 @@ export const join = (folder: string, name: string) => (folder ? `${folder}/${nam
 export const parentOf = (path: string) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
 export const baseOf = (path: string) => path.slice(path.lastIndexOf('/') + 1);
 /** `path` is `root` or inside it. '' contains everything. */
+/** The folders directly inside `parent` ('' is the root), by name. */
+export const childFolders = (folders: string[], parent: string) =>
+  folders.filter((f) => f !== '' && parentOf(f) === parent).sort((a, b) => baseOf(a).localeCompare(baseOf(b)));
+
 export const isUnder = (path: string, root: string) => root === '' || path === root || path.startsWith(root + '/');
 /** `path` relative to `root`, '' when they are the same. */
 export function relativeTo(path: string, root: string): string {

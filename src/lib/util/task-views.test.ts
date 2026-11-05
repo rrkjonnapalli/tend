@@ -40,6 +40,11 @@ describe('views', () => {
     expect(titles(viewTasks({ tasks, folder: 'work', view: 'due', ctx }))).toEqual(['c', 'd']);
   });
 
+  it('Due counts up to a picked day', () => {
+    const later = { ...ctx, dueOn: '2026-10-10' };
+    expect(titles(viewTasks({ tasks, folder: 'work', view: 'due', ctx: later }))).toEqual(['c', 'd', 'e']);
+  });
+
   it('Upcoming sorts by due date and includes subtasks', () => {
     expect(titles(viewTasks({ tasks, folder: '', view: 'upcoming', ctx }))).toEqual(['d', 'f', 'e', 'h']);
   });

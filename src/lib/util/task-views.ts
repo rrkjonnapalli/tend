@@ -21,7 +21,7 @@ const inRange = (day: string, [from, to]: DayRange) => day >= from && day <= to;
 // Due never shows Done tasks; every other view does, unless the list hides them.
 const filters: Record<View, (t: Task, c: ViewContext) => boolean> = {
   all: (t) => t.parentId === null,
-  due: (t, c) => isDue(t, c.today),
+  due: (t, c) => isDue(t, c.dueOn ?? c.today),
   myday: (t, c) => inMyDay(t, c),
   upcoming: (t, c) => !!t.dueDate && t.dueDate >= c.today,
   range: (t, c) => !!t.dueDate && inRange(t.dueDate, c.range),
