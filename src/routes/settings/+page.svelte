@@ -70,7 +70,7 @@
   <div class="top"><span class="caption muted">Settings</span></div>
   <nav class="secs" bind:this={navEl}>
     {#each shownSections as s (s.id)}
-      {@const on = s.id === current.id && (!ui.phone || requested !== null)}
+      {@const on = s.id === current.id}
       <button class="sec" class:on aria-current={on ? 'page' : undefined} onclick={() => show(s.id)}>
         {s.label}
       </button>
@@ -83,12 +83,9 @@
   <Drawer label="Settings sections">{@render sectionList()}</Drawer>
 {/if}
 
-{#if ui.phone && !requested}
-  <PhoneSettings />
-{:else}
 {#if !ui.phone}{@render sectionList()}{/if}
 <main class="detail-page detail-stack">
-  <PageBar onback={ui.phone ? () => nav.back(routes.settings) : undefined}>
+  <PageBar>
     <Breadcrumbs crumbs={[{ label: SETTINGS_ROOT_NAME }, { label: current.label }]} />
     {#snippet actions()}
       {#if ui.phone}<button class="icon-btn" aria-label="Settings sections" onclick={() => (ui.drawer = true)}><Icon name="list" size={16} /></button>{/if}
@@ -98,6 +95,8 @@
     <PageTitle title={current.label} meta={current.sub} />
 
     {#if current.id === SETTINGS_SECTION.general}
+      <!-- A phone's General also holds the vault, sync, appearance and fonts. -->
+      {#if ui.phone}<PhoneSettings />{/if}
       <SettingsGeneral />
     {:else if current.id === SETTINGS_SECTION.tasks}
       <StatusesEditor />
@@ -114,7 +113,6 @@
     {/if}
   </article>
 </main>
-{/if}
 
 <style>
   .side {

@@ -1,8 +1,7 @@
 <script lang="ts">
-  // Settings on a phone (MD-Settings): the vault, sync, appearance (theme and the menu button's
-  // side) and fonts on one page; the other sections are in the drawer. Spec: tend-mobile-spec.md §11.
+  // The top of Settings › General on a phone (MD-Settings): the vault, sync, appearance (theme and
+  // the menu button's side) and fonts. The sections are in the drawer. Spec: tend-mobile-spec.md §11.
   import { onMount } from 'svelte';
-  import Icon from '../Icon.svelte';
   import ChoicePicker from '../ChoicePicker.svelte';
   import { appAPI } from '#lib/api/app.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
@@ -10,7 +9,6 @@
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { settingDefaults, settingKeys, textSizeChoices, themeChoices } from '#lib/config/settings.config.ts';
   import { SETTINGS_SECTION } from '#lib/enums/settings.enum.ts';
-  import { ui } from '#lib/stores/ui.svelte.ts';
   import type { ThemePref } from '#lib/types/theme.type.ts';
   import type { TextSize } from '#lib/types/font.type.ts';
   import type { MenuSide } from '#lib/types/ui.type.ts';
@@ -44,12 +42,7 @@
   }
 </script>
 
-<main class="phone-list">
-  <div class="head">
-    <h1>Settings</h1>
-    <button class="ib" aria-label="Settings sections" onclick={() => (ui.drawer = true)}><Icon name="list" size={20} /></button>
-  </div>
-
+<div class="top">
   <h2>Vault</h2>
   <p class="val mono">{vault.path ?? ''}</p>
 
@@ -103,13 +96,13 @@
     </div>
   </div>
 
-</main>
+</div>
 
 <style>
-  h1 {
-    margin: 24px 0 8px;
-    font: var(--text-heading);
+  .top {
+    margin-bottom: 8px;
   }
+
 
   h2 {
     margin: 20px 0 4px;
@@ -204,27 +197,6 @@
   }
 
 
-  .head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-right: -12px;
-  }
 
-  .ib {
-    display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border: 0;
-    border-radius: var(--radius-control);
-    background: transparent;
-    color: var(--text-muted);
-  }
 
-  .ib:active,
-  .ib:focus-visible {
-    outline: none;
-    background: var(--c-hover);
-  }
 </style>

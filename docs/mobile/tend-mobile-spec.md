@@ -113,7 +113,7 @@ There is no tab bar or dock on the phone. Navigation is one round button in a bo
 - Sync: repo · branch, last synced, Sync now.
 - Appearance: Theme (System / Light / Dark), Menu button (Left / Right).
 - Fonts: App font, Editor font, Text size (each opens the Fonts screen).
-- Sections: General, Tasks (statuses, labels), Library, Tags, Sync, in the left drawer (its button sits by the title, and on each section's bar). Each opens full screen with a back arrow. No Command palette section on a phone; Feedback isn't there yet.
+- Sections: General, Tasks (statuses, labels), Library, Tags, Sync, in the left drawer (its button sits on every section's bar). Settings opens on General, which on a phone starts with the vault, sync, appearance and fonts above Files and Confirmations. No Command palette section on a phone; Feedback isn't there yet.
 
 ## 12. Screens
 
