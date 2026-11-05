@@ -96,3 +96,11 @@
   border-color: var(--c-current);
   background: var(--c-current);
 }
+
+/* Dropdown choices big enough to tap in the phone layout (config.phoneMaxWidth). */
+@media (max-width: 600px) {
+  .popover [role='option'] {
+    min-height: 44px;
+    font-size: 15px;
+  }
+}

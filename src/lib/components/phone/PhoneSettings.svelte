@@ -3,6 +3,7 @@
   // side) and fonts on one page; the other sections are in the drawer. Spec: tend-mobile-spec.md §11.
   import { onMount } from 'svelte';
   import Icon from '../Icon.svelte';
+  import ChoicePicker from '../ChoicePicker.svelte';
   import { appAPI } from '#lib/api/app.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
   import { sync } from '#lib/stores/sync.svelte.ts';
@@ -37,8 +38,9 @@
   const lastOk = $derived(sync.status?.lastOkAt ?? null);
 
   /** The font list: Tend's own first, then the installed families; a picked one that is gone stays. */
-  function familiesWith(picked: string) {
-    return picked && !fonts.includes(picked) ? [picked, ...fonts] : fonts;
+  function fontChoices(picked: string, own: string) {
+    const families = picked && !fonts.includes(picked) ? [picked, ...fonts] : fonts;
+    return [{ id: '', label: `${own} (Tend’s own)` }, ...families.map((f) => ({ id: f, label: f }))];
   }
 </script>
 
@@ -82,20 +84,14 @@
   </div>
 
   <h2>Fonts</h2>
-  <label class="row">
+  <div class="row">
     <span class="grow">App font</span>
-    <select class="pick" value={appFont} onchange={(e) => settings.set(settingKeys.appFont, e.currentTarget.value)}>
-      <option value="">Lato (Tend’s own)</option>
-      {#each familiesWith(appFont) as f (f)}<option value={f}>{f}</option>{/each}
-    </select>
-  </label>
-  <label class="row">
+    <ChoicePicker value={appFont} choices={fontChoices(appFont, 'Lato')} what="App font" field onpick={(id) => settings.set(settingKeys.appFont, id)} />
+  </div>
+  <div class="row">
     <span class="grow">Editor font</span>
-    <select class="pick" value={editorFont} onchange={(e) => settings.set(settingKeys.editorFont, e.currentTarget.value)}>
-      <option value="">Work Sans (Tend’s own)</option>
-      {#each familiesWith(editorFont) as f (f)}<option value={f}>{f}</option>{/each}
-    </select>
-  </label>
+    <ChoicePicker value={editorFont} choices={fontChoices(editorFont, 'Work Sans')} what="Editor font" field onpick={(id) => settings.set(settingKeys.editorFont, id)} />
+  </div>
   <div class="row">
     <span class="grow">Text size</span>
     <div class="seg" role="radiogroup" aria-label="Text size">
@@ -207,16 +203,6 @@
     background: var(--c-hover);
   }
 
-  .pick {
-    max-width: 55%;
-    height: 36px;
-    padding: 0 8px;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: var(--c-chip);
-    font: var(--text-ui);
-    color: var(--text);
-  }
 
   .head {
     display: flex;

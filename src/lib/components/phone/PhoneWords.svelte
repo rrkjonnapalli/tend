@@ -2,6 +2,7 @@
   // Words on a phone (ML-Words): a kind dropdown (all kinds unless one is picked) that filters the
   // list, then each word with its meaning on one line. A word opens on its own page.
   import type { WordGroup } from '#lib/types/word.type.ts';
+  import ChoicePicker from '../ChoicePicker.svelte';
   import { routes } from '#lib/util/routes.ts';
 
   let { groups }: { groups: WordGroup[] } = $props();
@@ -10,6 +11,7 @@
 
   let kind = $state(ALL);
 
+  const choices = $derived([{ id: ALL, label: 'All kinds' }, ...groups.map((g) => ({ id: g.kind.value, label: `${g.kind.label} (${g.words.length})` }))]);
   const picked = $derived(groups.find((g) => g.kind.value === kind) ?? null);
   const shown = $derived(
     (picked ? [picked] : groups).flatMap((g) => g.words).sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })),
@@ -17,10 +19,9 @@
 </script>
 
 <div class="phone-list">
-  <select class="kind" aria-label="Kind" bind:value={kind}>
-    <option value={ALL}>All kinds</option>
-    {#each groups as g (g.kind.value)}<option value={g.kind.value}>{g.kind.label} ({g.words.length})</option>{/each}
-  </select>
+  <div class="kind">
+    <ChoicePicker value={kind} {choices} what="Kind" search={false} onpick={(id) => (kind = id)} />
+  </div>
   {#each shown as w (w.id)}
     <a class="wr" href={routes.libraryWord(w.id)}>
       <span class="w">{w.title}</span>
@@ -33,20 +34,7 @@
 
 <style>
   .kind {
-    height: 36px;
     margin: 4px 0 12px;
-    padding: 0 10px;
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: var(--c-chip);
-    font: var(--text-ui);
-    font-size: 15px;
-    color: var(--text);
-  }
-
-  .kind:focus-visible {
-    outline: none;
-    background: var(--c-hover);
   }
 
   .wr {

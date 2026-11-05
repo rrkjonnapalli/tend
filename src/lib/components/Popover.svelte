@@ -95,8 +95,8 @@
 <style>
   .popover {
     position: fixed;
-    /* Above a dialog (41), below a toast (50). */
-    z-index: 45;
+    /* Above a dialog (41), a toast (50) and the phone's drawer and sheets (51–61). */
+    z-index: 70;
     max-height: calc(100vh - 16px);
     overflow: auto;
     background: var(--c-page);

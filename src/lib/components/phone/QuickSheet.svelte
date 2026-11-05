@@ -4,6 +4,7 @@
   // Names become slugs (the name rule); a task title is free text.
   import { goto } from '$app/navigation';
   import Sheet from './Sheet.svelte';
+  import ChoicePicker from '../ChoicePicker.svelte';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
   import { tasks } from '#lib/stores/tasks.svelte.ts';
@@ -58,12 +59,10 @@
       </label>
     {/each}
   </div>
-  <label class="f">
+  <div class="f">
     <span class="lbl">in</span>
-    <select class="in mono" bind:value={target}>
-      {#each folders as path (path)}<option value={path}>{labelOf(path)}</option>{/each}
-    </select>
-  </label>
+    <ChoicePicker value={target} choices={folders.map((path) => ({ id: path, label: labelOf(path) }))} what="Folder" field onpick={(id) => (target = id)} />
+  </div>
   <label class="f">
     <span class="lbl">{isTask ? 'title' : 'name'}</span>
     <input use:focusOnMount class="in" class:mono={!isTask} autocapitalize={isTask ? 'sentences' : 'off'} bind:value={name} />
