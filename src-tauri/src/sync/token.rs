@@ -38,8 +38,23 @@ fn platform_store() -> Option<std::sync::Arc<keyring_core::CredentialStore>> {
         .map(|s| s as _)
 }
 
+#[cfg(all(not(test), target_os = "ios"))]
+fn platform_store() -> Option<std::sync::Arc<keyring_core::CredentialStore>> {
+    apple_native_keyring_store::protected::Store::new()
+        .ok()
+        .map(|s| s as _)
+}
+
+#[cfg(all(not(test), target_os = "android"))]
+fn platform_store() -> Option<std::sync::Arc<keyring_core::CredentialStore>> {
+    android_native_keyring_store::Store::new().ok().map(|s| s as _)
+}
+
 /// No store on this platform yet: every call reports `SYNC_TOKEN`.
-#[cfg(all(not(test), not(target_os = "macos")))]
+#[cfg(all(
+    not(test),
+    not(any(target_os = "macos", target_os = "ios", target_os = "android"))
+))]
 fn platform_store() -> Option<std::sync::Arc<keyring_core::CredentialStore>> {
     None
 }

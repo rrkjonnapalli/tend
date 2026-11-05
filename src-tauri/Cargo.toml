@@ -33,11 +33,16 @@ rusqlite_migration = "2.6.0"
 git2 = { version = "0.21.0", default-features = false, features = ["https", "vendored-libgit2", "vendored-openssl"] }
 keyring-core = "1.0.0"
 fontdb = { version = "0.24.0", default-features = false, features = ["std", "fs", "memmap"] }
-trash = "5.2.9"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 apple-native-keyring-store = { version = "1.0.2", features = ["keychain"] }
 objc2 = "0.6.4"
+
+[target.'cfg(target_os = "ios")'.dependencies]
+apple-native-keyring-store = { version = "1.0.2", features = ["protected"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+android-native-keyring-store = "1.0.0"
 
 [dev-dependencies]
 tempfile = "3.27.0"
@@ -55,4 +60,5 @@ strip = true
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2.5.3"
 tauri-plugin-updater = "2.14.0"
+trash = "5.2.9"
 tauri-plugin-window-state = "2.5.0"
