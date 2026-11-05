@@ -1,5 +1,6 @@
 <script lang="ts">
-  // References: the list, newest first, filtered by the Library search; + or a row opens the popup.
+  // References: the list, newest first, filtered by the Library search; + or a row opens a
+  // reference's page in the list's place.
   import ColumnHeader from '#lib/components/ColumnHeader.svelte';
   import LibraryEmpty from '#lib/components/LibraryEmpty.svelte';
   import RefForm from '#lib/components/RefForm.svelte';
@@ -16,18 +17,22 @@
 
   refs.load();
 
-  /** The open popup; text handed over from Home opens it with the text in. */
+  /** The open reference page; text handed over from Home opens it with the text in. */
   const handed = library.takeHanded();
   let form = $state<RefFormState | null>(handed === null ? null : { editing: null, filled: handed });
 
   const needle = $derived(searchNeedle(library.query));
   const shown = $derived(refs.refs.filter((r) => textMatches([refTitle(r), r.value, r.why], needle)));
 
-  // The bar's + opens the popup.
+  // The bar's + opens a new reference's page.
   onLibraryAdd(() => (form = { editing: null }));
 </script>
 
-{#if ui.phone && refs.refs.length > 0}
+{#if form}
+  {#key form}
+    <RefForm editing={form.editing} filled={form.filled} onclose={() => (form = null)} onopen={(ref) => (form = { editing: ref })} />
+  {/key}
+{:else if ui.phone && refs.refs.length > 0}
   <PhoneRefs refs={shown} onopen={(ref) => (form = { editing: ref })} />
 {:else if refs.loaded && refs.refs.length === 0}
   <LibraryEmpty title="Nothing saved yet" hint="Press + and paste a link." />
@@ -43,12 +48,6 @@
       <LibraryEmpty title="Nothing matches" hint="Try other words." />
     {/if}
   </div>
-{/if}
-
-{#if form}
-  {#key form}
-    <RefForm editing={form.editing} filled={form.filled} onclose={() => (form = null)} onopen={(ref) => (form = { editing: ref })} />
-  {/key}
 {/if}
 
 <style>

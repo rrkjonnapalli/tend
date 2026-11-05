@@ -1,9 +1,8 @@
 <script lang="ts">
-  // The one popup for adding and editing a reference. Only the reference is needed: paste,
+  // The one page for adding and editing a reference. Only the reference is needed: paste,
   // Enter, done. A link gets its page title fetched into Title unless one was typed; text is its
   // own title until changed. Link or text is picked from what is typed, until picked by hand.
   import { untrack } from 'svelte';
-  import Modal from './Modal.svelte';
   import PageBar from './PageBar.svelte';
   import Breadcrumbs from './Breadcrumbs.svelte';
   import { ui } from '#lib/stores/ui.svelte.ts';
@@ -48,14 +47,12 @@
     { value: REF_KIND.text, label: 'text' },
   ];
 
-  // The popup is remounted for each reference, so these start from the one it opened with.
+  // The page is remounted for each reference, so these start from the one it opened with.
   const start = untrack(() => editing);
   const label = start ? 'Edit reference' : 'Add a reference';
 
-  // On a phone the page is a layer of its own: Esc (and the back arrow) close it.
-  $effect(() => {
-    if (ui.phone) return pushLayer(onclose);
-  });
+  // Esc (and the back arrow) close the page.
+  $effect(() => pushLayer(onclose));
   const handed = untrack(() => filled);
   let value = $state(start?.value ?? handed);
   let kind = $state<RefKind>(start?.kind ?? REF_KIND.text);
@@ -166,7 +163,7 @@
   }
 
   /** Saves the tags when they changed. A refusal (a tag blocked since the pool was loaded) is
-   *  returned, not thrown: the reference is saved by then, and the popup closes first. */
+   *  returned, not thrown: the reference is saved by then, and the page closes first. */
   async function writeTags(saved: Ref): Promise<unknown> {
     const tagsChanged = tags.join(' ') !== saved.tags.join(' ');
     if (!tagsChanged) return null;
@@ -293,19 +290,13 @@
   </div>
 {/snippet}
 
-{#if ui.phone}
-  <!-- A phone opens a reference as a page of its own (ML-Refs), not a popup. -->
-  <div class="page" role="dialog" aria-modal="true" aria-label={label}>
-    <PageBar onback={onclose}>
-      <Breadcrumbs crumbs={[{ label: 'references' }, { label: start ? refTitle(start) : 'new' }]} />
-    </PageBar>
-    {@render form()}
-  </div>
-{:else}
-  <Modal {label} width={560} top={96} shade {onclose}>
-    {@render form()}
-  </Modal>
-{/if}
+<!-- A reference opens as a page of its own, in place of the list; a phone's covers the screen. -->
+<div class="page" class:phone={ui.phone} role="region" aria-label={label}>
+  <PageBar onback={onclose}>
+    <Breadcrumbs crumbs={[{ label: 'references' }, { label: start ? refTitle(start) : 'new' }]} />
+  </PageBar>
+  {@render form()}
+</div>
 
 {#if confirming}
   <ConfirmDialog
@@ -318,27 +309,37 @@
 {/if}
 
 <style>
-  /* A phone's reference page: the whole screen, above the list, scrolling on its own. */
+  /* The page takes the list's place and scrolls on its own; the form keeps a reading width. */
   .page {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 24px;
+    overflow-y: auto;
+  }
+
+  /* A phone's page covers the whole screen, the Library bar too. */
+  .page.phone {
     position: fixed;
     inset: 0;
     z-index: 45;
-    display: flex;
-    flex-direction: column;
     padding: env(safe-area-inset-top) 20px calc(24px + var(--kb, 0px));
-    overflow-y: auto;
     background: var(--c-page);
   }
 
-  .page .card {
-    padding: 8px 0 0;
-  }
-
   .card {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 16px;
-    padding: 22px 24px 18px;
+    padding: 8px 0 48px;
+  }
+
+  .page.phone .card {
+    padding-bottom: 0;
   }
 
   .main {
