@@ -514,6 +514,8 @@ body.reordering .sortable:not(.lifted) .grip {
   min-width: 0;
   padding: 0 24px 64px;
   overflow: auto;
+  /* Room for the scrollbar is kept, so content doesn't shift when one appears. */
+  scrollbar-gutter: stable;
 }
 
 .detail-stack {
@@ -573,6 +575,7 @@ body.reordering .sortable:not(.lifted) .grip {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  scrollbar-gutter: stable;
   margin: 0 -24px;
   padding: 0 24px 48px;
 }

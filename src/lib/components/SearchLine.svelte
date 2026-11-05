@@ -94,4 +94,11 @@
     background: transparent;
     font: var(--text-ui);
   }
+
+  /* The phone layout (config.phoneMaxWidth): the field takes the whole line. */
+  @media (max-width: 600px) {
+    .search {
+      max-width: none;
+    }
+  }
 </style>
