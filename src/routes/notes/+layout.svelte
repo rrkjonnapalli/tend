@@ -12,14 +12,14 @@
   import { nav } from '#lib/stores/history.svelte.ts';
   import { isUnder, join, parentOf } from '#lib/util/names.ts';
   import { NOTES_ROOT_NAME, folderContents } from '#lib/util/note-paths.ts';
-  import { routes } from '#lib/util/routes.ts';
+  import { FOLDER_PARAM, routes } from '#lib/util/routes.ts';
 
   let { children }: { children: Snippet } = $props();
 
   notes.load();
 
   const noteId = $derived(page.params.id ?? null);
-  const folder = $derived(page.url.searchParams.get('f') ?? '');
+  const folder = $derived(page.url.searchParams.get(FOLDER_PARAM) ?? '');
   const selected = $derived<ExplorerItem>(noteId ? { kind: 'leaf', id: noteId } : { kind: 'folder', path: folder });
   const leaves = $derived(notes.notes.map((n) => ({ id: n.id, folder: n.folder, name: n.name })));
 

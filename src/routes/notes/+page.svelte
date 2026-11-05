@@ -21,9 +21,9 @@
   import { nameError, relativeTo } from '#lib/util/names.ts';
   import { folderCrumbs, folderSummary } from '#lib/util/note-paths.ts';
   import { ago } from '#lib/util/dates.ts';
-  import { routes } from '#lib/util/routes.ts';
+  import { FOLDER_PARAM, routes } from '#lib/util/routes.ts';
 
-  const folder = $derived(page.url.searchParams.get('f') ?? '');
+  const folder = $derived(page.url.searchParams.get(FOLDER_PARAM) ?? '');
   let query = $state('');
   const needle = $derived(searchNeedle(query));
   const inFolder = $derived(notes.under(folder));

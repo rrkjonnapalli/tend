@@ -1,8 +1,8 @@
 // Search params of the task list, and URLs built from them.
 import type { Crumb } from '#lib/types/breadcrumb.type.ts';
-import { routes } from './routes.ts';
+import { FOLDER_PARAM, routes } from './routes.ts';
 
-export const TASK_PARAMS = { folder: 'f', view: 'v', from: 'from', to: 'to', add: 'add', dueOn: 'd' } as const;
+export const TASK_PARAMS = { folder: FOLDER_PARAM, view: 'v', from: 'from', to: 'to', add: 'add', dueOn: 'd' } as const;
 
 /** `{ f: folder }`, or nothing for the root folder. */
 export function folderParam(folder: string): Record<string, string> {

@@ -5,11 +5,12 @@
   import { syncAPI } from '#lib/api/sync.ts';
   import { sync } from '#lib/stores/sync.svelte.ts';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
+  import { repoLabel } from '#lib/util/sync.ts';
 
   let { onclose }: { onclose: () => void } = $props();
 
   let token = $state('');
-  const repo = $derived(sync.status?.config?.url.replace(/^https?:\/\//, '').replace(/\.git$/, '') ?? 'the repo');
+  const repo = $derived(sync.status?.config ? repoLabel(sync.status.config.url) : 'the repo');
 
   async function save() {
     await syncAPI.setToken(token);
@@ -21,9 +22,9 @@
 
 <Sheet title="Replace token" action="Save" disabled={token === ''} onaction={save} {onclose}>
   <p class="why">The remote turned down the saved token, so sync has stopped. Your changes stay on this phone until you add a new one.</p>
-  <label class="f">
-    <span class="lbl">New token</span>
-    <input use:focusOnMount class="in" type="password" autocomplete="off" autocapitalize="off" bind:value={token} />
+  <label class="p-field">
+    <span class="p-label">New token</span>
+    <input use:focusOnMount class="p-input" type="password" autocomplete="off" autocapitalize="off" bind:value={token} />
   </label>
   <p class="hint">Needs read and write access to {repo}.</p>
 </Sheet>
@@ -38,32 +39,10 @@
     color: var(--text-muted);
   }
 
-  .f {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .lbl,
   .hint {
     margin: 0;
     font: var(--text-caption);
     color: var(--text-muted);
   }
 
-  .in {
-    height: 44px;
-    padding: 0 12px;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    background: var(--c-chip);
-    font: var(--text-mono);
-    font-size: 15px;
-    color: var(--text);
-  }
-
-  .in:focus {
-    outline: none;
-    border-color: var(--primary);
-  }
 </style>

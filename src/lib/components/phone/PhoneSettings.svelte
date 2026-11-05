@@ -14,6 +14,7 @@
   import type { MenuSide } from '#lib/types/ui.type.ts';
   import { ago } from '#lib/util/dates.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { repoLabel } from '#lib/util/sync.ts';
 
   const sides: { value: MenuSide; label: string }[] = [
     { value: 'left', label: 'Left' },
@@ -32,8 +33,15 @@
   const editorFont = $derived(settings.get<string>(settingKeys.editorFont, settingDefaults.editorFont));
   const textSize = $derived(settings.get<TextSize>(settingKeys.textSize, settingDefaults.textSize));
   const config = $derived(sync.status?.config ?? null);
-  const repo = $derived(config?.url.replace(/^https?:\/\//, '').replace(/\.git$/, '') ?? '');
+  const repo = $derived(config ? repoLabel(config.url) : '');
   const lastOk = $derived(sync.status?.lastOkAt ?? null);
+  const syncLine = $derived(lineOf(lastOk));
+
+  function lineOf(last: number | null) {
+    if (sync.state === 'running') return 'Syncing…';
+    if (last) return `Synced ${ago(last)}`;
+    return 'Not synced yet';
+  }
 
   /** The font list: Tend's own first, then the installed families; a picked one that is gone stays. */
   function fontChoices(picked: string, own: string) {
@@ -50,7 +58,7 @@
   {#if config}
     <div class="row"><span class="mono grow">{repo}</span><span class="meta">{config.branch}</span></div>
     <div class="row">
-      <span class="grow">{sync.state === 'running' ? 'Syncing…' : lastOk ? `Synced ${ago(lastOk)}` : 'Not synced yet'}</span>
+      <span class="grow">{syncLine}</span>
       <button class="link" disabled={sync.state === 'running'} onclick={sync.now}>Sync now</button>
     </div>
   {:else}
@@ -58,18 +66,18 @@
   {/if}
 
   <h2>Appearance</h2>
-  <div class="seg wide" role="radiogroup" aria-label="Theme">
+  <div class="p-seg wide" role="radiogroup" aria-label="Theme">
     {#each themeChoices as t (t.value)}
-      <label class="choice" class:on={theme === t.value}>
+      <label class="p-choice" class:on={theme === t.value}>
         <input type="radio" name="theme" value={t.value} checked={theme === t.value} onchange={() => settings.set(settingKeys.theme, t.value)} />{t.label}
       </label>
     {/each}
   </div>
   <div class="row">
     <span class="grow">Menu button</span>
-    <div class="seg" role="radiogroup" aria-label="Menu button">
+    <div class="p-seg" role="radiogroup" aria-label="Menu button">
       {#each sides as s (s.value)}
-        <label class="choice" class:on={side === s.value}>
+        <label class="p-choice" class:on={side === s.value}>
           <input type="radio" name="menu-side" value={s.value} checked={side === s.value} onchange={() => settings.set(settingKeys.menuSide, s.value)} />{s.label}
         </label>
       {/each}
@@ -87,9 +95,9 @@
   </div>
   <div class="row">
     <span class="grow">Text size</span>
-    <div class="seg" role="radiogroup" aria-label="Text size">
+    <div class="p-seg" role="radiogroup" aria-label="Text size">
       {#each textSizeChoices as t (t.value)}
-        <label class="choice" class:on={textSize === t.value}>
+        <label class="p-choice" class:on={textSize === t.value}>
           <input type="radio" name="text-size" value={t.value} checked={textSize === t.value} onchange={() => settings.set(settingKeys.textSize, t.value)} />{t.label}
         </label>
       {/each}
@@ -102,7 +110,6 @@
   .top {
     margin-bottom: 8px;
   }
-
 
   h2 {
     margin: 20px 0 4px;
@@ -157,46 +164,8 @@
     color: var(--c-muted-2);
   }
 
-  .seg {
-    display: flex;
-    padding: 3px;
-    border-radius: var(--radius-md);
-    background: var(--c-chip);
-  }
-
-  .seg.wide {
+  .wide {
     margin: 8px 0;
   }
-
-  .choice {
-    flex: 1;
-    display: grid;
-    place-items: center;
-    min-width: 56px;
-    height: 36px;
-    padding: 0 10px;
-    border-radius: var(--radius-sm);
-    font: var(--text-ui);
-    color: var(--c-muted-2);
-  }
-
-  .choice.on {
-    background: var(--c-page);
-    color: var(--text);
-    font-weight: 700;
-  }
-
-  .choice input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .choice:focus-within {
-    background: var(--c-hover);
-  }
-
-
-
 
 </style>

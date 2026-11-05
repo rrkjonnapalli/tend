@@ -4,6 +4,7 @@
   // Names become slugs (the name rule); a task title is free text.
   import { goto } from '$app/navigation';
   import Sheet from './Sheet.svelte';
+  import type { QuickSheetKind, Tree } from '#lib/types/ui.type.ts';
   import ChoicePicker from '../ChoicePicker.svelte';
   import { focusOnMount } from '#lib/actions/focus.action.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
@@ -12,14 +13,11 @@
   import { routes } from '#lib/util/routes.ts';
   import { messageOf } from '#lib/errors/app-error.ts';
 
-  type Tree = 'notes' | 'tasks';
-  type Kind = 'leaf' | 'folder';
-
   let { tree, folder, rootName, onclose }: { tree: Tree; folder: string; rootName: string; onclose: () => void } = $props();
 
   // svelte-ignore state_referenced_locally
   let target = $state(folder);
-  let kind = $state<Kind>('leaf');
+  let kind = $state<QuickSheetKind>('leaf');
   let name = $state('');
   let failure = $state('');
 
@@ -30,6 +28,14 @@
   const canCreate = $derived(isTask ? name.trim() !== '' : nameError(name) === '');
 
   const labelOf = (path: string) => (path ? `${rootName}/${path}` : rootName);
+  const hint = $derived(hintOf(name));
+
+  /** The name rule, and the name a typed one is saved as when it differs. */
+  function hintOf(typed: string) {
+    const saved = slug(typed);
+    if (!typed || saved === typed) return 'Lowercase letters, digits and _ only.';
+    return `Lowercase letters, digits and _ only: saved as ${saved || '…'}`;
+  }
 
   async function create() {
     failure = '';
@@ -52,94 +58,29 @@
 </script>
 
 <Sheet {title} action="Create" disabled={!canCreate} onaction={create} {onclose}>
-  <div class="seg" role="radiogroup" aria-label="What to create">
+  <div class="p-seg" role="radiogroup" aria-label="What to create">
     {#each [['leaf', leafLabel], ['folder', 'Folder']] as [value, label] (value)}
-      <label class="choice" class:on={kind === value}>
-        <input type="radio" name="quick-kind" {value} checked={kind === value} onchange={() => (kind = value as Kind)} />{label}
+      <label class="p-choice" class:on={kind === value}>
+        <input type="radio" name="quick-kind" {value} checked={kind === value} onchange={() => (kind = value as QuickSheetKind)} />{label}
       </label>
     {/each}
   </div>
-  <div class="f">
-    <span class="lbl">in</span>
+  <div class="p-field">
+    <span class="p-label">in</span>
     <ChoicePicker value={target} choices={folders.map((path) => ({ id: path, label: labelOf(path) }))} what="Folder" field onpick={(id) => (target = id)} />
   </div>
-  <label class="f">
-    <span class="lbl">{isTask ? 'title' : 'name'}</span>
-    <input use:focusOnMount class="in" class:mono={!isTask} autocapitalize={isTask ? 'sentences' : 'off'} bind:value={name} />
+  <label class="p-field">
+    <span class="p-label">{isTask ? 'title' : 'name'}</span>
+    <input use:focusOnMount class="p-input" class:mono={!isTask} autocapitalize={isTask ? 'sentences' : 'off'} bind:value={name} />
   </label>
   {#if failure}
     <p class="err" role="alert">{failure}</p>
   {:else if !isTask}
-    <p class="hint">Lowercase letters, digits and _ only{name && slug(name) !== name ? `: saved as ${slug(name) || '…'}` : '.'}</p>
+    <p class="hint">{hint}</p>
   {/if}
 </Sheet>
 
 <style>
-  .seg {
-    display: flex;
-    padding: 3px;
-    border-radius: var(--radius-md);
-    background: var(--c-chip);
-  }
-
-  .choice {
-    flex: 1;
-    display: grid;
-    place-items: center;
-    height: 38px;
-    border-radius: var(--radius-sm);
-    font: var(--text-ui);
-    font-size: 15px;
-    color: var(--c-muted-2);
-  }
-
-  .choice.on {
-    background: var(--c-page);
-    color: var(--text);
-    font-weight: 700;
-  }
-
-  .choice input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .choice:focus-within {
-    background: var(--c-hover);
-  }
-
-  .f {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .lbl {
-    font: var(--text-caption);
-    color: var(--text-muted);
-  }
-
-  .in {
-    height: 44px;
-    padding: 0 12px;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    background: var(--c-chip);
-    font: var(--text-ui);
-    font-size: 15px;
-    color: var(--text);
-  }
-
-  .in.mono {
-    font: var(--text-mono);
-    font-size: 15px;
-  }
-
-  .in:focus {
-    outline: none;
-    border-color: var(--primary);
-  }
 
   .hint,
   .err {

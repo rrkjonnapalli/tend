@@ -36,3 +36,6 @@ export type SyncSetup = { url: string; token: string; branch: string; username: 
 
 /** How the dock icon shows sync. */
 export type SyncState = 'off' | 'running' | 'failed' | 'synced';
+
+/** The phone menu's sync dot: running, failed, waiting for a new token, or none. */
+export type SyncMark = 'run' | 'fail' | 'tok' | '';

@@ -3,7 +3,7 @@
 // phone layout lifts its bottom bars and sheets by it (tend-mobile-spec.md §4).
 
 /** The part of the window the keyboard covers, in px; 0 when it is down. */
-export const keyboardHeight = (windowHeight: number, visibleHeight: number) => Math.max(0, Math.round(windowHeight - visibleHeight));
+export const keyboardHeight = ({ window, visible }: { window: number; visible: number }) => Math.max(0, Math.round(window - visible));
 
 /** The height popovers and sheets can use: above the keyboard. */
 export const visibleHeight = () => window.visualViewport?.height ?? window.innerHeight;
@@ -13,7 +13,7 @@ export function watchKeyboard(): () => void {
   const vv = window.visualViewport;
   if (!vv) return () => {};
   const root = document.documentElement.style;
-  const update = () => root.setProperty('--kb', `${keyboardHeight(window.innerHeight, vv.height)}px`);
+  const update = () => root.setProperty('--kb', `${keyboardHeight({ window: window.innerHeight, visible: vv.height })}px`);
   update();
   vv.addEventListener('resize', update);
   return () => {

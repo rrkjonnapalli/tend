@@ -2,7 +2,7 @@
   // The bar above the phone's keyboard while a note is edited (MD-Note-Edit): heading, bold,
   // italic, list, checkbox, link, code, and one to hide the keyboard. Its buttons never take
   // focus, so the editor keeps its selection and the keyboard stays up.
-  import type { MdFormat } from '#lib/util/md-format.ts';
+  import type { MdFormat } from '#lib/types/md-format.type.ts';
 
   let { onformat, ondone }: { onformat: (kind: MdFormat) => void; ondone: () => void } = $props();
 

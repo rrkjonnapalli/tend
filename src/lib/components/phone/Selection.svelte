@@ -58,7 +58,7 @@
 
 {#if renaming}
   <Sheet title="Rename" action="Save" disabled={name.trim() === ''} onaction={rename} onclose={() => (renaming = null)}>
-    <input use:focusOnMount class="in" aria-label="Name" autocapitalize="off" bind:value={name} />
+    <input use:focusOnMount class="p-input" aria-label="Name" autocapitalize="off" bind:value={name} />
   </Sheet>
 {/if}
 
@@ -72,20 +72,3 @@
     onclose={() => (deleting = false)} />
 {/if}
 
-<style>
-  .in {
-    height: 44px;
-    padding: 0 12px;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    background: var(--c-chip);
-    font: var(--text-ui);
-    font-size: 15px;
-    color: var(--text);
-  }
-
-  .in:focus {
-    outline: none;
-    border-color: var(--primary);
-  }
-</style>

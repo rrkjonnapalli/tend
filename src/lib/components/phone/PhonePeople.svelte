@@ -47,12 +47,12 @@
   <PhoneSearch placeholder="Search name, phone or email" bind:query onadd={() => (adding = true)} />
 
   {#if !needle && soon.length > 0}
-    <button class="fs" aria-expanded={open} onclick={() => (open = !open)}>
+    <button class="p-section" aria-expanded={open} onclick={() => (open = !open)}>
       <Icon name={open ? 'chevronDown' : 'chevronRight'} size={14} stroke={2.5} />Birthdays<span class="n">{soon.length}</span>
     </button>
     {#if open}
       {#each soon as { p, bd } (p.id)}
-        <a class="qr in" href={routes.person(p.id)}><span class="tt">{displayName(p)}</span><span class="bd">{dateOf(bd.text)}</span></a>
+        <a class="qr indent" href={routes.person(p.id)}><span class="tt">{displayName(p)}</span><span class="bd">{dateOf(bd.text)}</span></a>
       {/each}
     {/if}
     <div class="gap"></div>
@@ -67,37 +67,14 @@
 
 {#if adding}
   <Sheet title="New person" action="Add" disabled={first.trim() === ''} onaction={add} onclose={() => (adding = false)}>
-    <label class="f"><span class="lbl">First name</span><input use:focusOnMount class="in" autocapitalize="words" bind:value={first} /></label>
-    <label class="f"><span class="lbl">Last name</span><input class="in" autocapitalize="words" bind:value={last} /></label>
+    <label class="p-field"><span class="p-label">First name</span><input use:focusOnMount class="p-input" autocapitalize="words" bind:value={first} /></label>
+    <label class="p-field"><span class="p-label">Last name</span><input class="p-input" autocapitalize="words" bind:value={last} /></label>
   </Sheet>
 {/if}
 
 <style>
-  .fs {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    width: calc(100% + 20px);
-    height: 44px;
-    margin: 0 -10px;
-    padding: 0 10px;
-    border: 0;
-    border-radius: var(--radius-control);
-    background: transparent;
-    font: var(--text-section);
-    color: var(--text);
-  }
 
-  .fs :global(svg),
-  .n {
-    color: var(--c-muted-2);
-  }
-
-  .n {
-    font: var(--text-meta);
-  }
-
-  .in {
+  .indent {
     padding-left: 34px;
   }
 
@@ -111,30 +88,4 @@
     height: 12px;
   }
 
-  .f {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .lbl {
-    font: var(--text-caption);
-    color: var(--text-muted);
-  }
-
-  .f .in {
-    height: 44px;
-    padding: 0 12px;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    background: var(--c-chip);
-    font: var(--text-ui);
-    font-size: 15px;
-    color: var(--text);
-  }
-
-  .f .in:focus {
-    outline: none;
-    border-color: var(--primary);
-  }
 </style>

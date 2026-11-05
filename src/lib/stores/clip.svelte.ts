@@ -3,21 +3,20 @@
 import { notes } from './notes.svelte.ts';
 import { tasks } from './tasks.svelte.ts';
 import { canPaste } from '#lib/util/clip.ts';
-
-export type ClipTree = 'notes' | 'tasks';
+import type { Tree } from '#lib/types/ui.type.ts';
 
 class Clip {
   /** The rows picked so far, in the list `tree`. */
-  selecting = $state<{ tree: ClipTree; ids: string[] } | null>(null);
+  selecting = $state<{ tree: Tree; ids: string[] } | null>(null);
   /** What was cut, and the folder it came from (for the paste bar). */
-  cut = $state<{ tree: ClipTree; ids: string[]; from: string } | null>(null);
+  cut = $state<{ tree: Tree; ids: string[]; from: string } | null>(null);
 
   /** A bar owns the bottom of the screen: the menu button hides. */
   get busy() {
     return this.selecting !== null || this.cut !== null;
   }
 
-  start = (tree: ClipTree, id: string) => {
+  start = (tree: Tree, id: string) => {
     this.cut = null;
     this.selecting = { tree, ids: [id] };
   };
@@ -48,7 +47,7 @@ class Clip {
   };
 
   /** Where each cut item is now: its folder. */
-  #foldersOf(tree: ClipTree, ids: string[]): string[] {
+  #foldersOf(tree: Tree, ids: string[]): string[] {
     if (tree === 'notes') return ids.map((id) => notes.byId(id)?.folder ?? '');
     return ids.map((id) => tasks.byId(id)?.path ?? '');
   }

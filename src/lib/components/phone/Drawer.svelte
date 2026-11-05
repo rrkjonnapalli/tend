@@ -50,7 +50,7 @@
     z-index: 50;
     padding: 0;
     border: 0;
-    background: rgba(37, 44, 51, 0.12);
+    background: var(--c-scrim);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s;

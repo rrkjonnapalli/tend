@@ -105,3 +105,108 @@
     font-size: 15px;
   }
 }
+
+/* A labelled field in a phone sheet or form (MD-Quick, MD-Token, MD-Restore): the label above,
+   a soft filled box that shows focus by its border. */
+.p-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.p-label {
+  font: var(--text-caption);
+  color: var(--text-muted);
+}
+
+.p-input {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--c-chip);
+  font: var(--text-ui);
+  font-size: 15px;
+  color: var(--text);
+}
+
+.p-input.mono {
+  font: var(--text-mono);
+  font-size: 15px;
+}
+
+.p-input:focus,
+.p-input:focus-within {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* A segmented choice (theme, menu side, text size, Note or Folder): radios under the labels. */
+.p-seg {
+  display: flex;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--c-chip);
+}
+
+.p-choice {
+  position: relative;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-width: 56px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font: var(--text-ui);
+  font-size: 15px;
+  color: var(--c-muted-2);
+}
+
+.p-choice.on {
+  background: var(--c-page);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.p-choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.p-choice:focus-within {
+  background: var(--c-hover);
+}
+
+/* The heading of a collapsible section in a phone list (Folders, Birthdays). */
+.p-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: calc(100% + 20px);
+  height: 44px;
+  margin: 0 -10px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  text-align: left;
+  font: var(--text-section);
+  color: var(--text);
+}
+
+.p-section svg,
+.p-section .n {
+  color: var(--c-muted-2);
+}
+
+.p-section .n {
+  font: var(--text-meta);
+}
+
+.p-section:active,
+.p-section:focus-visible {
+  outline: none;
+  background: var(--c-hover);
+}

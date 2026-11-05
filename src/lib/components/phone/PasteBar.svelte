@@ -8,13 +8,13 @@
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import { NOTES_ROOT_NAME } from '#lib/util/note-paths.ts';
   import { plural } from '#lib/util/plural.ts';
-  import { routes } from '#lib/util/routes.ts';
+  import { FOLDER_PARAM, routes } from '#lib/util/routes.ts';
 
   const cut = $derived(clip.cut!);
   const listPath = $derived(cut.tree === 'notes' ? routes.notes : routes.tasks);
   /** Paste goes into the folder of the matching list (Notes or Tasks), never a page. */
   const onList = $derived(page.url.pathname === listPath);
-  const folder = $derived(page.url.searchParams.get('f') ?? '');
+  const folder = $derived(page.url.searchParams.get(FOLDER_PARAM) ?? '');
   const rootName = $derived(cut.tree === 'notes' ? NOTES_ROOT_NAME : settings.get(settingKeys.tasksRootName, settingDefaults.tasksRootName));
   const what = $derived(plural(cut.ids.length, cut.tree === 'notes' ? 'note' : 'task'));
   const from = $derived(cut.from ? `${rootName}/${cut.from}` : rootName);

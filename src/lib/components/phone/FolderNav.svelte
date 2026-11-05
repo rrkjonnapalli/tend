@@ -46,7 +46,7 @@
 {/if}
 
 {#if subfolders.length > 0}
-  <button class="fs" aria-expanded={open} onclick={() => (open = !open)}>
+  <button class="p-section" aria-expanded={open} onclick={() => (open = !open)}>
     <Icon name={open ? 'chevronDown' : 'chevronRight'} size={14} stroke={2.5} />Folders<span class="n">{subfolders.length}</span>
   </button>
   {#if open}
@@ -62,9 +62,6 @@
 
 <style>
   /* Sizes from docs/mobile/design/tend-mobile2.css (.qs, .loc, .fs, .fr). */
-
-
-
 
   .ib {
     flex: none;
@@ -107,7 +104,6 @@
     color: var(--c-faint);
   }
 
-  .fs,
   .fr {
     display: flex;
     align-items: center;
@@ -122,19 +118,6 @@
     text-align: left;
     color: var(--text);
     text-decoration: none;
-  }
-
-  .fs {
-    font: var(--text-section);
-  }
-
-  .fs :global(svg) {
-    color: var(--c-muted-2);
-  }
-
-  .n {
-    font: var(--text-meta);
-    color: var(--c-muted-2);
   }
 
   .fr {
@@ -162,13 +145,11 @@
     height: 12px;
   }
 
-  .fs:active,
   .fr:active,
   .ib:active {
     background: var(--c-hover);
   }
 
-  .fs:focus-visible,
   .fr:focus-visible,
   .ib:focus-visible {
     outline: none;

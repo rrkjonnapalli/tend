@@ -7,7 +7,8 @@
   import { markdown } from '@codemirror/lang-markdown';
   import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
   import { tags as t } from '@lezer/highlight';
-  import { mdFormat, type MdFormat } from '#lib/util/md-format.ts';
+  import { mdFormat } from '#lib/util/md-format.ts';
+  import type { MdFormat } from '#lib/types/md-format.type.ts';
 
   let {
     value,
@@ -111,7 +112,7 @@
   export function format(kind: MdFormat) {
     if (!view) return;
     const { from, to } = view.state.selection.main;
-    const e = mdFormat(view.state.doc.toString(), from, to, kind);
+    const e = mdFormat({ doc: view.state.doc.toString(), from, to, kind });
     view.dispatch({ changes: { from: e.from, to: e.to, insert: e.insert }, selection: { anchor: e.anchor, head: e.head } });
     view.focus();
   }

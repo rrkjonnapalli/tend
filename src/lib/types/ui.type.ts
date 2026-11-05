@@ -8,6 +8,9 @@ export type QuickKind = 'note' | 'task' | 'folder' | 'timer';
 /** The two folder trees: notes and tasks. */
 export type Tree = 'notes' | 'tasks';
 
+/** What the phone's quick-create sheet makes: the tree's own item (a note or task), or a folder. */
+export type QuickSheetKind = 'leaf' | 'folder';
+
 export type PageAction = 'note.mode' | 'note.tag' | 'page.width' | 'page.search' | 'task.status' | 'task.due' | 'task.myday' | 'snap.paper';
 
 /** One line of a ChoicePicker: `id` is what is stored, `label` what is shown. */

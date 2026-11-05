@@ -59,13 +59,13 @@
     <h1 class="brand">tend<span>.</span></h1>
     <p class="sub">Tend restores your vault from its Git repo onto this phone. Connect the repo your computer syncs to.</p>
 
-    <label class="f">
-      <span class="lbl">Repo URL</span>
-      <textarea use:plainText class="in mono" rows="2" placeholder="https://github.com/you/notes" autocapitalize="off" spellcheck="false" bind:value={setup.url}></textarea>
+    <label class="p-field">
+      <span class="p-label">Repo URL</span>
+      <textarea use:plainText class="p-input mono" rows="2" placeholder="https://github.com/you/notes" autocapitalize="off" spellcheck="false" bind:value={setup.url}></textarea>
     </label>
-    <label class="f">
-      <span class="lbl">Token</span>
-      <span class="in row">
+    <label class="p-field">
+      <span class="p-label">Token</span>
+      <span class="p-input row">
         <input class="mono grow" type={showToken ? 'text' : 'password'} autocomplete="off" autocapitalize="off" bind:value={setup.token} />
         <button class="eye" type="button" aria-label={showToken ? 'Hide token' : 'Show token'} onclick={() => (showToken = !showToken)}>
           <Icon name="eye" size={18} />
@@ -78,13 +78,13 @@
       <span class="meta">· branch {setup.branch || 'main'}</span>
     </button>
     {#if more}
-      <label class="f">
-        <span class="lbl">Branch</span>
-        <input use:plainText class="in mono" placeholder="main" autocapitalize="off" bind:value={setup.branch} />
+      <label class="p-field">
+        <span class="p-label">Branch</span>
+        <input use:plainText class="p-input mono" placeholder="main" autocapitalize="off" bind:value={setup.branch} />
       </label>
-      <label class="f">
-        <span class="lbl">Username</span>
-        <input use:plainText class="in mono" placeholder="x-access-token" autocapitalize="off" bind:value={setup.username} />
+      <label class="p-field">
+        <span class="p-label">Username</span>
+        <input use:plainText class="p-input mono" placeholder="x-access-token" autocapitalize="off" bind:value={setup.username} />
       </label>
     {/if}
 
@@ -151,33 +151,10 @@
     text-align: center;
   }
 
-  .f {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .lbl {
-    font: var(--text-caption);
-    color: var(--text-muted);
-  }
-
-  .in {
-    min-height: 44px;
+  /* The repo URL wraps onto two lines. */
+  textarea.p-input {
     padding: 10px 12px;
-    border: 1px solid transparent;
-    border-radius: var(--radius-md);
-    background: var(--c-chip);
-    font: var(--text-mono);
-    font-size: 15px;
-    color: var(--text);
     resize: none;
-  }
-
-  .in:focus,
-  .in:focus-within {
-    outline: none;
-    border-color: var(--primary);
   }
 
   .row {

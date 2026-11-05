@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, ago, dayOfMonth, dueLabel, joinTime, monthBounds, monthGrid, mondayIndex, calendarStart, clampYear, dobLabel, monthDay, monthDays, nextBirthday, parseDOB, parseTime, pastYears, planYears, stepMonth, shortDate, splitTime, timeLabel, timestamp } from './dates.ts';
+import { addDays, ago, dayOfMonth, dueLabel, joinTime, monthBounds, monthGrid, mondayIndex, calendarStart, clampYear, dobLabel, monthDay, monthDays, nextBirthday, parseDOB, parseTime, pastYears, planYears, stepMonth, shortDate, splitTime, timeLabel, timestamp, clockTime } from './dates.ts';
 
 const NOW = new Date(2026, 9, 4, 12, 0); // Sun 4 Oct 2026, noon
 
@@ -110,5 +110,12 @@ describe('timestamp', () => {
     expect(timestamp(at('2026-10-04', '17:05:09'), NOW)).toBe('Today, 5:05:09 PM');
     expect(timestamp(at('2026-10-03', '00:00:00'), NOW)).toBe('Yesterday, 12:00:00 AM');
     expect(timestamp(at('2026-09-24', '09:30:01'), NOW)).toBe('24 Sep, 9:30:01 AM');
+  });
+});
+
+describe('clockTime', () => {
+  it('is the time of day of a moment', () => {
+    expect(clockTime(new Date(2026, 10, 5, 9, 42).getTime())).toBe('9:42 AM');
+    expect(clockTime(new Date(2026, 10, 5, 13, 5).getTime())).toBe('1:05 PM');
   });
 });

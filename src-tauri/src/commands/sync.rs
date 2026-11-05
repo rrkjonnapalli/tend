@@ -127,8 +127,6 @@ pub fn sync_connect<R: Runtime>(
 #[tauri::command(async)]
 pub fn sync_restore<R: Runtime>(
     app: AppHandle<R>,
-    state: State<AppState>,
-    cfg: State<ConfigDir>,
     path: String,
     setup: SyncSetup,
 ) -> AppResult<vault::Check> {
@@ -136,7 +134,7 @@ pub fn sync_restore<R: Runtime>(
     if vault::visible_entries(&root) > 0 {
         return Err(errors::RESTORE_NOT_EMPTY.err());
     }
-    restore_into(&app, &state, &cfg, root, &setup)
+    restore_into(&app, Restore { root, setup: &setup })
 }
 
 /// A phone's restore: the vault goes in Tend's own storage, in the folder named after the remote
@@ -145,8 +143,6 @@ pub fn sync_restore<R: Runtime>(
 #[tauri::command(async)]
 pub fn sync_restore_phone<R: Runtime>(
     app: AppHandle<R>,
-    state: State<AppState>,
-    cfg: State<ConfigDir>,
     setup: SyncSetup,
     replace: bool,
 ) -> AppResult<vault::Check> {
@@ -160,7 +156,7 @@ pub fn sync_restore_phone<R: Runtime>(
         std::fs::remove_dir_all(&root)?;
     }
     std::fs::create_dir_all(&root)?;
-    let result = restore_into(&app, &state, &cfg, root.clone(), &setup);
+    let result = restore_into(&app, Restore { root: root.clone(), setup: &setup });
     // A failed restore leaves no folder behind, so the next try doesn't ask to replace it.
     let restored = matches!(&result, Ok(check) if check.ok);
     if !restored {
@@ -169,13 +165,15 @@ pub fn sync_restore_phone<R: Runtime>(
     result
 }
 
-fn restore_into<R: Runtime>(
-    app: &AppHandle<R>,
-    state: &State<AppState>,
-    cfg: &State<ConfigDir>,
+/// What a restore fills: the empty folder that becomes the vault, and the remote to fill it from.
+struct Restore<'a> {
     root: PathBuf,
-    setup: &SyncSetup,
-) -> AppResult<vault::Check> {
+    setup: &'a SyncSetup,
+}
+
+fn restore_into<R: Runtime>(app: &AppHandle<R>, Restore { root, setup }: Restore) -> AppResult<vault::Check> {
+    let state = app.state::<AppState>();
+    let cfg = app.state::<ConfigDir>();
     let (check, opened) = vault::open(&root, false);
     let Some(opened) = opened else {
         return Ok(check);
@@ -189,7 +187,7 @@ fn restore_into<R: Runtime>(
         return Err(e);
     }
     config::set_sync_config(&cfg.0, &root, Some(config))?;
-    super::vault::activate(app, state, opened)?;
+    super::vault::activate(app, &state, opened)?;
     config::remember_vault(&cfg.0, &root)?;
     Ok(check)
 }

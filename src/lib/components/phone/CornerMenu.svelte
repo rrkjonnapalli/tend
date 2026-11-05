@@ -15,7 +15,8 @@
   import { SETTINGS_SECTION } from '#lib/enums/settings.enum.ts';
   import { routes } from '#lib/util/routes.ts';
   import { isTypingTarget } from '#lib/util/keys.ts';
-  import { timeLabel } from '#lib/util/dates.ts';
+  import { clockTime } from '#lib/util/dates.ts';
+  import type { SyncMark } from '#lib/types/sync.type.ts';
 
   const sections: { href: string; label: string; icon: IconName }[] = [
     { href: routes.notes, label: 'Notes', icon: 'note' },
@@ -33,24 +34,18 @@
   const icon = $derived<IconName>(current?.icon ?? 'settings');
   /** The sync dot and icon colour: running, failed, or waiting for a new token. */
   const syncMark = $derived(markOf());
-  const lastSync = $derived(sync.status?.lastOkAt ? clock(sync.status.lastOkAt) : '');
+  const lastSync = $derived(sync.status?.lastOkAt ? clockTime(sync.status.lastOkAt) : '');
 
   function isCurrent(href: string) {
     const path = page.url.pathname;
     return path === href || path.startsWith(`${href}/`);
   }
 
-  function markOf(): 'run' | 'fail' | 'tok' | '' {
+  function markOf(): SyncMark {
     if (sync.state === 'running') return 'run';
     if (sync.needsToken) return 'tok';
     if (sync.state === 'failed') return 'fail';
     return '';
-  }
-
-  function clock(ms: number) {
-    const d = new Date(ms);
-    const hhmm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-    return timeLabel(hhmm);
   }
 
   /** Idle: sync now. Refused token: the Replace token sheet. Failed: Settings → Sync, which shows
@@ -119,7 +114,7 @@
     z-index: 40;
     padding: 0;
     border: 0;
-    background: rgba(37, 44, 51, 0.08);
+    background: var(--c-scrim);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s;
@@ -146,7 +141,7 @@
     background: var(--c-page);
     box-shadow:
       0 0 0 1px var(--border),
-      0 12px 32px -14px rgba(37, 44, 51, 0.32);
+      var(--c-float-shadow);
     overflow: hidden;
     transition:
       width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1),

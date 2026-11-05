@@ -5,10 +5,13 @@ import type { SettingsSection } from '#lib/enums/settings.enum.ts';
 /** The query parameter holding the stack the Snaps board shows (see routes.libraryStack). */
 export const STACK_PARAM = 's';
 
+/** The query parameter holding the open folder of a notes or tasks list. */
+export const FOLDER_PARAM = 'f';
+
 /** `?f=<folder>` for a folder view; nothing for the root. */
 function folderQuery(path: string): string {
   if (!path) return '';
-  return `?f=${encodeURIComponent(path)}`;
+  return `?${FOLDER_PARAM}=${encodeURIComponent(path)}`;
 }
 
 /** Where the Library's pages live; each area is the segment after it. */

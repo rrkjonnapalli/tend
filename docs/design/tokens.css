@@ -78,6 +78,8 @@
   --indigo-night-800: #2c2752;
   --scrim-light: rgba(48, 56, 65, 0.08);
   --scrim-dark: rgba(0, 0, 0, 0.45);
+  --float-light: 0 12px 32px -14px rgba(37, 44, 51, 0.32);
+  --float-dark: 0 12px 32px -14px rgba(0, 0, 0, 0.7);
 }
 
 /* The light theme's colour roles. Also on anything marked data-surface="light": a sticky note
@@ -125,6 +127,7 @@
   --c-nav-active-soft: var(--indigo-100); /* timer chip, assignee chip, person chips */
   --c-overdue: var(--orange-700);
   --c-scrim: var(--scrim-light);  /* behind a modal: --text at 8% */
+  --c-float-shadow: var(--float-light);  /* under the phone's floating menu button */
 
   /* color swatches for statuses and labels (their color column stores the hex) */
   --sw-gray: #7d8995; --sw-slate: #475569; --sw-blue: #1259d3; --sw-sky: #429ff5; --sw-indigo: #3f51b5;
@@ -317,6 +320,7 @@
   --c-nav-active-soft: var(--indigo-night-800);
   --c-overdue: var(--orange-night-300);
   --c-scrim: var(--scrim-dark);
+  --c-float-shadow: var(--float-dark);
 
   --board-bg: var(--night-900);
   --board-dot: var(--night-700);

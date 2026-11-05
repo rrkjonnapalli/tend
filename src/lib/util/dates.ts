@@ -178,6 +178,12 @@ export function timeLabel(hhmm: string): string {
   return `${t.h}:${pad(t.m)} ${t.pm ? 'PM' : 'AM'}`;
 }
 
+/** The time of day of a moment: '9:42 AM'. */
+export function clockTime(ms: number): string {
+  const d = new Date(ms);
+  return timeLabel(`${pad(d.getHours())}:${pad(d.getMinutes())}`);
+}
+
 /** A moment to the second: 'Today, 5:05:09 PM', 'Yesterday, …', or '10 Oct, …'. */
 export function timestamp(ms: number, now = new Date()): string {
   const d = new Date(ms);

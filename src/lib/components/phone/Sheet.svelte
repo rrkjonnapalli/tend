@@ -54,7 +54,7 @@
     z-index: 60;
     padding: 0;
     border: 0;
-    background: rgba(37, 44, 51, 0.08);
+    background: var(--c-scrim);
   }
 
   .sheet {

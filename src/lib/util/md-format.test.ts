@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { mdFormat } from './md-format.ts';
+import type { MdFormat } from '#lib/types/md-format.type.ts';
 
 /** Applies an edit and marks the selection with [ and ] (| for a caret). */
-function run(doc: string, from: number, to: number, kind: Parameters<typeof mdFormat>[3]) {
-  const e = mdFormat(doc, from, to, kind);
+function run(doc: string, from: number, to: number, kind: MdFormat) {
+  const e = mdFormat({ doc, from, to, kind });
   const out = doc.slice(0, e.from) + e.insert + doc.slice(e.to);
   if (e.anchor === e.head) return out.slice(0, e.anchor) + '|' + out.slice(e.anchor);
   return out.slice(0, e.anchor) + '[' + out.slice(e.anchor, e.head) + ']' + out.slice(e.head);
