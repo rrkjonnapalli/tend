@@ -108,7 +108,7 @@ There is no tab bar or dock on the phone. Navigation is one round button in a bo
 
 ## 11. Settings (mobile)
 
-- Vault: shows the remote's `<owner>/<repo>` (§10; the host only when it isn't github.com). **Change vault folder…** waits for the folder picker.
+- Vault: shows the remote's `<host>/<owner>/<repo>` (§10). **Change vault folder…** waits for the folder picker.
 - Sync: repo · branch, last synced, Sync now.
 - Appearance: Theme (System / Light / Dark), Menu button (Left / Right).
 - Fonts: App font, Editor font, Text size (each opens the Fonts screen).
