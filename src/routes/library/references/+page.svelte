@@ -4,6 +4,8 @@
   import LibraryEmpty from '#lib/components/LibraryEmpty.svelte';
   import RefForm from '#lib/components/RefForm.svelte';
   import RefRow from '#lib/components/RefRow.svelte';
+  import PhoneRefs from '#lib/components/phone/PhoneRefs.svelte';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import { library, onLibraryAdd } from '#lib/stores/library.svelte.ts';
   import { refs } from '#lib/stores/refs.svelte.ts';
   import type { RefFormState } from '#lib/types/ref.type.ts';
@@ -25,7 +27,9 @@
   onLibraryAdd(() => (form = { editing: null }));
 </script>
 
-{#if refs.loaded && refs.refs.length === 0}
+{#if ui.phone && refs.refs.length > 0}
+  <PhoneRefs refs={shown} onopen={(ref) => (form = { editing: ref })} />
+{:else if refs.loaded && refs.refs.length === 0}
   <LibraryEmpty title="Nothing saved yet" hint="Press + and paste a link." />
 {:else}
   <div class="list-page refs">

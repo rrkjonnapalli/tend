@@ -6,6 +6,8 @@
   import LibraryEmpty from '#lib/components/LibraryEmpty.svelte';
   import WordEntry from '#lib/components/WordEntry.svelte';
   import WordList from '#lib/components/WordList.svelte';
+  import PhoneWords from '#lib/components/phone/PhoneWords.svelte';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import { LIBRARY_AREA } from '#lib/enums/library.enum.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
   import { library, onLibraryAdd } from '#lib/stores/library.svelte.ts';
@@ -47,21 +49,29 @@
     nav.replace(routes.libraryWord(id), { keepFocus: true });
   }
 
+  function toList() {
+    nav.back(routes.libraryArea(LIBRARY_AREA.words));
+  }
+
   function afterDelete() {
     goto(routes.libraryArea(LIBRARY_AREA.words), { replaceState: true });
   }
 </script>
 
-{#if words.loaded && words.words.length === 0 && !adding}
+{#if ui.phone && !adding && !requested}
+  <PhoneWords {groups} />
+{:else if words.loaded && words.words.length === 0 && !adding}
   <LibraryEmpty title="Nothing here yet" hint="Press + to add a word, an idiom or a phrase." />
 {:else}
   <div class="words">
-    <WordList {groups} selected={open?.id ?? null} adding={adding ? draftTitle.trim() || 'new word' : null} onpick={show} onfollow={follow} />
+    {#if !ui.phone}
+      <WordList {groups} selected={open?.id ?? null} adding={adding ? draftTitle.trim() || 'new word' : null} onpick={show} onfollow={follow} />
+    {/if}
     {#if adding}
       <WordEntry word={null} filled={draftTitle} onsaved={show} oncancel={() => (adding = false)} onopen={show} ondeleted={afterDelete} ontyped={(t) => (draftTitle = t)} />
     {:else if open}
       {#key open.id}
-        <WordEntry word={open} onsaved={show} onopen={show} ondeleted={afterDelete} />
+        <WordEntry word={open} onsaved={show} onopen={show} ondeleted={afterDelete} onback={ui.phone ? toList : undefined} />
       {/key}
     {/if}
   </div>

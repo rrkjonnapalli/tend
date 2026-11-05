@@ -12,7 +12,8 @@
   import StackPath from '#lib/components/StackPath.svelte';
   import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
   import { snapsAPI } from '#lib/api/snaps.ts';
-  import { boardColumn, boardTilts } from '#lib/config/library.config.ts';
+  import { boardColumn, phoneBoardColumn, boardTilts } from '#lib/config/library.config.ts';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import { BOARD_KIND, DROP_KIND, type BoardKind } from '#lib/enums/snap.enum.ts';
   import { library, onLibraryAdd } from '#lib/stores/library.svelte.ts';
   import { snaps } from '#lib/stores/snaps.svelte.ts';
@@ -59,10 +60,11 @@
 
   /** The board's width inside its side gaps, and the columns that fit in it. */
   let surfaceWidth = $state(0);
+  const column = $derived(ui.phone ? phoneBoardColumn : boardColumn);
   const columns = $derived.by(() => {
-    const inner = surfaceWidth - 2 * boardColumn.gap;
-    const count = columnCount(inner, boardColumn);
-    const width = (inner - (count - 1) * boardColumn.gap) / count;
+    const inner = surfaceWidth - 2 * column.gap;
+    const count = columnCount(inner, column);
+    const width = (inner - (count - 1) * column.gap) / count;
     return packColumns({ items, count, heightOf: (item) => estimateHeight(item, width) });
   });
 
@@ -220,7 +222,7 @@
     {#if snaps.loaded && items.length === 0}
       <div class="empty"><LibraryEmpty title={empty.title} hint={empty.hint} board /></div>
     {/if}
-    <div class="surface" bind:clientWidth={surfaceWidth} style:gap="{boardColumn.gap}px" style:padding-inline="{boardColumn.gap}px">
+    <div class="surface" bind:clientWidth={surfaceWidth} style:gap="{column.gap}px" style:padding-inline="{column.gap}px">
       {#each columns as column, c (c)}
         <div class="column">
           {#each column as { item, at: i } (itemKey(item))}

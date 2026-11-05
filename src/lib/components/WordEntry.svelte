@@ -36,6 +36,7 @@
     onopen,
     ondeleted,
     ontyped,
+    onback,
   }: {
     /** The word to edit; none adds a new one. */
     word: Word | null;
@@ -48,6 +49,8 @@
     ondeleted: () => void;
     /** A new word's title as it is typed. */
     ontyped?: (title: string) => void;
+    /** The phone's back arrow: the word has a page of its own there. */
+    onback?: () => void;
   } = $props();
 
   // The page is remounted for each word, so these start from the one it opened with.
@@ -263,7 +266,7 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="page" onkeydown={onpagekey}>
-  <PageBar>
+  <PageBar {onback}>
     <Breadcrumbs crumbs={[{ label: kindLabel }, { label: isNew ? 'new' : start?.title || 'untitled' }]} />
     {#snippet actions()}
       {#if !isNew}

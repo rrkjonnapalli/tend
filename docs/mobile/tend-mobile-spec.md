@@ -146,6 +146,6 @@ Tauri 2 mobile, same SvelteKit app; phone layout chosen by viewport width. Each 
 | P3 | First run + sync on phone · done (progress without counts, `open-questions.md` #23) | Restore into `vaults/<host>/<owner>/<repo>` (§10), progress screen, sync on open/suspend/resume/interval, dot states, token sheet |
 | P4 | Explorer · done (the board too) | Notes and Tasks explorer: search, Folders section, ↑, items, views and counts, quick create |
 | P5 | Pages · done (the board was built in P4) | Note view/edit with formatting bar, task page, board, people, person |
-| P6 | Library | Words with Kinds, word page, snaps board and stacks, new snap and snap editor, references |
+| P6 | Library · done (snap editor as a popup, `open-questions.md` #26) | Words with Kinds, word page, snaps board and stacks, new snap and snap editor, references |
 | P7 | Select · cut · paste, dialogs | Long-press selection, action bar, paste bar and rules, delete confirms, changed-elsewhere |
 | P8 | Settings | Vault, sync, appearance, fonts, sub-pages |

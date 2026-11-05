@@ -4,6 +4,8 @@
   import { untrack, type Snippet } from 'svelte';
   import { page } from '$app/state';
   import LibraryBar from '#lib/components/LibraryBar.svelte';
+  import PhoneLibraryBar from '#lib/components/phone/PhoneLibraryBar.svelte';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import { zoneNav } from '#lib/actions/zone-nav.action.ts';
   import { library } from '#lib/stores/library.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
@@ -26,7 +28,12 @@
 </script>
 
 <main class="library" use:zoneNav>
-  {#if area}<LibraryBar {area} />{/if}
+  {#if area && ui.phone}
+    <!-- A word open on a phone has the whole page. -->
+    {#if !page.url.searchParams.has('w')}<PhoneLibraryBar {area} />{/if}
+  {:else if area}
+    <LibraryBar {area} />
+  {/if}
   {@render children()}
 </main>
 

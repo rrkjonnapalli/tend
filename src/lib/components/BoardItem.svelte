@@ -2,6 +2,7 @@
   // The card every board item shares: its tilt and drop key, "in <stack>" while searching, a
   // button over the whole card (a click opens it, a press that moves drags it) and the tools that
   // show in its corner on hover. SnapItem and StackItem put their paper or pile inside.
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import type { Snippet } from 'svelte';
   import { BOARD_KIND, type BoardKind } from '#lib/enums/snap.enum.ts';
   import { dropKey } from '#lib/util/snaps.ts';
@@ -57,7 +58,8 @@
     {@render children()}
     <button class="hit" aria-label={label} onclick={onopen} onpointerdown={onpress}></button>
     {@render field?.()}
-    <span class="tools">{@render tools()}</span>
+    <!-- A phone opens the item to pin, cut or delete it (tend-mobile-spec.md §7). -->
+    {#if !ui.phone}<span class="tools">{@render tools()}</span>{/if}
   </div>
 </div>
 
