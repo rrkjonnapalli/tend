@@ -71,7 +71,7 @@
 
   // The phone layout follows the on-screen keyboard (util/keyboard.ts).
   $effect(() => {
-    if (ui.phone) return watchKeyboard();
+    if (ui.phone) return watchKeyboard((height) => (ui.keyboard = height));
   });
 
   // Light or dark, from Settings (System until a vault's settings say otherwise).

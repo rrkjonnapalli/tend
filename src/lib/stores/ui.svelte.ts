@@ -13,6 +13,8 @@ class Ui {
   quick = $state<QuickKind | null>(null);
   /** The phone's left drawer (folder tree, Settings sections) is open. */
   drawer = $state(false);
+  /** The phone's on-screen keyboard height in px; 0 when it is down (util/keyboard.ts). */
+  keyboard = $state(0);
 
   /** The phone layout: a narrow window (always on a phone). */
   get phone(): boolean {

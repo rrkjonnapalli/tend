@@ -1,7 +1,7 @@
 <script lang="ts">
   // The phone's only navigation: a round button tucked into a bottom corner that grows into the
-  // menu (Notes · Tasks · People · Library, then Sync and Settings). It hides while a field has
-  // focus, since the keyboard is up then. Spec: docs/mobile/tend-mobile-spec.md §4.
+  // menu (Notes · Tasks · People · Library, then Sync and Settings). It hides while the keyboard
+  // is up. Spec: docs/mobile/tend-mobile-spec.md §4.
   import type { IconName } from '#lib/types/icon.type.ts';
   import type { MenuSide } from '#lib/types/ui.type.ts';
   import { page } from '$app/state';
@@ -10,11 +10,11 @@
   import TokenSheet from './TokenSheet.svelte';
   import { sync } from '#lib/stores/sync.svelte.ts';
   import { clip } from '#lib/stores/clip.svelte.ts';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import { SETTINGS_SECTION } from '#lib/enums/settings.enum.ts';
   import { routes } from '#lib/util/routes.ts';
-  import { isTypingTarget } from '#lib/util/keys.ts';
   import { clockTime } from '#lib/util/dates.ts';
   import type { SyncMark } from '#lib/types/sync.type.ts';
 
@@ -26,7 +26,6 @@
   ];
 
   let open = $state(false);
-  let typing = $state(false);
   let tokenOpen = $state(false);
 
   const side = $derived(settings.get<MenuSide>(settingKeys.menuSide, settingDefaults.menuSide));
@@ -62,19 +61,12 @@
     if (open && e.key === 'Escape') open = false;
   }
 
-  function onfocusin(e: FocusEvent) {
-    typing = isTypingTarget(e.target);
-  }
-
-  function onfocusout() {
-    typing = false;
-  }
 </script>
 
-<svelte:window {onkeydown} {onfocusin} {onfocusout} />
+<svelte:window {onkeydown} />
 
 <!-- The keyboard, the selection's action bar and the paste bar each take the bottom. -->
-{#if !typing && !clip.busy}
+{#if ui.keyboard === 0 && !clip.busy}
   <button class="veil" class:open tabindex="-1" aria-hidden="true" onclick={() => (open = false)}></button>
   <nav class="cm" class:open class:l={side === 'left'} aria-label="Menu">
     <div class="items" inert={!open}>

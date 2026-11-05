@@ -8,16 +8,22 @@ export const keyboardHeight = ({ window, visible }: { window: number; visible: n
 /** The height popovers and sheets can use: above the keyboard. */
 export const visibleHeight = () => window.visualViewport?.height ?? window.innerHeight;
 
-/** Keeps `--kb` up to date while the phone layout shows; returns the stop function. */
-export function watchKeyboard(): () => void {
+/** Keeps `--kb` up to date while the phone layout shows, and tells `onchange` the height; returns
+ *  the stop function. */
+export function watchKeyboard(onchange: (height: number) => void): () => void {
   const vv = window.visualViewport;
   if (!vv) return () => {};
   const root = document.documentElement.style;
-  const update = () => root.setProperty('--kb', `${keyboardHeight({ window: window.innerHeight, visible: vv.height })}px`);
+  const update = () => {
+    const height = keyboardHeight({ window: window.innerHeight, visible: vv.height });
+    root.setProperty('--kb', `${height}px`);
+    onchange(height);
+  };
   update();
   vv.addEventListener('resize', update);
   return () => {
     vv.removeEventListener('resize', update);
     root.removeProperty('--kb');
+    onchange(0);
   };
 }
