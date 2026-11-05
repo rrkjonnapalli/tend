@@ -164,6 +164,7 @@
     background: var(--c-page);
     color: var(--text);
     font: var(--text-caption);
+    white-space: nowrap;
     cursor: pointer;
   }
 

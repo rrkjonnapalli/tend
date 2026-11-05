@@ -9,7 +9,7 @@
   import DateField from './DateField.svelte';
   import TimeField from './TimeField.svelte';
   import { dobLabel, formatDOB, parseDOB } from '#lib/util/dates.ts';
-  import { birthdayHint, dobOf } from '#lib/util/birthdays.ts';
+  import { birthdayHint, birthdayLabel, dobOf } from '#lib/util/birthdays.ts';
 
   let {
     person,
@@ -44,6 +44,7 @@
   const dob = $derived(dobOf(person));
 
   const hint = $derived(dob ? birthdayHint(dob) : '');
+  const soon = $derived(dob ? birthdayLabel(dob).soon : false);
 
   /** The name fields that differ from the saved person. */
   function namePatch(): PersonPatch {
@@ -91,17 +92,37 @@
   <div class="pv" data-prop>
     <input use:plainText class="text-field quiet" style:width="240px" aria-label="Nickname" placeholder="optional, shown instead of the name" bind:value={nick} onblur={saveName} onkeydown={enterBlurs} />
   </div>
-  <span class="pl">Born</span>
-  <div class="pv" data-prop>
+  <span class="pl born-label">Born</span>
+  <div class="pv born" data-prop>
     <DateField value={dobText(dob)} what="date of birth" empty="No DOB" format={dobShown} dimPast={false} yearOptional onchange={saveDOB} />
     <TimeField value={person.tob} onchange={(tob) => onsave({ tob })} />
-    <span class="hint">{hint}</span>
+    {#if hint}<span class="hint" class:soon>{hint}</span>{/if}
   </div>
 </div>
 
 <style>
+  /* The date and time on one line, the next birthday under them. */
+  .born {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  /* Lined up with the date, not centred between it and the next birthday. */
+  .born-label {
+    align-self: start;
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+  }
+
   .hint {
-    font: var(--text-meta);
+    flex-basis: 100%;
+    font: var(--text-caption);
     color: var(--c-muted-2);
+  }
+
+  /* Within SOON_DAYS: violet, like the People list. */
+  .hint.soon {
+    color: var(--accent);
   }
 </style>
