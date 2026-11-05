@@ -3,6 +3,8 @@
   // button over the whole card (a click opens it, a press that moves drags it) and the tools that
   // show in its corner on hover. SnapItem and StackItem put their paper or pile inside.
   import { ui } from '#lib/stores/ui.svelte.ts';
+  import Icon from './Icon.svelte';
+  import { longPress } from '#lib/actions/long-press.action.ts';
   import type { Snippet } from 'svelte';
   import { BOARD_KIND, type BoardKind } from '#lib/enums/snap.enum.ts';
   import { dropKey } from '#lib/util/snaps.ts';
@@ -22,6 +24,8 @@
     field,
     tools,
     light = false,
+    onhold,
+    selected,
   }: {
     kind: BoardKind;
     id: string;
@@ -42,6 +46,10 @@
     tools: Snippet;
     /** A sticky's card: it stays light in the dark theme, and so do the tools on it. */
     light?: boolean;
+    /** A long press on a phone: starts selecting (MD-Snap-Select). */
+    onhold?: () => void;
+    /** While the board is selecting: whether this one is picked; undefined otherwise. */
+    selected?: boolean;
   } = $props();
 </script>
 
@@ -56,7 +64,12 @@
   {#if where}<span class="in">in {where}</span>{/if}
   <div class="card" data-surface={lightSurface(light)}>
     {@render children()}
-    <button class="hit" aria-label={label} onclick={onopen} onpointerdown={onpress}></button>
+    {#if onhold}
+      <button class="hit" aria-label={label} aria-pressed={selected} onclick={onopen} use:longPress={onhold}></button>
+    {:else}
+      <button class="hit" aria-label={label} onclick={onopen} onpointerdown={onpress}></button>
+    {/if}
+    {#if selected !== undefined}<span class="check" class:on={selected} aria-hidden="true"><Icon name="check" size={14} stroke={3} /></span>{/if}
     {@render field?.()}
     <!-- A phone opens the item to pin, cut or delete it (tend-mobile-spec.md §7). -->
     {#if !ui.phone}<span class="tools">{@render tools()}</span>{/if}
@@ -119,6 +132,28 @@
   .snap .card {
     translate: 0 var(--card-lift);
     transition: translate 0.15s ease;
+  }
+
+  /* The selection's circle check in the corner (MD-Snap-Select). */
+  .check {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border: 1.5px solid var(--board-ink-muted);
+    border-radius: 50%;
+    color: transparent;
+    pointer-events: none;
+  }
+
+  .check.on {
+    border-color: var(--c-current);
+    background: var(--c-current);
+    color: var(--on-primary);
   }
 
   .hit {

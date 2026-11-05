@@ -56,7 +56,7 @@
   }
 </script>
 
-<ActionBar oncut={() => clip.cutSelected(folder)} onrename={startRename} ondelete={askDelete} />
+<ActionBar oncut={() => clip.cutSelected(folder)} middle={{ label: 'Rename', icon: 'edit', disabled: ids.length !== 1, onclick: startRename }} ondelete={askDelete} />
 
 {#if renaming}
   <Sheet title="Rename" action="Save" disabled={name.trim() === ''} onaction={rename} onclose={() => (renaming = null)}>

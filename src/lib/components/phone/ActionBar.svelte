@@ -1,17 +1,15 @@
 <script lang="ts">
-  // The bottom of a list while rows are selected (MD-Select): Cut · Rename · Delete, in place of
-  // the menu button. Rename works on one item at a time.
+  // The bottom of a list while items are selected, in place of the menu button: Cut · (Rename or
+  // Tag) · Delete (MD-Select, MD-Snap-Select).
   import Icon from '../Icon.svelte';
-  import { clip } from '#lib/stores/clip.svelte.ts';
+  import type { ClipAction } from '#lib/types/clip.type.ts';
 
-  let { oncut, onrename, ondelete }: { oncut: () => void; onrename: () => void; ondelete: () => void } = $props();
-
-  const one = $derived(clip.selecting?.ids.length === 1);
+  let { oncut, middle, ondelete }: { oncut: () => void; middle: ClipAction; ondelete: () => void } = $props();
 </script>
 
 <div class="bar" role="toolbar" aria-label="Selected items">
   <button onclick={oncut}><Icon name="cut" size={22} />Cut</button>
-  <button disabled={!one} onclick={onrename}><Icon name="edit" size={22} />Rename</button>
+  <button disabled={middle.disabled} onclick={middle.onclick}><Icon name={middle.icon} size={22} />{middle.label}</button>
   <button class="danger" onclick={ondelete}><Icon name="trash" size={22} />Delete</button>
 </div>
 

@@ -1,31 +1,50 @@
 <script lang="ts">
-  // After Cut (MD-Paste): what was cut and where from, Cancel, and Paste here into the folder of
-  // the list on screen. Browsing goes on as usual underneath. Spec: tend-mobile-spec.md §8.
+  // After Cut (MD-Paste, MD-Snap-Move): what was cut and where from, Cancel, and Paste here into
+  // the folder (or stack) on screen. Browsing goes on as usual underneath. Spec: tend-mobile-spec.md §8.
   import { page } from '$app/state';
   import Icon from '../Icon.svelte';
   import { clip } from '#lib/stores/clip.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
+  import { snaps } from '#lib/stores/snaps.svelte.ts';
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
+  import { LIBRARY_AREA } from '#lib/enums/library.enum.ts';
+  import type { ClipTree } from '#lib/types/clip.type.ts';
   import { NOTES_ROOT_NAME } from '#lib/util/note-paths.ts';
   import { plural } from '#lib/util/plural.ts';
-  import { FOLDER_PARAM, routes } from '#lib/util/routes.ts';
+  import { FOLDER_PARAM, routes, STACK_PARAM } from '#lib/util/routes.ts';
+  import { whereLabel } from '#lib/util/snaps.ts';
+
+  /** Each list's page, the query parameter naming where it is, what it holds, and how a place is
+   *  named ('' is its root: the notes or tasks root, or the board). */
+  const lists: Record<ClipTree, { path: string; param: string; noun: string; placeOf: (at: string) => string }> = {
+    notes: { path: routes.notes, param: FOLDER_PARAM, noun: 'note', placeOf: (at) => (at ? `${NOTES_ROOT_NAME}/${at}` : NOTES_ROOT_NAME) },
+    tasks: { path: routes.tasks, param: FOLDER_PARAM, noun: 'task', placeOf: tasksPlace },
+    snaps: { path: routes.libraryArea(LIBRARY_AREA.snaps), param: STACK_PARAM, noun: 'snap', placeOf: snapsPlace },
+  };
 
   const cut = $derived(clip.cut!);
-  const listPath = $derived(cut.tree === 'notes' ? routes.notes : routes.tasks);
-  /** Paste goes into the folder of the matching list (Notes or Tasks), never a page. */
-  const onList = $derived(page.url.pathname === listPath);
-  const folder = $derived(page.url.searchParams.get(FOLDER_PARAM) ?? '');
-  const rootName = $derived(cut.tree === 'notes' ? NOTES_ROOT_NAME : settings.get(settingKeys.tasksRootName, settingDefaults.tasksRootName));
-  const what = $derived(plural(cut.ids.length, cut.tree === 'notes' ? 'note' : 'task'));
-  const from = $derived(cut.from ? `${rootName}/${cut.from}` : rootName);
-  const ready = $derived(onList && clip.canPasteIn(folder));
+  const list = $derived(lists[cut.tree]);
+  /** Paste goes into the place shown by the matching list, never into a page. */
+  const onList = $derived(page.url.pathname === list.path);
+  const here = $derived(page.url.searchParams.get(list.param) ?? '');
+  const what = $derived(plural(cut.ids.length, list.noun));
+  const ready = $derived(onList && clip.canPasteIn(here));
+
+  function tasksPlace(at: string) {
+    const root = settings.get(settingKeys.tasksRootName, settingDefaults.tasksRootName);
+    return at ? `${root}/${at}` : root;
+  }
+
+  function snapsPlace(at: string) {
+    return at ? whereLabel(at, snaps.stacks) : 'the board';
+  }
 </script>
 
 <div class="bar" role="region" aria-label="Cut">
   <span class="ic"><Icon name="cut" size={18} /></span>
-  <span class="txt"><b>Cut</b><span class="m">{what} from {from}</span></span>
+  <span class="txt"><b>Cut</b><span class="m">{what} from {list.placeOf(cut.from)}</span></span>
   <button class="tb" onclick={clip.clear}>Cancel</button>
-  <button class="tb act" disabled={!ready} onclick={() => clip.paste(folder)}>Paste here</button>
+  <button class="tb act" disabled={!ready} onclick={() => clip.paste(here)}>Paste here</button>
 </div>
 
 <style>

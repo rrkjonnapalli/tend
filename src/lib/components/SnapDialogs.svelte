@@ -1,10 +1,12 @@
 <script lang="ts">
-  // The snap editor and the snap delete confirm, shown over any page: ⌘S opens a blank paper
+  // The snap editor (a sheet on a phone) and the snap delete confirm, shown over any page: ⌘S opens a blank paper
   // anywhere, and the Snaps board opens the same one. A new snap goes in the stack the board
   // shows, or loose on the board when another page is open.
   import { page } from '$app/state';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import SnapEditor from './SnapEditor.svelte';
+  import PhoneSnapSheet from './phone/PhoneSnapSheet.svelte';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import { snapsAPI } from '#lib/api/snaps.ts';
   import { LIBRARY_AREA } from '#lib/enums/library.enum.ts';
   import { PAPER } from '#lib/enums/snap.enum.ts';
@@ -94,7 +96,8 @@
 
 {#if snaps.editing}
   {#key snaps.editing}
-    <SnapEditor
+    {@const Editor = ui.phone ? PhoneSnapSheet : SnapEditor}
+    <Editor
       snap={snaps.editing.snap}
       filled={snaps.editing.filled}
       {open}

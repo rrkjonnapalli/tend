@@ -4,6 +4,12 @@ import { toAppError } from './app-error.ts';
 
 type Show = (message: string) => void;
 
+/** Browser notices sent as errors that aren't the app's: a ResizeObserver that couldn't deliver
+ *  every change in one frame (the layout settles on the next one). */
+const BROWSER_NOTICES = ['ResizeObserver loop'];
+
+const isBrowserNotice = (e: ErrorEvent) => !e.error && BROWSER_NOTICES.some((notice) => e.message.includes(notice));
+
 /** Starts listening; returns the function that stops it. */
 export function installErrorHandler(show: Show): () => void {
   const report = (reason: unknown) => {
@@ -16,6 +22,7 @@ export function installErrorHandler(show: Show): () => void {
     report(e.reason);
   };
   const onError = (e: ErrorEvent) => {
+    if (isBrowserNotice(e)) return;
     report(e.error ?? e.message);
   };
   window.addEventListener('unhandledrejection', onRejection);

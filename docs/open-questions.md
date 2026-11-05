@@ -27,8 +27,6 @@ status).
 | 22 | Mobile | Picking the vault folder on a phone. `tauri-plugin-dialog` has no folder picker on iOS or Android; iOS needs a security-scoped bookmark, Android needs *All files access* for a real path. Until decided, the vault is `vaults/<host>/<owner>/<repo>` in Tend's own storage (`docs/mobile/tend-mobile-spec.md` §10). |
 | 23 | Mobile | The phone's "Getting your vault ready…" shows an indeterminate bar, not the mockup's steps and counts (MD-Ready): Rust sends no restore progress yet. A restore cut short starts over; it doesn't resume. |
 | 25 | Mobile | On the Android emulator the first launch after `adb install -r` logs "Failed to fetch dynamically imported module" for an old chunk and the process exits; the second launch works. Likely the WebView's cache of the previous build. Check on a real phone and with an APK update before release. |
-| 26 | Mobile | Snaps on a phone open the desktop snap editor (a popup over the board: text, pin, delete, paper, stack, tags). MD-Snap-Edit and MD-Snap-New draw a full page with Paper and Tags sections; not built yet. |
-| 27 | Mobile | Selecting snaps (MD-Snap-Select: Cut · Tag · Delete) and pasting them into a stack (MD-Snap-Move) aren't built; a snap is moved from its editor's stack picker. "Opening an editor clears the clipboard" and "Search folders" while a cut is pending aren't built either. |
 
 ## From the Library work, 2026-10-12 to 2026-10-14 (build plan L7)
 
@@ -49,3 +47,5 @@ status).
 | 16 | Words | freedictionaryapi.com has no recordings, and calls an idiom a verb, so a looked-up idiom no longer switches its kind to *idiom* by itself. Accepted with the same decision. |
 | 17 | Fonts | Moved to `release-plan.md` §2.7 (Smile Moon licence). |
 | 24 | Mobile | The Android app icon comes from `docs/design/icon/icon-1024.png` (`bun tauri icon`), on a violet adaptive-icon background. The iOS set is generated too, for when the iOS project exists. |
+| 26 | Mobile | A snap on a phone opens in a sheet (MD-Snap-New): paper, a sticky's colour, the text on that paper, stack, tags; an opened one adds Pin to top, Cut and Delete. Saving goes through SnapDialogs, as on desktop. |
+| 27 | Mobile | The board selects snaps by long-press (MD-Snap-Select: Cut · Tag · Delete) and pastes them into the open stack or the board (MD-Snap-Move). A phone never drags cards: a finger on the board scrolls it. Stacks themselves aren't selected. |

@@ -1,24 +1,26 @@
 // The phone's selection and cut (tend-mobile-spec.md §8): long-press starts selecting rows of
-// one list; Cut keeps them until Paste here or Cancel. Only one of the two bars shows at a time.
+// one list (or snaps on the board); Cut keeps them until Paste here or Cancel. Only one of the two bars shows at a time.
 import { notes } from './notes.svelte.ts';
 import { tasks } from './tasks.svelte.ts';
 import { canPaste, selectedRoots } from '#lib/util/clip.ts';
 import { notesAPI } from '#lib/api/notes.ts';
 import { tasksAPI } from '#lib/api/tasks.ts';
-import type { Tree } from '#lib/types/ui.type.ts';
+import type { ClipTree } from '#lib/types/clip.type.ts';
+import { snaps } from './snaps.svelte.ts';
+import { snapsAPI } from '#lib/api/snaps.ts';
 
 class Clip {
   /** The rows picked so far, in the list `tree`. */
-  selecting = $state<{ tree: Tree; ids: string[] } | null>(null);
+  selecting = $state<{ tree: ClipTree; ids: string[] } | null>(null);
   /** What was cut, and the folder it came from (for the paste bar). */
-  cut = $state<{ tree: Tree; ids: string[]; from: string } | null>(null);
+  cut = $state<{ tree: ClipTree; ids: string[]; from: string } | null>(null);
 
   /** A bar owns the bottom of the screen: the menu button hides. */
   get busy() {
     return this.selecting !== null || this.cut !== null;
   }
 
-  start = (tree: Tree, id: string) => {
+  start = (tree: ClipTree, id: string) => {
     this.cut = null;
     this.selecting = { tree, ids: [id] };
   };
@@ -44,13 +46,21 @@ class Clip {
     this.selecting = null;
   };
 
+  /** Cuts one item without a selection: a snap's editor on a phone. */
+  cutOne = (tree: ClipTree, id: string, from: string) => {
+    this.selecting = null;
+    this.cut = { tree, ids: [id], from };
+  };
+
   clear = () => {
     this.cut = null;
   };
 
   /** Where each cut item is now: its folder. */
-  #foldersOf(tree: Tree, ids: string[]): string[] {
+  /** Where each item is now: its folder, or its stack ('' for loose on the board). */
+  #foldersOf(tree: ClipTree, ids: string[]): string[] {
     if (tree === 'notes') return ids.map((id) => notes.byId(id)?.folder ?? '');
+    if (tree === 'snaps') return ids.map((id) => snaps.snaps.find((s) => s.id === id)?.stackId ?? '');
     return ids.map((id) => tasks.byId(id)?.path ?? '');
   }
 
@@ -59,10 +69,10 @@ class Clip {
     return canPaste({ from: this.#foldersOf(this.cut.tree, this.cut.ids), target });
   };
 
-  /** What a selection acts on: every note; tasks as trees (a subtask whose parent is selected goes
+  /** What a selection acts on: every note or snap; tasks as trees (a subtask whose parent is selected goes
    *  with it). */
-  roots = (tree: Tree, ids: string[]): string[] => {
-    if (tree === 'notes') return ids;
+  roots = (tree: ClipTree, ids: string[]): string[] => {
+    if (tree !== 'tasks') return ids;
     const items = ids.flatMap((id) => {
       const task = tasks.byId(id);
       return task ? [{ id, parentId: task.parentId }] : [];
@@ -78,6 +88,11 @@ class Clip {
     if (cut.tree === 'notes') {
       for (const id of cut.ids) await notesAPI.move({ item: { kind: 'note', id }, target });
       await notes.load();
+    } else if (cut.tree === 'snaps') {
+      // The board itself is '': no stack.
+      const stackId = target || null;
+      for (const id of cut.ids) await snapsAPI.update({ id, patch: { stackId } });
+      await snaps.load();
     } else {
       const topLevel = cut.ids.filter((id) => tasks.byId(id)?.parentId === null);
       for (const id of topLevel) await tasksAPI.move({ id, target });

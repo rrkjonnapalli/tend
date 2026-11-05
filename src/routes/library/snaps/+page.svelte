@@ -3,6 +3,9 @@
   // Library search has text it shows every match across all stacks instead. + or a snap opens the
   // editor (SnapDialogs, shared by every page). Drag a snap or stack onto a stack to put it in, a snap onto a snap to make a stack of
   // the two, anything onto a step of the path to move it up.
+  import SelectBar from '#lib/components/phone/SelectBar.svelte';
+  import SnapSelection from '#lib/components/phone/SnapSelection.svelte';
+  import { clip } from '#lib/stores/clip.svelte.ts';
   import { onDestroy } from 'svelte';
   import { page } from '$app/state';
   import { goto } from '$app/navigation';
@@ -168,7 +171,8 @@
    *  pointer; less stays a click. Off while searching or writing. */
   function press({ kind, id }: BoardRef) {
     return (e: PointerEvent) => {
-      const blocked = e.button !== 0 || needle !== '' || snaps.editing !== null;
+      // A phone moves snaps by cut and paste: a finger on a card scrolls the board.
+      const blocked = ui.phone || e.button !== 0 || needle !== '' || snaps.editing !== null;
       const card = (e.currentTarget as HTMLElement).closest<HTMLElement>('[data-drop]');
       if (blocked || !card) return;
       let ghost: DragGhost | null = null;
@@ -207,13 +211,21 @@
 
   const isDragging = (kind: BoardKind, id: string) => drag?.kind === kind && drag.id === id;
 
+  /** A tap opens the snap, or picks it while the board is selecting. */
+  function openSnap(snap: Snap) {
+    if (selecting) clip.toggle(snap.id);
+    else snaps.editing = { snap };
+  }
+
   /** The tilts repeat down the board's order. */
   function tiltAt(at: number): number {
     const slot = at % boardTilts.length;
     return boardTilts[slot];
   }
+  const selecting = $derived(clip.selecting?.tree === 'snaps');
 </script>
 
+{#if selecting}<div class="sel"><SelectBar all={level.snaps.map((s) => s.id)} /></div>{/if}
 <div class="snaps">
   <div class="board" bind:this={board}>
     {#if path.length && !needle}
@@ -234,7 +246,9 @@
                 where={needle ? where(snap.stackId) : null}
                 dragging={isDragging(BOARD_KIND.snap, snap.id)}
                 pairing={over === dropKey(DROP_KIND.snap, snap.id)}
-                onopen={() => (snaps.editing = { snap })}
+                onopen={() => openSnap(snap)}
+                onhold={ui.phone ? () => clip.start('snaps', snap.id) : undefined}
+                selected={selecting ? clip.selecting?.ids.includes(snap.id) : undefined}
                 onpress={press({ kind: BOARD_KIND.snap, id: snap.id })}
                 onpin={() => togglePin(snap)}
                 ondelete={() => snaps.askDelete(snap)} />
@@ -263,6 +277,8 @@
 
 </div>
 
+{#if selecting}<SnapSelection {open} />{/if}
+
 {#if removing}
   {@const stack = removing}
   <ConfirmDialog
@@ -274,6 +290,11 @@
 {/if}
 
 <style>
+  .sel {
+    flex: none;
+    padding: 4px 20px 0;
+  }
+
   .snaps {
     position: relative;
     flex: 1 1 auto;

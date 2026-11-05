@@ -66,6 +66,9 @@ export const papers: PaperChoice[] = [
 /** A new sticky's colour (the Yellow swatch). */
 export const stickyColor = '#d4b106';
 
+/** The sticky colours a phone offers (MD-Snap-New): Yellow, Mint, Sky, Pink and Orange swatches. */
+export const phoneStickyColors = ['#d4b106', '#62d2a2', '#429ff5', '#f67280', '#d57149'];
+
 /** The board's columns: at least this wide, this far apart, with the gap also at each side. */
 export const boardColumn = { minWidth: 250, gap: 52 };
 

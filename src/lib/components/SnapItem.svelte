@@ -21,6 +21,8 @@
     onpress,
     onpin,
     ondelete,
+    onhold,
+    selected,
   }: {
     snap: Snap;
     tilt: number;
@@ -33,13 +35,17 @@
     onpress: (e: PointerEvent) => void;
     onpin: () => void;
     ondelete: () => void;
+    /** A long press on a phone: starts selecting. */
+    onhold?: () => void;
+    /** While selecting: whether this snap is picked. */
+    selected?: boolean;
   } = $props();
 
   const firstLine = $derived(snap.text.split('\n')[0]);
   const pinLabel = $derived(snap.pinned ? 'Unpin from top' : 'Pin to top');
 </script>
 
-<BoardItem kind={BOARD_KIND.snap} id={snap.id} {tilt} {where} {dragging} over={pairing} light={snap.paper === PAPER.sticky} label="Edit snap: {firstLine}" {onopen} {onpress}>
+<BoardItem kind={BOARD_KIND.snap} id={snap.id} {tilt} {where} {dragging} over={pairing} light={snap.paper === PAPER.sticky} label="Edit snap: {firstLine}" {onopen} {onpress} {onhold} {selected}>
   <div class="spot" class:pairing>
     <div class="note" class:torn={snap.paper === PAPER.scrap}>
       <SnapPaper paper={snap.paper} color={snap.color}>
