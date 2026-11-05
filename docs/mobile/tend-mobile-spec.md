@@ -57,7 +57,8 @@ There is no tab bar or dock on the phone. Navigation is one round button in a bo
 ## 5. Explorer (Notes and Tasks)
 
 - Top row: the drawer button, the search field (soft gray fill, no border) and **+**.
-- **Folders live in a left drawer** (decided 2026-11-05, replacing the mockups' in-page Folders section): the same folder tree as the desktop explorer, full height, 44 px rows. It opens from the drawer button or a swipe from the left edge, and closes on the veil, Esc/Back, or as soon as a folder or note is picked. Note, task and person pages reach it by the edge swipe.
+- **Folders** section: collapsible, shows only the folders inside the current folder. Tapping a folder opens it (it becomes the current folder). Open in Notes, closed in Tasks.
+- **The whole tree is in a left drawer** too (decided 2026-11-05): the same folder tree as the desktop explorer, full height, 44 px rows. It opens from the drawer button or a swipe from the left edge, and closes on the veil, Esc/Back, or as soon as a folder or note is picked. Note, task and person pages reach it by the edge swipe.
 - Outside the top-level folder: a row with **↑** (up one level) and the path (`notes / work`).
 - Below: the items in the current folder.
   - Notes: notes directly in the folder; row = name | last edited.

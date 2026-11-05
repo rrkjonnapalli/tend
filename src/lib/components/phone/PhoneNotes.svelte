@@ -1,6 +1,6 @@
 <script lang="ts">
-  // Notes on a phone (MC-Notes, MC-Notes-Open): the notes directly in the folder, newest edit first;
-  // the folders are in the drawer. A search looks through this folder and everything inside it.
+  // Notes on a phone (MC-Notes, MC-Notes-Open): the folder's subfolders, then the notes directly
+  // in it, newest edit first. A search looks through this folder and everything inside it.
   import FolderNav from './FolderNav.svelte';
   import QuickSheet from './QuickSheet.svelte';
   import SelectBar from './SelectBar.svelte';
@@ -10,6 +10,7 @@
   import { clip } from '#lib/stores/clip.svelte.ts';
   import { settings } from '#lib/stores/settings.svelte.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
+  import { childFolders } from '#lib/util/names.ts';
   import { NOTES_ROOT_NAME } from '#lib/util/note-paths.ts';
   import { searchNeedle, textMatches } from '#lib/util/search.ts';
   import { ago } from '#lib/util/dates.ts';
@@ -23,6 +24,7 @@
   const selecting = $derived(clip.selecting?.tree === 'notes');
 
   const needle = $derived(searchNeedle(query));
+  const subfolders = $derived(needle ? [] : childFolders(notes.folders, folder));
   const shown = $derived(
     needle ? notes.under(folder).filter((n) => textMatches([n.name, n.folder], needle)) : notes.notes.filter((n) => n.folder === folder),
   );
@@ -33,7 +35,7 @@
   {#if selecting}
     <SelectBar all={rows.map((n) => n.id)} />
   {:else}
-    <FolderNav rootName={NOTES_ROOT_NAME} {folder} hrefOf={routes.notesFolder} placeholder="Search notes" bind:query onadd={() => (adding = true)} />
+    <FolderNav rootName={NOTES_ROOT_NAME} {folder} {subfolders} hrefOf={routes.notesFolder} placeholder="Search notes" bind:query onadd={() => (adding = true)} />
   {/if}
   {#each rows as n (n.id)}
     {#snippet body()}
