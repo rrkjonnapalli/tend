@@ -119,7 +119,7 @@
 
 <div class="veil">
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="draft" class:torn={paper === PAPER.scrap} class:lined={isLined} data-surface={lightSurface(isSticky)} role="dialog" aria-label={start ? 'Edit snap' : 'New snap'} tabindex="-1" {onkeydown}>
+  <div class="draft" class:torn={paper === PAPER.scrap} data-surface={lightSurface(isSticky)} role="dialog" aria-label={start ? 'Edit snap' : 'New snap'} tabindex="-1" {onkeydown}>
     <SnapPaper {paper} {color} size={PAPER_SIZE.editor}>
       <textarea use:plainText use:focusOnMount bind:this={ink} class="ink" class:ruled={isLined} aria-label="Snap text" placeholder="Write it down…" bind:value={text}></textarea>
       <div class="foot">
@@ -207,11 +207,9 @@
   /* Lined paper scrolls with its text: the field spans the sheet and draws the rules itself, so
      every line of text stays sitting on one. At the top they meet the sheet's own rules. */
   .ruled {
-    flex: none;
-    width: calc(100% + 38px);
-    height: 240px;
-    margin: 0 -18px 0 -20px;
-    padding: 0 18px 0 20px;
+    width: calc(100% + 40px);
+    margin: 0 -20px;
+    padding: 0 20px;
     background-color: var(--paper);
     background-image: repeating-linear-gradient(transparent 0 23px, var(--paper-rule) 23px 24px);
     background-attachment: local;
@@ -286,16 +284,6 @@
 
   .left {
     left: 8px;
-  }
-
-  /* On lined paper the buttons sit on a line of their own, like the text: the first (with the
-     pin) and the last, with the text on the ten between. */
-  .lined .corner {
-    top: 0;
-  }
-
-  .lined .foot {
-    bottom: 6px;
   }
 
   .right {

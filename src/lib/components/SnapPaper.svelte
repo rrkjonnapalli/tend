@@ -91,22 +91,14 @@
     font: var(--text-hand-sticky);
   }
 
+  /* In the editor every paper has the same room and the mono ones the same type, so switching
+     paper never moves the text. 52px keeps lined paper's rules on the text's lines (4 + 2 × 24). */
   .editor {
     min-height: 0;
-    padding-top: 50px;
-    padding-bottom: 68px;
-    padding-right: 18px;
+    padding: 52px 20px 68px;
   }
 
-  .editor.lined {
-    padding-top: 28px;
-  }
-
-  .editor.slip {
-    font: var(--text-snap-slip-edit);
-  }
-
-  .editor:not(.slip, .sticky) {
+  .editor:not(.sticky) {
     font: var(--text-snap-edit);
   }
 

@@ -233,7 +233,6 @@
   --text-snap:           400 14px/24px var(--font-mono);  /* a snap's text on the board (a slip uses --text-snap-slip) */
   --text-snap-slip:      400 13px/20px var(--font-mono);  /* a slip's text on the board */
   --text-snap-edit:      400 15px/24px var(--font-mono);  /* a snap's text in its editor */
-  --text-snap-slip-edit: 400 14px/20px var(--font-mono);  /* a slip's text in the editor */
   --text-snap-mini:      400 12px/20px var(--font-mono);  /* a snap's text on Home's mini board */
   --text-hand-sticky:      400 20px/28px var(--font-sticky);  /* a sticky note on the board */
   --text-hand-sticky-edit: 400 22px/30px var(--font-sticky);  /* a sticky note in the editor */
