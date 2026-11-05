@@ -138,4 +138,11 @@
     font: var(--text-meta);
     color: var(--c-muted-2);
   }
+
+  /* The phone layout (config.phoneMaxWidth): Active above Blocked. */
+  @media (max-width: 600px) {
+    .cols {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
 </style>
