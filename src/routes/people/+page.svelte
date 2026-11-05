@@ -13,6 +13,8 @@
   import { displayName, PEOPLE_ROOT_NAME, personMatches, splitName } from '#lib/util/people.ts';
   import type { PersonRow } from '#lib/types/person.type.ts';
   import { people } from '#lib/stores/people.svelte.ts';
+  import { ui } from '#lib/stores/ui.svelte.ts';
+  import PhonePeople from '#lib/components/phone/PhonePeople.svelte';
   import { personBirthday } from '#lib/util/birthdays.ts';
   import { plural } from '#lib/util/plural.ts';
   import { routes } from '#lib/util/routes.ts';
@@ -53,27 +55,31 @@
   }
 </script>
 
-<main class="list-page" use:zoneNav>
-  <PageBar><Breadcrumbs crumbs={[{ label: PEOPLE_ROOT_NAME }]} /></PageBar>
-  <PageTitle title={PEOPLE_ROOT_NAME} meta={summary} />
-  <SearchLine bind:value={query} label="Search people" placeholder="Search name, phone or email" />
-  <AddLine bind:value={draft} bind:input={addInput} label="Add person" placeholder="add person (first and last name)" onadd={add} />
-  <ColumnHeader template="var(--grid-person)" gap="16px" columns={COLUMNS} />
-  <div class="list-scroll" data-zone="rows">
-    <div class="table">
-      {#each shown as p (p.id)}
-        {@const bd = personBirthday(p)}
-        <a class="prow" data-row href={routes.person(p.id)}>
-          <span class="nm">{displayName(p)}</span>
-          <span class="m" class:soon={bd?.soon}>{bd?.text ?? ''}</span>
-          <span class="m">{p.phone ?? ''}</span>
-          <span class="m">{p.email ?? ''}</span>
-        </a>
-      {/each}
-      {#if people.loaded && shown.length === 0}<span class="list-empty">{emptyText}</span>{/if}
+{#if ui.phone}
+  <PhonePeople />
+{:else}
+  <main class="list-page" use:zoneNav>
+    <PageBar><Breadcrumbs crumbs={[{ label: PEOPLE_ROOT_NAME }]} /></PageBar>
+    <PageTitle title={PEOPLE_ROOT_NAME} meta={summary} />
+    <SearchLine bind:value={query} label="Search people" placeholder="Search name, phone or email" />
+    <AddLine bind:value={draft} bind:input={addInput} label="Add person" placeholder="add person (first and last name)" onadd={add} />
+    <ColumnHeader template="var(--grid-person)" gap="16px" columns={COLUMNS} />
+    <div class="list-scroll" data-zone="rows">
+      <div class="table">
+        {#each shown as p (p.id)}
+          {@const bd = personBirthday(p)}
+          <a class="prow" data-row href={routes.person(p.id)}>
+            <span class="nm">{displayName(p)}</span>
+            <span class="m" class:soon={bd?.soon}>{bd?.text ?? ''}</span>
+            <span class="m">{p.phone ?? ''}</span>
+            <span class="m">{p.email ?? ''}</span>
+          </a>
+        {/each}
+        {#if people.loaded && shown.length === 0}<span class="list-empty">{emptyText}</span>{/if}
+      </div>
     </div>
-  </div>
-</main>
+  </main>
+{/if}
 
 <style>
 

@@ -17,6 +17,7 @@
   import EditControls from '#lib/components/EditControls.svelte';
   import Attachments from '#lib/components/Attachments.svelte';
   import Comments from '#lib/components/Comments.svelte';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import MoveToDialog from '#lib/components/MoveToDialog.svelte';
   import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
   import DeletedDialog from '#lib/components/DeletedDialog.svelte';
@@ -224,9 +225,11 @@
           <button class="icon-btn" aria-label="Move to…" title="Move to…" onclick={() => (moving = true)}><Icon name="folder" size={14} /></button>
         {/if}
         <button class="icon-btn" aria-label="Delete task" title="Delete task" onclick={askDelete}><Icon name="trash" size={14} /></button>
-        <button class="icon-btn" aria-label={widthLabel} title={widthLabel} onclick={toggleWidth}>
-          <Icon name={wide ? 'narrow' : 'widen'} size={14} />
-        </button>
+        {#if !ui.phone}
+          <button class="icon-btn" aria-label={widthLabel} title={widthLabel} onclick={toggleWidth}>
+            <Icon name={wide ? 'narrow' : 'widen'} size={14} />
+          </button>
+        {/if}
         {/snippet}
       </PageBar>
 
@@ -267,13 +270,16 @@
             </Section>
           {/if}
 
-          <Section title="Attachments">
-            <Attachments owner={SOURCE_TYPE.task} {id} />
-          </Section>
+          <!-- Not on a phone in v1 (tend-mobile-spec.md §6). -->
+          {#if !ui.phone}
+            <Section title="Attachments">
+              <Attachments owner={SOURCE_TYPE.task} {id} />
+            </Section>
 
-          <Section title="Comments" extra={commentCount ? String(commentCount) : ''}>
-            <Comments task={id} onchange={(n) => (commentCount = n)} />
-          </Section>
+            <Section title="Comments" extra={commentCount ? String(commentCount) : ''}>
+              <Comments task={id} onchange={(n) => (commentCount = n)} />
+            </Section>
+          {/if}
         </div>
       </div>
     </article>

@@ -19,6 +19,8 @@
   import { errors } from '#lib/errors/registry.ts';
   import MarkdownView from '#lib/components/MarkdownView.svelte';
   import MarkdownEditor from '#lib/components/MarkdownEditor.svelte';
+  import FormatBar from '#lib/components/phone/FormatBar.svelte';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import { notesAPI } from '#lib/api/notes.ts';
   import { tagsAPI } from '#lib/api/tags.ts';
   import { notes } from '#lib/stores/notes.svelte.ts';
@@ -259,6 +261,14 @@
     }),
   );
 
+  // The phone's formatting bar shows while the editor has focus (the keyboard is up).
+  let editor = $state<MarkdownEditor>();
+  let typing = $state(false);
+
+  function onEditorFocus(e: FocusEvent) {
+    typing = (e.target as HTMLElement).closest('.cm-editor') !== null;
+  }
+
   function toggleWidth() {
     settings.set(settingKeys.notesWide, !wide);
   }
@@ -282,19 +292,24 @@
       {/if}
       <button class="icon-btn" aria-label="Move to…" title="Move to…" onclick={() => (moving = true)}><Icon name="folder" size={14} /></button>
       <button class="icon-btn" aria-label="Delete note" title="Delete note" onclick={askDelete}><Icon name="trash" size={14} /></button>
-      <button class="icon-btn" aria-label={widthLabel} title={widthLabel} onclick={toggleWidth}>
-        <Icon name={wide ? 'narrow' : 'widen'} size={14} />
-      </button>
+      {#if ui.phone}
+        {#if editing}<button class="text-btn done" onclick={() => setMode(false)}>Done</button>{/if}
+      {:else}
+        <button class="icon-btn" aria-label={widthLabel} title={widthLabel} onclick={toggleWidth}>
+          <Icon name={wide ? 'narrow' : 'widen'} size={14} />
+        </button>
+      {/if}
     {/snippet}
   </PageBar>
 
   {#if loadedId === id}
-    <article class="detail-body note" style:max-width={wide ? 'none' : 'var(--content-w)'}>
+    <article class="detail-body note" style:max-width={wide ? 'none' : 'var(--content-w)'} onfocusin={onEditorFocus} onfocusout={() => (typing = false)}>
       <TagEditor bind:this={tagEditor} {tags} onchange={setTags} />
       <div>
         {#if editing}
           {#key id}
             <MarkdownEditor
+              bind:this={editor}
               value={text}
               {onchange}
               onblur={flush}
@@ -313,6 +328,10 @@
     </article>
   {/if}
 </main>
+
+{#if ui.phone && editing && typing}
+  <FormatBar onformat={(kind) => editor?.format(kind)} ondone={() => (document.activeElement as HTMLElement | null)?.blur()} />
+{/if}
 
 {#if deleted.gone}
   <DeletedDialog kind="note" onkeep={keep} ondiscard={discard} />
@@ -350,6 +369,16 @@
 {/if}
 
 <style>
+  /* The phone's Done, in the place of the width toggle. */
+  .done {
+    padding: 0 4px;
+    border: 0;
+    background: transparent;
+    font: var(--text-ui);
+    font-size: 15px;
+    color: var(--primary);
+  }
+
   /* Tags sit just above the text. */
   .note {
     gap: 16px;

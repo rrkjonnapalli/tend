@@ -6,6 +6,8 @@
   import Section from './Section.svelte';
   import { peopleAPI } from '#lib/api/people.ts';
   import type { Contact, ContactKind } from '#lib/types/person.type.ts';
+  import type { IconName } from '#lib/types/icon.type.ts';
+  import { ui } from '#lib/stores/ui.svelte.ts';
 
   let {
     person,
@@ -24,6 +26,12 @@
   } = $props();
 
   const rows = $derived(contacts.filter((c) => c.kind === kind));
+
+  /** A phone calls a number or writes to an address straight from its row (MD-Person). */
+  const reachBy: Partial<Record<ContactKind, { scheme: string; label: string; icon: IconName }>> = {
+    phone: { scheme: 'tel:', label: 'Call', icon: 'call' },
+    email: { scheme: 'mailto:', label: 'Email', icon: 'mail' },
+  };
   let editing = $state<string | null>(null);
   let edValue = $state('');
   let edLabel = $state('');
@@ -98,6 +106,11 @@
           <span class="cl">{c.label}</span>
         {/if}
         <span class="acts" class:on-hover={!isEditing}>
+          {#if ui.phone && reachBy[kind] && !isEditing}
+            <a class="icon-btn sm" href="{reachBy[kind]?.scheme}{c.value}" aria-label="{reachBy[kind]?.label} {c.value}">
+              <Icon name={reachBy[kind]!.icon} size={16} />
+            </a>
+          {/if}
           <button class="icon-btn sm danger" aria-label="Delete" title="Delete" onclick={() => remove(c)}>
             <Icon name="trash" size={13} />
           </button>
@@ -206,5 +219,12 @@
 
   .ain::placeholder {
     color: var(--c-muted-2);
+  }
+
+  /* The phone layout (config.phoneMaxWidth): a narrow label, room for the call or mail button. */
+  @media (max-width: 600px) {
+    .crow {
+      grid-template-columns: minmax(0, 1fr) 64px 100px;
+    }
   }
 </style>

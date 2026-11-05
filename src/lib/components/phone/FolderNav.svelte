@@ -3,6 +3,7 @@
   // a folder, then the collapsible Folders section with the folders directly inside this one.
   // Tapping a folder opens it; there is no tree. Spec: tend-mobile-spec.md §5.
   import Icon from '../Icon.svelte';
+  import PhoneSearch from './PhoneSearch.svelte';
   import { baseOf, parentOf } from '#lib/util/names.ts';
 
   let {
@@ -29,13 +30,7 @@
   const parts = $derived(folder ? folder.split('/') : []);
 </script>
 
-<div class="top">
-  <label class="fld">
-    <Icon name="search" size={18} />
-    <input type="search" {placeholder} aria-label={placeholder} autocapitalize="off" bind:value={query} />
-  </label>
-  <button class="ib" aria-label="New" onclick={onadd}><Icon name="plus" size={22} /></button>
-</div>
+<PhoneSearch {placeholder} bind:query {onadd} />
 
 {#if folder}
   <div class="loc">
@@ -66,40 +61,9 @@
 
 <style>
   /* Sizes from docs/mobile/design/tend-mobile2.css (.qs, .loc, .fs, .fr). */
-  .top {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    height: 56px;
-    margin-right: -12px;
-  }
 
-  .fld {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 36px;
-    padding: 0 12px;
-    border-radius: var(--radius-md);
-    background: var(--c-chip);
-    color: var(--c-muted-2);
-  }
 
-  .fld:focus-within {
-    background: var(--c-hover);
-  }
 
-  .fld input {
-    flex: 1;
-    min-width: 0;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    font: var(--text-ui);
-    font-size: 15px;
-    color: var(--text);
-  }
 
   .ib {
     flex: none;

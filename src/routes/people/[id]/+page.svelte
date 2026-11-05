@@ -2,6 +2,7 @@
   import { zoneNav } from '#lib/actions/zone-nav.action.ts';
   // Person page: name fields, birthday, contact sections, notes and assigned tasks.
   import { page } from '$app/state';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import Icon from '#lib/components/Icon.svelte';
   import Breadcrumbs from '#lib/components/Breadcrumbs.svelte';
   import PageBar from '#lib/components/PageBar.svelte';
@@ -101,7 +102,8 @@
               empty="No notes"
               label="Notes" />
           </Section>
-          <PersonTasks person={id} />
+          <!-- Not on a phone in v1 (tend-mobile-spec.md §1). -->
+          {#if !ui.phone}<PersonTasks person={id} />{/if}
         </div>
       </div>
     </div>

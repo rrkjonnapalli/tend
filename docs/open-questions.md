@@ -27,6 +27,7 @@ status).
 | 22 | Mobile | Picking the vault folder on a phone. `tauri-plugin-dialog` has no folder picker on iOS or Android; iOS needs a security-scoped bookmark, Android needs *All files access* for a real path. Until decided, the vault is `vaults/<host>/<owner>/<repo>` in Tend's own storage (`docs/mobile/tend-mobile-spec.md` §10). |
 | 23 | Mobile | The phone's "Getting your vault ready…" shows an indeterminate bar, not the mockup's steps and counts (MD-Ready): Rust sends no restore progress yet. A restore cut short starts over; it doesn't resume. |
 | 24 | Mobile | The Android app still has Tauri's default icon: run `bun tauri icon docs/design/icon/icon-1024.png` and commit `src-tauri/gen/android` icons. |
+| 25 | Mobile | On the Android emulator the first launch after `adb install -r` logs "Failed to fetch dynamically imported module" for an old chunk and the process exits; the second launch works. Likely the WebView's cache of the previous build. Check on a real phone and with an APK update before release. |
 
 ## From the Library work, 2026-10-12 to 2026-10-14 (build plan L7)
 

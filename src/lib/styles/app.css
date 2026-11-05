@@ -447,6 +447,13 @@ html .opt.danger:focus-visible {
   visibility: visible;
 }
 
+/* A touchscreen has no hover: the controls stay visible. */
+@media (hover: none) {
+  .on-hover {
+    visibility: visible;
+  }
+}
+
 /* While a list row is being dragged. */
 body.reordering,
 body.reordering * {

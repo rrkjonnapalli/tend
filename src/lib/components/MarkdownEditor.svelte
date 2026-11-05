@@ -7,6 +7,7 @@
   import { markdown } from '@codemirror/lang-markdown';
   import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
   import { tags as t } from '@lezer/highlight';
+  import { mdFormat, type MdFormat } from '#lib/util/md-format.ts';
 
   let {
     value,
@@ -104,6 +105,15 @@
 
   export function focus() {
     view?.focus();
+  }
+
+  /** Applies a formatting-bar edit to the selection (the phone's bar, `md-format.ts`). */
+  export function format(kind: MdFormat) {
+    if (!view) return;
+    const { from, to } = view.state.selection.main;
+    const e = mdFormat(view.state.doc.toString(), from, to, kind);
+    view.dispatch({ changes: { from: e.from, to: e.to, insert: e.insert }, selection: { anchor: e.anchor, head: e.head } });
+    view.focus();
   }
 </script>
 

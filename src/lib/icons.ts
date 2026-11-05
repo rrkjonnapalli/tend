@@ -28,6 +28,8 @@ export const icons = {
   alert: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.5v.01"/>',
   doneHidden: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8"/><path d="M4 20L20 4"/>',
   back: '<path d="M19 12H5"/><path d="M11 6l-6 6 6 6"/>',
+  call: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
   up: '<path d="M12 19V6M6 11l6-6 6 6"/>',
   widen: '<path d="M3 12h18"/><path d="M7 8l-4 4 4 4"/><path d="M17 8l4 4-4 4"/>',
   narrow: '<path d="M3 12h6M15 12h6"/><path d="M6 8l4 4-4 4"/><path d="M18 8l-4 4 4 4"/>',

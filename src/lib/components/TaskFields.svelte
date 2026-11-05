@@ -2,6 +2,7 @@
   // The task's properties grid: location (top-level tasks), status, due date and time, My day,
   // assignee, tags, labels.
   import type { Task, TaskPatch } from '#lib/types/task.type.ts';
+  import { ui } from '#lib/stores/ui.svelte.ts';
   import StatusSelect from './StatusSelect.svelte';
   import DateField from './DateField.svelte';
   import TimeField from './TimeField.svelte';
@@ -35,7 +36,8 @@
   } = $props();
 
   // Subtasks live wherever their parent does, so only top-level tasks show a location.
-  const hasLocation = $derived(task.parentId === null);
+  // A phone moves a task from the page's menu instead, and has no labels (tend-mobile-spec.md §6).
+  const hasLocation = $derived(task.parentId === null && !ui.phone);
   const location = $derived(folderLabel({ rootName, path: task.path }));
 
   let statusSelect = $state<StatusSelect>();
@@ -84,8 +86,10 @@
   <div class="pv" data-prop><AssigneeField value={task.assigneeId} onchange={(assigneeId) => onpatch({ assigneeId })} /></div>
   <span class="pl">Tags</span>
   <div class="pv" data-prop>{#if tagsLoaded}<TagEditor {tags} onchange={ontags} addLabel="+" />{/if}</div>
-  <span class="pl">Labels</span>
-  <div class="pv" data-prop><LabelField taskId={task.id} /></div>
+  {#if !ui.phone}
+    <span class="pl">Labels</span>
+    <div class="pv" data-prop><LabelField taskId={task.id} /></div>
+  {/if}
 </div>
 
 <style>
