@@ -25,6 +25,8 @@ status).
 | 11 | M3 | A scan that fixes names renames the files first and logs them in one transaction after; if that transaction fails, the files keep their new names but the `path_log` rows are lost (the next scan indexes them as they are). Accepted: disk is the truth, and the case needs a database failure mid-scan. |
 | 21 | Mobile | Deleting on a phone: there is no system Trash on iOS or Android (`trash` doesn't build there; the spike makes it delete for good). Delete for good, or move to `.tend/trash/` and empty it after N days? Undecided. |
 | 22 | Mobile | Picking the vault folder on a phone. `tauri-plugin-dialog` has no folder picker on iOS or Android; iOS needs a security-scoped bookmark, Android needs *All files access* for a real path. Until decided, the vault is `vaults/<host>/<owner>/<repo>` in Tend's own storage (`docs/mobile/tend-mobile-spec.md` §10). |
+| 23 | Mobile | The phone's "Getting your vault ready…" shows an indeterminate bar, not the mockup's steps and counts (MD-Ready): Rust sends no restore progress yet. A restore cut short starts over; it doesn't resume. |
+| 24 | Mobile | The Android app still has Tauri's default icon: run `bun tauri icon docs/design/icon/icon-1024.png` and commit `src-tauri/gen/android` icons. |
 
 ## From the Library work, 2026-10-12 to 2026-10-14 (build plan L7)
 

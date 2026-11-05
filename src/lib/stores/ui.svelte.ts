@@ -2,11 +2,20 @@
 import { settings } from './settings.svelte.ts';
 import type { Popup, QuickKind } from '#lib/types/ui.type.ts';
 import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
+import { config } from '#lib/config/app.config.ts';
+import { MediaQuery } from 'svelte/reactivity';
+
+const phoneQuery = new MediaQuery(`max-width: ${config.phoneMaxWidth}px`);
 
 class Ui {
   popup = $state<Popup>(null);
   palette = $state(false);
   quick = $state<QuickKind | null>(null);
+
+  /** The phone layout: a narrow window (always on a phone). */
+  get phone(): boolean {
+    return phoneQuery.current;
+  }
 
   get navOpen(): boolean {
     return settings.get(settingKeys.navOpen, settingDefaults.navOpen);

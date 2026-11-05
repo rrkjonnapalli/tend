@@ -34,6 +34,12 @@ class SyncStore {
     return 'synced';
   });
 
+  /** The remote refused the token: automatic sync waits for a new one. */
+  needsToken = $derived.by(() => {
+    const key = errors.SYNC_AUTH.key;
+    return this.status?.error?.key === key || this.status?.lastResult === key;
+  });
+
   /** Another device synced with a newer Tend: nothing syncs either way until this app updates. */
   outdated = $derived.by(() => {
     const key = errors.SNAPSHOT_TOO_NEW.key;

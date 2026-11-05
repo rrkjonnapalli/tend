@@ -12,7 +12,8 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "tauri": "tauri",
     "test": "vitest run",
-    "app": "tauri build --debug --bundles app && open src-tauri/target/debug/bundle/macos/Tend.app"
+    "app": "tauri build --debug --bundles app && open src-tauri/target/debug/bundle/macos/Tend.app",
+    "android": "sh scripts/android.sh"
   },
   "license": "MIT",
   "dependencies": {

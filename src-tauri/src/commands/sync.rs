@@ -4,13 +4,13 @@
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Runtime, State};
+use tauri::{AppHandle, Manager, Runtime, State};
 
 use crate::config::{self, ConfigDir, SyncConfig};
 use crate::db;
 use crate::error::{errors, AppResult};
 use crate::state::AppState;
-use crate::sync::{git, run, runner, state as sync_state, token};
+use crate::sync::{folder, git, run, runner, state as sync_state, token};
 use crate::vault;
 
 const DEFAULT_BRANCH: &str = "main";
@@ -136,11 +136,51 @@ pub fn sync_restore<R: Runtime>(
     if vault::visible_entries(&root) > 0 {
         return Err(errors::RESTORE_NOT_EMPTY.err());
     }
+    restore_into(&app, &state, &cfg, root, &setup)
+}
+
+/// A phone's restore: the vault goes in Tend's own storage, in the folder named after the remote
+/// (`sync::folder`). A folder already there is replaced only when `replace` says so; otherwise
+/// `RESTORE_NOT_EMPTY` lets the phone ask first.
+#[tauri::command(async)]
+pub fn sync_restore_phone<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<AppState>,
+    cfg: State<ConfigDir>,
+    setup: SyncSetup,
+    replace: bool,
+) -> AppResult<vault::Check> {
+    let data_dir = app.path().app_data_dir().map_err(|e| errors::IO.with(e.to_string()))?;
+    let root = folder::phone_vault(&data_dir, &setup.url)?;
+    if root.exists() {
+        if !replace {
+            return Err(errors::RESTORE_NOT_EMPTY.err());
+        }
+        // Tend's own storage, which nothing else reads: no Trash to keep it in.
+        std::fs::remove_dir_all(&root)?;
+    }
+    std::fs::create_dir_all(&root)?;
+    let result = restore_into(&app, &state, &cfg, root.clone(), &setup);
+    // A failed restore leaves no folder behind, so the next try doesn't ask to replace it.
+    let restored = matches!(&result, Ok(check) if check.ok);
+    if !restored {
+        let _ = std::fs::remove_dir_all(&root);
+    }
+    result
+}
+
+fn restore_into<R: Runtime>(
+    app: &AppHandle<R>,
+    state: &State<AppState>,
+    cfg: &State<ConfigDir>,
+    root: PathBuf,
+    setup: &SyncSetup,
+) -> AppResult<vault::Check> {
     let (check, opened) = vault::open(&root, false);
     let Some(opened) = opened else {
         return Ok(check);
     };
-    let config = config_of(&setup);
+    let config = config_of(setup);
     let before = token::load(&config.url)?;
     token::save(&config.url, &setup.token)?;
     let remote = runner::remote_of(&config)?;
@@ -149,7 +189,7 @@ pub fn sync_restore<R: Runtime>(
         return Err(e);
     }
     config::set_sync_config(&cfg.0, &root, Some(config))?;
-    super::vault::activate(&app, &state, opened)?;
+    super::vault::activate(app, state, opened)?;
     config::remember_vault(&cfg.0, &root)?;
     Ok(check)
 }

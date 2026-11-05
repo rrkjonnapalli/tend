@@ -184,8 +184,15 @@ Decided: both ship in v1. Tauri 2 builds iOS and Android apps, but mobile is a p
 
 Nothing in the schema or the sync format needs to change for mobile.
 
-Spike done 2026-10-15 on branch `spike/mobile`: the Rust core builds and links for Android; iOS
-needs Xcode first. Results, findings and your actions: `docs/mobile-spike.md` on that branch.
+Spike done 2026-10-15 and merged into `main`; findings in `docs/mobile-spike.md`. iOS needs Xcode
+first. Android builds and installs with `bun run android` (an emulator or a USB phone). The phone
+screens and build plan are in `docs/mobile/tend-mobile-spec.md` (P1–P8).
+
+Found on the Android emulator (2026-11-05):
+- The token is saved in the Android Keystore (`android-native-keyring-store`) and read back.
+- The vendored OpenSSL has no CA certificates on Android and no file access (`no-stdio`), so every
+  HTTPS fetch failed as "the SSL certificate is invalid". At startup `src-tauri/src/android.rs`
+  reads the system's CA certificates and hands them to libgit2 from memory.
 
 Order:
 1. **Spike.** Build the Rust core for Android and the iOS simulator; list what breaks (`git2`

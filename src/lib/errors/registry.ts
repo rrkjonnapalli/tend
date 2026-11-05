@@ -13,6 +13,10 @@ export const errors = {
   NOTE_CHANGED: { key: 'NOTE_CHANGED', message: 'This note changed outside Tend or on another device while it was open.' },
   /** Mirrors the backend's SNAPSHOT_TOO_NEW: Settings → Sync asks for an update instead of Sync now. */
   SNAPSHOT_TOO_NEW: { key: 'SNAPSHOT_TOO_NEW', message: 'This vault was synced by a newer Tend. Update Tend to keep syncing.' },
+  /** Mirrors the backend's SYNC_AUTH: the phone's menu button asks for a new token. */
+  SYNC_AUTH: { key: 'SYNC_AUTH', message: 'The sync token was refused. Replace it in Settings → Sync.' },
+  /** Mirrors the backend's RESTORE_NOT_EMPTY: the phone asks before replacing the folder. */
+  RESTORE_NOT_EMPTY: { key: 'RESTORE_NOT_EMPTY', message: 'Choose an empty folder to restore into.' },
   TIMEOUT: { key: 'TIMEOUT', message: 'Tend took too long to respond. Try again.' },
   UNKNOWN: { key: 'UNKNOWN', message: 'Something went wrong.' },
 } as const satisfies Record<string, ErrorDef>;

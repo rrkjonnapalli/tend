@@ -5,6 +5,7 @@
   import { page } from '$app/state';
   import VaultGate from '#lib/components/VaultGate.svelte';
   import BottomNav from '#lib/components/BottomNav.svelte';
+  import CornerMenu from '#lib/components/phone/CornerMenu.svelte';
   import TopBar from '#lib/components/TopBar.svelte';
   import Toast from '#lib/components/Toast.svelte';
   import CommandPalette from '#lib/components/CommandPalette.svelte';
@@ -17,7 +18,7 @@
   import { runBeforeQuit } from '#lib/util/before-quit.ts';
   import { available, blocked, commands } from '#lib/commands.ts';
   import { routes } from '#lib/util/routes.ts';
-  import { inTauri, watchFilled } from '#lib/util/window.ts';
+  import { inDesktopApp, inTauri, watchFilled } from '#lib/util/window.ts';
   import { vault } from '#lib/stores/vault.svelte.ts';
   import { update } from '#lib/stores/update.svelte.ts';
   import { nav } from '#lib/stores/history.svelte.ts';
@@ -87,7 +88,7 @@
 
   // Once per launch: look for a newer Tend.
   $effect(() => {
-    if (inTauri()) void update.start();
+    if (inDesktopApp()) void update.start();
   });
 
   // Back in the window after midnight: My day, Due and Upcoming move to the new day.
@@ -207,13 +208,15 @@
 
 <svelte:window {onkeydown} {onfocusin} />
 
-<div class="shell" class:filled>
-  <TopBar />
+<div class="shell" class:filled={filled || ui.phone} class:phone={ui.phone}>
+  {#if !ui.phone}<TopBar />{/if}
   {#if !settled}
     <VaultGate />
   {:else}
     <div class="page" bind:this={pageEl}>{@render children()}</div>
-    {#if inVault}<BottomNav />{/if}
+    {#if inVault}
+      {#if ui.phone}<CornerMenu />{:else}<BottomNav />{/if}
+    {/if}
   {/if}
 </div>
 {#if settled}
@@ -233,6 +236,11 @@
     background: var(--c-page);
     border: 1px solid var(--border);
     border-radius: var(--window-radius);
+  }
+
+  /* The phone layout clears the status bar and the home indicator. */
+  .shell.phone {
+    padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
   }
 
   .shell.filled {

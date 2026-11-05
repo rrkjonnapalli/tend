@@ -43,6 +43,10 @@ apple-native-keyring-store = { version = "1.0.2", features = ["protected"] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android-native-keyring-store = "1.0.0"
+# Already built by git2 (same versions): used to hand Android's CA certificates to libgit2 from
+# memory, since the vendored OpenSSL has no file access there (`android.rs`).
+libgit2-sys = "0.18.8"
+openssl-sys = "0.9.117"
 
 [dev-dependencies]
 tempfile = "3.27.0"

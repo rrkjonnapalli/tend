@@ -4,6 +4,8 @@
   import Icon from '#lib/components/Icon.svelte';
   import StartChecklist from '#lib/components/StartChecklist.svelte';
   import StartRestore from '#lib/components/StartRestore.svelte';
+  import { ui } from '#lib/stores/ui.svelte.ts';
+  import PhoneStart from '#lib/components/phone/PhoneStart.svelte';
   import { vaultAPI } from '#lib/api/vault.ts';
   import { notesAPI } from '#lib/api/notes.ts';
   import type { Skipped } from '#lib/types/note.type.ts';
@@ -105,6 +107,9 @@
   ];
 </script>
 
+{#if ui.phone}
+<PhoneStart onrestored={openVault} />
+{:else}
 <main class="start">
   <div class="cols">
     <div class="col">
@@ -184,6 +189,7 @@
     </div>
   </div>
 </main>
+{/if}
 
 <style>
   .start {

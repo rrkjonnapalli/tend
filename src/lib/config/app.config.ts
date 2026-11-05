@@ -4,4 +4,6 @@ export const config = {
   callTimeoutMs: 15_000,
   /** For commands that copy or scan many files (rescan, adding attachments). */
   slowCallTimeoutMs: 120_000,
+  /** At this window width or narrower the app uses the phone layout (docs/mobile/tend-mobile-spec.md). */
+  phoneMaxWidth: 600,
 };

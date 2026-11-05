@@ -142,8 +142,8 @@ Tauri 2 mobile, same SvelteKit app; phone layout chosen by viewport width. Each 
 | # | Milestone | Done when |
 |---|---|---|
 | P1 | Fonts and Due (both apps) · done | App/Editor font + text size work on desktop; Due view with date picker replaces Overdue; snaps unaffected |
-| P2 | Phone shell + corner menu | Phone layout at narrow widths; corner button (left/right), grow animation, veil, hides with keyboard |
-| P3 | First run + sync on phone | Restore into `vaults/<host>/<owner>/<repo>` (§10), progress screen, sync on open/suspend/resume/interval, dot states, token sheet |
+| P2 | Phone shell + corner menu · done | Phone layout at narrow widths; corner button (left/right), grow animation, veil, hides with keyboard |
+| P3 | First run + sync on phone · done (progress without counts, `open-questions.md` #23) | Restore into `vaults/<host>/<owner>/<repo>` (§10), progress screen, sync on open/suspend/resume/interval, dot states, token sheet |
 | P4 | Explorer | Notes and Tasks explorer: search, Folders section, ↑, items, views and counts, quick create |
 | P5 | Pages | Note view/edit with formatting bar, task page, board, people, person |
 | P6 | Library | Words with Kinds, word page, snaps board and stacks, new snap and snap editor, references |

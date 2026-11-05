@@ -39,7 +39,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48c6349ddff23194f8fdce2ea8849380f5a4868c1648965b70e801e104cba9b3"
 dependencies = [
  "base64 0.22.1",
- "jni",
+ "jni 0.21.1",
  "keyring-core",
  "log",
  "ndk-context",
@@ -4614,10 +4614,12 @@ dependencies = [
  "fontdb",
  "git2",
  "keyring-core",
+ "libgit2-sys",
  "mime_guess",
  "notify",
  "notify-debouncer-full",
  "objc2",
+ "openssl-sys",
  "rusqlite",
  "rusqlite_migration",
  "serde",

@@ -15,6 +15,8 @@ mod http;
 mod ipc_tests;
 mod labels;
 mod links;
+#[cfg(any(test, target_os = "android"))]
+mod android;
 #[cfg(target_os = "macos")]
 mod macos;
 mod names;
@@ -135,6 +137,7 @@ pub fn with_commands<R: Runtime>(builder: Builder<R>) -> Builder<R> {
             commands::sync::sync_status,
             commands::sync::sync_connect,
             commands::sync::sync_restore,
+            commands::sync::sync_restore_phone,
             commands::sync::sync_now,
             commands::sync::sync_set_interval,
             commands::sync::sync_token_set,
@@ -274,6 +277,11 @@ pub fn run() {
         .setup(|app| {
             #[cfg(target_os = "macos")]
             macos::show_notifications_in_foreground();
+            #[cfg(target_os = "android")]
+            // Not fatal: without it only sync fails, and says why.
+            if let Err(e) = android::trust_system_certs() {
+                eprintln!("CA certificates for sync: {e}");
+            }
             app.manage(ConfigDir(app.path().app_config_dir()?));
             Ok(())
         });
@@ -288,5 +296,19 @@ pub fn run() {
         if let tauri::RunEvent::ExitRequested { api, .. } = &event {
             on_exit(handle, api);
         }
+        #[cfg(mobile)]
+        if let tauri::RunEvent::WindowEvent { event, .. } = &event {
+            on_phone_event(handle, event);
+        }
     });
+}
+
+/// Phones never send a quit: they sync when Tend goes to the background and when it comes back
+/// (v1-sync-spec §15). A run cut short in the background is safe; the next one finishes it.
+#[cfg(mobile)]
+fn on_phone_event<R: Runtime>(app: &AppHandle<R>, event: &tauri::WindowEvent) {
+    let leaving_or_back = matches!(event, tauri::WindowEvent::Suspended | tauri::WindowEvent::Resumed);
+    if leaving_or_back {
+        app.state::<AppState>().with_runner(|r| r.now());
+    }
 }

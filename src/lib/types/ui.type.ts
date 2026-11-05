@@ -12,3 +12,6 @@ export type PageAction = 'note.mode' | 'note.tag' | 'page.width' | 'page.search'
 
 /** One line of a ChoicePicker: `id` is what is stored, `label` what is shown. */
 export type Choice = { id: string; label: string };
+
+/** The bottom corner the phone's menu button sits in. */
+export type MenuSide = 'left' | 'right';

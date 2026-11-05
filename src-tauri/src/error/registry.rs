@@ -189,6 +189,10 @@ pub const RESTORE_NOT_EMPTY: ErrorDef = def(
     "RESTORE_NOT_EMPTY",
     "Choose an empty folder to restore into.",
 );
+pub const SYNC_URL: ErrorDef = def(
+    "SYNC_URL",
+    "The repo URL should look like https://github.com/owner/repo.",
+);
 pub const SYNC_INTERVAL: ErrorDef = def(
     "SYNC_INTERVAL",
     "Sync every 0 to 1440 minutes (0 turns it off).",

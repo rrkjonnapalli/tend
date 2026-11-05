@@ -30,6 +30,8 @@ export const settingKeys = {
   editorFont: 'fonts.editor',
   /** `TextSize`: scales the type tokens; kept on this device. */
   textSize: 'fonts.size',
+  /** `MenuSide`: which bottom corner the phone's menu button sits in; kept on this device. */
+  menuSide: 'ui.menu_side',
   /** The folder Quick create last used for each kind; folders keep one per tree. */
   /** Whether deleting a note, task, person, word, snap or reference asks first; kept on this device. */
   confirmDelete: (kind: DeleteKind) => `confirm.delete.${kind}`,
@@ -55,6 +57,7 @@ export const settingDefaults = {
   appFont: '',
   editorFont: '',
   textSize: 'default',
+  menuSide: 'right',
 } as const;
 
 /** The range the file size limit may take (src-tauri/src/files.rs `LIMIT_MB_RANGE`). */

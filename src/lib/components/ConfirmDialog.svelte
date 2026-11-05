@@ -1,10 +1,13 @@
 <script lang="ts">
   // A yes/no question in a modal. Esc or the left button cancels; the right button runs
   // `onconfirm` and stays disabled until it settles, so a double click can't run it twice.
-  // `danger` styles it for deleting; `confirmWord` makes the user type a word first.
+  // `danger` styles it for deleting; `confirmWord` makes the user type a word first. On a phone it
+  // is an action sheet instead.
   import { focusOnMount, focusWhen } from '#lib/actions/focus.action.ts';
   import { plainText } from '#lib/actions/plain-text.action.ts';
   import Modal from './Modal.svelte';
+  import ActionSheet from './phone/ActionSheet.svelte';
+  import { ui } from '#lib/stores/ui.svelte.ts';
 
   let {
     title,
@@ -49,6 +52,9 @@
   }
 </script>
 
+{#if ui.phone}
+  <ActionSheet {title} {body} {confirm} {cancel} {danger} {confirmWord} {onconfirm} {onclose} />
+{:else}
 <Modal label={title} role="alertdialog" width={WIDTH} top={TOP} shade {onclose}>
   <div class="dlg">
     <h2>{title}</h2>
@@ -76,6 +82,7 @@
     </div>
   </div>
 </Modal>
+{/if}
 
 <style>
   .dlg {

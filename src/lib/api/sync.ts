@@ -12,6 +12,10 @@ export const syncAPI = {
   connect: (setup: SyncSetup) => call<void>('sync_connect', { args: { setup }, timeoutMs: null }),
   /** Restores into an empty folder and opens it as the vault. */
   restore: (input: { path: string; setup: SyncSetup }) => call<Check>('sync_restore', { args: input, timeoutMs: null }),
+  /** A phone's restore into Tend's own storage (`vaults/<host>/<owner>/<repo>`); `replace` drops a
+   *  folder already there, otherwise that fails with RESTORE_NOT_EMPTY. */
+  restorePhone: (input: { setup: SyncSetup; replace: boolean }) =>
+    call<Check>('sync_restore_phone', { args: input, timeoutMs: null }),
   now: () => call<void>('sync_now'),
   setInterval: (minutes: number) => call<void>('sync_set_interval', { args: { minutes } }),
   setToken: (token: string) => call<void>('sync_token_set', { args: { token } }),

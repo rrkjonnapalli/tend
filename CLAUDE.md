@@ -50,12 +50,14 @@ src-tauri/src/
   error/            typed errors with stable codes
   fonts/            installed font families
   macos/            macOS-only pieces
+  android.rs        Android-only pieces (CA certificates for libgit2)
   update.rs, http.rs, files.rs, dates.rs, colors.rs, state.rs, util.rs
 src/lib/
   api/              typed wrappers around invoke() (one file per area)
   stores/           Svelte 5 state, one *.svelte.ts per area (vault, notes, tasks, people, library,
                     words, snaps, refs, timers, sync, settings, tags, update, ui, toast, …)
   components/       BottomNav, Explorer, Popover, ChoicePicker, MarkdownField, TagEditor, DateField, …
+    phone/          the phone layout (docs/mobile/): CornerMenu, Sheet, ActionSheet, PhoneStart, …
   actions/          Svelte actions (focus, keyboard navigation, portal, …)
   config/, enums/, errors/, hooks/, types/   app constants, enums, error codes, shared types
   styles/           app.css (base styles, :focus-visible), fonts.css
@@ -79,7 +81,7 @@ src/routes/         start, notes, tasks, people, library, settings
 
 1. `cargo test` (in `src-tauri/`). Add tests for anything in Rust with rules: vault check, migrations, scan, name validation, folder rename/move/delete, status rules, sync merges.
 2. `bun run check` (svelte-check, no errors) and `bun run test` (vitest, for `src/lib/util`; plain `bun test` runs Bun's own runner, not vitest).
-3. `bun run tauri dev` starts. Try the change by hand.
+3. `bun run tauri dev` starts. Try the change by hand. Phone screens: `bun run android` builds and installs on a running emulator.
 4. Compare the screens with `docs/design/screens/png/` and fix visible differences.
 5. Update the docs the change touches (`decisions.md`, `open-questions.md`, `release-plan.md`).
 
