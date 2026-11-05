@@ -30,6 +30,7 @@
   import { settingDefaults, settingKeys } from '#lib/config/settings.config.ts';
   import { applyTheme } from '#lib/util/theme.ts';
   import { applyFonts } from '#lib/util/font.ts';
+  import { watchKeyboard } from '#lib/util/keyboard.ts';
   import type { TextSize } from '#lib/types/font.type.ts';
   import { startTabbingIn } from '#lib/util/focus-start.ts';
   import { focusDock, focusMain, focusSide } from '#lib/util/panes.ts';
@@ -66,6 +67,11 @@
     if (!settled) return;
     if (!vault.path && !onStart) nav.replace(routes.start);
     else if (vault.path && path === routes.home) nav.replace(routes.notes);
+  });
+
+  // The phone layout follows the on-screen keyboard (util/keyboard.ts).
+  $effect(() => {
+    if (ui.phone) return watchKeyboard();
   });
 
   // Light or dark, from Settings (System until a vault's settings say otherwise).
@@ -248,9 +254,9 @@
   }
 
   /* The phone layout clears the status bar and the home indicator. */
-  /* 100dvh follows the keyboard, so the page doesn't slide under the status bar while typing. */
+  /* The page ends where the keyboard starts (--kb, util/keyboard.ts). */
   .shell.phone {
-    height: 100dvh;
+    height: calc(100dvh - var(--kb, 0px));
     padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
   }
 

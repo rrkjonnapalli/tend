@@ -9,6 +9,7 @@
   import { portal } from '#lib/actions/portal.action.ts';
   import { pushLayer } from '#lib/util/layers.ts';
   import { positionFor } from '#lib/util/popover-position.ts';
+  import { visibleHeight } from '#lib/util/keyboard.ts';
 
   let {
     anchor,
@@ -49,7 +50,7 @@
       size: { width: el.offsetWidth, height: el.offsetHeight },
       placement,
       offset,
-      viewport: { width: window.innerWidth, height: window.innerHeight },
+      viewport: { width: window.innerWidth, height: visibleHeight() },
     });
   }
 
@@ -59,9 +60,12 @@
     const ro = new ResizeObserver(place);
     ro.observe(el);
     window.addEventListener('resize', place);
+    // A phone's keyboard shrinks only the visible area.
+    window.visualViewport?.addEventListener('resize', place);
     return () => {
       ro.disconnect();
       window.removeEventListener('resize', place);
+      window.visualViewport?.removeEventListener('resize', place);
     };
   });
 
@@ -97,7 +101,7 @@
     position: fixed;
     /* Above a dialog (41), a toast (50) and the phone's drawer and sheets (51–61). */
     z-index: 70;
-    max-height: calc(100vh - 16px);
+    max-height: calc(100vh - var(--kb, 0px) - 16px);
     overflow: auto;
     background: var(--c-page);
     border: 1px solid var(--border);

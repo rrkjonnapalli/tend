@@ -61,12 +61,12 @@
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--kb, 0px);
     z-index: 61;
     display: flex;
     flex-direction: column;
     gap: 16px;
-    max-height: 90vh;
+    max-height: calc(100dvh - var(--kb, 0px) - 24px);
     overflow-y: auto;
     padding: 10px 20px calc(20px + env(safe-area-inset-bottom));
     border-radius: 20px 20px 0 0;
