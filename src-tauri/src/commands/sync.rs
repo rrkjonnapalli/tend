@@ -148,14 +148,7 @@ pub fn sync_restore_phone<R: Runtime>(
 ) -> AppResult<vault::Check> {
     let data_dir = app.path().app_data_dir().map_err(|e| errors::IO.with(e.to_string()))?;
     let root = folder::phone_vault(&data_dir, &setup.url)?;
-    if root.exists() {
-        if !replace {
-            return Err(errors::RESTORE_NOT_EMPTY.err());
-        }
-        // Tend's own storage, which nothing else reads: no Trash to keep it in.
-        std::fs::remove_dir_all(&root)?;
-    }
-    std::fs::create_dir_all(&root)?;
+    folder::prepare_phone_vault(&root, replace)?;
     let result = restore_into(&app, Restore { root: root.clone(), setup: &setup });
     // A failed restore leaves no folder behind, so the next try doesn't ask to replace it.
     let restored = matches!(&result, Ok(check) if check.ok);

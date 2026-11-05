@@ -13,6 +13,20 @@ pub fn phone_vault(data_dir: &Path, url: &str) -> AppResult<PathBuf> {
     Ok(data_dir.join("vaults").join(host).join(owner).join(repo))
 }
 
+/// Gets `root` ready for a phone's restore: created when missing. A folder already there is
+/// emptied only with `replace`; without it nothing is touched and `RESTORE_NOT_EMPTY` lets the
+/// phone ask first. It's Tend's own storage, which nothing else reads: no Trash to keep it in.
+pub fn prepare_phone_vault(root: &Path, replace: bool) -> AppResult<()> {
+    if root.exists() {
+        if !replace {
+            return Err(errors::RESTORE_NOT_EMPTY.err());
+        }
+        std::fs::remove_dir_all(root)?;
+    }
+    std::fs::create_dir_all(root)?;
+    Ok(())
+}
+
 /// Host, owner and repo of an `https://` (or `http://`) remote; anything else is refused.
 fn parts(url: &str) -> Option<[String; 3]> {
     let rest = url.trim().strip_prefix("https://").or_else(|| url.trim().strip_prefix("http://"))?;

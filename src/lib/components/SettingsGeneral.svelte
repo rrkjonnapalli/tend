@@ -21,7 +21,7 @@
   import ChoicePicker from './ChoicePicker.svelte';
   import { appAPI } from '#lib/api/app.ts';
   import type { TextSize } from '#lib/types/font.type.ts';
-  import type { Choice } from '#lib/types/ui.type.ts';
+  import { fontChoices } from '#lib/util/font.ts';
 
   let skipped = $state<Skipped[]>([]);
   let showSkipped = $state(false);
@@ -45,17 +45,6 @@
 
   async function loadFonts() {
     fonts = await appAPI.fonts();
-  }
-
-  /** Tend's own font first, then every installed family; a picked one that is gone stays listed. */
-  function fontChoices({ installed, picked, own: ownName }: { installed: string[]; picked: string; own: string }): Choice[] {
-    const own: Choice = { id: '', label: `Tend’s own (${ownName})` };
-    const families = installed.map((name) => ({ id: name, label: name }));
-    const unlisted = picked !== '' && !installed.includes(picked);
-    const loaded = installed.length > 0;
-    const label = loaded ? `${picked} (not installed)` : picked;
-    const gone: Choice[] = unlisted ? [{ id: picked, label }] : [];
-    return [own, ...gone, ...families];
   }
 
   /** Saves the limit, then rescans so notes over (or now under) it leave (or join) the index. */

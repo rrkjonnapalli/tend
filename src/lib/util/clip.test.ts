@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canPaste } from './clip.ts';
+import { canPaste, selectedRoots } from './clip.ts';
 
 describe('canPaste', () => {
   it('refuses the folder every item is already in', () => {
@@ -10,5 +10,16 @@ describe('canPaste', () => {
     expect(canPaste({ from: ['home'], target: 'work' })).toBe(true);
     expect(canPaste({ from: ['home', 'work'], target: 'work' })).toBe(true);
     expect(canPaste({ from: ['home'], target: '' })).toBe(true);
+  });
+});
+
+describe('selectedRoots', () => {
+  it('drops a subtask whose parent is selected too', () => {
+    const items = [
+      { id: 'p', parentId: null },
+      { id: 'c', parentId: 'p' },
+      { id: 'lone', parentId: 'other' },
+    ];
+    expect(selectedRoots(items)).toEqual(['p', 'lone']);
   });
 });

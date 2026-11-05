@@ -43,7 +43,9 @@
   }
 
   async function remove() {
-    for (const id of ids) await onremove(id);
+    const tree = clip.selecting?.tree;
+    const targets = tree ? clip.roots(tree, ids) : ids;
+    for (const id of targets) await onremove(id);
     deleting = false;
     clip.stop();
   }

@@ -14,6 +14,7 @@
   import type { MenuSide } from '#lib/types/ui.type.ts';
   import { ago } from '#lib/util/dates.ts';
   import { routes } from '#lib/util/routes.ts';
+  import { fontChoices } from '#lib/util/font.ts';
   import { repoLabel } from '#lib/util/sync.ts';
 
   const sides: { value: MenuSide; label: string }[] = [
@@ -43,11 +44,6 @@
     return 'Not synced yet';
   }
 
-  /** The font list: Tend's own first, then the installed families; a picked one that is gone stays. */
-  function fontChoices(picked: string, own: string) {
-    const families = picked && !fonts.includes(picked) ? [picked, ...fonts] : fonts;
-    return [{ id: '', label: `${own} (Tend’s own)` }, ...families.map((f) => ({ id: f, label: f }))];
-  }
 </script>
 
 <div class="top">
@@ -87,11 +83,11 @@
   <h2>Fonts</h2>
   <div class="row">
     <span class="grow">App font</span>
-    <ChoicePicker value={appFont} choices={fontChoices(appFont, 'Lato')} what="App font" field onpick={(id) => settings.set(settingKeys.appFont, id)} />
+    <ChoicePicker value={appFont} choices={fontChoices({ installed: fonts, picked: appFont, own: 'Lato' })} what="App font" field onpick={(id) => settings.set(settingKeys.appFont, id)} />
   </div>
   <div class="row">
     <span class="grow">Editor font</span>
-    <ChoicePicker value={editorFont} choices={fontChoices(editorFont, 'Work Sans')} what="Editor font" field onpick={(id) => settings.set(settingKeys.editorFont, id)} />
+    <ChoicePicker value={editorFont} choices={fontChoices({ installed: fonts, picked: editorFont, own: 'Work Sans' })} what="Editor font" field onpick={(id) => settings.set(settingKeys.editorFont, id)} />
   </div>
   <div class="row">
     <span class="grow">Text size</span>

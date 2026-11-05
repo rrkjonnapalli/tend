@@ -34,3 +34,27 @@ fn anything_but_host_owner_repo_is_refused() {
         assert_eq!(err.key(), errors::SYNC_URL.key, "{bad}");
     }
 }
+
+#[test]
+fn a_folder_already_there_is_kept_unless_replacing() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("vaults/github.com/a/b");
+    std::fs::create_dir_all(&root).unwrap();
+    std::fs::write(root.join("note.md"), "# Note").unwrap();
+
+    let err = prepare_phone_vault(&root, false).unwrap_err();
+    assert_eq!(err.key(), errors::RESTORE_NOT_EMPTY.key);
+    assert!(root.join("note.md").exists(), "nothing is touched without replace");
+
+    prepare_phone_vault(&root, true).unwrap();
+    assert!(root.is_dir());
+    assert_eq!(std::fs::read_dir(&root).unwrap().count(), 0, "replace empties it");
+}
+
+#[test]
+fn a_missing_folder_is_created() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("vaults/github.com/a/b");
+    prepare_phone_vault(&root, false).unwrap();
+    assert!(root.is_dir());
+}

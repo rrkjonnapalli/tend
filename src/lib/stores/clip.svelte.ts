@@ -2,7 +2,9 @@
 // one list; Cut keeps them until Paste here or Cancel. Only one of the two bars shows at a time.
 import { notes } from './notes.svelte.ts';
 import { tasks } from './tasks.svelte.ts';
-import { canPaste } from '#lib/util/clip.ts';
+import { canPaste, selectedRoots } from '#lib/util/clip.ts';
+import { notesAPI } from '#lib/api/notes.ts';
+import { tasksAPI } from '#lib/api/tasks.ts';
 import type { Tree } from '#lib/types/ui.type.ts';
 
 class Clip {
@@ -57,12 +59,29 @@ class Clip {
     return canPaste({ from: this.#foldersOf(this.cut.tree, this.cut.ids), target });
   };
 
+  /** What a selection acts on: every note; tasks as trees (a subtask whose parent is selected goes
+   *  with it). */
+  roots = (tree: Tree, ids: string[]): string[] => {
+    if (tree === 'notes') return ids;
+    const items = ids.flatMap((id) => {
+      const task = tasks.byId(id);
+      return task ? [{ id, parentId: task.parentId }] : [];
+    });
+    return selectedRoots(items);
+  };
+
+  /** Moves what was cut into `target`, then reloads once. A subtask can't move on its own
+   *  (SUBTASK_MOVE): it moves with its parent, or stays. */
   paste = async (target: string) => {
     const cut = this.cut;
     if (!cut) return;
-    for (const id of cut.ids) {
-      if (cut.tree === 'notes') await notes.move({ kind: 'note', id }, target);
-      else await tasks.move({ id, target });
+    if (cut.tree === 'notes') {
+      for (const id of cut.ids) await notesAPI.move({ item: { kind: 'note', id }, target });
+      await notes.load();
+    } else {
+      const topLevel = cut.ids.filter((id) => tasks.byId(id)?.parentId === null);
+      for (const id of topLevel) await tasksAPI.move({ id, target });
+      await tasks.load();
     }
     this.cut = null;
   };
