@@ -35,9 +35,6 @@ export function mondayIndex(d: Date): number {
   return (sundayFirst + WEEK_DAYS - 1) % WEEK_DAYS;
 }
 
-/** '2026-10-21' → 21. */
-export const dayOfMonth = (day: string) => Number(day.slice(8));
-
 /** The first and last day of the month that `day` falls in. */
 export function monthBounds(day: string): DayRange {
   const d = parseISO(day);
@@ -135,26 +132,6 @@ export function ago(ms: number, now = new Date()): string {
   if (days === 1) return 'Yesterday';
   if (days < WEEK_DAYS) return WEEKDAYS[new Date(ms).getDay()];
   return shortDate(day, now);
-}
-
-/** Free-form time → 'HH:MM'. Accepts 5pm, 5:30 pm, 17:30. */
-export function parseTime(text: string): string | null {
-  const v = text.trim().toLowerCase().replace(/\s+/g, '');
-  let m = v.match(/^(\d{1,2})(?::(\d{2}))?(am|pm)$/);
-  if (m) {
-    const h = Number(m[1]);
-    const mi = Number(m[2] ?? 0);
-    if (h < 1 || h > 12 || mi > 59) return null;
-    return joinTime({ h, m: mi, pm: m[3] === 'pm' });
-  }
-  m = v.match(/^(\d{1,2}):(\d{2})$/);
-  if (m) {
-    const h = Number(m[1]);
-    const mi = Number(m[2]);
-    if (h > 23 || mi > 59) return null;
-    return `${pad(h)}:${pad(mi)}`;
-  }
-  return null;
 }
 
 /** '17:05' → { h: 5, m: 5, pm: true }. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, ago, dayOfMonth, dueLabel, joinTime, monthBounds, monthGrid, mondayIndex, calendarStart, clampYear, dobLabel, monthDay, monthDays, nextBirthday, parseDOB, parseTime, pastYears, planYears, stepMonth, shortDate, splitTime, timeLabel, timestamp, clockTime } from './dates.ts';
+import { addDays, ago, dueLabel, joinTime, monthBounds, monthGrid, mondayIndex, calendarStart, clampYear, dobLabel, monthDay, monthDays, nextBirthday, parseDOB, pastYears, planYears, stepMonth, shortDate, splitTime, timeLabel, timestamp, clockTime } from './dates.ts';
 
 const NOW = new Date(2026, 9, 4, 12, 0); // Sun 4 Oct 2026, noon
 
@@ -14,7 +14,6 @@ describe('calendar', () => {
     expect(mondayIndex(new Date(2026, 9, 5))).toBe(0); // Monday
     expect(mondayIndex(new Date(2026, 9, 4))).toBe(6); // Sunday
     expect(monthBounds('2026-02-14')).toEqual(['2026-02-01', '2026-02-28']);
-    expect(dayOfMonth('2026-10-09')).toBe(9);
   });
 
   it('adds days across months', () => {
@@ -42,15 +41,6 @@ describe('calendar', () => {
 });
 
 describe('times', () => {
-  it('parses free-form times', () => {
-    expect(parseTime('5pm')).toBe('17:00');
-    expect(parseTime('5:30 pm')).toBe('17:30');
-    expect(parseTime('12am')).toBe('00:00');
-    expect(parseTime('17:30')).toBe('17:30');
-    expect(parseTime('25:00')).toBeNull();
-    expect(parseTime('13pm')).toBeNull();
-  });
-
   it('round-trips 12-hour parts', () => {
     expect(splitTime('17:05')).toEqual({ h: 5, m: 5, pm: true });
     expect(splitTime('00:15')).toEqual({ h: 12, m: 15, pm: false });

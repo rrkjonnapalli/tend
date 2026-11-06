@@ -17,7 +17,11 @@
   const editing: Record<string, boolean> = $state({});
 
   async function load() {
-    list = await commentsAPI.list(task);
+    const shown = task;
+    const loaded = await commentsAPI.list(shown);
+    // Another task may have opened while this one loaded.
+    if (shown !== task) return;
+    list = loaded;
     onchange?.(list.length);
   }
 
@@ -27,11 +31,19 @@
     load();
   });
 
+  let posting = false;
+
   async function post() {
-    if (!draft.trim()) return;
-    await commentsAPI.add({ task, body: draft });
-    draft = '';
-    composerKey += 1;
+    // A second ⌘↵ while the first post runs would add the comment twice.
+    if (!draft.trim() || posting) return;
+    posting = true;
+    try {
+      await commentsAPI.add({ task, body: draft });
+      draft = '';
+      composerKey += 1;
+    } finally {
+      posting = false;
+    }
     await load();
   }
 

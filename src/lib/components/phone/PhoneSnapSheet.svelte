@@ -28,7 +28,7 @@
     snap: Snap | null;
     filled?: string;
     open: string | null;
-    onsave: (draft: SnapDraft) => void;
+    onsave: (draft: SnapDraft) => void | Promise<void>;
     ondelete: () => void;
     onclose: () => void;
   } = $props();
@@ -57,10 +57,21 @@
     onsave({ text, paper, color, stackId, pinned, tags });
   }
 
-  function cut() {
+  /** Changed since the sheet opened (the stack aside: Cut moves it anyway). */
+  const edited = $derived.by(() => {
+    if (!start) return false;
+    const looks = paper !== start.paper || color !== (start.color ?? stickyColor) || pinned !== start.pinned;
+    const tagsChanged = tags.join(' ') !== start.tags.join(' ');
+    return text !== start.text || looks || tagsChanged;
+  });
+
+  /** Edits made before Cut are kept: saved where the snap is now (which closes the sheet), then
+   *  the snap is cut from there. */
+  async function cut() {
     if (!start) return;
+    if (edited) await onsave({ text, paper, color, stackId: start.stackId, pinned, tags });
+    else onclose();
     clip.cutOne('snaps', start.id, start.stackId ?? '');
-    onclose();
   }
 </script>
 

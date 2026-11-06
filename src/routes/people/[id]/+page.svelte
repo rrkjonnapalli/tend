@@ -50,10 +50,23 @@
     load(id);
   });
 
-  async function save(patch: PersonPatch) {
-    person = await peopleAPI.update({ id, patch });
+  /** Saves to `personId`, which may no longer be the person shown: the answer then stays off
+   *  this page. */
+  async function saveTo(personId: string, patch: PersonPatch) {
+    const saved = await peopleAPI.update({ id: personId, patch });
     people.load();
+    if (personId === id) person = saved;
   }
+
+  const save = (patch: PersonPatch) => saveTo(id, patch);
+  const notesSaver = (personId: string) => (notes: string) => saveTo(personId, { notes });
+
+  // Another person opens with Notes closed; the field is keyed on the person, so an edit left
+  // open is saved to the person it was made on.
+  $effect(() => {
+    void id;
+    notesEditing = false;
+  });
 
   /** Asks first unless Settings → General turned that off for persons. */
   function askDelete() {
@@ -93,14 +106,16 @@
             {#snippet actions()}
               <EditControls editing={notesEditing} what="notes" onedit={() => notesField?.edit()} oncancel={() => notesField?.cancel()} onsave={() => notesField?.save()} />
             {/snippet}
-            <MarkdownField
-              bind:this={notesField}
-              bind:editing={notesEditing}
-              value={person.notes}
-              onsave={(notes) => save({ notes })}
-              placeholder="Anything worth remembering (markdown)"
-              empty="No notes"
-              label="Notes" />
+            {#key id}
+              <MarkdownField
+                bind:this={notesField}
+                bind:editing={notesEditing}
+                value={person.notes}
+                onsave={notesSaver(id)}
+                placeholder="Anything worth remembering (markdown)"
+                empty="No notes"
+                label="Notes" />
+            {/key}
           </Section>
           <!-- Not on a phone in v1 (tend-mobile-spec.md §1). -->
           {#if !ui.phone}<PersonTasks person={id} />{/if}

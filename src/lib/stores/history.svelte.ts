@@ -22,7 +22,9 @@ class History {
    *  focus and scroll where they are (switching a section with the keyboard). */
   replace = (url: string, { keepFocus = false }: { keepFocus?: boolean } = {}) => {
     this.#replacing = true;
-    return goto(url, { replace: true, reset: !keepFocus });
+    // A cancelled navigation (a page holding a failed save) never records: the flag must not
+    // turn the next ordinary step into a replace.
+    return goto(url, { replace: true, reset: !keepFocus }).finally(() => (this.#replacing = false));
   };
 
   /** The previous page, or `fallback` when this is the first page of the session. */

@@ -8,3 +8,6 @@ export type ClipTree = 'notes' | 'tasks' | 'snaps';
 
 /** The action bar's middle button: Rename for notes and tasks, Tag for snaps. */
 export type ClipAction = { label: string; icon: IconName; disabled?: boolean; onclick: () => void };
+
+/** What was cut: the rows of one list, and the folder they came from (for the paste bar). */
+export type Cut = { tree: ClipTree; ids: string[]; from: string };

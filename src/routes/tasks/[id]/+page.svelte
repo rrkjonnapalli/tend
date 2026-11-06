@@ -83,22 +83,27 @@
 
   /** The chips follow the answer: a refused tag (a blocked one) never shows. */
   async function setTags(next: string[]) {
-    tags = await tasksAPI.setTags({ id, tags: next });
+    const taskId = id;
+    const saved = await tasksAPI.setTags({ id: taskId, tags: next });
+    // Another task may have opened while this one saved.
+    if (taskId === id) tags = saved;
   }
 
   let descField = $state<MarkdownField>();
   let descEditing = $state(false);
   // Another task (a subtask clicked mid-edit) opens with its description closed, never with an
-  // empty editor that ✓ would save over its text.
+  // empty editor that ✓ would save over its text. The field is keyed on the task, so an edit left
+  // open is saved to the task it was made on.
   $effect(() => {
     void id;
     descEditing = false;
   });
 
-  async function saveDescription(text: string) {
-    description = text;
-    await patch({ description: text });
-  }
+  /** Saves a description to `taskId`, which may no longer be the task shown. */
+  const descriptionSaver = (taskId: string) => async (text: string) => {
+    if (taskId === id) description = text;
+    await tasks.update(taskId, { description: text });
+  };
 
   // ---- breadcrumb and back
 
@@ -252,14 +257,16 @@
               <EditControls editing={descEditing} what="description" onedit={() => descField?.edit()} oncancel={() => descField?.cancel()} onsave={() => descField?.save()} />
             {/snippet}
             {#if detailLoaded}
-              <MarkdownField
-                bind:this={descField}
-                bind:editing={descEditing}
-                value={description}
-                onsave={saveDescription}
-                placeholder="Add a description…"
-                empty="No description"
-                label="Description" />
+              {#key id}
+                <MarkdownField
+                  bind:this={descField}
+                  bind:editing={descEditing}
+                  value={description}
+                  onsave={descriptionSaver(id)}
+                  placeholder="Add a description…"
+                  empty="No description"
+                  label="Description" />
+              {/key}
             {/if}
           </Section>
 
@@ -277,7 +284,8 @@
             </Section>
 
             <Section title="Comments" extra={commentCount ? String(commentCount) : ''}>
-              <Comments task={id} onchange={(n) => (commentCount = n)} />
+              <!-- Keyed: an unposted comment belongs to its task, never the next one opened. -->
+              {#key id}<Comments task={id} onchange={(n) => (commentCount = n)} />{/key}
             </Section>
           {/if}
         </div>

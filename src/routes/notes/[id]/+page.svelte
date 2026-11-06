@@ -224,7 +224,11 @@
 
   /** The chips follow the answer: a refused tag (a blocked one) never shows. */
   async function setTags(next: string[]) {
-    tags = await tagsAPI.setForNote({ id, tags: next });
+    const noteId = id;
+    const saved = await tagsAPI.setForNote({ id: noteId, tags: next });
+    // Another note may have opened while this one saved.
+    if (noteId !== id) return;
+    tags = saved;
   }
 
   /** "Keep mine": the text on screen is saved over the other version. */

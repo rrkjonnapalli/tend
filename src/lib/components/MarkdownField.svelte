@@ -3,6 +3,8 @@
   // ⌘↵ saves, Esc cancels. Pair it with EditControls for the pencil / ✕ / ✓ buttons.
   import MarkdownEditor from './MarkdownEditor.svelte';
   import MarkdownView from './MarkdownView.svelte';
+  import { toAppError } from '#lib/errors/app-error.ts';
+  import { errors } from '#lib/errors/registry.ts';
 
   let {
     value,
@@ -25,23 +27,46 @@
     label: string;
   } = $props();
 
+  type Saver = (text: string) => void | Promise<void>;
+
   let draft = $state('');
+  /** The edit under way: the text it started from, and the save of the item it started on (a
+   *  page may show another item by the time the field goes away). Not state: only read on leave. */
+  let open: { from: string; saver: Saver } | null = null;
 
   export function edit() {
     draft = value;
+    open = { from: value, saver: onsave };
     editing = true;
   }
 
   /** Closes the editor once the text is saved; a failed save keeps it open with the draft. */
   export async function save() {
     if (!editing) return;
-    if (draft !== value) await onsave(draft);
+    if (draft !== value) await (open?.saver ?? onsave)(draft);
+    open = null;
     editing = false;
   }
 
   export function cancel() {
+    open = null;
     editing = false;
   }
+
+  /** Saves an edit left open when the field goes away (another item or page opened). The item may
+   *  have been deleted meanwhile: then there is nothing to save to. */
+  async function saveOnLeave(edit: { from: string; saver: Saver }, text: string) {
+    try {
+      await edit.saver(text);
+    } catch (e) {
+      if (!toAppError(e).is(errors.NOT_FOUND)) throw e;
+    }
+  }
+
+  $effect(() => () => {
+    const changed = open !== null && draft !== open.from;
+    if (open && changed) void saveOnLeave(open, draft);
+  });
 </script>
 
 {#if editing}

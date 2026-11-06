@@ -37,10 +37,14 @@ export function clearDragging() {
   document.body.classList.remove(DRAGGING_CLASS);
 }
 
-/** Stops the click that releasing a drag fires. A cancelled pointer fires no click. */
+/** Stops the click that releasing a drag fires. A cancelled pointer fires no click, and neither
+ *  does a release outside the window: the guard ends after this task, so it never eats a later
+ *  real click. */
 export function swallowReleaseClick(e: PointerEvent) {
   if (e.type === 'pointercancel') return;
-  window.addEventListener('click', (c) => c.stopPropagation(), { capture: true, once: true });
+  const swallow = (c: MouseEvent) => c.stopPropagation();
+  window.addEventListener('click', swallow, { capture: true, once: true });
+  setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0);
 }
 
 export const pointOf = (e: PointerEvent): Point => ({ x: e.clientX, y: e.clientY });

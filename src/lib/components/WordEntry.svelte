@@ -114,6 +114,8 @@
     fetching = true;
     try {
       const found = await wordsAPI.lookup({ title: t, source: askedSource });
+      // The title changed while this looked up: the answer is for another word.
+      if (title.trim() !== t) return;
       dictionary = found;
       notFound = found === null;
       idiomFrom(found);
