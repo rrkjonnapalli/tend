@@ -68,22 +68,28 @@ fn collect_files(root: &Path, dir: &Path, out: &mut Vec<String>) {
     }
 }
 
+/// A fetched commit and the files Tend manages in it (`managed_files`), read once per run.
+#[derive(Clone, Copy)]
+struct Head<'a> {
+    commit: Oid,
+    managed: &'a BTreeMap<String, String>,
+}
+
 /// The tree to commit on top of `parent`: the vault's synced files, plus the parent's files Tend
 /// doesn't manage (a licence, say). `adopted` files became notes, so they leave the tree.
 fn tree_now(
     conn: &Connection,
     root: &Path,
     repo: &Repo,
-    (parent, adopted): (Option<Oid>, &[String]),
+    (parent, adopted): (Option<Head>, &[String]),
 ) -> AppResult<Oid> {
     let paths = synced_paths(conn, root)?;
-    let Some(commit) = parent else {
+    let Some(Head { commit, managed: in_parent }) = parent else {
         return repo.tree_of_files(&paths, None);
     };
-    let in_parent = managed_files(repo, commit)?;
     let mut managed: BTreeSet<String> = in_parent.keys().cloned().collect();
     managed.extend(adopted.iter().cloned());
-    let unchanged = unchanged_files(conn, &in_parent)?;
+    let unchanged = unchanged_files(conn, in_parent)?;
     let kept = Kept {
         commit,
         managed: &managed,
@@ -129,8 +135,9 @@ fn unchanged_files(
 /// Markdown files on the remote that Tend doesn't manage (the README made with the repo, a file
 /// added on the host's website) become notes: each folder and the file name get their slug, and a
 /// taken name gets `_1`, `_2`. Returns the remote paths taken in, which leave the next commit.
-fn adopt(conn: &mut Connection, root: &Path, repo: &Repo, head: Oid) -> AppResult<Vec<String>> {
-    let managed: BTreeSet<String> = managed_files(repo, head)?.into_keys().collect();
+fn adopt(conn: &mut Connection, root: &Path, repo: &Repo, head: Head) -> AppResult<Vec<String>> {
+    let managed: BTreeSet<String> = head.managed.keys().cloned().collect();
+    let head = head.commit;
     let blobs = repo.blobs(head)?;
     let mut adopted = Vec::new();
     for path in repo.foreign_files(head, &managed)? {
@@ -312,12 +319,20 @@ fn step(
     (repo, remote): (&Repo, &Remote),
     (base, head): (Option<Oid>, Option<Oid>),
 ) -> AppResult<Outcome> {
-    let adopted = match head {
-        Some(head) => adopt(conn, root, repo, head)?,
+    let in_head = match head {
+        Some(commit) => managed_files(repo, commit)?,
+        None => BTreeMap::new(),
+    };
+    let fetched = head.map(|commit| Head {
+        commit,
+        managed: &in_head,
+    });
+    let adopted = match fetched {
+        Some(fetched) => adopt(conn, root, repo, fetched)?,
         None => Vec::new(),
     };
     shards::export(conn, root)?;
-    let mut tree = tree_now(conn, root, repo, (head, &adopted))?;
+    let mut tree = tree_now(conn, root, repo, (fetched, &adopted))?;
     if let (Some(base), Some(head)) = (base, head) {
         let idle = head == base && tree == repo.tree_of(base)?;
         if idle {
@@ -327,7 +342,7 @@ fn step(
     if let Some(head) = head {
         merge_in(conn, root, repo, (base, head))?;
         shards::export(conn, root)?;
-        tree = tree_now(conn, root, repo, (Some(head), &adopted))?;
+        tree = tree_now(conn, root, repo, (fetched, &adopted))?;
         if tree == repo.tree_of(head)? {
             repo.point_branch(remote, head)?;
             return Ok(Outcome::Pulled);

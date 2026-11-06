@@ -43,7 +43,19 @@ pub struct SyncSetup {
     token: String,
 }
 
-fn config_of(setup: &SyncSetup) -> SyncConfig {
+/// A token typed into the URL (`https://<token>@github.com/…`) would be stored in plain text and
+/// shown in Settings; it belongs in the Token field, which goes to the Keychain.
+fn has_userinfo(url: &str) -> bool {
+    let rest = url.split_once("://").map_or("", |(_, rest)| rest);
+    let host = rest.split('/').next().unwrap_or("");
+    host.contains('@')
+}
+
+fn config_of(setup: &SyncSetup) -> AppResult<SyncConfig> {
+    let url = setup.url.trim();
+    if has_userinfo(url) {
+        return Err(errors::SYNC_URL.with("Put the token in the Token field, not in the repo URL."));
+    }
     let branch = setup
         .branch
         .as_deref()
@@ -54,14 +66,14 @@ fn config_of(setup: &SyncSetup) -> SyncConfig {
         .as_deref()
         .map(str::trim)
         .filter(|u| !u.is_empty());
-    SyncConfig {
-        url: setup.url.trim().to_string(),
+    Ok(SyncConfig {
+        url: url.to_string(),
         branch: branch.unwrap_or(DEFAULT_BRANCH).to_string(),
         username: username.map(String::from),
         author_name: DEFAULT_AUTHOR.into(),
         author_email: DEFAULT_EMAIL.into(),
         interval_minutes: DEFAULT_INTERVAL_MINUTES,
-    }
+    })
 }
 
 #[tauri::command(async)]
@@ -109,7 +121,7 @@ pub fn sync_connect<R: Runtime>(
     setup: SyncSetup,
 ) -> AppResult<()> {
     let vault = state.vault()?;
-    let config = config_of(&setup);
+    let config = config_of(&setup)?;
     let before = token::load(&config.url)?;
     token::save(&config.url, &setup.token)?;
     let remote = runner::remote_of(&config)?;
@@ -167,11 +179,11 @@ struct Restore<'a> {
 fn restore_into<R: Runtime>(app: &AppHandle<R>, Restore { root, setup }: Restore) -> AppResult<vault::Check> {
     let state = app.state::<AppState>();
     let cfg = app.state::<ConfigDir>();
+    let config = config_of(setup)?;
     let (check, opened) = vault::open(&root, false);
     let Some(opened) = opened else {
         return Ok(check);
     };
-    let config = config_of(setup);
     let before = token::load(&config.url)?;
     token::save(&config.url, &setup.token)?;
     let remote = runner::remote_of(&config)?;

@@ -21,9 +21,14 @@ pub fn days_in_month(year: Option<i64>, month: i64) -> i64 {
     }
 }
 
-/// `HH:MM`, 24-hour: `17:30` yes, `29:59` or `7:30` no.
+/// Only ASCII digits: Rust's number parse would also take a leading `+`.
+fn digits(s: &str) -> bool {
+    s.bytes().all(|b| b.is_ascii_digit())
+}
+
+/// `HH:MM`, 24-hour: `17:30` yes, `29:59`, `7:30` or `+1:30` no.
 pub fn is_time(t: &str) -> bool {
-    let shaped = t.len() == 5 && t.as_bytes()[2] == b':';
+    let shaped = t.len() == 5 && t.as_bytes()[2] == b':' && digits(&t[..2]) && digits(&t[3..]);
     if !shaped {
         return false;
     }
@@ -38,7 +43,8 @@ pub fn is_date(d: &str) -> bool {
     let [y, m, day] = parts.as_slice() else {
         return false;
     };
-    let shaped = y.len() == 4 && m.len() == 2 && day.len() == 2;
+    let sized = y.len() == 4 && m.len() == 2 && day.len() == 2;
+    let shaped = sized && [y, m, day].iter().all(|p| digits(p));
     let (Ok(year), Ok(month), Ok(dd)) = (y.parse::<i64>(), m.parse::<i64>(), day.parse::<i64>())
     else {
         return false;

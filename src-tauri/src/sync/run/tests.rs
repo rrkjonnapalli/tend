@@ -409,7 +409,12 @@ fn a_file_taken_in_before_a_failed_push_is_not_taken_in_twice() {
     // An earlier connect took the README in, then its push failed.
     let repo = Repo::open(a.root()).unwrap();
     let head = repo.fetch(&remote).unwrap().unwrap();
-    adopt(&mut a.vault.db(), a.root(), &repo, head).unwrap();
+    let managed = managed_files(&repo, head).unwrap();
+    let fetched = Head {
+        commit: head,
+        managed: &managed,
+    };
+    adopt(&mut a.vault.db(), a.root(), &repo, fetched).unwrap();
     assert!(a.root().join("readme.md").is_file());
     connect(&mut a.vault.db(), a.root(), &remote).unwrap();
     assert!(!a.root().join("readme_1.md").exists());
@@ -483,4 +488,34 @@ fn host_markdown_that_differs_only_in_case_becomes_two_notes() {
         remote_files(server.path()),
         [".gitignore", "readme.md", "readme_1.md"]
     );
+}
+
+#[test]
+fn a_push_rejected_because_another_device_pushed_first_keeps_both_changes() {
+    let server = tempfile::tempdir().unwrap();
+    let remote = remote(server.path());
+    let a = Device::new();
+    connect(&mut a.vault.db(), a.root(), &remote).unwrap();
+    let b = Device::new();
+    let root = b.root().to_path_buf();
+    restore(&mut b.vault.db(), &root, &remote).unwrap();
+
+    // A fetches; B pushes before A does.
+    let ship = a.task("Ship");
+    let repo = Repo::open(a.root()).unwrap();
+    let stale = repo.fetch(&remote).unwrap();
+    let base = resolve_base(&a.vault.db(), &repo, stale).unwrap();
+    let review = b.task("Review");
+    assert_eq!(b.sync(&remote).unwrap(), Outcome::Pushed);
+    let root = a.root().to_path_buf();
+    let pushed = step(&mut a.vault.db(), &root, (&repo, &remote), (base, stale));
+    assert!(pushed.is_err_and(|e| e.is(errors::SYNC_REJECTED)));
+
+    // The retry merges B's push in and pushes both.
+    assert_eq!(a.sync(&remote).unwrap(), Outcome::Pushed);
+    b.sync(&remote).unwrap();
+    for device in [&a, &b] {
+        let tasks = &device.rows()[tables::TASKS];
+        assert!(tasks.contains_key(&ship) && tasks.contains_key(&review));
+    }
 }

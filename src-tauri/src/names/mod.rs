@@ -52,10 +52,12 @@ pub fn slug(text: &str) -> Option<String> {
             gap = true;
             continue;
         }
-        if out.len() >= MAX_CHARS {
+        let joins = gap && !out.is_empty();
+        // The `_` counts too, or a gap at the limit makes a name one over it.
+        if out.len() + usize::from(joins) >= MAX_CHARS {
             break;
         }
-        if gap && !out.is_empty() {
+        if joins {
             out.push('_');
         }
         gap = false;

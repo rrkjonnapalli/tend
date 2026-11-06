@@ -412,3 +412,22 @@ fn a_tag_kept_under_another_devices_id_keeps_its_links() {
         "the link is unchanged in the merge, so nothing would write it again"
     );
 }
+
+#[test]
+fn an_edit_made_during_the_merge_rejects_the_apply_and_changes_nothing() {
+    let mut v = vault();
+    let (local, merged, blobs) = remote_edit(&mut v);
+    // A note is made after the merge was worked out from `local`.
+    v.note("", "Later");
+    let before = snapshot(&v.conn).unwrap();
+    let change = Change {
+        local: &local,
+        merged: &merged,
+        remote: &merged,
+    };
+    let root = v.root().to_path_buf();
+    let applied = apply(&mut v.conn, &root, &change, &blobs, no_tx);
+    assert!(applied.is_err_and(|e| e.is(crate::error::errors::SYNC_REJECTED)));
+    assert_eq!(snapshot(&v.conn).unwrap(), before);
+    assert_eq!(v.read("plan.md"), "# Plan\n");
+}

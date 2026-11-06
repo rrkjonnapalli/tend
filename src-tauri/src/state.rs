@@ -98,11 +98,12 @@ impl AppState {
         *self.guard.lock().unwrap_or_else(|e| e.into_inner()) = Some(guard);
     }
 
-    /// Replaces the sync runner; the old one stops.
+    /// Replaces the sync runner. The old one stops and its run in progress ends first, so two runs
+    /// never share `.tend/staging` (reopening the same vault).
     pub fn set_runner(&self, runner: Option<Runner>) {
         let mut slot = self.runner.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(old) = slot.take() {
-            old.stop();
+            old.stop_and_wait();
         }
         *slot = runner;
     }

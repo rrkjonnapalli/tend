@@ -46,12 +46,15 @@ use crate::config::ConfigDir;
 use crate::error::AppResult;
 use crate::state::{AppState, Vault};
 
-/// Runs once a vault becomes the open vault: index the notes, then watch them.
+/// Runs once a vault becomes the open vault: finish a cut-off sync, index the notes, then watch
+/// them.
 fn on_vault_open<R: Runtime>(
     app: &AppHandle<R>,
     state: &AppState,
     vault: &Arc<Vault>,
 ) -> AppResult<()> {
+    // Before the scan, or it indexes the half-applied files and resume then keeps them.
+    sync::apply::resume(&vault.db(), &vault.root)?;
     notes::watcher::rescan(vault)?;
     let watcher_app = app.clone();
     let guard = notes::watcher::start(vault.clone(), move |v| {

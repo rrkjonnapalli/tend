@@ -88,6 +88,16 @@ fn clear_missing(tx: &Transaction, path: &str) -> AppResult<()> {
     Ok(())
 }
 
+/// Drops the row a missing note left at `path` (kept a while for links), so a note can take it:
+/// `note_exists` already counts that name as free.
+fn clear_missing_note(tx: &Transaction, path: &str) -> AppResult<()> {
+    tx.execute(
+        "DELETE FROM attachments WHERE missing_at IS NOT NULL AND path = ?1",
+        [path],
+    )?;
+    Ok(())
+}
+
 /// Creates the folder `path` typed by the user, and any missing parents. When the last segment is
 /// taken it gets a suffix. Returns the path that was created.
 pub fn folder_create(conn: &mut Connection, dir: &Path, path: &str) -> AppResult<String> {
@@ -109,6 +119,14 @@ pub fn folder_create(conn: &mut Connection, dir: &Path, path: &str) -> AppResult
 /// Makes `path` exist on disk and in the index, parents included.
 fn create_path(conn: &mut Connection, dir: &Path, path: &str) -> AppResult<()> {
     let missing = missing_folders(conn, path)?;
+    for p in &missing {
+        if differs_only_in_case(dir, p) {
+            return Err(errors::NAME_TAKEN.with(format!(
+                "A folder named like “{}” is already here, with other capitals",
+                names::base(p)
+            )));
+        }
+    }
     fs::create_dir_all(dir.join(path))?;
     let now = now_ms();
     in_transaction(conn, |tx| {
@@ -120,6 +138,19 @@ fn create_path(conn: &mut Connection, dir: &Path, path: &str) -> AppResult<()> {
             )?;
         }
         Ok(())
+    })
+}
+
+/// A folder on disk whose name is `path`'s but for capitals (`Work` for `work`). On macOS the disk
+/// treats them as one folder, so making `work` would really use `Work`, which the scan skips.
+fn differs_only_in_case(dir: &Path, path: &str) -> bool {
+    let name = names::base(path);
+    let Ok(entries) = fs::read_dir(dir.join(names::parent(path))) else {
+        return false;
+    };
+    entries.flatten().any(|e| {
+        let other = e.file_name().to_string_lossy().into_owned();
+        other != name && other.eq_ignore_ascii_case(name)
     })
 }
 
@@ -172,6 +203,7 @@ pub fn create(conn: &mut Connection, dir: &Path, folder: &str, title: &str) -> A
             let _ = fs::remove_file(&path);
         },
         |tx| {
+            clear_missing_note(tx, &vault_path(&folder, &name))?;
             tx.execute(
                 "INSERT INTO attachments
                    (id, path, name, mime_type, size_bytes, sha256, created_at, updated_at, mtime)
@@ -269,6 +301,7 @@ fn relocate_note(
         |tx| {
             let now = now_ms();
             let new_path = vault_path(folder, name);
+            clear_missing_note(tx, &new_path)?;
             tx.execute(
                 "UPDATE attachments SET path = ?1, name = ?2, updated_at = ?3 WHERE id = ?4",
                 params![new_path, format!("{name}{EXT}"), now, attachment_id],
@@ -324,6 +357,10 @@ pub fn move_folder(
     }
     if names::parent(path) == target {
         return Err(errors::SAME_FOLDER.err());
+    }
+    // Before the target is made, so a stale path leaves no empty folder behind.
+    if path.is_empty() || !folder_exists(conn, path)? {
+        return Err(errors::NOT_FOUND.with("Folder was not found"));
     }
     ensure_folder(conn, dir, &target)?;
     let slot = Slot {

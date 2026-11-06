@@ -20,6 +20,9 @@ fn slugs() {
     assert_eq!(slug("日本"), None);
     assert_eq!(slug("🔥"), None);
     assert_eq!(slug(&"é".repeat(300)).unwrap().len(), 200);
+    // A gap right at the limit: the `_` would make it 201 (the UI's slug gives the same 199).
+    let at_limit = slug(&format!("{} b", "a".repeat(199))).unwrap();
+    assert_eq!(at_limit, "a".repeat(199));
     for text in ["a — b • c", "Plan_1", "x__y"] {
         let made = slug(text).unwrap();
         assert!(is_valid(&made), "{made}");

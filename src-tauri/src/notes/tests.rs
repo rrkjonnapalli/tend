@@ -519,3 +519,44 @@ fn symlinks_are_skipped_so_a_loop_cannot_hang_the_scan() {
     scan(&mut conn, &dir, true).unwrap();
     assert_eq!(names_in(&tree(&conn).unwrap()), vec!["work/a"]);
 }
+
+#[test]
+fn a_name_left_by_a_missing_note_can_be_taken_again() {
+    let mut f = fixture(&[("plan.md", "# Plan"), ("draft.md", "# Draft"), ("work/plan.md", "# P")]);
+    fs::remove_file(f.dir.join("plan.md")).unwrap();
+    fs::remove_file(f.dir.join("work/plan.md")).unwrap();
+    scan(&mut f.conn, &f.dir, false).unwrap();
+
+    let made = create(&mut f.conn, &f.dir, "", "Plan").unwrap();
+    assert_eq!(made.name, "plan");
+    let draft = names_in(&tree(&f.conn).unwrap()).contains(&"draft".to_string());
+    assert!(draft);
+    let id: String = f
+        .conn
+        .query_row(
+            "SELECT n.id FROM notes n JOIN attachments a ON a.id = n.attachment_id
+             WHERE a.path = 'draft.md'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let moved = move_note(&mut f.conn, &f.dir, &id, "work").unwrap();
+    let renamed = rename_note(&mut f.conn, &f.dir, &moved.id, "plan").unwrap();
+    assert_eq!((renamed.folder.as_str(), renamed.name.as_str()), ("work", "plan"));
+}
+
+#[test]
+fn moving_a_folder_that_is_gone_makes_no_target() {
+    let mut f = fixture(&[("old/a.md", "# A")]);
+    let moved = move_folder(&mut f.conn, &f.dir, "nope", "archive");
+    assert!(moved.unwrap_err().is(errors::NOT_FOUND));
+    assert!(!f.dir.join("archive").exists());
+}
+
+#[test]
+fn a_typed_folder_that_differs_only_in_case_from_one_on_disk_is_refused() {
+    let mut f = fixture(&[("Work/a.md", "# A")]);
+    let made = create(&mut f.conn, &f.dir, "work", "Meeting");
+    assert!(made.unwrap_err().is(errors::NAME_TAKEN));
+    assert!(!f.dir.join("Work/meeting.md").exists());
+}

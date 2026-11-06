@@ -352,10 +352,12 @@ implemented.
 4. Apply rows to SQLite in **one transaction** (a backup copy of `tend.db` is taken just
    before); check references; commit. A failed apply rolls back, `.tend/staging/` is emptied, and the
    sync fails with the vault unchanged.
-5. Move staged files into place and remove deleted ones; renames go to `path_log`. A file that no
+5. Move staged files into place and move deleted ones to the system Trash (a delete that won over an
+   unpushed local edit stays recoverable); renames go to `path_log`. A file that no
    longer holds the hash the merge expected was edited meanwhile (an autosave, another editor): it is
    left alone, and the next scan and sync send the edit. If the app stops between the commit and
-   the moves, the next run first finishes them from `pending.json`: a staged file moves only when the
+   the moves, opening the vault first finishes them from `pending.json`, before its scan (which would
+   otherwise index the half-applied files and undo the apply): a staged file moves only when the
    database holds its hash at its path, a removal happens only when no row is left there; a staged
    apply that never committed is discarded.
 6. Scan the vault, matching files to note rows by `attachments.path` (§11.3). Applied files hash the
@@ -437,7 +439,8 @@ lock (one run at a time; triggers during a run coalesce into it)
 ## 14. Connecting and restoring
 
 **Connect** (Settings → Sync): URL and token, with branch (default `main`) and username (default
-`x-access-token`) under "More". Commits are authored "Tend <tend@localhost>"; there is no device
+`x-access-token`) under "More". A URL with a token or user in it (`https://<token>@host/…`) is
+refused (`SYNC_URL`): the token would be stored in plain text. Commits are authored "Tend <tend@localhost>"; there is no device
 name. New connections sync every 15 min. The remote can be empty, hold only files such as a README or licence, or
 already hold a vault (another device's, or this one's after a disconnect): a vault there is merged
 with this one on an empty base (§9.1). **Files on the remote that Tend doesn't manage** (anything outside `.tend/`, `.gitignore` and the

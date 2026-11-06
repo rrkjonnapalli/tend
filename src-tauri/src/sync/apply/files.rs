@@ -248,12 +248,12 @@ fn indexed_shas(conn: &Connection) -> AppResult<BTreeMap<String, String>> {
     Ok(rows.collect::<Result<_, _>>()?)
 }
 
+/// A note another device deleted goes to the Trash: it may hold an edit that was never pushed.
 fn remove_if_there(path: &Path) -> AppResult<()> {
-    match fs::remove_file(path) {
-        Ok(()) => Ok(()),
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(e) => Err(e.into()),
+    if !path.exists() {
+        return Ok(());
     }
+    crate::files::to_trash(path)
 }
 
 /// Deepest first; a folder that still holds anything (a file Tend doesn't index) stays.

@@ -399,3 +399,38 @@ fn restore_needs_an_empty_folder() {
         .unwrap_err();
     assert_eq!(refused["key"], "RESTORE_NOT_EMPTY");
 }
+
+#[test]
+fn opening_a_vault_finishes_a_cut_off_sync_before_scanning() {
+    let h = Harness::new();
+    h.ok("note_create", json!({ "folder": "", "title": "Plan" }));
+    let root = h.vault.path();
+    let file = root.join("plan.md");
+    let sha = crate::files::sha256(&file).unwrap();
+    // A sync committed another device's delete, then the app quit before removing the file.
+    let (db, _) = crate::db::open(&crate::vault::db_path(root)).unwrap();
+    db.execute("DELETE FROM attachments WHERE path = 'plan.md'", [])
+        .unwrap();
+    let staging = root.join(".tend/staging");
+    std::fs::create_dir_all(&staging).unwrap();
+    let pending = json!({
+        "moves": [], "removals": ["plan.md"], "gone_folders": [], "expected": { "plan.md": sha }
+    });
+    std::fs::write(staging.join("pending.json"), pending.to_string()).unwrap();
+
+    h.ok("vault_open", json!({ "path": root }));
+    assert!(!file.exists(), "the delete is finished, not scanned back in");
+    let indexed: i64 = db
+        .query_row("SELECT COUNT(*) FROM attachments WHERE path = 'plan.md'", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(indexed, 0);
+}
+
+#[test]
+fn a_token_typed_into_the_repo_url_is_refused() {
+    let h = Harness::new();
+    let setup = json!({ "url": "https://ghp_secret@github.com/me/notes.git", "token": "t" });
+    let refused = h.call("sync_connect", json!({ "setup": setup })).unwrap_err();
+    assert_eq!(refused["key"], "SYNC_URL");
+    assert_eq!(h.ok("sync_status", json!({}))["config"], Value::Null);
+}
