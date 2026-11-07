@@ -96,6 +96,16 @@
     return () => void stop.then((unlisten) => unlisten());
   });
 
+  // Leaving the app (a phone going to the background, where it may be killed without a quit) saves
+  // what pages hold, as quitting does.
+  $effect(() => {
+    const onhide = () => {
+      if (document.visibilityState === 'hidden') void runBeforeQuit();
+    };
+    document.addEventListener('visibilitychange', onhide);
+    return () => document.removeEventListener('visibilitychange', onhide);
+  });
+
   // Once per launch: look for a newer Tend.
   $effect(() => {
     if (inDesktopApp()) void update.start();

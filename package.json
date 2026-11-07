@@ -13,7 +13,8 @@
     "tauri": "tauri",
     "test": "vitest run",
     "app": "tauri build --debug --bundles app && open src-tauri/target/debug/bundle/macos/Tend.app",
-    "android": "sh scripts/android.sh"
+    "android": "sh scripts/android.sh",
+    "notices": "bun scripts/notices.ts"
   },
   "license": "MIT",
   "dependencies": {

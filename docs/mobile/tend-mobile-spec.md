@@ -104,6 +104,7 @@ There is no tab bar or dock on the phone. Navigation is one round button in a bo
   - Android: Rust, Git and SQLite need a real file path, which the system folder picker (a `content://` URI) doesn't give; it needs *All files access* and a path.
   - Either way the vault's `.tend/` folder lives inside the vault, as on desktop.
 - Getting your vault ready: progress, steps (Downloading, Applying files, Opening the vault). Resumes if interrupted.
+- Leaving Tend (the app hidden, as when a phone sends it to the background) saves the open note at once, as quitting does: Android may stop the app without a quit.
 - Settings › Sync: last sync (with error banner when failed), Sync now, Disconnect…, repo and branch, token "saved on this phone" with Replace, schedule ("when you open or leave Tend, and every 15 min").
 - Replace token sheet: explanation, new token field, Save.
 

@@ -9,6 +9,7 @@
   import WordKindsEditor from '#lib/components/WordKindsEditor.svelte';
   import SettingsDictionary from '#lib/components/SettingsDictionary.svelte';
   import SettingsGeneral from '#lib/components/SettingsGeneral.svelte';
+  import SettingsAbout from '#lib/components/SettingsAbout.svelte';
   import SettingsPalette from '#lib/components/SettingsPalette.svelte';
   import SettingsSync from '#lib/components/SettingsSync.svelte';
   import SettingsTags from '#lib/components/SettingsTags.svelte';
@@ -35,6 +36,7 @@
     { id: SETTINGS_SECTION.tags, label: 'Tags', sub: 'Every tag, and the ones you blocked.' },
     { id: SETTINGS_SECTION.sync, label: 'Sync', sub: 'Keep this vault in a Git repo, and in step with your other devices.' },
     { id: SETTINGS_SECTION.palette, label: 'Command palette', sub: 'Every command, with its shortcut. Press ⌘K anywhere to open the palette.' },
+    { id: SETTINGS_SECTION.about, label: 'About', sub: 'This version of Tend, and the work it is built on.' },
   ];
 
   const requested = $derived(page.url.searchParams.get(SECTION_PARAM));
@@ -107,8 +109,10 @@
       <SettingsTags />
     {:else if current.id === SETTINGS_SECTION.sync}
       <SettingsSync />
-    {:else}
+    {:else if current.id === SETTINGS_SECTION.palette}
       <SettingsPalette />
+    {:else}
+      <SettingsAbout />
     {/if}
   </article>
 </main>

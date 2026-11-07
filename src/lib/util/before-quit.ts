@@ -1,5 +1,6 @@
 // Work that must finish before the app quits (saving an open note). Pages register it; the layout
-// runs it all when Rust says the app is quitting (`app:quitting`) and then answers `app_flushed`.
+// runs it all when Rust says the app is quitting (`app:quitting`) and then answers `app_flushed`,
+// and when the app is hidden (a phone in the background can be killed with no quit).
 
 import type { QuitHook } from '#lib/types/quit.type.ts';
 

@@ -319,7 +319,8 @@ The user picks one **vault folder**. It is the **notes root**: its `.md` files a
 
 ## 13. Settings
 
-- Sections on the left: General · Tasks · Library · Tags · Sync · Command palette.
+- Sections on the left: General · Tasks · Library · Tags · Sync · Command palette · About.
+- **About:** the running version, the font credits (Smile Moon: MJType, all rights reserved) and the licence notices of every shipped library and font, loaded from `static/third-party-licenses.txt`. `bun run notices` writes that file from `package.json` dependencies and the Rust crates (normal dependencies, plus vendored `-src` C code); run it after changing dependencies.
 - **Library:** the dictionary to look words up in (a field-sized dropdown) and word kinds (§15).
 - **Tags:** a search line at the top right, like the list pages, filters both columns by name. Every tag in two columns, **Active** and **Blocked**, by name; each row shows the tag and how many things use it. An active row has *Block*, a blocked row *Unblock*. Block asks first (*Block “name”?* — it comes off N things and can't be added again until unblocked); Unblock doesn't ask. Each row also has a delete icon: it always asks (*Delete “name”?* — it comes off N things), then removes the tag from the pool and from everything that carries it; unlike a blocked tag it can be typed again later. Each of the three reloads the tag pool and every list that shows tags (§7).
 - **General:** vault path as plain text, with a *Change vault folder…* link on the right. Below it, a quiet "N items skipped" line (files/folders whose names break the rule) that expands to the list.

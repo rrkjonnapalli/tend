@@ -6,4 +6,6 @@ export const config = {
   slowCallTimeoutMs: 120_000,
   /** At this window width or narrower the app uses the phone layout (docs/mobile/tend-mobile-spec.md). */
   phoneMaxWidth: 600,
+  /** The shipped libraries' and fonts' licence notices (`bun run notices` writes it into static/). */
+  noticesPath: '/third-party-licenses.txt',
 };

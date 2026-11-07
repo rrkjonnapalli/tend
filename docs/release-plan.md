@@ -124,9 +124,12 @@ Status: **todo**, **doing**, **done**, **decided** (no code needed), **user** (o
 
 ### 3.4 Sync config keyed by vault path — todo (audit #12)
 
-### 3.5 About page with credits — todo
+### 3.5 About page with credits — done
 - Settings → About: version, licence notices for the libraries and fonts (MIT and OFL require
   their notices to ship), and the Smile Moon note. Work Sans (`@fontsource/work-sans`, OFL-1.1) is bundled since the reading-font change and needs its notice too.
+- Built: Settings → About, with `static/third-party-licenses.txt` from `bun run notices`. About 45
+  crates ship no licence file; the notices name only their licence for those. Rerun it before each
+  release.
 
 ### 3.6 Big syncs — todo
 Covers the first sync, a sync after a long time, and syncs with many changes. A loading screen

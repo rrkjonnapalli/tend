@@ -6,6 +6,7 @@ export const SETTINGS_SECTION = {
   tags: 'tags',
   sync: 'sync',
   palette: 'palette',
+  about: 'about',
 } as const;
 
 export type SettingsSection = (typeof SETTINGS_SECTION)[keyof typeof SETTINGS_SECTION];
